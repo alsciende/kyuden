@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping\Cache;
 #[ORM\Entity(repositoryClass: PrintingRepository::class)]
 #[Cache(usage: 'READ_ONLY')]
 #[ORM\Table('printings')]
-class Printing
+class Printing implements \Stringable
 {
     #[ORM\Id]
     #[ORM\Column(type: 'integer')]
@@ -128,6 +128,7 @@ class Printing
         return $this;
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return sprintf('%s (#%s) x %s (#%s)', $this->getLogicalCard()->getName(), $this->getLogicalCard()->getId(), $this->getPack()->getName(), $this->getPack()->getId());

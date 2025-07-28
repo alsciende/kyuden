@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Annotation\Ignore;
 #[ORM\Entity(repositoryClass: CardRepository::class)]
 #[Cache(usage: 'READ_ONLY')]
 #[ORM\Table('logical_cards')]
-class LogicalCard
+class LogicalCard implements \Stringable
 {
     #[ORM\Id]
     #[ORM\Column(length: 50)]
@@ -437,6 +437,7 @@ class LogicalCard
         $this->physicalCards = $physicalCards;
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return sprintf('%s (#%s)', $this->getName(), $this->getId());

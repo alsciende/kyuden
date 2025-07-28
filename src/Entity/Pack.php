@@ -15,7 +15,7 @@ use Symfony\Component\Serializer\Annotation\Ignore;
 #[ORM\Entity(repositoryClass: PackRepository::class)]
 #[Cache(usage: 'READ_ONLY')]
 #[ORM\Table('packs')]
-class Pack
+class Pack implements \Stringable
 {
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'NONE')]
@@ -125,6 +125,7 @@ class Pack
         return $this->printings;
     }
 
+    #[\Override]
     public function __toString(): string
     {
         return sprintf('%s (#%s)', $this->getName(), $this->getShorthand());

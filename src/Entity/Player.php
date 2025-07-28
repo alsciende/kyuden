@@ -99,11 +99,11 @@ class Player
 
         usort(
             $this->cardsByPlaceCollection[DynastyCard::STATE_DRAW_DECK],
-            fn (PhysicalCard $card) => $card->getPosition() ?? 0,
+            fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
         );
         usort(
             $this->cardsByPlaceCollection[ConflictCard::STATE_DRAW_DECK],
-            fn (PhysicalCard $card) => $card->getPosition() ?? 0,
+            fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
         );
     }
 

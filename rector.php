@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
 use Rector\Php80\Rector\Class_\ClassPropertyAssignToConstructorPromotionRector;
+use Rector\PHPUnit\Set\PHPUnitSetList;
+use Rector\Set\ValueObject\LevelSetList;
+use Rector\Set\ValueObject\SetList;
+use Rector\Symfony\CodeQuality\Rector\Class_\EventListenerToEventSubscriberRector;
 use Rector\Symfony\Set\SymfonySetList;
-use Rector\Symfony\Symfony34\Rector\Closure\ContainerGetNameToTypeInTestsRector;
 
 return RectorConfig::configure()
     ->withPaths([
@@ -16,11 +19,14 @@ return RectorConfig::configure()
     ->withSets([
         SymfonySetList::SYMFONY_CODE_QUALITY,
         SymfonySetList::SYMFONY_CONSTRUCTOR_INJECTION,
-        SymfonySetList::ANNOTATIONS_TO_ATTRIBUTES,
+        SymfonySetList::SYMFONY_70,
+        SetList::TYPE_DECLARATION,
+        PHPUnitSetList::PHPUNIT_100,
+        LevelSetList::UP_TO_PHP_83,
     ])
-    ->withPhpSets()
-    ->withTypeCoverageLevel(45)
     ->withSkip([
-        ContainerGetNameToTypeInTestsRector::class,
         ClassPropertyAssignToConstructorPromotionRector::class,
-    ]);
+        EventListenerToEventSubscriberRector::class,
+    ])
+    ->withAttributesSets(symfony: true)
+    ->withPhpSets();

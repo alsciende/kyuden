@@ -20,6 +20,7 @@ readonly class TestEventSubscriber implements EventSubscriberInterface
         $this->accumulator->addCounter($this->counter);
     }
 
+    #[\Override]
     public static function getSubscribedEvents(): array
     {
         return [

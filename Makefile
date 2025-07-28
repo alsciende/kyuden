@@ -2,6 +2,9 @@ COMPOSER := docker run --rm --interactive --tty --volume ${PWD}:/app --workdir /
 EXEC := docker compose exec --interactive php
 PHP := ${EXEC} php
 
+composer:
+	docker run --rm --interactive --tty --volume ${PWD}:/app --workdir /app composer bash
+
 up: install build
 
 install:
@@ -38,3 +41,6 @@ db:
 	$(PHP) bin/console doctrine:schema:drop -f
 	$(PHP) bin/console doctrine:schema:create
 	$(PHP) bin/console doctrine:fixtures:load -n
+
+sh:
+	$(EXEC) bash

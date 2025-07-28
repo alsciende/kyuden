@@ -27,7 +27,7 @@ final readonly class GainHonorHandler
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->stateManager->withState(
             $player,
-            fn (PlayerState $state) => $state->setHonor($message->getHonorGain()),
+            fn (PlayerState $state): PlayerState => $state->setHonor($message->getHonorGain()),
         );
     }
 }

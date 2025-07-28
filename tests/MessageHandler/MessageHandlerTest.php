@@ -19,6 +19,7 @@ use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Service\PlayerStateManager;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
@@ -28,6 +29,7 @@ class MessageHandlerTest extends KernelTestCase
     use StarterDeckLionTrait;
     use StarterCraneDeckTrait;
 
+    #[\Override]
     protected function setUp(): void
     {
         self::bootKernel();
@@ -57,9 +59,7 @@ class MessageHandlerTest extends KernelTestCase
         return $gameId;
     }
 
-    /**
-     * @depends testCreateGameHandler
-     */
+    #[Depends('testCreateGameHandler')]
     public function testJoinGameHandler(string $gameId): string
     {
         $container = static::getContainer();
@@ -116,9 +116,7 @@ class MessageHandlerTest extends KernelTestCase
         return $gameId;
     }
 
-    /**
-     * @depends testJoinGameHandler
-     */
+    #[Depends('testJoinGameHandler')]
     public function testChooseStrongholdProvinceHandler(string $gameId): string
     {
         $container = static::getContainer();
@@ -181,7 +179,7 @@ class MessageHandlerTest extends KernelTestCase
         foreach ($game->getPlayers() as $player) {
             // deck shuffled
             $dynastyPositions = array_map(
-                fn (PhysicalCard $card) => $card->getPosition(),
+                fn (PhysicalCard $card): ?int => $card->getPosition(),
                 $player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK)
             );
             $this->assertSame(count($dynastyPositions), count(array_unique($dynastyPositions)));

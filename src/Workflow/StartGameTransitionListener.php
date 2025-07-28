@@ -31,7 +31,7 @@ readonly class StartGameTransitionListener
 
         $this->stateManager->withState(
             $game,
-            fn (GameState $state) => $state->setFirstPlayer($this->selectRandomFirstPlayer($game))
+            fn (GameState $state): GameState => $state->setFirstPlayer($this->selectRandomFirstPlayer($game))
         );
 
         $this->logger->debug('StartGameTransitionListener', [

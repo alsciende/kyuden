@@ -13,11 +13,13 @@ final readonly class ChooseStrongholdProvince implements PlayerActionInterface
     ) {
     }
 
+    #[\Override]
     public function getGameId(): string
     {
         return $this->gameId;
     }
 
+    #[\Override]
     public function getPlayerId(): string
     {
         return $this->playerId;

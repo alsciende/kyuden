@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\EventDispatcher;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
 class EventDispatcherTest extends KernelTestCase
@@ -18,8 +18,8 @@ class EventDispatcherTest extends KernelTestCase
         $kernel = self::bootKernel();
         $this->assertSame('test', $kernel->getEnvironment());
 
-        /** @var EventDispatcher $dispatcherService */
-        $dispatcherService = static::getContainer()->get('event_dispatcher');
+        /** @var EventDispatcherInterface $dispatcherService */
+        $dispatcherService = static::getContainer()->get(EventDispatcherInterface::class);
 
         $accumulator = new TestAccumulator();
 
