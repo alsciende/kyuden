@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterDeckPhoenixTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getPhoenixStarterCards(): array
     {

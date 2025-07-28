@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterDeckLionTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getLionStarterCards(): array
     {

@@ -43,7 +43,7 @@ readonly class AutomaticGameLauncher implements GameLauncherInterface
                 $candidate->getUserId(),
                 $candidate->getDeck()->getId(),
                 $candidate->getDeck()->getName(),
-                $candidate->getDeck()->getContent()
+                JoinGame::generateCardsIds($candidate->getDeck()->getContent())
             );
             ($this->joinGameHandler)($joinGame);
 

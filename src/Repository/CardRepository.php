@@ -13,11 +13,6 @@ use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<PhysicalCard>
- *
- * @method PhysicalCard|null find($id, $lockMode = null, $lockVersion = null)
- * @method PhysicalCard|null findOneBy(array $criteria, array $orderBy = null)
- * @method PhysicalCard[]    findAll()
- * @method PhysicalCard[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class CardRepository extends ServiceEntityRepository
 {

@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterDeckUnicornTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getUnicornStarterCards(): array
     {

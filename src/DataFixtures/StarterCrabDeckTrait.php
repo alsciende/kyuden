@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterCrabDeckTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getCrabStarterCards(): array
     {

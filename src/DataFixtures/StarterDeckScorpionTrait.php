@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterDeckScorpionTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getScorpionStarterCards(): array
     {

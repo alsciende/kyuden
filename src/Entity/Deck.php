@@ -24,7 +24,7 @@ class Deck
     private ?string $name = null;
 
     /**
-     * @var array<string>
+     * @var list<string>
      */
     #[ORM\Column(type: 'text[]')]
     private array $content = [];
@@ -52,7 +52,7 @@ class Deck
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getContent(): array
     {
@@ -60,7 +60,7 @@ class Deck
     }
 
     /**
-     * @param array<string> $content
+     * @param list<string> $content
      *
      * @return $this
      */

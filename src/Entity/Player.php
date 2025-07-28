@@ -225,14 +225,7 @@ class Player
 
     public function removeCard(PhysicalCard $card): static
     {
-        if ($this->physicalCards->removeElement($card)) {
-            // set the owning side to null (unless already changed)
-            if ($card->getPlayer() === $this) {
-                $card->setPlayer(null);
-            }
-        }
-
-        return $this;
+        throw new \LogicException('Removing card does not exist. Delete the card instead.');
     }
 
     public function getDeck(): Deck

@@ -8,6 +8,7 @@ use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
+use App\Exception\Data\GameNotFoundException;
 use App\Factory\CardFactory;
 use App\Message\JoinGame;
 use App\Repository\GameRepository;
@@ -32,7 +33,11 @@ final readonly class JoinGameHandler
 
         $player = new Player($message->getPlayerId());
         $player->setUserId($message->getUserId());
-        $player->setDeck($this->entityManager->find(Deck::class, $message->getDeckId()));
+        $deck = $this->entityManager->find(Deck::class, $message->getDeckId());
+        if (! $deck instanceof Deck) {
+            throw new GameNotFoundException($message->getDeckId());
+        }
+        $player->setDeck($deck);
         $game->addPlayer($player);
 
         foreach ($message->getCardIds() as $cardId => $id) {

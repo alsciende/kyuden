@@ -10,7 +10,7 @@ namespace App\DataFixtures;
 trait StarterCraneDeckTrait
 {
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getCraneStarterCards(): array
     {

@@ -1,9 +1,8 @@
 parameters:
-    level: 4
+    level: max
     paths:
         - bin/
         - config/
-        - public/
         - src/
         - tests/
     excludePaths:
