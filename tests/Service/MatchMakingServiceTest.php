@@ -17,9 +17,9 @@ class MatchMakingServiceTest extends TestCase
     {
         $repo = $this->createStub(CandidateRepository::class);
         $repo->method('findAll')->willReturn([
-            (new Candidate())->setDeck(new Deck('1'))->setUserId('jack'),
-            (new Candidate())->setDeck(new Deck('2'))->setUserId('jane'),
-            (new Candidate())->setDeck(new Deck('3'))->setUserId('jill'),
+            new Candidate()->setDeck(new Deck('1'))->setUserId('jack'),
+            new Candidate()->setDeck(new Deck('2'))->setUserId('jane'),
+            new Candidate()->setDeck(new Deck('3'))->setUserId('jill'),
         ]);
 
         $launcher = $this->createMock(GameLauncherInterface::class);
