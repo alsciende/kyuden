@@ -18,32 +18,23 @@ use Symfony\Component\Uid\Uuid;
     name: 'app:deck:create',
     description: 'Add a short description for your command',
 )]
-class DeckCreateCommand extends Command
+readonly class DeckCreateCommand
 {
     use StarterDeckLionTrait;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $deck = new Deck(Uuid::v4()->toString());
         $deck->setName('Lion Clan Starter Deck');
         $deck->setContent($this->getLionStarterCards());
         $this->entityManager->persist($deck);
         $this->entityManager->flush();
-
         $io->success("Deck {$deck->getId()} created");
 
         return Command::SUCCESS;

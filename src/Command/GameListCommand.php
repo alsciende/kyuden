@@ -17,27 +17,18 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:game:list',
     description: 'Add a short description for your command',
 )]
-class GameListCommand extends Command
+readonly class GameListCommand
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private EntityManagerInterface $entityManager,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         /** @var Game[] $rows */
         $rows = $this->entityManager->getRepository(Game::class)->findAll();
-
         $io->table(
             ['Id', 'Current Place', 'Players'],
             array_map(

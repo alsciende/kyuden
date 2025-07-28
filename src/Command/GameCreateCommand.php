@@ -17,27 +17,18 @@ use Symfony\Component\Uid\Uuid;
     name: 'app:game:create',
     description: 'Create a game',
 )]
-class GameCreateCommand extends Command
+readonly class GameCreateCommand
 {
     public function __construct(
-        private readonly MessageBusInterface $bus,
+        private MessageBusInterface $bus,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $gameId = Uuid::v4()->toString();
         $this->bus->dispatch(new CreateGame($gameId));
-
         $io->success("Game {$gameId} created successfully.");
 
         return Command::SUCCESS;

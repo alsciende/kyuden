@@ -16,27 +16,18 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:candidate:list',
     description: 'Add a short description for your command',
 )]
-class CandidateListCommand extends Command
+readonly class CandidateListCommand
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private EntityManagerInterface $entityManager,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         /** @var Candidate[] $rows */
         $rows = $this->entityManager->getRepository(Candidate::class)->findAll();
-
         $io->table(
             ['Id', 'User', 'Deck'],
             array_map(

@@ -15,24 +15,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:matchmaking',
     description: 'Launch Matchmaking on the current Candidates',
 )]
-class MatchmakingCommand extends Command
+readonly class MatchmakingCommand
 {
     public function __construct(
-        private readonly MatchMakingInterface $matchMaking,
+        private MatchMakingInterface $matchMaking,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $this->matchMaking->findMatches();
 
         return Command::SUCCESS;

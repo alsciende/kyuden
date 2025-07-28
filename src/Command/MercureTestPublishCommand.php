@@ -16,26 +16,21 @@ use Symfony\Component\Mercure\Update;
     name: 'app:mercure:test:publish',
     description: 'Add a short description for your command',
 )]
-class MercureTestPublishCommand extends Command
+readonly class MercureTestPublishCommand
 {
     public function __construct(
-        private readonly HubInterface $hub,
+        private HubInterface $hub,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $update = new Update(
             'https://example.com/games',
             '{"status": "started"}'
         );
-
         $this->hub->publish($update);
-
         $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
 
         return Command::SUCCESS;

@@ -17,24 +17,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
     name: 'app:event:play',
     description: 'Add a short description for your command',
 )]
-class EventPlayCommand extends Command
+readonly class EventPlayCommand
 {
     public function __construct(
-        private readonly EventPlayer $player,
+        private EventPlayer $player,
     ) {
-        parent::__construct();
     }
 
-    #[\Override]
-    protected function configure(): void
-    {
-    }
-
-    #[\Override]
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $nameQuestion = new Question('Class of message');
         $nameQuestion->setValidator(
             function (string $anwser): string {
@@ -47,7 +39,6 @@ class EventPlayCommand extends Command
         );
         /** @var string $name */
         $name = $io->askQuestion($nameQuestion);
-
         $payloadQuestion = new Question('Payload of message');
         $payloadQuestion->setValidator(
             function (string $answer): string {
@@ -60,11 +51,8 @@ class EventPlayCommand extends Command
         );
         /** @var string $payload */
         $payload = $io->askQuestion($payloadQuestion);
-
         $io->title("Playing event {$name} with payload {$payload}");
-
         $this->player->playEvent(new Event($name, $payload));
-
         $io->success('Event played successfully.');
 
         return Command::SUCCESS;
