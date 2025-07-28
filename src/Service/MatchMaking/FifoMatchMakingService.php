@@ -21,7 +21,7 @@ readonly class FifoMatchMakingService implements MatchMakingInterface
         $candidates = $this->candidateRepository->findAll();
         $pairs = array_chunk($candidates, 2);
 
-        while (($pair = array_shift($pairs)) && is_array($pair) && (count($pair) === 2)) {
+        while (($pair = array_shift($pairs)) && (count($pair) === 2)) {
             $this->launcher->createGame($pair);
         }
     }

@@ -44,7 +44,7 @@ class GameListCommand extends Command
                 fn (Game $game): array => [
                     $game->getId(),
                     $game->getCurrentPlace(),
-                    implode(' & ', array_map(fn (Player $player): ?string => $player->getUserId(), $game->getPlayers()->toArray())),
+                    implode(' & ', array_map(fn (Player $player): string => $player->getUserId(), $game->getPlayers()->toArray())),
                 ],
                 $rows
             )

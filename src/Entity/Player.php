@@ -35,7 +35,7 @@ class Player
     private Game $game;
 
     #[ORM\Column(length: 255)]
-    private ?string $userId = null;
+    private string $userId;
 
     /**
      * @var ArrayCollection<int, PhysicalCard>
@@ -48,7 +48,7 @@ class Player
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Deck $deck = null;
+    private Deck $deck;
 
     public function __construct(string $id)
     {
@@ -185,12 +185,12 @@ class Player
         return $this;
     }
 
-    public function getUserId(): ?string
+    public function getUserId(): string
     {
         return $this->userId;
     }
 
-    public function setUserId(?string $userId): static
+    public function setUserId(string $userId): static
     {
         $this->userId = $userId;
 
@@ -235,12 +235,12 @@ class Player
         return $this;
     }
 
-    public function getDeck(): ?Deck
+    public function getDeck(): Deck
     {
         return $this->deck;
     }
 
-    public function setDeck(?Deck $deck): static
+    public function setDeck(Deck $deck): static
     {
         $this->deck = $deck;
 

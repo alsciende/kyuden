@@ -44,7 +44,7 @@ abstract class PhysicalCard
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $currentPlace = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
 
     #[ORM\Column(nullable: true)]
@@ -58,11 +58,11 @@ abstract class PhysicalCard
 
     #[ORM\ManyToOne(inversedBy: 'physicalCards')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Game $game = null;
+    private Game $game;
 
     #[ORM\ManyToOne(inversedBy: 'physicalCards')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Player $player = null;
+    private Player $player;
 
     #[ORM\ManyToOne(inversedBy: 'topCards')]
     #[ORM\JoinColumn(nullable: true)]
@@ -73,8 +73,6 @@ abstract class PhysicalCard
      */
     #[ORM\OneToMany(mappedBy: 'bottomCard', targetEntity: self::class, fetch: 'LAZY', orphanRemoval: true)]
     private Collection $topCards;
-
-    private ?string $side = null;
 
     public function __construct(string $id, LogicalCard $logicalCard)
     {
@@ -145,33 +143,28 @@ abstract class PhysicalCard
         return $this;
     }
 
-    public function getGame(): ?Game
+    public function getGame(): Game
     {
         return $this->game;
     }
 
-    public function setGame(?Game $game): static
+    public function setGame(Game $game): static
     {
         $this->game = $game;
 
         return $this;
     }
 
-    public function getPlayer(): ?Player
+    public function getPlayer(): Player
     {
         return $this->player;
     }
 
-    public function setPlayer(?Player $player): static
+    public function setPlayer(Player $player): static
     {
         $this->player = $player;
 
         return $this;
-    }
-
-    public function getSide(): ?string
-    {
-        return $this->side;
     }
 
     /**

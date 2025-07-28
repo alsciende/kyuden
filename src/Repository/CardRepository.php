@@ -34,7 +34,7 @@ class CardRepository extends ServiceEntityRepository
             throw new CardNotFoundException($cardId);
         }
 
-        if ($game instanceof Game && $card->getGame()?->getId() !== $game->getId()) {
+        if ($game instanceof Game && $card->getGame()->getId() !== $game->getId()) {
             throw new GameMismatchException();
         }
 

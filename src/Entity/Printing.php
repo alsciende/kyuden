@@ -19,11 +19,11 @@ class Printing implements \Stringable
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: LogicalCard::class, inversedBy: 'printings')]
-    #[ORM\JoinColumn(name: 'card_id', referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: 'card_id', referencedColumnName: 'id', nullable: false)]
     private LogicalCard $card;
 
     #[ORM\ManyToOne(targetEntity: Pack::class, inversedBy: 'printings')]
-    #[ORM\JoinColumn(name: 'pack_id', referencedColumnName: 'id')]
+    #[ORM\JoinColumn(name: 'pack_id', referencedColumnName: 'id', nullable: false)]
     private Pack $pack;
 
     #[ORM\Column]

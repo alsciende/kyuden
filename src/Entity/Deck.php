@@ -20,7 +20,7 @@ class Deck
     #[ORM\Column]
     private string $id;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $name = null;
 
     /**

@@ -24,7 +24,7 @@ class Event
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: 'jsonb')]
