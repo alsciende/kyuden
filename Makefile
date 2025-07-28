@@ -5,10 +5,11 @@ PHP := ${EXEC} php
 composer:
 	docker run --rm --interactive --tty --volume ${PWD}:/app --workdir /app composer bash
 
-up: install build
-
 install:
 	$(COMPOSER) install
+
+update:
+	$(COMPOSER) update
 
 build:
 	docker compose up --build --detach
@@ -19,6 +20,8 @@ down:
 reset:
 	docker compose down --remove-orphans --volumes
 	rm -rf vendor
+
+up: install build
 
 check-symfony:
 	$(PHP) bin/console lint:container
