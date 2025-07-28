@@ -11,6 +11,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class User implements UserInterface
 {
+    /**
+     * @var non-empty-string
+     */
     public string $id;
 
     #[\Override]
