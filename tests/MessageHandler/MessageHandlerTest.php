@@ -174,7 +174,7 @@ class MessageHandlerTest extends KernelTestCase
 
         $bus->dispatch($message);
 
-        $this->assertSame('dynasty_phase_begins', $game->getCurrentPlace());
+        $this->assertSame('reveal_facedown_dynasty_cards', $game->getCurrentPlace());
 
         foreach ($game->getPlayers() as $player) {
             // deck shuffled

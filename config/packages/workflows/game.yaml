@@ -23,11 +23,6 @@ framework:
                         auto: true
                 setup_game: # setup game
                     from: place_provinces
-                    to: dynasty_phase_begins
-                    metadata:
-                        auto: true
-                t0:
-                    from: dynasty_phase_begins
                     to: reveal_facedown_dynasty_cards
                     metadata:
                         auto: true
