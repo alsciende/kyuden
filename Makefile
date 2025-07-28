@@ -17,11 +17,19 @@ reset:
 	docker compose down --remove-orphans --volumes
 	rm -rf vendor
 
-lint:
+check-symfony:
 	$(PHP) bin/console lint:container
+
+ecs:
 	$(PHP) vendor/bin/ecs --fix
-#	$(PHP) vendor/bin/rector
+
+rector:
+	$(PHP) vendor/bin/rector
+
+phpstan:
 	$(PHP) vendor/bin/phpstan -v --memory-limit=1G
+
+lint: check-symfony ecs rector phpstan
 
 test:
 	$(PHP) vendor/bin/phpunit

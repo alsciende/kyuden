@@ -55,7 +55,7 @@ class PrintingFixtures extends Fixture implements DependentFixtureInterface
     }
 
     #[\Override]
-    public function getDependencies()
+    public function getDependencies(): array
     {
         return [
             LogicalCardFixtures::class,
