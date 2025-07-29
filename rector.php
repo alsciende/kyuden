@@ -22,7 +22,7 @@ return RectorConfig::configure()
         SymfonySetList::SYMFONY_73,
         SetList::TYPE_DECLARATION,
         PHPUnitSetList::PHPUNIT_100,
-        LevelSetList::UP_TO_PHP_83,
+        LevelSetList::UP_TO_PHP_84,
     ])
     ->withSkip([
         ClassPropertyAssignToConstructorPromotionRector::class,

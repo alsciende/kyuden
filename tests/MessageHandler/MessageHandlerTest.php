@@ -186,7 +186,7 @@ class MessageHandlerTest extends KernelTestCase
             // conflict cards drawn
             $this->assertSame(19, count($player->getCardsByPlace(ConflictCard::STATE_DRAW_DECK)));
             $this->assertSame(5, count($player->getCardsByPlace(ConflictCard::STATE_HAND)));
-            // starting honot
+            // starting honor
             $this->assertGreaterThan(0, $playerStateManager->getState($player)->getHonor());
             // filled provinces
             $this->assertSame(4, count($player->getCardsByPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
