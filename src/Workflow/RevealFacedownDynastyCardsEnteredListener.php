@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Workflow;
 
 use App\Entity\Game;
@@ -12,12 +14,11 @@ use Symfony\Component\Workflow\Event\EnteredEvent;
 final readonly class RevealFacedownDynastyCardsEnteredListener
 {
     public function __construct(
-        private EventDispatcherInterface $eventDispatcher
-    )
-    {
+        private EventDispatcherInterface $eventDispatcher,
+    ) {
     }
 
-    public function __invoke(EnteredEvent $event):void
+    public function __invoke(EnteredEvent $event): void
     {
         /** @var Game $game */
         $game = $event->getSubject();
