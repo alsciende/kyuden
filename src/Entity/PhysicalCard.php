@@ -11,8 +11,6 @@ use App\Entity\CardTypes\RoleCard;
 use App\Enum\Side;
 use App\Enum\Type;
 use App\Repository\CardRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -64,21 +62,14 @@ abstract class PhysicalCard
     #[ORM\JoinColumn(nullable: false)]
     private Player $player;
 
-    #[ORM\ManyToOne(inversedBy: 'topCards')]
+    #[ORM\ManyToOne(inversedBy: 'cards')]
     #[ORM\JoinColumn(nullable: true)]
-    private ?PhysicalCard $bottomCard = null;
-
-    /**
-     * @var ArrayCollection<int, PhysicalCard>
-     */
-    #[ORM\OneToMany(mappedBy: 'bottomCard', targetEntity: self::class, fetch: 'LAZY', orphanRemoval: true)]
-    private Collection $topCards;
+    private ?Stack $stack = null;
 
     public function __construct(string $id, LogicalCard $logicalCard)
     {
         $this->id = $id;
         $this->logicalCard = $logicalCard;
-        $this->topCards = new ArrayCollection();
     }
 
     public function getId(): string
@@ -167,52 +158,16 @@ abstract class PhysicalCard
         return $this;
     }
 
-    /**
-     * @return Collection<int, PhysicalCard>
-     */
-    public function getTopCards(): Collection
+    public function getStack(): ?Stack
     {
-        return $this->topCards;
+        return $this->stack;
     }
 
-    /**
-     * @param ArrayCollection<int, PhysicalCard> $topCards
-     */
-    public function setTopCards(ArrayCollection $topCards): void
+    public function setStack(?Stack $stack): static
     {
-        $this->topCards = $topCards;
-    }
-
-    public function addTopCard(self $card): static
-    {
-        if (! $this->topCards->contains($card)) {
-            $this->topCards->add($card);
-            $card->setBottomCard($this);
-        }
+        $this->stack = $stack;
 
         return $this;
-    }
-
-    public function removeTopCard(self $card): static
-    {
-        if ($this->topCards->removeElement($card)) {
-            // set the owning side to null (unless already changed)
-            if ($card->getBottomCard() === $this) {
-                $card->setBottomCard(null);
-            }
-        }
-
-        return $this;
-    }
-
-    public function getBottomCard(): ?self
-    {
-        return $this->bottomCard;
-    }
-
-    public function setBottomCard(?self $bottomCard): void
-    {
-        $this->bottomCard = $bottomCard;
     }
 
     /**

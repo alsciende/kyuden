@@ -9,6 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Exception\Data\CardNotFoundException;
+use App\Exception\Data\MissingStackException;
 use App\Exception\Rules\DrawingFromEmptyDeckException;
 use App\Message\FillProvince;
 use App\Repository\GameRepository;
@@ -45,13 +46,16 @@ final readonly class FillProvinceHandler
     private function fillProvince(Player $player, PhysicalCard $province): void
     {
         $dynastyDeck = $player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK);
-        $topCard = array_pop($dynastyDeck);
-        if ($topCard === null) {
+        $card = array_pop($dynastyDeck);
+        if ($card === null) {
             throw new DrawingFromEmptyDeckException();
         }
-        $province->addTopCard($topCard);
-        $topCard->setPosition(null);
-        $this->dynastyCardStateMachine->apply($topCard, 'draw_card');
+        if ($province->getStack() === null) {
+            throw new MissingStackException($province);
+        }
+        $province->getStack()->addCard($card);
+        $card->setPosition(null);
+        $this->dynastyCardStateMachine->apply($card, 'draw_card');
         $player->resetCardGroups();
     }
 }

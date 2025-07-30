@@ -35,13 +35,18 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
         if ($message instanceof ActionInterface) {
             $gameId = $message->getGameId();
             $game = $this->gameRepository->get($gameId);
-            $this->checkTransition($game);
+            do {
+                $transitionOccurred = $this->checkTransition($game);
+            } while ($transitionOccurred);
         }
 
         return $envelope;
     }
 
-    private function checkTransition(Game $game): void
+    /**
+     * @return bool True if a transition occurred
+     */
+    private function checkTransition(Game $game): bool
     {
         $availableTransitions = $this->gameStateMachine->getEnabledTransitions($game);
         $this->logger->debug('WorkflowTransitionMiddleware', [
@@ -59,8 +64,10 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
             if ($isAuto) {
                 $this->gameStateMachine->apply($game, $transition->getName());
 
-                return;
+                return true;
             }
         }
+
+        return false;
     }
 }

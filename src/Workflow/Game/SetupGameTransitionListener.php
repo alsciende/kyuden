@@ -13,6 +13,7 @@ use App\Message\FillProvince;
 use App\Message\GainHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
+use App\Service\StackManager;
 use App\State\Manager\PlayerStateManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -28,6 +29,7 @@ readonly class SetupGameTransitionListener
         private LoggerInterface $logger,
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
+        private StackManager $stackManager,
     ) {
     }
 
@@ -75,13 +77,19 @@ readonly class SetupGameTransitionListener
             new GainHonor($player->getGame()->getId(), $player->getId(), $honor)
         );
 
+        // create stack for provinces
+        $provinces = $player->getCardsByType(Type::PROVINCE);
+
+        // create empty stacks for other cards
+        // @TODO
+
         // fill provinces
         $strongholdProvinceId = $this->stateManager->getState($player)->getStrongholdProvinceId();
-        $provinces = $player->getCardsByType(Type::PROVINCE);
         $stronghold = $player->getStronghold();
         foreach ($provinces as $province) {
+            $stack = $this->stackManager->createEmptyStack()->addCard($province);
             if ($province->getId() === $strongholdProvinceId) {
-                $province->addTopCard($stronghold);
+                $stack->addCard($stronghold);
             } else {
                 $this->transitionBus->dispatch(
                     new FillProvince($player->getGame()->getId(), $player->getId(), $province->getId())

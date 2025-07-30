@@ -24,6 +24,8 @@ Build an engine to play Legends of the Five Rings LCG as published by Fantasy Fl
 
 `App\Entity\PhysicalCard` is a mapped superclass on the actual card types in `src/Entity/CardTypes`.
 
+`App\Entity\PhysicalCard` in play are organized in `App\Entity\Stack`: ordered collection of cards.
+
 `App\Entity\Deck` is a collection of card codes that should refer to known `App\Entity\LogicalCard`. When a game starts, the deck is used to generate the `App\Entity\PhysicalCard` set.
 
 
