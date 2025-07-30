@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Workflow;
+namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use Symfony\Component\Workflow\Attribute\AsGuardListener;

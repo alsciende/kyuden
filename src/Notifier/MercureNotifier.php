@@ -9,7 +9,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Serializer\SerializerInterface;
 
-readonly class Notifier implements NotifierInterface
+readonly class MercureNotifier implements NotifierInterface
 {
     public function __construct(
         private HubInterface $hub,

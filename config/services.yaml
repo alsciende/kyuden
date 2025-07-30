@@ -33,5 +33,5 @@ services:
     # please note that last definitions always *replace* previous ones
 
     App\Notifier\NotifierInterface:
-        class: App\Notifier\Notifier
+        class: App\Notifier\MercureNotifier
 
