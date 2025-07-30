@@ -12,6 +12,22 @@ Build an engine to play Legends of the Five Rings LCG as published by Fantasy Fl
 
 ## Architecture
 
+### Entities
+
+`App\Entity\LogicalCard` is what we list in a pack or a decklist. It holds the game information about a card: title, cost, text, etc.
+
+`App\Entity\LogicalCard` are grouped in `App\Entity\Pack` by `App\Entity\Printing`.
+
+`App\Entity\PhysicalCard` is an occurrence of a card that can be in multiples in a deck. This is the card that is drawn, played, discarded, etc.
+
+`App\Entity\PhysicalCard` are associated to a `App\Entity\Player` in a `App\Entity\Game`.
+
+`App\Entity\PhysicalCard` is a mapped superclass on the actual card types in `src/Entity/CardTypes`.
+
+`App\Entity\Deck` is a collection of card codes that should refer to known `App\Entity\LogicalCard`. When a game starts, the deck is used to generate the `App\Entity\PhysicalCard` set.
+
+
+
 ### User Events and Action Messages
 
 - Events are received by the `App\Controller\EventController`, converted to messages, and dispatched to the bus (TODO)

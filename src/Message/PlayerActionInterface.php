@@ -6,7 +6,5 @@ namespace App\Message;
 
 interface PlayerActionInterface extends ActionInterface
 {
-    public function getGameId(): string;
-
     public function getPlayerId(): string;
 }

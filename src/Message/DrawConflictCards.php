@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Message;
 
+use App\Attribute\AppActionMessage;
+
+#[AppActionMessage]
 final readonly class DrawConflictCards implements PlayerActionInterface
 {
     public function __construct(
