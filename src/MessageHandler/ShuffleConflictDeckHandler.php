@@ -25,6 +25,6 @@ final readonly class ShuffleConflictDeckHandler
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $this->shuffler->shuffleCards($player->getCardsByPlace(ConflictCard::STATE_DRAW_DECK));
+        $this->shuffler->shuffleCards($player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK));
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\StackType;
 use App\Repository\StackRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -22,9 +23,18 @@ class Stack
     #[ORM\OneToMany(mappedBy: 'stack', targetEntity: PhysicalCard::class)]
     private Collection $cards;
 
-    public function __construct(string $id)
+    #[ORM\ManyToOne(inversedBy: 'stacks')]
+    #[ORM\JoinColumn(nullable: false)]
+    private Player $player;
+
+    #[ORM\Column(enumType: StackType::class)]
+    private StackType $type;
+
+    public function __construct(string $id, Player $player, StackType $type)
     {
         $this->id = $id;
+        $this->player = $player;
+        $this->type = $type;
         $this->cards = new ArrayCollection();
     }
 
@@ -69,5 +79,15 @@ class Stack
         }
 
         return $this;
+    }
+
+    public function getPlayer(): Player
+    {
+        return $this->player;
+    }
+
+    public function getType(): StackType
+    {
+        return $this->type;
     }
 }

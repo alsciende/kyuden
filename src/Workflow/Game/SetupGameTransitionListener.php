@@ -6,6 +6,7 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\StackType;
 use App\Enum\Type;
 use App\Exception\Data\DataException;
 use App\Message\DrawConflictCards;
@@ -59,6 +60,8 @@ readonly class SetupGameTransitionListener
      */
     private function setup(Player $player): void
     {
+        // create stacks
+
         // shuffle decks
         $this->transitionBus->dispatch(
             new ShuffleDynastyDeck($player->getGame()->getId(), $player->getId())
@@ -78,7 +81,7 @@ readonly class SetupGameTransitionListener
         );
 
         // create stack for provinces
-        $provinces = $player->getCardsByType(Type::PROVINCE);
+        $provinces = $player->getCardsByType(Type::Province);
 
         // create empty stacks for other cards
         // @TODO
@@ -87,7 +90,7 @@ readonly class SetupGameTransitionListener
         $strongholdProvinceId = $this->stateManager->getState($player)->getStrongholdProvinceId();
         $stronghold = $player->getStronghold();
         foreach ($provinces as $province) {
-            $stack = $this->stackManager->createEmptyStack()->addCard($province);
+            $stack = $this->stackManager->createEmptyStack($player, StackType::Province)->addCard($province);
             if ($province->getId() === $strongholdProvinceId) {
                 $stack->addCard($stronghold);
             } else {

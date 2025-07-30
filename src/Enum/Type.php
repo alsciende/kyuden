@@ -9,13 +9,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum Type: string implements TranslatableInterface
 {
-    case ATTACHMENT = 'attachment';
-    case CHARACTER = 'character';
-    case EVENT = 'event';
-    case HOLDING = 'holding';
-    case PROVINCE = 'province';
-    case ROLE = 'role';
-    case STRONGHOLD = 'stronghold';
+    case Attachment = 'attachment';
+    case Character = 'character';
+    case Event = 'event';
+    case Holding = 'holding';
+    case Province = 'province';
+    case Role = 'role';
+    case Stronghold = 'stronghold';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {

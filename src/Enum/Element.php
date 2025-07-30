@@ -6,9 +6,9 @@ namespace App\Enum;
 
 enum Element: string
 {
-    case AIR = 'air';
-    case EARTH = 'earth';
-    case FIRE = 'fire';
-    case VOID = 'void';
-    case WATER = 'water';
+    case Air = 'air';
+    case Earth = 'earth';
+    case Fire = 'fire';
+    case Void = 'void';
+    case Water = 'water';
 }

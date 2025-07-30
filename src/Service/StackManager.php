@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\PhysicalCard;
+use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\StackType;
 use App\Exception\Data\MissingStackException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -17,9 +19,9 @@ class StackManager
     ) {
     }
 
-    public function createEmptyStack(): Stack
+    public function createEmptyStack(Player $player, StackType $type): Stack
     {
-        $stack = new Stack(Uuid::v4()->toString());
+        $stack = new Stack(Uuid::v4()->toString(), $player, $type);
         $this->entityManager->persist($stack);
 
         return $stack;

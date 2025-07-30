@@ -9,14 +9,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 enum Clan: string implements TranslatableInterface
 {
-    case CRAB = 'crab';
-    case CRANE = 'crane';
-    case DRAGON = 'dragon';
-    case LION = 'lion';
-    case NEUTRAL = 'neutral';
-    case PHOENIX = 'phoenix';
-    case SCORPION = 'scorpion';
-    case UNICORN = 'unicorn';
+    case Crab = 'crab';
+    case Crane = 'crane';
+    case Dragon = 'dragon';
+    case Lion = 'lion';
+    case Neutral = 'neutral';
+    case Phoenix = 'phoenix';
+    case Scorpion = 'scorpion';
+    case Unicorn = 'unicorn';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {

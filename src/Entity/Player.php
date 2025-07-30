@@ -55,17 +55,24 @@ class Player implements StatefulInterface
     {
         $this->id = $id;
         $this->physicalCards = new ArrayCollection();
+        $this->stacks = new ArrayCollection();
     }
 
     /**
      * @var array<string, list<PhysicalCard>>
      */
-    private array $cardsByPlaceCollection = [];
+    private array $cardsByCurrentPlaceCollection = [];
 
     /**
      * @var array<string, list<PhysicalCard>>
      */
     private array $cardsByTypeCollection = [];
+
+    /**
+     * @var Collection<int, Stack>
+     */
+    #[ORM\OneToMany(mappedBy: 'player', targetEntity: Stack::class)]
+    private Collection $stacks;
 
     #[ORM\PostLoad]
     public function onPostLoad(): void
@@ -75,7 +82,7 @@ class Player implements StatefulInterface
 
     public function resetCardGroups(): void
     {
-        $this->cardsByPlaceCollection = [];
+        $this->cardsByCurrentPlaceCollection = [];
         $this->cardsByTypeCollection = [];
         foreach ($this->physicalCards as $card) {
             $place = $card->getCurrentPlace();
@@ -83,11 +90,11 @@ class Player implements StatefulInterface
                 throw new \LogicException('Uninitialized card cannot be grouped');
             }
 
-            if (! array_key_exists($place, $this->cardsByPlaceCollection)) {
-                $this->cardsByPlaceCollection[$place] = [];
+            if (! array_key_exists($place, $this->cardsByCurrentPlaceCollection)) {
+                $this->cardsByCurrentPlaceCollection[$place] = [];
             }
 
-            $this->cardsByPlaceCollection[$place][] = $card;
+            $this->cardsByCurrentPlaceCollection[$place][] = $card;
 
             $type = $card->getLogicalCard()->getType()->value;
 
@@ -99,11 +106,11 @@ class Player implements StatefulInterface
         }
 
         usort(
-            $this->cardsByPlaceCollection[DynastyCard::STATE_DRAW_DECK],
+            $this->cardsByCurrentPlaceCollection[DynastyCard::STATE_DRAW_DECK],
             fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
         );
         usort(
-            $this->cardsByPlaceCollection[ConflictCard::STATE_DRAW_DECK],
+            $this->cardsByCurrentPlaceCollection[ConflictCard::STATE_DRAW_DECK],
             fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
         );
     }
@@ -111,21 +118,21 @@ class Player implements StatefulInterface
     /**
      * @return array<string, list<PhysicalCard>>
      */
-    public function getCardsByPlaceCollection(): array
+    public function getCardsByCurrentPlaceCollection(): array
     {
-        return $this->cardsByPlaceCollection;
+        return $this->cardsByCurrentPlaceCollection;
     }
 
     /**
      * @return list<PhysicalCard>
      */
-    public function getCardsByPlace(string $place): array
+    public function getCardsByCurrentPlace(string $place): array
     {
-        if (! array_key_exists($place, $this->cardsByPlaceCollection)) {
+        if (! array_key_exists($place, $this->cardsByCurrentPlaceCollection)) {
             return [];
         }
 
-        return $this->cardsByPlaceCollection[$place];
+        return $this->cardsByCurrentPlaceCollection[$place];
     }
 
     /**
@@ -150,7 +157,7 @@ class Player implements StatefulInterface
 
     public function getStronghold(): PhysicalCard
     {
-        $strongholds = $this->getCardsByType(Type::STRONGHOLD);
+        $strongholds = $this->getCardsByType(Type::Stronghold);
 
         if (count($strongholds) !== 1) {
             throw new DeckConstructionException('Deck must contain exactly one Stronghold');
@@ -239,5 +246,13 @@ class Player implements StatefulInterface
         $this->deck = $deck;
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Stack>
+     */
+    public function getStacks(): Collection
+    {
+        return $this->stacks;
     }
 }

@@ -20,9 +20,9 @@ class ConflictCard extends PhysicalCard
     public function getAllowedTypes(): array
     {
         return [
-            Type::ATTACHMENT,
-            Type::CHARACTER,
-            Type::EVENT,
+            Type::Attachment,
+            Type::Character,
+            Type::Event,
         ];
     }
 }

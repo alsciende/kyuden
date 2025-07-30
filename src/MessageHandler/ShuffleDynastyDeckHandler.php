@@ -25,6 +25,6 @@ final readonly class ShuffleDynastyDeckHandler
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $this->shuffler->shuffleCards($player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK));
+        $this->shuffler->shuffleCards($player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK));
     }
 }

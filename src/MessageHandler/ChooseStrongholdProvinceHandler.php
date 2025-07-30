@@ -32,8 +32,8 @@ final readonly class ChooseStrongholdProvinceHandler
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $logicalCard = $card->getLogicalCard();
 
-        if ($logicalCard->getType() !== Type::PROVINCE) {
-            throw new WrongCardTypeException($card, Type::PROVINCE);
+        if ($logicalCard->getType() !== Type::Province) {
+            throw new WrongCardTypeException($card, Type::Province);
         }
 
         $this->stateManager->withState(

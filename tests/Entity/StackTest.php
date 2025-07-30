@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Tests\Entity;
 
 use App\Entity\PhysicalCard;
+use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\StackType;
 use PHPUnit\Framework\TestCase;
 
 class StackTest extends TestCase
 {
     public function testAddAbove(): void
     {
-        $stack = new Stack('test');
+        $stack = new Stack('test', self::createMock(Player::class), StackType::InPlay);
 
         $card1 = self::createMock(PhysicalCard::class);
         $card2 = self::createMock(PhysicalCard::class);
@@ -27,7 +29,7 @@ class StackTest extends TestCase
 
     public function testAddBelow(): void
     {
-        $stack = new Stack('test');
+        $stack = new Stack('test', self::createMock(Player::class), StackType::InPlay);
 
         $card1 = self::createMock(PhysicalCard::class);
         $card2 = self::createMock(PhysicalCard::class);

@@ -15,8 +15,8 @@ class ProvinceCard extends PhysicalCard
     public function getAllowedTypes(): array
     {
         return [
-            Type::PROVINCE,
-            Type::STRONGHOLD,
+            Type::Province,
+            Type::Stronghold,
         ];
     }
 }

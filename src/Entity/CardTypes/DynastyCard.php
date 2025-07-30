@@ -21,9 +21,9 @@ class DynastyCard extends PhysicalCard
     public function getAllowedTypes(): array
     {
         return [
-            Type::CHARACTER,
-            Type::EVENT,
-            Type::HOLDING,
+            Type::Character,
+            Type::Event,
+            Type::Holding,
         ];
     }
 }

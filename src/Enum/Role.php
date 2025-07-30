@@ -6,11 +6,11 @@ namespace App\Enum;
 
 enum Role: string
 {
-    case SEEKER = 'seeker';
-    case KEEPER = 'keeper';
-    case AIR = 'air';
-    case EARTH = 'earth';
-    case FIRE = 'fire';
-    case VOID = 'void';
-    case WATER = 'water';
+    case Seeker = 'seeker';
+    case Keeper = 'keeper';
+    case Air = 'air';
+    case Earth = 'earth';
+    case Fire = 'fire';
+    case Void = 'void';
+    case Water = 'water';
 }

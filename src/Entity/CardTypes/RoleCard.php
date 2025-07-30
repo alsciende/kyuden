@@ -15,7 +15,7 @@ class RoleCard extends PhysicalCard
     public function getAllowedTypes(): array
     {
         return [
-            Type::ROLE,
+            Type::Role,
         ];
     }
 }

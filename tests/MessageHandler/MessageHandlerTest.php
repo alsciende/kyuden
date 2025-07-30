@@ -155,18 +155,18 @@ class MessageHandlerTest extends KernelTestCase
             // deck shuffled
             $dynastyPositions = array_map(
                 fn (PhysicalCard $card): ?int => $card->getPosition(),
-                $player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK)
+                $player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)
             );
             $this->assertSame(count($dynastyPositions), count(array_unique($dynastyPositions)));
             // conflict cards drawn
-            $this->assertSame(19, count($player->getCardsByPlace(ConflictCard::STATE_DRAW_DECK)));
-            $this->assertSame(5, count($player->getCardsByPlace(ConflictCard::STATE_HAND)));
+            $this->assertSame(19, count($player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)));
+            $this->assertSame(5, count($player->getCardsByCurrentPlace(ConflictCard::STATE_HAND)));
             // starting honor
             $this->assertGreaterThan(0, $this->playerStateManager->getState($player)->getHonor());
             // filled provinces
-            $this->assertSame(4, count($player->getCardsByPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
-            $this->assertSame(16, count($player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK)));
-            $provinces = $player->getCardsByType(Type::PROVINCE);
+            $this->assertSame(4, count($player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
+            $this->assertSame(16, count($player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)));
+            $provinces = $player->getCardsByType(Type::Province);
             foreach ($provinces as $province) {
                 // counting 2: the province and the dynasty card on it
                 $this->assertEquals(2, $province->getStack()?->getCards()->count());

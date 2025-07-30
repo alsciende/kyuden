@@ -25,10 +25,10 @@ use Doctrine\ORM\Mapping as ORM;
 abstract class PhysicalCard
 {
     public const array DISCRIMINATOR_MAP = [
-        Side::CONFLICT->value => ConflictCard::class,
-        Side::DYNASTY->value => DynastyCard::class,
-        Side::PROVINCE->value => ProvinceCard::class,
-        Side::ROLE->value => RoleCard::class,
+        Side::Conflict->value => ConflictCard::class,
+        Side::Dynasty->value => DynastyCard::class,
+        Side::Province->value => ProvinceCard::class,
+        Side::Role->value => RoleCard::class,
     ];
 
     #[ORM\Id]

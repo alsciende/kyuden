@@ -6,8 +6,8 @@ namespace App\Enum;
 
 enum Side: string
 {
-    case CONFLICT = 'conflict';
-    case DYNASTY = 'dynasty';
-    case PROVINCE = 'province';
-    case ROLE = 'role';
+    case Conflict = 'conflict';
+    case Dynasty = 'dynasty';
+    case Province = 'province';
+    case Role = 'role';
 }

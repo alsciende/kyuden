@@ -31,7 +31,7 @@ final readonly class FillProvinceHandler
     {
         $game = $this->gameRepository->get($message->getGameId(), 'place_provinces');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $provinces = $player->getCardsByType(Type::PROVINCE);
+        $provinces = $player->getCardsByType(Type::Province);
         foreach ($provinces as $province) {
             if ($province->getId() === $message->getProvinceId()) {
                 $this->fillProvince($player, $province);
@@ -45,7 +45,7 @@ final readonly class FillProvinceHandler
 
     private function fillProvince(Player $player, PhysicalCard $province): void
     {
-        $dynastyDeck = $player->getCardsByPlace(DynastyCard::STATE_DRAW_DECK);
+        $dynastyDeck = $player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK);
         $card = array_pop($dynastyDeck);
         if ($card === null) {
             throw new DrawingFromEmptyDeckException();
