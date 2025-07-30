@@ -7,8 +7,8 @@ namespace App\MessageHandler;
 use App\Message\GainHonor;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
-use App\Service\PlayerStateManager;
-use App\State\PlayerState;
+use App\State\Manager\PlayerStateManager;
+use App\State\Model\PlayerState;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]

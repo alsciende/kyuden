@@ -6,7 +6,7 @@ namespace App\Command;
 
 use App\Entity\Game;
 use App\Repository\GameRepository;
-use App\Service\GameStateManager;
+use App\State\Manager\GameStateManager;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;

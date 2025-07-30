@@ -13,7 +13,7 @@ use App\Message\FillProvince;
 use App\Message\GainHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
-use App\Service\PlayerStateManager;
+use App\State\Manager\PlayerStateManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;

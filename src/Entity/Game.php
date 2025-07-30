@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\GameRepository;
+use App\State\Model\StatefulInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -15,7 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table('games')]
-class Game
+class Game implements StatefulInterface
 {
     #[ORM\Id]
     #[ORM\Column]

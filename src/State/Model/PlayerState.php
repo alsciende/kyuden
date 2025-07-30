@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\State;
+namespace App\State\Model;
 
 use App\Exception\Rules\MaximumHonorReachedException;
 use App\Exception\Rules\MinimumHonorReachedException;

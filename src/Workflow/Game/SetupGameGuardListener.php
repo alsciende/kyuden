@@ -6,7 +6,7 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
-use App\Service\PlayerStateManager;
+use App\State\Manager\PlayerStateManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Attribute\AsGuardListener;
 use Symfony\Component\Workflow\Event\GuardEvent;

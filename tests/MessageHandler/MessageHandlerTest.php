@@ -17,7 +17,7 @@ use App\Message\CreateGame;
 use App\Message\JoinGame;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
-use App\Service\PlayerStateManager;
+use App\State\Manager\PlayerStateManager;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;

@@ -9,6 +9,7 @@ use App\Entity\CardTypes\DynastyCard;
 use App\Enum\Type;
 use App\Exception\Rules\DeckConstructionException;
 use App\Repository\PlayerRepository;
+use App\State\Model\StatefulInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -21,7 +22,7 @@ use Doctrine\ORM\Mapping\OrderBy;
 #[ORM\Entity(repositoryClass: PlayerRepository::class)]
 #[ORM\Table('players')]
 #[ORM\HasLifecycleCallbacks]
-class Player
+class Player implements StatefulInterface
 {
     #[ORM\Id]
     #[ORM\Column]

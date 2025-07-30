@@ -6,8 +6,8 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
-use App\Service\GameStateManager;
-use App\State\GameState;
+use App\State\Manager\GameStateManager;
+use App\State\Model\GameState;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
