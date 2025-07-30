@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
-use App\Attribute\AppActionMessage;
+use App\Attribute\AppAction;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -19,7 +19,7 @@ class Kernel extends BaseKernel implements CompilerPassInterface
     {
         parent::build($container);
 
-        $container->registerAttributeForAutoconfiguration(AppActionMessage::class, static function (ChildDefinition $definition): void {
+        $container->registerAttributeForAutoconfiguration(AppAction::class, static function (ChildDefinition $definition): void {
             $definition->addResourceTag('app.action_message');
         });
     }

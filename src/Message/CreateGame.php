@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Message;
 
-use App\Attribute\AppActionMessage;
+use App\Attribute\AppAction;
 
-#[AppActionMessage]
+#[AppAction]
 final readonly class CreateGame implements ActionInterface
 {
     public function __construct(

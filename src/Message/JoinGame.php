@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Message;
 
-use App\Attribute\AppActionMessage;
+use App\Attribute\AppAction;
 use Symfony\Component\Uid\Uuid;
 
-#[AppActionMessage]
+#[AppAction]
 final readonly class JoinGame implements PlayerActionInterface
 {
     /**
