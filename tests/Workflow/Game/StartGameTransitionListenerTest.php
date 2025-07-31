@@ -12,7 +12,7 @@ use App\Workflow\Game\StartGameTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\Marking;
 
-class StartGameTransitionListenerTestCase extends AbstractKernelTestCase
+class StartGameTransitionListenerTest extends AbstractKernelTestCase
 {
     public function testInitPlayer(): void
     {

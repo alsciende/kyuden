@@ -16,7 +16,7 @@ use App\Message\ChooseStrongholdProvince;
 use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\Depends;
 
-class MessageHandlerTestCase extends AbstractKernelTestCase
+class MessageHandlerTest extends AbstractKernelTestCase
 {
     public function testCreateGameHandler(): string
     {
