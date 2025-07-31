@@ -14,7 +14,6 @@ use App\Message\GainHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
 use App\State\Manager\PlayerStateManager;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
@@ -25,24 +24,15 @@ readonly class SetupGameTransitionListener
     public const int STARTING_CARDS = 5;
 
     public function __construct(
-        private LoggerInterface $logger,
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
     ) {
     }
 
-    /**
-     * Setup Players
-     * Determine First Player.
-     */
     public function __invoke(TransitionEvent $event): void
     {
         /** @var Game $game */
         $game = $event->getSubject();
-
-        $this->logger->debug('this is where we should setup the game', [
-            'game_id' => $game->getId(),
-        ]);
 
         foreach ($game->getPlayers() as $player) {
             $this->setup($player);

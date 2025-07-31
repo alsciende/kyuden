@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Service;
+namespace App\Tests\Workflow\Game;
 
 use App\DataFixtures\AppFixtures;
 use App\Entity\Game;
@@ -10,14 +10,16 @@ use App\Entity\Player;
 use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
-use App\Service\GameSetupService;
 use App\Tests\CreateGameTrait;
 use App\Tests\CreatePlayerTrait;
+use App\Workflow\Game\StartGameTransitionListener;
 use PHPUnit\Framework\Attributes\Before;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Workflow\Event\TransitionEvent;
+use Symfony\Component\Workflow\Marking;
 
-class GameSetupServiceTest extends KernelTestCase
+class StartGameTransitionListenerTest extends KernelTestCase
 {
     use CreateGameTrait;
     use CreatePlayerTrait;
@@ -43,8 +45,8 @@ class GameSetupServiceTest extends KernelTestCase
 
     public function testInitPlayer(): void
     {
-        /** @var GameSetupService $service */
-        $service = self::getContainer()->get(GameSetupService::class);
+        /** @var StartGameTransitionListener $service */
+        $service = self::getContainer()->get(StartGameTransitionListener::class);
 
         $game = $this->createGame();
         self::assertInstanceOf(Game::class, $game);
@@ -52,7 +54,10 @@ class GameSetupServiceTest extends KernelTestCase
         $player = $this->createPlayer($game, AppFixtures::LION_STARTER_DECK, 'john');
         self::assertInstanceOf(Player::class, $player);
 
-        $service->initPlayer($player);
+        self::assertEquals(0, $player->getStacks()->count());
+
+        $event = new TransitionEvent($game, self::createMock(Marking::class));
+        $service($event);
 
         self::assertEquals(11, $player->getStacks()->count());
     }
