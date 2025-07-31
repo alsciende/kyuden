@@ -15,11 +15,13 @@ class StackTest extends TestCase
 {
     public function testMoveAround(): void
     {
-        $stack = new Stack('test', self::createMock(Player::class), StackType::InPlay);
+        $hand = new Stack('hand', self::createMock(Player::class), StackType::InPlay);
 
-        $card1 = new DynastyCard('1', self::createMock(LogicalCard::class));
-        $card2 = new DynastyCard('2', self::createMock(LogicalCard::class));
-        $card3 = new DynastyCard('3', self::createMock(LogicalCard::class));
+        $card1 = new DynastyCard('1', self::createMock(LogicalCard::class), $hand);
+        $card2 = new DynastyCard('2', self::createMock(LogicalCard::class), $hand);
+        $card3 = new DynastyCard('3', self::createMock(LogicalCard::class), $hand);
+
+        $stack = new Stack('test', self::createMock(Player::class), StackType::InPlay);
 
         $stack->addCard($card1);
         $stack->addCard($card2);

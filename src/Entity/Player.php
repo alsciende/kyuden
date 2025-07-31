@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
+use App\Enum\StackType;
 use App\Enum\Type;
 use App\Exception\Rules\DeckConstructionException;
 use App\Repository\PlayerRepository;
@@ -254,5 +255,20 @@ class Player implements StatefulInterface
     public function getStacks(): Collection
     {
         return $this->stacks;
+    }
+
+    public function getUniqueStack(StackType $stackType): Stack
+    {
+        if (! $stackType->isUnique()) {
+            throw new \LogicException('Stack type must be unique');
+        }
+
+        foreach ($this->stacks as $stack) {
+            if ($stack->getType() === $stackType) {
+                return $stack;
+            }
+        }
+
+        throw new \LogicException('Stack not found for type: ' . $stackType->value);
     }
 }

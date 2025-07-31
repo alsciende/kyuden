@@ -9,22 +9,22 @@ framework:
                 property: 'currentPlace'
             supports:
                 - App\Entity\CardTypes\ProvinceCard
-            initial_marking: facedown
+            initial_marking: !php/const App\Entity\CardTypes\ProvinceCard::STATE_FACEDOWN
             places:
-                - facedown
-                - unbroken
-                - broken
+                - !php/const App\Entity\CardTypes\ProvinceCard::STATE_FACEDOWN
+                - !php/const App\Entity\CardTypes\ProvinceCard::STATE_UNBROKEN
+                - !php/const App\Entity\CardTypes\ProvinceCard::STATE_BROKEN
             transitions:
                 reveal:
-                    from: facedown
-                    to: unbroken
+                    from: !php/const App\Entity\CardTypes\ProvinceCard::STATE_FACEDOWN
+                    to: !php/const App\Entity\CardTypes\ProvinceCard::STATE_UNBROKEN
                 unreveal:
-                    from: unbroken
-                    to: facedown
+                    from: !php/const App\Entity\CardTypes\ProvinceCard::STATE_UNBROKEN
+                    to: !php/const App\Entity\CardTypes\ProvinceCard::STATE_FACEDOWN
                 break:
-                    from: unbroken
-                    to: broken
+                    from: !php/const App\Entity\CardTypes\ProvinceCard::STATE_UNBROKEN
+                    to: !php/const App\Entity\CardTypes\ProvinceCard::STATE_BROKEN
                 restore:
-                    from: broken
-                    to: unbroken
+                    from: !php/const App\Entity\CardTypes\ProvinceCard::STATE_BROKEN
+                    to: !php/const App\Entity\CardTypes\ProvinceCard::STATE_UNBROKEN
 

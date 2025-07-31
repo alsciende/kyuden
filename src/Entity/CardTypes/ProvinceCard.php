@@ -11,6 +11,10 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 class ProvinceCard extends PhysicalCard
 {
+    public const string STATE_FACEDOWN = 'province_facedown';
+    public const string STATE_UNBROKEN = 'province_unbroken';
+    public const string STATE_BROKEN = 'province_broken';
+
     #[\Override]
     public function getAllowedTypes(): array
     {

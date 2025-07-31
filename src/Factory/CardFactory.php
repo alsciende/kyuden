@@ -6,6 +6,7 @@ namespace App\Factory;
 
 use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
+use App\Entity\Stack;
 use App\Exception\Data\LogicalCardNotFoundException;
 use App\Repository\LogicalCardRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +21,7 @@ readonly class CardFactory
     ) {
     }
 
-    public function createCard(string $physicalCardId, string $logicalCardId): PhysicalCard
+    public function createCard(string $physicalCardId, string $logicalCardId, Stack $stack): PhysicalCard
     {
         $logicalCard = $this->cardRepository->find($logicalCardId);
         if (! $logicalCard instanceof LogicalCard) {
@@ -30,7 +31,7 @@ readonly class CardFactory
         $classname = $this->getClassname($logicalCard->getSide()->value);
 
         /** @var PhysicalCard $card */
-        $card = new $classname($physicalCardId, $logicalCard);
+        $card = new $classname($physicalCardId, $logicalCard, $stack);
         $card->setTitle($logicalCard->getName());
 
         $this->registry->get($card)->getMarking($card);

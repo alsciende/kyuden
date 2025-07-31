@@ -66,10 +66,11 @@ abstract class PhysicalCard
     #[ORM\JoinColumn(nullable: false)]
     private Stack $stack;
 
-    public function __construct(string $id, LogicalCard $logicalCard)
+    public function __construct(string $id, LogicalCard $logicalCard, Stack $stack)
     {
         $this->id = $id;
         $this->logicalCard = $logicalCard;
+        $this->stack = $stack;
     }
 
     public function getId(): string

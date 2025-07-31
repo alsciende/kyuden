@@ -65,7 +65,7 @@ readonly class StartGameTransitionListener
         $hand = $this->stackFactory->createStack($player, StackType::Hand);
 
         foreach ($player->getDeck()->getContent() as $id) {
-            $card = $this->cardFactory->createCard(Uuid::v4()->toString(), $id);
+            $card = $this->cardFactory->createCard(Uuid::v4()->toString(), $id, $hand);
             $player->addCard($card);
             $player->getGame()->addCard($card);
             // all cards start in hand and will be moved to the correct stacks later

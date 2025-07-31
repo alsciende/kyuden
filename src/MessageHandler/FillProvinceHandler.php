@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
+use App\Enum\StackType;
 use App\Exception\Rules\DrawingFromEmptyDeckException;
 use App\Message\FillProvince;
 use App\Repository\CardRepository;
@@ -37,14 +38,14 @@ final readonly class FillProvinceHandler
 
     private function fillProvince(Player $player, PhysicalCard $province): void
     {
-        $dynastyDeck = $player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK);
-        $card = array_pop($dynastyDeck);
-        if ($card === null) {
+        $stack = $player->getUniqueStack(StackType::DynastyDrawDeck);
+        $card = $stack->getCards()->first();
+        if (! $card instanceof DynastyCard) {
             throw new DrawingFromEmptyDeckException();
         }
-        $province->getStack()->addCard($card);
-        $card->setPosition(null);
-        $this->dynastyCardStateMachine->apply($card, 'draw_card');
-        $player->resetCardGroups();
+
+        $this->dynastyCardStateMachine->apply($card, 'draw_card', [
+            'province' => $province,
+        ]);
     }
 }

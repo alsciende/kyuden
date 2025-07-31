@@ -10,10 +10,6 @@ framework:
             supports:
                 - App\Entity\Game
             initial_marking: join_game
-            places:
-                - join_game # players can join the game
-                - place_provinces # players can choose which province has the stronghold
-                - dynasty_phase_begins
             # we are in a different place if the phase of the game is different AND the available player actions are different
             transitions:
                 start_game: # select first player

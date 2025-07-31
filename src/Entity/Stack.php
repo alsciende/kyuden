@@ -87,6 +87,7 @@ class Stack
     {
         if (! $this->cards->contains($card)) {
             $this->cards->add($card);
+            $card->getStack()->removeCard($card);
             $card->setStack($this);
 
             if ($above) {
@@ -96,6 +97,13 @@ class Stack
             }
             $this->repositionCards();
         }
+
+        return $this;
+    }
+
+    public function removeCard(PhysicalCard $card): static
+    {
+        $this->cards->removeElement($card);
 
         return $this;
     }

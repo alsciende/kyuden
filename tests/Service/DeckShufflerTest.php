@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\LogicalCard;
+use App\Entity\Stack;
 use App\Service\DeckShuffler;
 use PHPUnit\Framework\TestCase;
 
@@ -16,8 +17,8 @@ class DeckShufflerTest extends TestCase
         $service = new DeckShuffler();
 
         $cards = [
-            new DynastyCard('1', $this->createStub(LogicalCard::class)),
-            new DynastyCard('2', $this->createStub(LogicalCard::class)),
+            new DynastyCard('1', $this->createStub(LogicalCard::class), self::createMock(Stack::class)),
+            new DynastyCard('2', $this->createStub(LogicalCard::class), self::createMock(Stack::class)),
         ];
         $this->assertNull($cards[0]->getPosition());
         $this->assertNull($cards[1]->getPosition());

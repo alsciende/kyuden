@@ -8,54 +8,16 @@ use App\DataFixtures\AppFixtures;
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
-use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Message\ChooseStrongholdProvince;
-use App\Repository\CardRepository;
-use App\Repository\DeckRepository;
-use App\Repository\GameRepository;
-use App\Repository\PlayerRepository;
-use App\State\Manager\PlayerStateManager;
-use App\Tests\CreateGameTrait;
-use App\Tests\CreatePlayerTrait;
-use PHPUnit\Framework\Attributes\Before;
+use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\Depends;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\Messenger\MessageBusInterface;
 
-class MessageHandlerTest extends KernelTestCase
+class MessageHandlerTestCase extends AbstractKernelTestCase
 {
-    use CreateGameTrait;
-    use CreatePlayerTrait;
-
-    private MessageBusInterface $messageBus;
-    private GameRepository $gameRepository;
-    private CardRepository $cardRepository;
-    private PlayerRepository $playerRepository;
-    private PlayerStateManager $playerStateManager;
-    private DeckRepository $deckRepository;
-
-    #[Before]
-    protected function getServices(): void
-    {
-        $container = static::getContainer();
-        // @phpstan-ignore assign.propertyType
-        $this->messageBus = $container->get(MessageBusInterface::class);
-        // @phpstan-ignore assign.propertyType
-        $this->gameRepository = $container->get(GameRepository::class);
-        // @phpstan-ignore assign.propertyType
-        $this->cardRepository = $container->get(CardRepository::class);
-        // @phpstan-ignore assign.propertyType
-        $this->playerRepository = $container->get(PlayerRepository::class);
-        // @phpstan-ignore assign.propertyType
-        $this->playerStateManager = $container->get(PlayerStateManager::class);
-        // @phpstan-ignore assign.propertyType
-        $this->deckRepository = $container->get(DeckRepository::class);
-    }
-
     public function testCreateGameHandler(): string
     {
         $game = $this->createGame();
@@ -73,6 +35,8 @@ class MessageHandlerTest extends KernelTestCase
         $this->assertInstanceOf(Game::class, $game);
 
         $john = $this->createPlayer($game, AppFixtures::LION_STARTER_DECK, 'john');
+
+        $this->assertSame('join_game', $game->getCurrentPlace());
 
         $this->assertInstanceOf(Player::class, $john);
         $this->assertSame($game->getId(), $john->getGame()->getId());
@@ -112,7 +76,7 @@ class MessageHandlerTest extends KernelTestCase
     #[Depends('testJoinGameHandler')]
     public function testChooseStrongholdProvinceHandler(string $gameId): string
     {
-        $game = $this->gameRepository->get($gameId);
+        $game = $this->gameRepository->get($gameId, 'place_provinces');
         $this->assertSame(2, $game->getPlayers()->count());
         $john = $game->getPlayers()->get(0);
         $this->assertInstanceOf(Player::class, $john);
@@ -126,6 +90,14 @@ class MessageHandlerTest extends KernelTestCase
         $this->chooseStrongholdProvince($game, $jane, 'Entrenched Position');
         // all automatic transitions happened automatically, this is the first manual transition
         $this->assertSame('play_cards_from_provinces', $game->getCurrentPlace());
+
+        return $gameId;
+    }
+
+    #[Depends('testChooseStrongholdProvinceHandler')]
+    public function testSetupGameTransitionListener(string $gameId): string
+    {
+        $game = $this->gameRepository->get($gameId, 'play_cards_from_provinces');
 
         // assert that the game is ready to start, everything is in order
         foreach ($game->getPlayers() as $player) {

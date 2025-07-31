@@ -13,7 +13,7 @@ class PlayerState
     public const int MAXIMUM_HONOR = 25;
 
     private ?string $strongholdProvinceId = null;
-    private int $honor;
+    private ?int $honor = null;
 
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
@@ -25,20 +25,20 @@ class PlayerState
         return $this->strongholdProvinceId;
     }
 
-    public function getHonor(): int
+    public function getHonor(): ?int
     {
         return $this->honor;
     }
 
-    public function setHonor(int $honor): self
+    public function setHonor(?int $honor): self
     {
         $this->honor = $honor;
 
-        if ($this->honor <= self::MINIMUM_HONOR) {
+        if (is_int($this->honor) && $this->honor <= self::MINIMUM_HONOR) {
             throw new MinimumHonorReachedException();
         }
 
-        if ($this->honor >= self::MAXIMUM_HONOR) {
+        if (is_int($this->honor) && $this->honor >= self::MAXIMUM_HONOR) {
             throw new MaximumHonorReachedException();
         }
 
