@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Workflow\Game;
 
+use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Entity\Player;
-use App\Enum\Type;
+use App\Enum\StackType;
 use App\Exception\Data\DataException;
+use App\Factory\StackFactory;
 use App\Message\DrawConflictCards;
 use App\Message\FillProvince;
 use App\Message\GainHonor;
@@ -26,6 +28,7 @@ readonly class SetupGameTransitionListener
     public function __construct(
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
+        private StackFactory $stackFactory,
     ) {
     }
 
@@ -66,17 +69,17 @@ readonly class SetupGameTransitionListener
         );
 
         // fill provinces
-        $provinces = $player->getCardsByType(Type::Province);
+        $strongholdProvinceStack = $player->getUniqueStack(StackType::StrongholdProvince);
         $strongholdProvinceId = $this->stateManager->getState($player)->getStrongholdProvinceId();
-        $stronghold = $player->getStronghold();
-        foreach ($provinces as $province) {
-            if ($province->getId() === $strongholdProvinceId) {
-                $province->getStack()->addCard($stronghold);
-            } else {
-                $this->transitionBus->dispatch(
-                    new FillProvince($player->getGame()->getId(), $player->getId(), $province->getId())
-                );
+        foreach ($strongholdProvinceStack->getCards() as $card) {
+            if ($card->getId() === $strongholdProvinceId || $card instanceof StrongholdCard) {
+                continue; // skip the stronghold province and its stronghold card
             }
+            $provinceStack = $this->stackFactory->createStack($player, StackType::RegularProvince);
+            $provinceStack->addCard($card);
+            $this->transitionBus->dispatch(
+                new FillProvince($player->getGame()->getId(), $player->getId(), $card->getId())
+            );
         }
 
         // draw starting hand

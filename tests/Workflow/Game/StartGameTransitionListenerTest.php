@@ -30,6 +30,6 @@ class StartGameTransitionListenerTest extends AbstractKernelTestCase
         $event = new TransitionEvent($game, self::createMock(Marking::class));
         $service($event);
 
-        self::assertEquals(11, $player->getStacks()->count());
+        self::assertEquals(7, $player->getStacks()->count());
     }
 }

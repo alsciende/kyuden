@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+2",
     "text": "<b>Interrupt:</b> When you declare a conflict, choose a number greater than 0 and bow this stronghold – your opponent declares defenders for this conflict. Then declare the conflict <i>(choosing attackers, ring, conflict type, and province)</i>. You must declare a number of attackers equal to the number you chose.",

@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+2",
     "text": "<b>Action:</b> Bow this stronghold. Choose a <em>Bushi</em> character with printed cost 2 or lower - ready that character.",

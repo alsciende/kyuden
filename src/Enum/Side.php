@@ -10,4 +10,5 @@ enum Side: string
     case Dynasty = 'dynasty';
     case Province = 'province';
     case Role = 'role';
+    case Stronghold = 'stronghold';
 }

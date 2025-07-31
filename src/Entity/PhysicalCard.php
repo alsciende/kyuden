@@ -8,6 +8,7 @@ use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\CardTypes\RoleCard;
+use App\Entity\CardTypes\StrongholdCard;
 use App\Enum\Side;
 use App\Enum\Type;
 use App\Repository\CardRepository;
@@ -29,6 +30,7 @@ abstract class PhysicalCard
         Side::Dynasty->value => DynastyCard::class,
         Side::Province->value => ProvinceCard::class,
         Side::Role->value => RoleCard::class,
+        Side::Stronghold->value => StrongholdCard::class,
     ];
 
     #[ORM\Id]

@@ -10,13 +10,14 @@ enum StackType: int
     case ConflictDiscardPile = 1;
     case DynastyDrawDeck = 2;
     case DynastyDiscardPile = 3;
-    case Role = 4;
-    case Hand = 5;
-    case Province = 6;
-    case InPlay = 7;
+    case StrongholdProvince = 4;
+    case Role = 5;
+    case Hand = 6;
+    case RegularProvince = 7;
+    case InPlay = 8;
 
     public function isUnique(): bool
     {
-        return $this->value < 6;
+        return $this->value < 7;
     }
 }

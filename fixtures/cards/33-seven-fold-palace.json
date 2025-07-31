@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+1",
     "text": "<b>Reaction:</b> After an honored character you control wins a conflict as the attacker, bow this stronghold - gain 2 honor.",

@@ -11,6 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 class RoleCard extends PhysicalCard
 {
+    public const string STATE_IN_PLAY = 'in_play';
+
     #[\Override]
     public function getAllowedTypes(): array
     {

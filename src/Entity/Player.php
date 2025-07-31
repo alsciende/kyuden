@@ -252,9 +252,13 @@ class Player implements StatefulInterface
     /**
      * @return Collection<int, Stack>
      */
-    public function getStacks(): Collection
+    public function getStacks(?StackType $stackType = null): Collection
     {
-        return $this->stacks;
+        if ($stackType === null) {
+            return $this->stacks;
+        }
+
+        return $this->stacks->filter(fn (Stack $stack): bool => $stack->getType() === $stackType);
     }
 
     public function getUniqueStack(StackType $stackType): Stack

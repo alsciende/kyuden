@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+2",
     "text": "<b>Reaction:</b>  After you break a province, bow this stronghold - each conflict declared this round is [conflict-military] instead of its normal type.",

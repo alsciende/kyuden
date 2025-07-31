@@ -20,7 +20,6 @@ class ProvinceCard extends PhysicalCard
     {
         return [
             Type::Province,
-            Type::Stronghold,
         ];
     }
 }

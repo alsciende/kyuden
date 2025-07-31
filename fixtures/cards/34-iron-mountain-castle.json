@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+2",
     "text": "Each [clan-dragon] character you control can have an additional restricted attachment.<br><b>Interrupt:</b> When you play an attachment on a character you control, bow this stronghold - reduce the cost to play that attachment by 1.",

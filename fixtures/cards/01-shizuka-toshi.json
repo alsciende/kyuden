@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+2",
     "text": "<b>Action:</b> During a [conflict-political] conflict, bow this stronghold. Choose a participating character with [conflict-political] skill 2 or lower – bow that character.",

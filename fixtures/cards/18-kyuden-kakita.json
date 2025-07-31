@@ -19,7 +19,7 @@
     "political": null,
     "political_bonus": null,
     "role_restriction": null,
-    "side": "province",
+    "side": "stronghold",
     "strength": null,
     "strength_bonus": "+1",
     "text": "<b>Reaction:</b> After a duel resolves, bow this stronghold and choose a character you control that was involved in the duel - honor that character.",

@@ -9,11 +9,10 @@ framework:
                 property: 'currentPlace'
             supports:
                 - App\Entity\CardTypes\RoleCard
-            initial_marking: in_play
+            initial_marking: !php/const App\Entity\CardTypes\RoleCard::STATE_IN_PLAY
             places:
-                - in_play
+                - !php/const App\Entity\CardTypes\RoleCard::STATE_IN_PLAY
             transitions:
                 noop:
-                    from: in_play
-                    to: in_play
-
+                    from: !php/const App\Entity\CardTypes\RoleCard::STATE_IN_PLAY
+                    to: !php/const App\Entity\CardTypes\RoleCard::STATE_IN_PLAY

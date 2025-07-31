@@ -6,11 +6,12 @@ namespace App\Workflow\Game;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
-use App\Enum\Type;
 use App\Factory\CardFactory;
 use App\Factory\StackFactory;
 use App\State\Manager\GameStateManager;
@@ -60,6 +61,9 @@ readonly class StartGameTransitionListener
         return $players[array_rand($players)];
     }
 
+    /**
+     * Create all unique stacks for the player and fill them with cards.
+     */
     private function initPlayer(Player $player): void
     {
         $hand = $this->stackFactory->createStack($player, StackType::Hand);
@@ -84,13 +88,10 @@ readonly class StartGameTransitionListener
 
         $this->stackFactory->createStack($player, StackType::Role);
 
-        // 5 provinces
-        $provinceCards = $player->getPhysicalCards()->filter(
-            fn (PhysicalCard $card): bool => $card->getLogicalCard()->getType() === Type::Province
-        );
-        foreach ($provinceCards as $provinceCard) {
-            $this->stackFactory->createStack($player, StackType::Province)
-                ->addCard($provinceCard);
-        }
+        // we put all the province cards in the first province stack, as well as the stronghold card,
+        // they will be moved to the correct stacks later
+        $this->stackFactory->createStack($player, StackType::StrongholdProvince)
+            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof ProvinceCard)
+            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof StrongholdCard);
     }
 }
