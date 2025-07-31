@@ -7,7 +7,7 @@ namespace App\Service;
 use App\Entity\PhysicalCard;
 use Random\Randomizer;
 
-class DeckShuffler
+readonly class DeckShuffler
 {
     /**
      * Edit the position of all cards. Return the sorted array.

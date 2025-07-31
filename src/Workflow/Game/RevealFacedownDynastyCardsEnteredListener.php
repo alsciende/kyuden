@@ -11,7 +11,7 @@ use Symfony\Component\Workflow\Attribute\AsEnteredListener;
 use Symfony\Component\Workflow\Event\EnteredEvent;
 
 #[AsEnteredListener(workflow: 'game', place: 'reveal_facedown_dynasty_cards')]
-final readonly class RevealFacedownDynastyCardsEnteredListener
+readonly class RevealFacedownDynastyCardsEnteredListener
 {
     public function __construct(
         private EventDispatcherInterface $eventDispatcher,

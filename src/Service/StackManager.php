@@ -10,7 +10,7 @@ use App\Enum\StackType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-class StackManager
+readonly class StackManager
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
