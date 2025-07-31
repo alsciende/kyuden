@@ -6,6 +6,7 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Service\GameSetupService;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\Log\LoggerInterface;
@@ -18,6 +19,7 @@ readonly class StartGameTransitionListener
     public function __construct(
         private GameStateManager $stateManager,
         private LoggerInterface $logger,
+        private GameSetupService $setupService,
     ) {
     }
 
@@ -37,6 +39,10 @@ readonly class StartGameTransitionListener
         $this->logger->debug('StartGameTransitionListener', [
             'first_player_id' => $this->stateManager->getState($game)->firstPlayerId,
         ]);
+
+        foreach ($game->getPlayers() as $player) {
+            $this->setupService->initPlayer($player);
+        }
     }
 
     private function selectRandomFirstPlayer(Game $game): Player

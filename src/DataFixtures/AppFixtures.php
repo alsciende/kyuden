@@ -14,14 +14,36 @@ use Doctrine\Persistence\ObjectManager;
 class AppFixtures extends Fixture
 {
     use StarterDeckLionTrait;
+    use StarterDeckCrabTrait;
+    use StarterDeckPhoenixTrait;
+    use StarterDeckCraneTrait;
+    use StarterDeckScorpionTrait;
+    use StarterDeckUnicornTrait;
+
+    public const CRAB_STARTER_DECK = 'crab-starter-deck';
+    public const CRANE_STARTER_DECK = 'crane-starter-deck';
+    public const LION_STARTER_DECK = 'lion-starter-deck';
+    public const PHOENIX_STARTER_DECK = 'phoenix-starter-deck';
+    public const SCORPION_STARTER_DECK = 'scorpion-starter-deck';
+    public const UNICORN_STARTER_DECK = 'unicorn-starter-deck';
 
     #[\Override]
     public function load(ObjectManager $manager): void
     {
-        $deck = new Deck('1');
-        $manager->persist($deck);
-        $deck->setName('Lion Clan Starter Deck');
-        $deck->setContent($this->getLionStarterCards());
+        $decks = [
+            'crab-starter-deck' => $this->getCrabStarterCards(),
+            'crane-starter-deck' => $this->getCraneStarterCards(),
+            'lion-starter-deck' => $this->getLionStarterCards(),
+            'phoenix-starter-deck' => $this->getPhoenixStarterCards(),
+            'scorpion-starter-deck' => $this->getScorpionStarterCards(),
+            'unicorn-starter-deck' => $this->getUnicornStarterCards(),
+        ];
+        foreach ($decks as $deckId => $cards) {
+            $deck = new Deck($deckId);
+            $manager->persist($deck);
+            $deck->setName($deckId);
+            $deck->setContent($cards);
+        }
 
         $john = new Candidate();
         $manager->persist($john);

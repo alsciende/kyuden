@@ -35,7 +35,7 @@ Build an engine to play Legends of the Five Rings LCG as published by Fantasy Fl
 - Events are received by the `App\Controller\EventController`, converted to messages, and dispatched to the bus (TODO)
 - Messages are instances of `App\Message\ActionInterface`
 - Messages are routed to the middlewares in the order they are listed in messenger.yaml, but each middleware starts by forwarding the message down the chain:
-  - doctrine_transaction
+  - doctrine_transaction (`\Symfony\Bridge\Doctrine\Messenger\DoctrineTransactionMiddleware`)
   - `App\Middleware\WorkflowTransitionMiddleware`
   - `App\Middleware\EventRecordingMiddleware`
 - Messages are routed to their main handler in src/MessageHandler, which changes the game state accordingly

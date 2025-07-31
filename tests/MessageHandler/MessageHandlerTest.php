@@ -4,38 +4,39 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
-use App\DataFixtures\StarterCraneDeckTrait;
-use App\DataFixtures\StarterDeckLionTrait;
+use App\DataFixtures\AppFixtures;
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Message\ChooseStrongholdProvince;
-use App\Message\CreateGame;
-use App\Message\JoinGame;
 use App\Repository\CardRepository;
+use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\PlayerStateManager;
+use App\Tests\CreateGameTrait;
+use App\Tests\CreatePlayerTrait;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\Depends;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Uid\Uuid;
 
 class MessageHandlerTest extends KernelTestCase
 {
-    use StarterDeckLionTrait;
-    use StarterCraneDeckTrait;
+    use CreateGameTrait;
+    use CreatePlayerTrait;
 
     private MessageBusInterface $messageBus;
     private GameRepository $gameRepository;
     private CardRepository $cardRepository;
     private PlayerRepository $playerRepository;
     private PlayerStateManager $playerStateManager;
+    private DeckRepository $deckRepository;
 
     #[Before]
     protected function getServices(): void
@@ -51,59 +52,34 @@ class MessageHandlerTest extends KernelTestCase
         $this->playerRepository = $container->get(PlayerRepository::class);
         // @phpstan-ignore assign.propertyType
         $this->playerStateManager = $container->get(PlayerStateManager::class);
+        // @phpstan-ignore assign.propertyType
+        $this->deckRepository = $container->get(DeckRepository::class);
     }
 
     public function testCreateGameHandler(): string
     {
-        $gameId = Uuid::v4()->toString();
-
-        $message = new CreateGame($gameId);
-        $this->messageBus->dispatch($message);
-
-        $game = $this->gameRepository->find($gameId);
+        $game = $this->createGame();
 
         $this->assertInstanceOf(Game::class, $game);
         $this->assertSame('join_game', $game->getCurrentPlace());
 
-        return $gameId;
+        return $game->getId();
     }
 
     #[Depends('testCreateGameHandler')]
     public function testJoinGameHandler(string $gameId): string
     {
         $game = $this->gameRepository->get($gameId);
+        $this->assertInstanceOf(Game::class, $game);
 
-        $playerId = Uuid::v4()->toString();
-        $message = new JoinGame(
-            $game->getId(),
-            $playerId,
-            'john',
-            'John',
-            '1',
-            null,
-            JoinGame::generateCardsIds($this->getLionStarterCards()),
-        );
-        $this->messageBus->dispatch($message);
+        $john = $this->createPlayer($game, AppFixtures::LION_STARTER_DECK, 'john');
 
-        $john = $this->playerRepository->find($playerId);
         $this->assertInstanceOf(Player::class, $john);
         $this->assertSame($game->getId(), $john->getGame()->getId());
         $this->assertSame(1, $game->getPlayers()->count());
 
-        $playerId = Uuid::v4()->toString();
-        $message = new JoinGame(
-            $game->getId(),
-            $playerId,
-            'jane',
-            'Jane',
-            '1',
-            null,
-            JoinGame::generateCardsIds($this->getCraneStarterCards()),
-        );
+        $jane = $this->createPlayer($game, AppFixtures::CRANE_STARTER_DECK, 'jane');
 
-        $jane = $this->messageBus->dispatch($message);
-
-        $jane = $this->playerRepository->find($playerId);
         $this->assertInstanceOf(Player::class, $jane);
         $this->assertSame($game->getId(), $jane->getGame()->getId());
         $this->assertSame(2, $game->getPlayers()->count());
@@ -144,6 +120,7 @@ class MessageHandlerTest extends KernelTestCase
         $this->assertInstanceOf(Player::class, $jane);
 
         $this->chooseStrongholdProvince($game, $john, 'Ancestral Lands');
+        // no transition because only one player has chosen a stronghold province
         $this->assertSame('place_provinces', $game->getCurrentPlace());
 
         $this->chooseStrongholdProvince($game, $jane, 'Entrenched Position');
@@ -169,7 +146,7 @@ class MessageHandlerTest extends KernelTestCase
             $provinces = $player->getCardsByType(Type::Province);
             foreach ($provinces as $province) {
                 // counting 2: the province and the dynasty card on it
-                $this->assertEquals(2, $province->getStack()?->getCards()->count());
+                $this->assertEquals(2, $province->getStack()->getCards()->count());
             }
         }
 

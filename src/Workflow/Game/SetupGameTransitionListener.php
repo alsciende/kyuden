@@ -6,7 +6,6 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
-use App\Enum\StackType;
 use App\Enum\Type;
 use App\Exception\Data\DataException;
 use App\Message\DrawConflictCards;
@@ -14,7 +13,6 @@ use App\Message\FillProvince;
 use App\Message\GainHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
-use App\Service\StackManager;
 use App\State\Manager\PlayerStateManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -30,7 +28,6 @@ readonly class SetupGameTransitionListener
         private LoggerInterface $logger,
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
-        private StackManager $stackManager,
     ) {
     }
 
@@ -60,8 +57,6 @@ readonly class SetupGameTransitionListener
      */
     private function setup(Player $player): void
     {
-        // create stacks
-
         // shuffle decks
         $this->transitionBus->dispatch(
             new ShuffleDynastyDeck($player->getGame()->getId(), $player->getId())
@@ -80,19 +75,13 @@ readonly class SetupGameTransitionListener
             new GainHonor($player->getGame()->getId(), $player->getId(), $honor)
         );
 
-        // create stack for provinces
-        $provinces = $player->getCardsByType(Type::Province);
-
-        // create empty stacks for other cards
-        // @TODO
-
         // fill provinces
+        $provinces = $player->getCardsByType(Type::Province);
         $strongholdProvinceId = $this->stateManager->getState($player)->getStrongholdProvinceId();
         $stronghold = $player->getStronghold();
         foreach ($provinces as $province) {
-            $stack = $this->stackManager->createEmptyStack($player, StackType::Province)->addCard($province);
             if ($province->getId() === $strongholdProvinceId) {
-                $stack->addCard($stronghold);
+                $province->getStack()->addCard($stronghold);
             } else {
                 $this->transitionBus->dispatch(
                     new FillProvince($player->getGame()->getId(), $player->getId(), $province->getId())

@@ -16,6 +16,14 @@ class User implements UserInterface
      */
     public string $id;
 
+    /**
+     * @param non-empty-string $id
+     */
+    public function __construct(string $id)
+    {
+        $this->id = $id;
+    }
+
     #[\Override]
     public function getRoles(): array
     {

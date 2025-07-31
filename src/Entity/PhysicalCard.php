@@ -63,8 +63,8 @@ abstract class PhysicalCard
     private Player $player;
 
     #[ORM\ManyToOne(inversedBy: 'cards')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Stack $stack = null;
+    #[ORM\JoinColumn(nullable: false)]
+    private Stack $stack;
 
     public function __construct(string $id, LogicalCard $logicalCard)
     {
@@ -158,12 +158,12 @@ abstract class PhysicalCard
         return $this;
     }
 
-    public function getStack(): ?Stack
+    public function getStack(): Stack
     {
         return $this->stack;
     }
 
-    public function setStack(?Stack $stack): static
+    public function setStack(Stack $stack): static
     {
         $this->stack = $stack;
 

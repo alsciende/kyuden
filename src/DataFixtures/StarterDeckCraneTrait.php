@@ -7,7 +7,7 @@ namespace App\DataFixtures;
 /**
  * @phpstan-ignore trait.unused
  */
-trait StarterCraneDeckTrait
+trait StarterDeckCraneTrait
 {
     /**
      * @return list<string>
