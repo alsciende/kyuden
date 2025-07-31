@@ -11,6 +11,7 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
+use App\Enum\StackType;
 use App\Enum\Type;
 use App\Message\ChooseStrongholdProvince;
 use App\Tests\AbstractKernelTestCase;
@@ -120,6 +121,8 @@ class MessageHandlerTest extends AbstractKernelTestCase
                 // counting 2: the province and the dynasty card on it
                 $this->assertEquals(2, $province->getStack()->getCards()->count());
             }
+
+            $this->assertSame(5, $player->getUniqueStack(StackType::Hand)->getCards()->count());
         }
 
         return $gameId;
