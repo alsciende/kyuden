@@ -12,7 +12,7 @@ use App\Entity\Player;
 use App\Enum\StackType;
 use App\Enum\Type;
 use App\Factory\CardFactory;
-use App\Service\StackManager;
+use App\Factory\StackFactory;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\Log\LoggerInterface;
@@ -25,8 +25,8 @@ readonly class StartGameTransitionListener
 {
     public function __construct(
         private GameStateManager $stateManager,
-        private StackManager $stackManager,
-        private CardFactory $factory,
+        private CardFactory $cardFactory,
+        private StackFactory $stackFactory,
         private LoggerInterface $logger,
     ) {
     }
@@ -62,34 +62,34 @@ readonly class StartGameTransitionListener
 
     private function initPlayer(Player $player): void
     {
-        $hand = $this->stackManager->new($player, StackType::Hand);
+        $hand = $this->stackFactory->createStack($player, StackType::Hand);
 
         foreach ($player->getDeck()->getContent() as $id) {
-            $card = $this->factory->createCard(Uuid::v4()->toString(), $id);
+            $card = $this->cardFactory->createCard(Uuid::v4()->toString(), $id);
             $player->addCard($card);
             $player->getGame()->addCard($card);
             // all cards start in hand and will be moved to the correct stacks later
             $card->setStack($hand);
         }
 
-        $this->stackManager->new($player, StackType::ConflictDrawDeck)
+        $this->stackFactory->createStack($player, StackType::ConflictDrawDeck)
             ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card->getCurrentPlace() === ConflictCard::STATE_DRAW_DECK);
 
-        $this->stackManager->new($player, StackType::ConflictDiscardPile);
+        $this->stackFactory->createStack($player, StackType::ConflictDiscardPile);
 
-        $this->stackManager->new($player, StackType::DynastyDrawDeck)
+        $this->stackFactory->createStack($player, StackType::DynastyDrawDeck)
             ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card->getCurrentPlace() === DynastyCard::STATE_DRAW_DECK);
 
-        $this->stackManager->new($player, StackType::DynastyDiscardPile);
+        $this->stackFactory->createStack($player, StackType::DynastyDiscardPile);
 
-        $this->stackManager->new($player, StackType::Role);
+        $this->stackFactory->createStack($player, StackType::Role);
 
         // 5 provinces
         $provinceCards = $player->getPhysicalCards()->filter(
             fn (PhysicalCard $card): bool => $card->getLogicalCard()->getType() === Type::Province
         );
         foreach ($provinceCards as $provinceCard) {
-            $this->stackManager->new($player, StackType::Province)
+            $this->stackFactory->createStack($player, StackType::Province)
                 ->addCard($provinceCard);
         }
     }

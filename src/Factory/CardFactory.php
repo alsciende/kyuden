@@ -8,6 +8,7 @@ use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
 use App\Exception\Data\LogicalCardNotFoundException;
 use App\Repository\LogicalCardRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Workflow\Registry;
 
 readonly class CardFactory
@@ -15,6 +16,7 @@ readonly class CardFactory
     public function __construct(
         private LogicalCardRepository $cardRepository,
         private Registry $registry,
+        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -32,6 +34,7 @@ readonly class CardFactory
         $card->setTitle($logicalCard->getName());
 
         $this->registry->get($card)->getMarking($card);
+        $this->entityManager->persist($card);
 
         return $card;
     }
