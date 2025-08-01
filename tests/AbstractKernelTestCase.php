@@ -71,10 +71,7 @@ abstract class AbstractKernelTestCase extends KernelTestCase
             $game->getId(),
             $playerId,
             $user->id,
-            $user->getUserIdentifier(),
             $deck->getId(),
-            $deck->getName(),
-            JoinGame::generateCardsIds($deck->getContent()),
         );
         $this->messageBus->dispatch($message);
 

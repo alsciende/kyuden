@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
@@ -11,9 +13,8 @@ use Symfony\Component\Workflow\Event\EnterEvent;
 class DynastyPhaseBeginsEnterListener
 {
     public function __construct(
-        private LoggerInterface $logger,
-    )
-    {
+        private readonly LoggerInterface $logger,
+    ) {
     }
 
     public function __invoke(EnterEvent $event): void

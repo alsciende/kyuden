@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Workflow\Game;
 
 use App\Entity\CardTypes\DynastyCard;
@@ -25,6 +27,7 @@ class DynastyCardsRevealedGuardListener
                 foreach ($provinceStack->getCards() as $card) {
                     if ($card->getCurrentPlace() === DynastyCard::STATE_PROVINCE_FACEDOWN) {
                         $event->setBlocked(true, 'You must reveal all facedown dynasty cards before proceeding.');
+
                         return;
                     }
                 }
