@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
@@ -11,12 +13,11 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
 readonly class StartRoundTransitionListener
 {
     public function __construct(
-        private LoggerInterface $logger
-    )
-    {
+        private LoggerInterface $logger,
+    ) {
     }
 
-    public function __invoke(TransitionEvent $event)
+    public function __invoke(TransitionEvent $event): void
     {
         /** @var Game $game */
         $game = $event->getSubject();

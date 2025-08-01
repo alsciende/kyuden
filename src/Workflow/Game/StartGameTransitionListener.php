@@ -7,6 +7,7 @@ namespace App\Workflow\Game;
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\CardTypes\RoleCard;
 use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
@@ -77,16 +78,17 @@ readonly class StartGameTransitionListener
         }
 
         $this->stackFactory->createStack($player, StackType::ConflictDrawDeck)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card->getCurrentPlace() === ConflictCard::STATE_DRAW_DECK);
+            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof ConflictCard);
 
         $this->stackFactory->createStack($player, StackType::ConflictDiscardPile);
 
         $this->stackFactory->createStack($player, StackType::DynastyDrawDeck)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card->getCurrentPlace() === DynastyCard::STATE_DRAW_DECK);
+            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof DynastyCard);
 
         $this->stackFactory->createStack($player, StackType::DynastyDiscardPile);
 
-        $this->stackFactory->createStack($player, StackType::Role);
+        $this->stackFactory->createStack($player, StackType::Role)
+            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof RoleCard);
 
         // we put all the province cards in the first province stack, as well as the stronghold card,
         // they will be moved to the correct stacks later
