@@ -24,12 +24,10 @@ class LogicalCardFixtures extends Fixture
         $finder = new Finder();
         $finder->files()->in($this->projectDir . '/fixtures/cards/')->name('*.json')->sortByName();
         foreach ($finder as $file) {
-            try {
-                $LogicalCard = $this->serializer->deserialize($file->getContents(), LogicalCard::class, 'json');
-            } catch (\Exception $exception) {
-                throw new \RuntimeException("Cannot deserializer {$file}", previous: $exception);
-            }
-            $manager->persist($LogicalCard);
+            /** @var LogicalCard $logicalCard */
+            $logicalCard = $this->serializer->deserialize($file->getContents(), LogicalCard::class, 'json');
+            $manager->persist($logicalCard);
+            $this->addReference($logicalCard->getId(), $logicalCard);
         }
 
         $manager->flush();

@@ -15,6 +15,7 @@ class AppFixtures extends Fixture
 {
     use StarterDeckLionTrait;
     use StarterDeckCrabTrait;
+    use StarterDeckDragonTrait;
     use StarterDeckPhoenixTrait;
     use StarterDeckCraneTrait;
     use StarterDeckScorpionTrait;
@@ -22,6 +23,7 @@ class AppFixtures extends Fixture
 
     public const CRAB_STARTER_DECK = 'crab-starter-deck';
     public const CRANE_STARTER_DECK = 'crane-starter-deck';
+    public const DRAGON_STARTER_DECK = 'dragon-starter-deck';
     public const LION_STARTER_DECK = 'lion-starter-deck';
     public const PHOENIX_STARTER_DECK = 'phoenix-starter-deck';
     public const SCORPION_STARTER_DECK = 'scorpion-starter-deck';
@@ -31,12 +33,13 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager): void
     {
         $decks = [
-            'crab-starter-deck' => $this->getCrabStarterCards(),
-            'crane-starter-deck' => $this->getCraneStarterCards(),
-            'lion-starter-deck' => $this->getLionStarterCards(),
-            'phoenix-starter-deck' => $this->getPhoenixStarterCards(),
-            'scorpion-starter-deck' => $this->getScorpionStarterCards(),
-            'unicorn-starter-deck' => $this->getUnicornStarterCards(),
+            self::CRAB_STARTER_DECK => $this->getCrabStarterCards(),
+            self::CRANE_STARTER_DECK => $this->getCraneStarterCards(),
+            self::DRAGON_STARTER_DECK => $this->getDragonStarterCards(),
+            self::LION_STARTER_DECK => $this->getLionStarterCards(),
+            self::PHOENIX_STARTER_DECK => $this->getPhoenixStarterCards(),
+            self::SCORPION_STARTER_DECK => $this->getScorpionStarterCards(),
+            self::UNICORN_STARTER_DECK => $this->getUnicornStarterCards(),
         ];
         foreach ($decks as $deckId => $cards) {
             $deck = new Deck($deckId);

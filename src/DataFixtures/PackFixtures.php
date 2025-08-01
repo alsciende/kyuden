@@ -24,8 +24,10 @@ class PackFixtures extends Fixture
         $finder = new Finder();
         $finder->files()->in($this->projectDir . '/fixtures/packs/')->name('*.json');
         foreach ($finder as $file) {
+            /** @var Pack $pack */
             $pack = $this->serializer->deserialize($file->getContents(), Pack::class, 'json');
             $manager->persist($pack);
+            $this->addReference($pack->getId(), $pack);
         }
 
         $manager->flush();

@@ -7,7 +7,6 @@ namespace App\DataFixtures;
 use App\Entity\LogicalCard;
 use App\Entity\Pack;
 use App\Entity\Printing;
-use App\Repository\LogicalCardRepository;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -25,26 +24,14 @@ class PrintingFixtures extends Fixture implements DependentFixtureInterface
     #[\Override]
     public function load(ObjectManager $manager): void
     {
-        /** @var LogicalCardRepository $logicalCardRepository */
-        $logicalCardRepository = $manager->getRepository(LogicalCard::class);
-        $packRepository = $manager->getRepository(Pack::class);
-
         $finder = new Finder();
         $finder->files()->in($this->projectDir . '/fixtures/printings/')->name('*.json');
         foreach ($finder as $file) {
             /** @var DtoPrinting $dto */
             $dto = $this->serializer->deserialize($file->getContents(), DtoPrinting::class, 'json');
             $printing = new Printing();
-            $card = $logicalCardRepository->find($dto->cardId);
-            if (! $card instanceof LogicalCard) {
-                continue;
-            }
-            $printing->setLogicalCard($card);
-            $pack = $packRepository->find($dto->packId);
-            if (! $pack instanceof Pack) {
-                continue;
-            }
-            $printing->setPack($pack);
+            $printing->setLogicalCard($this->getReference($dto->cardId, LogicalCard::class));
+            $printing->setPack($this->getReference($dto->packId, Pack::class));
             $printing->setIllustrator($dto->illustrator);
             $printing->setFlavorText($dto->flavorText);
             $printing->setPosition($dto->position);
