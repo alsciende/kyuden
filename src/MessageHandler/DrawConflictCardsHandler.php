@@ -26,17 +26,17 @@ final readonly class DrawConflictCardsHandler
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $conflictDeck = $player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK);
-        for ($i = 0; $i < $message->getQuantity(); ++$i) {
-            $topCard = array_pop($conflictDeck);
-            if ($topCard === null) {
-                throw new DrawingFromEmptyDeckException('Conflict deck is empty.');
-            }
+        $quantity = $message->getQuantity();
+        $cards = $player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)->slice(-$quantity);
+        if (count($cards) < $quantity) {
+            throw new DrawingFromEmptyDeckException('Conflict deck is empty.');
+        }
+
+        foreach ($cards as $card) {
             $this->conflictCardStateMachine->apply(
-                $topCard,
+                $card,
                 'draw_card'
             );
         }
-        $player->resetCardGroups();
     }
 }

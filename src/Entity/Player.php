@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Entity\CardTypes\ConflictCard;
-use App\Entity\CardTypes\DynastyCard;
+use App\Entity\CardTypes\StrongholdCard;
 use App\Enum\StackType;
-use App\Enum\Type;
 use App\Exception\Rules\DeckConstructionException;
 use App\Repository\PlayerRepository;
 use App\State\Model\StatefulInterface;
@@ -60,111 +58,48 @@ class Player implements StatefulInterface
     }
 
     /**
-     * @var array<string, list<PhysicalCard>>
-     */
-    private array $cardsByCurrentPlaceCollection = [];
-
-    /**
-     * @var array<string, list<PhysicalCard>>
-     */
-    private array $cardsByTypeCollection = [];
-
-    /**
      * @var Collection<int, Stack>
      */
     #[ORM\OneToMany(mappedBy: 'player', targetEntity: Stack::class)]
     private Collection $stacks;
 
-    #[ORM\PostLoad]
-    public function onPostLoad(): void
+    /**
+     * @return Collection<int, PhysicalCard>
+     */
+    public function getCardsByCurrentPlace(string $place): Collection
     {
-        $this->resetCardGroups();
-    }
-
-    public function resetCardGroups(): void
-    {
-        $this->cardsByCurrentPlaceCollection = [];
-        $this->cardsByTypeCollection = [];
-        foreach ($this->physicalCards as $card) {
-            $place = $card->getCurrentPlace();
-            if ($place === null) {
-                throw new \LogicException('Uninitialized card cannot be grouped');
-            }
-
-            if (! array_key_exists($place, $this->cardsByCurrentPlaceCollection)) {
-                $this->cardsByCurrentPlaceCollection[$place] = [];
-            }
-
-            $this->cardsByCurrentPlaceCollection[$place][] = $card;
-
-            $type = $card->getLogicalCard()->getType()->value;
-
-            if (! array_key_exists($type, $this->cardsByTypeCollection)) {
-                $this->cardsByTypeCollection[$type] = [];
-            }
-
-            $this->cardsByTypeCollection[$type][] = $card;
-        }
-
-        usort(
-            $this->cardsByCurrentPlaceCollection[DynastyCard::STATE_DRAW_DECK],
-            fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
-        );
-        usort(
-            $this->cardsByCurrentPlaceCollection[ConflictCard::STATE_DRAW_DECK],
-            fn (PhysicalCard $card): int => $card->getPosition() ?? 0,
+        return $this->getPhysicalCards()->filter(
+            fn (PhysicalCard $card): bool => $card->getCurrentPlace() === $place
         );
     }
 
     /**
-     * @return array<string, list<PhysicalCard>>
+     * @param class-string $className
+     *
+     * @return Collection<int, PhysicalCard>
      */
-    public function getCardsByCurrentPlaceCollection(): array
+    public function getCardsByClass(string $className): Collection
     {
-        return $this->cardsByCurrentPlaceCollection;
-    }
-
-    /**
-     * @return list<PhysicalCard>
-     */
-    public function getCardsByCurrentPlace(string $place): array
-    {
-        if (! array_key_exists($place, $this->cardsByCurrentPlaceCollection)) {
-            return [];
-        }
-
-        return $this->cardsByCurrentPlaceCollection[$place];
-    }
-
-    /**
-     * @return array<string, list<PhysicalCard>>
-     */
-    public function getCardsByTypeCollection(): array
-    {
-        return $this->cardsByTypeCollection;
-    }
-
-    /**
-     * @return list<PhysicalCard>
-     */
-    public function getCardsByType(Type $type): array
-    {
-        if (! array_key_exists($type->value, $this->cardsByTypeCollection)) {
-            return [];
-        }
-
-        return $this->cardsByTypeCollection[$type->value];
+        return $this->getPhysicalCards()->filter(
+            fn (PhysicalCard $card): bool => $card instanceof $className
+        );
     }
 
     public function getStronghold(): PhysicalCard
     {
-        $strongholds = $this->getCardsByType(Type::Stronghold);
+        $strongholds = $this->getCardsByClass(StrongholdCard::class);
 
-        if (count($strongholds) !== 1) {
-            throw new DeckConstructionException('Deck must contain exactly one Stronghold');
+        if ($strongholds->count() > 1) {
+            throw new DeckConstructionException('Deck contains more than one Stronghold');
         }
 
-        return $strongholds[0];
+        $stronghold = $strongholds->first();
+
+        if ($stronghold === false) {
+            throw new DeckConstructionException('Deck contains no Strongholds');
+        }
+
+        return $stronghold;
     }
 
     public function getId(): string

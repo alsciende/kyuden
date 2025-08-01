@@ -12,7 +12,6 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
-use App\Enum\Type;
 use App\Message\ChooseStrongholdProvince;
 use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\Depends;
@@ -103,10 +102,9 @@ class MessageHandlerTest extends AbstractKernelTestCase
         // assert that the game is ready to start, everything is in order
         foreach ($game->getPlayers() as $player) {
             // deck shuffled
-            $dynastyPositions = array_map(
-                fn (PhysicalCard $card): ?int => $card->getPosition(),
-                $player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)
-            );
+            $dynastyPositions = $player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)->map(
+                fn (PhysicalCard $card): ?int => $card->getPosition()
+            )->toArray();
             $this->assertSame(count($dynastyPositions), count(array_unique($dynastyPositions)));
             // conflict cards drawn
             $this->assertSame(20, count($player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)));
@@ -119,7 +117,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
             $this->assertSame(16, count($player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)));
             $this->assertSame(16, $player->getUniqueStack(StackType::DynastyDrawDeck)->getCards()->count());
             $this->assertSame(4, count($player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
-            foreach ($player->getCardsByType(Type::Province) as $province) {
+            foreach ($player->getCardsByClass(ProvinceCard::class) as $province) {
                 // counting 2: the province and the dynasty or stronghold card on it
                 $this->assertEquals(2, $province->getStack()->getCards()->count());
             }
