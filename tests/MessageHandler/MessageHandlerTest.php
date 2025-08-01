@@ -109,20 +109,20 @@ class MessageHandlerTest extends AbstractKernelTestCase
             );
             $this->assertSame(count($dynastyPositions), count(array_unique($dynastyPositions)));
             // conflict cards drawn
-            $this->assertSame(19, count($player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)));
-            $this->assertSame(5, count($player->getCardsByCurrentPlace(ConflictCard::STATE_HAND)));
+            $this->assertSame(20, count($player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)));
+            $this->assertSame(20, $player->getUniqueStack(StackType::ConflictDrawDeck)->getCards()->count());
+            $this->assertSame(4, count($player->getCardsByCurrentPlace(ConflictCard::STATE_HAND)));
+            $this->assertSame(4, $player->getUniqueStack(StackType::Hand)->getCards()->count());
             // starting honor
             $this->assertGreaterThan(0, $this->playerStateManager->getState($player)->getHonor());
             // filled provinces
-            $this->assertSame(4, count($player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
             $this->assertSame(16, count($player->getCardsByCurrentPlace(DynastyCard::STATE_DRAW_DECK)));
-            $provinces = $player->getCardsByType(Type::Province);
-            foreach ($provinces as $province) {
-                // counting 2: the province and the dynasty card on it
+            $this->assertSame(16, $player->getUniqueStack(StackType::DynastyDrawDeck)->getCards()->count());
+            $this->assertSame(4, count($player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEDOWN)));
+            foreach ($player->getCardsByType(Type::Province) as $province) {
+                // counting 2: the province and the dynasty or stronghold card on it
                 $this->assertEquals(2, $province->getStack()->getCards()->count());
             }
-
-            $this->assertSame(5, $player->getUniqueStack(StackType::Hand)->getCards()->count());
         }
 
         return $gameId;

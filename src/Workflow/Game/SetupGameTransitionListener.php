@@ -23,7 +23,7 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
 #[AsTransitionListener(workflow: 'game', transition: 'setup_game')]
 readonly class SetupGameTransitionListener
 {
-    public const int STARTING_CARDS = 5;
+    public const int STARTING_CARDS = 4;
 
     public function __construct(
         private MessageBusInterface $transitionBus,
