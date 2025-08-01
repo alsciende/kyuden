@@ -23,7 +23,7 @@ final readonly class GainHonorHandler
 
     public function __invoke(GainHonor $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'place_provinces');
+        $game = $this->gameRepository->get($message->getGameId(), 'choose_stronghold');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->stateManager->withState(
             $player,

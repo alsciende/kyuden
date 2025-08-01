@@ -14,11 +14,11 @@ framework:
             transitions:
                 start_game: # select first player
                     from: join_game
-                    to: place_provinces
+                    to: choose_stronghold
                     metadata:
                         auto: true
-                setup_game: # setup game
-                    from: place_provinces
+                setup_game:
+                    from: choose_stronghold
                     to: dynasty_phase_begins
                     metadata:
                         auto: true

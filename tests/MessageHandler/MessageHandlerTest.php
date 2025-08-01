@@ -51,7 +51,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         $this->assertSame(50, $john->getPhysicalCards()->count());
         $this->assertSame(50, $jane->getPhysicalCards()->count());
 
-        $this->assertSame('place_provinces', $game->getCurrentPlace());
+        $this->assertSame('choose_stronghold', $game->getCurrentPlace());
 
         return $gameId;
     }
@@ -77,7 +77,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
     #[Depends('testJoinGameHandler')]
     public function testChooseStrongholdProvinceHandler(string $gameId): string
     {
-        $game = $this->gameRepository->get($gameId, 'place_provinces');
+        $game = $this->gameRepository->get($gameId, 'choose_stronghold');
         $this->assertSame(2, $game->getPlayers()->count());
         $john = $game->getPlayers()->get(0);
         $this->assertInstanceOf(Player::class, $john);
@@ -86,7 +86,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
 
         $this->chooseStrongholdProvince($game, $john, 'Ancestral Lands');
         // no transition because only one player has chosen a stronghold province
-        $this->assertSame('place_provinces', $game->getCurrentPlace());
+        $this->assertSame('choose_stronghold', $game->getCurrentPlace());
 
         $this->chooseStrongholdProvince($game, $jane, 'Entrenched Position');
         // all automatic transitions happened automatically, this is the first manual transition

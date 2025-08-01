@@ -27,7 +27,7 @@ final readonly class ChooseStrongholdProvinceHandler
 
     public function __invoke(ChooseStrongholdProvince $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'place_provinces');
+        $game = $this->gameRepository->get($message->getGameId(), 'choose_stronghold');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $logicalCard = $card->getLogicalCard();

@@ -29,7 +29,7 @@ final readonly class FillProvinceHandler
 
     public function __invoke(FillProvince $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'place_provinces');
+        $game = $this->gameRepository->get($message->getGameId(), 'choose_stronghold');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $card = $this->cardRepository->get($message->getProvinceId(), $game);
 
