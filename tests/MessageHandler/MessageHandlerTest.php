@@ -13,6 +13,7 @@ use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
 use App\Message\ChooseStrongholdProvince;
+use App\Message\RevealDynastyCard;
 use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\Depends;
 
@@ -122,6 +123,28 @@ class MessageHandlerTest extends AbstractKernelTestCase
                 $this->assertEquals(2, $province->getStack()->getCards()->count());
             }
         }
+
+        return $gameId;
+    }
+
+    #[Depends('testSetupGameTransitionListener')]
+    public function testRevealDynastyCards(string $gameId): string
+    {
+        $game = $this->gameRepository->get($gameId, 'reveal_facedown_dynasty_cards');
+
+        foreach ($game->getPlayers() as $player) {
+            $this->assertCount(4, $player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEDOWN));
+            foreach ($player->getStacks(StackType::RegularProvince) as $stack) {
+                foreach ($stack->getCards()->filter(fn (PhysicalCard $card): bool => $card->getCurrentPlace() === DynastyCard::STATE_PROVINCE_FACEDOWN) as $card) {
+                    $this->messageBus->dispatch(
+                        new RevealDynastyCard($game->getId(), $player->getId(), $card->getId())
+                    );
+                }
+            }
+            $this->assertCount(4, $player->getCardsByCurrentPlace(DynastyCard::STATE_PROVINCE_FACEUP));
+        }
+
+        $this->assertSame('collect_fate', $game->getCurrentPlace());
 
         return $gameId;
     }
