@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\OrderBy;
+use Random\Randomizer;
 
 #[ORM\Entity(repositoryClass: StackRepository::class)]
 class Stack
@@ -129,6 +130,20 @@ class Stack
         foreach ($cards as $i => $card) {
             $card->setPosition($i);
         }
+    }
+
+    public function shuffle(): static
+    {
+        $randomizer = new Randomizer();
+
+        /** @var list<PhysicalCard> $shuffleArray */
+        $shuffleArray = $randomizer->shuffleArray($this->cards->getValues());
+
+        foreach ($shuffleArray as $index => $card) {
+            $card->setPosition($index);
+        }
+
+        return $this;
     }
 
     public function getPlayer(): Player
