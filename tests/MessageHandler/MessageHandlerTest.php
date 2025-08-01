@@ -90,7 +90,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
 
         $this->chooseStrongholdProvince($game, $jane, 'Entrenched Position');
         // all automatic transitions happened automatically, this is the first manual transition
-        $this->assertSame('play_cards_from_provinces', $game->getCurrentPlace());
+        $this->assertSame('reveal_facedown_dynasty_cards', $game->getCurrentPlace());
 
         return $gameId;
     }
@@ -98,7 +98,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
     #[Depends('testChooseStrongholdProvinceHandler')]
     public function testSetupGameTransitionListener(string $gameId): string
     {
-        $game = $this->gameRepository->get($gameId, 'play_cards_from_provinces');
+        $game = $this->gameRepository->get($gameId, 'reveal_facedown_dynasty_cards');
 
         // assert that the game is ready to start, everything is in order
         foreach ($game->getPlayers() as $player) {

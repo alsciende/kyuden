@@ -22,12 +22,12 @@ framework:
                     to: dynasty_phase_begins
                     metadata:
                         auto: true
-                start_round:
+                dynasty_phase_began:
                     from: dynasty_phase_begins
                     to: reveal_facedown_dynasty_cards
                     metadata:
                         auto: true
-                t1:
+                dynasty_cards_revealed:
                     from: reveal_facedown_dynasty_cards
                     to: collect_fate
                     metadata:
@@ -35,8 +35,6 @@ framework:
                 t2:
                     from: collect_fate
                     to: play_cards_from_provinces
-                    metadata:
-                        auto: true
                 t3:
                     from: play_cards_from_provinces
                     to: dynasty_phase_ends
