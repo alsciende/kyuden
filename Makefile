@@ -1,9 +1,7 @@
-COMPOSER := docker run --rm --interactive --tty --volume ${PWD}:/app --workdir /app composer
-EXEC := docker compose exec --interactive php
-PHP := ${EXEC} php
-
-composer:
-	docker run --rm --interactive --tty --volume ${PWD}:/app --workdir /app composer bash
+EXEC          := docker compose exec
+EXEC_SYMFONY  := $(EXEC) -it -u www-data -e http_proxy=${http_proxy} -e https_proxy=${https_proxy} -e no_proxy=${no_proxy} symfony
+EXEC_COMPOSER := $(EXEC_SYMFONY) composer
+PHP           := ${EXEC_SYMFONY} php
 
 install:
 	$(COMPOSER) install
@@ -12,16 +10,20 @@ update:
 	$(COMPOSER) update
 
 build:
-	docker compose up --build --detach
+	docker compose build
+
+reset:
+	docker compose down --remove-orphans --volumes
+	rm -rf var/ vendor/ public/bundles public/css public/js
+
+up:
+	docker compose up --detach
 
 down:
 	docker compose down --remove-orphans
 
-reset:
-	docker compose down --remove-orphans --volumes
-	rm -rf vendor
-
-up: install build
+sql:
+	$(EXEC) -it mysql mysql -u root -ppasswd
 
 check-symfony:
 	$(PHP) bin/console lint:container
@@ -46,4 +48,4 @@ db:
 	$(PHP) bin/console doctrine:fixtures:load -n
 
 sh:
-	$(EXEC) bash
+	$(EXEC_SYMFONY) bash

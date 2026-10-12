@@ -1,48 +1,48 @@
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "8080:80"
-    volumes:
-      - ./:/var/www/html
-      - ./docker/dev/nginx/conf.d:/etc/nginx/conf.d
-    depends_on:
-      - php
-
-  php:
-    build:
-      context: .
-      dockerfile: ./docker/dev/php-fpm/Dockerfile
-      args:
-        http_proxy: ${http_proxy:-}
-        https_proxy: ${https_proxy:-}
-        no_proxy: host.docker.internal
-    volumes:
-      - ./:/var/www/html
-    depends_on:
-      - database
-
   database:
     image: postgres:alpine
-    restart: always
+    shm_size: 128mb
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    volumes:
-      - database_data:/var/lib/postgresql/data:rw
+#    volumes:
+#      - database_data:/var/lib/postgresql/data:rw
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
-  pgweb:
-    restart: always
-    image: sosedoff/pgweb
+  adminer:
+    image: adminer
     ports:
-      - "8181:8081"
-    links:
-      - database:postgres
-    environment:
-      - PGWEB_DATABASE_URL=postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?sslmode=disable
+      - 8081:8080
+
+  symfony:
+    build:
+      context: .
+      dockerfile: ./docker/dev/symfony/Dockerfile
+    volumes:
+      - .:/var/www/html
+    # the Symfony cache (including the Doctrine second-level cache pool) lives in memory
+    # rather than on the slow bind mount; it is emptied when the container restarts
+    tmpfs:
+      - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
+    ports:
+      - 8080:8000
+    user: www-data
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+    entrypoint: '/var/www/html/docker/dev/symfony/entrypoint.sh'
+
+  mailer:
+    image: axllent/mailpit
+    ports:
+      - "1025"
+      - "8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   mercure:
     image: dunglas/mercure
