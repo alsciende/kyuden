@@ -47,7 +47,9 @@ Build an engine to play Legends of the Five Rings LCG as published by Fantasy Fl
 
 ### Workflow
 
-There are 6 workflows, one for `App\Entity\Game` and one for every subclass of `App\Entity\PhysicalCard`. They are state_machine, meaning one state at a time.
+There are 6 workflows, defined in `config/packages/workflows.php`, one for `App\Entity\Game` and one for every subclass of `App\Entity\PhysicalCard`. They are state_machine, meaning one state at a time.
+
+The place of a card is not stored: it is computed from the type of its `App\Entity\Stack` and its `App\Enum\Orientation` (see `App\Workflow\CardMarkingStore`). Card transitions describe the move or turn they make in their metadata (`stack`, `orientation`), applied by `App\Workflow\CardTransitionListener`. A card is created with the initial orientation of its type; a transition that moves a card always gives its orientation.
 
 Engine will listen to changes in the workflow with EventListeners located in `src/Workflow`. Some will try to block a transition (GuardListener), some will react to a transition (TransitionListener), etc.
 

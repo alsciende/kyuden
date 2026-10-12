@@ -43,4 +43,28 @@ class StackTest extends TestCase
         self::assertEquals(0, $card2->getPosition());
         self::assertEquals(2, $card3->getPosition());
     }
+
+    public function testTopCardsFollowPositionsNotCollectionOrder(): void
+    {
+        $deck = new Stack('deck', self::createMock(Player::class), StackType::DynastyDrawDeck);
+        self::assertNull($deck->getTopCard());
+
+        $card1 = new DynastyCard('1', self::createMock(LogicalCard::class), $deck);
+        $card2 = new DynastyCard('2', self::createMock(LogicalCard::class), $deck);
+        $card3 = new DynastyCard('3', self::createMock(LogicalCard::class), $deck);
+        $deck->addCard($card1);
+        $deck->addCard($card2);
+        $deck->addCard($card3);
+
+        self::assertSame([$card3, $card2], $deck->getTopCards(2));
+
+        // changes the positions but not the order of the collection, like a shuffle
+        $deck->moveCard($card1);
+
+        self::assertSame([$card1, $card2, $card3], $deck->getCards()->getValues());
+        self::assertSame([$card1, $card3], $deck->getTopCards(2));
+        self::assertSame($card1, $deck->getTopCard());
+        self::assertSame([$card2, $card3, $card1], $deck->getOrderedCards());
+        self::assertCount(3, $deck->getTopCards(10));
+    }
 }

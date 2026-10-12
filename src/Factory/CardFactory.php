@@ -21,19 +21,21 @@ readonly class CardFactory
     ) {
     }
 
-    public function createCard(string $physicalCardId, string $logicalCardId, Stack $stack): PhysicalCard
+    /**
+     * Creates a card on top of the stack, owned by the player of the stack, with the initial orientation of its type.
+     */
+    public function createCard(string $physicalCardId, LogicalCard $logicalCard, Stack $stack): PhysicalCard
     {
-        $logicalCard = $this->cardRepository->find($logicalCardId);
-        if (! $logicalCard instanceof LogicalCard) {
-            throw new LogicalCardNotFoundException($logicalCardId);
-        }
-
         $classname = $this->getClassname($logicalCard->getSide()->value);
 
         /** @var PhysicalCard $card */
         $card = new $classname($physicalCardId, $logicalCard, $stack);
         $card->setTitle($logicalCard->getName());
+        $stack->addCard($card);
+        $stack->getPlayer()->addCard($card);
+        $stack->getPlayer()->getGame()->addCard($card);
 
+        // fails if the card cannot be in that stack with that orientation
         $this->registry->get($card)->getMarking($card);
         $this->entityManager->persist($card);
 
@@ -49,5 +51,15 @@ readonly class CardFactory
         }
 
         return $classname;
+    }
+
+    public function getLogicalCard(string $logicalCardId): LogicalCard
+    {
+        $logicalCard = $this->cardRepository->find($logicalCardId);
+        if (! $logicalCard instanceof LogicalCard) {
+            throw new LogicalCardNotFoundException($logicalCardId);
+        }
+
+        return $logicalCard;
     }
 }

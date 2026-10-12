@@ -16,6 +16,7 @@ use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\Orientation;
 use App\Enum\StackType;
 use App\Exception\Data\DeckNotFoundException;
 use App\Exception\Data\LogicalCardNotFoundException;
@@ -31,8 +32,9 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Builds a game directly in a given state, without dispatching any action.
  *
- * The workflow places of the game and of each card are written directly: no transition, guard or
- * listener is triggered. Card places are inferred from the stack they are put in.
+ * The workflow place of the game is written directly: no transition, guard or listener is triggered.
+ * Cards are put directly in their stack, unless stated otherwise: in a deck or a province stack with the initial
+ * orientation of their type (see PhysicalCard::getInitialOrientation()), face up elsewhere.
  *
  * Players get all their unique stacks once the game has started (any place but join_game).
  *
@@ -226,14 +228,26 @@ final class GameBuilder
         return $stack;
     }
 
+    /**
+     * Null for the initial orientation of the card type (face down, except the stronghold).
+     */
+    private function getDefaultOrientation(Stack $stack): ?Orientation
+    {
+        return match ($stack->getType()) {
+            StackType::ConflictDrawDeck, StackType::DynastyDrawDeck, StackType::StrongholdProvince, StackType::RegularProvince => null,
+            StackType::ConflictDiscardPile, StackType::DynastyDiscardPile, StackType::Role, StackType::Hand, StackType::InPlay => Orientation::FaceUp,
+        };
+    }
+
     private function createCard(Player $player, Stack $stack, PlannedCard $plannedCard): PhysicalCard
     {
         $logicalCard = $this->getLogicalCard($plannedCard->code);
         $classname = $this->getClassname($logicalCard);
 
-        $card = new $classname(Uuid::v4()->toString(), $logicalCard, $stack);
+        $card = new $classname(Uuid::v4()->toString(), $logicalCard, $stack, $plannedCard->orientation ?? $this->getDefaultOrientation($stack));
         $card->setTitle($logicalCard->getName());
-        $card->setCurrentPlace($this->getPlace($card, $stack->getType(), $plannedCard->faceup));
+        // fails if the card cannot be in that stack with that orientation
+        $card->getCurrentPlace();
         $stack->addCard($card);
         $player->addCard($card);
         $player->getGame()->addCard($card);
@@ -246,45 +260,6 @@ final class GameBuilder
         }
 
         return $card;
-    }
-
-    /**
-     * Workflow place of a card, deduced from the stack it lies in.
-     */
-    private function getPlace(PhysicalCard $card, StackType $stackType, bool $faceup): string
-    {
-        $place = match (true) {
-            $card instanceof ConflictCard => $this->getConflictCardPlace($stackType),
-            $card instanceof DynastyCard => $this->getDynastyCardPlace($stackType, $faceup),
-            $card instanceof ProvinceCard => in_array($stackType, [StackType::RegularProvince, StackType::StrongholdProvince], true) ? ProvinceCard::STATE_FACEDOWN : null,
-            $card instanceof StrongholdCard => $stackType === StackType::StrongholdProvince ? StrongholdCard::STATE_IN_PLAY : null,
-            $card instanceof RoleCard => $stackType === StackType::Role ? RoleCard::STATE_IN_PLAY : null,
-            default => null,
-        };
-
-        return $place ?? throw new \LogicException(sprintf('Card %s (%s) cannot be put in stack %s.', $card->getTitle(), $card::class, $stackType->name));
-    }
-
-    private function getConflictCardPlace(StackType $stackType): ?string
-    {
-        return match ($stackType) {
-            StackType::ConflictDrawDeck => ConflictCard::STATE_DRAW_DECK,
-            StackType::Hand => ConflictCard::STATE_HAND,
-            StackType::InPlay => ConflictCard::STATE_IN_PLAY,
-            StackType::ConflictDiscardPile => ConflictCard::STATE_DISCARD_PILE,
-            default => null,
-        };
-    }
-
-    private function getDynastyCardPlace(StackType $stackType, bool $faceup): ?string
-    {
-        return match ($stackType) {
-            StackType::DynastyDrawDeck => DynastyCard::STATE_DRAW_DECK,
-            StackType::RegularProvince, StackType::StrongholdProvince => $faceup ? DynastyCard::STATE_PROVINCE_FACEUP : DynastyCard::STATE_PROVINCE_FACEDOWN,
-            StackType::InPlay => DynastyCard::STATE_IN_PLAY,
-            StackType::DynastyDiscardPile => DynastyCard::STATE_DISCARD_PILE,
-            default => null,
-        };
     }
 
     /**

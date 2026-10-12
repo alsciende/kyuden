@@ -9,13 +9,17 @@ use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\CardTypes\RoleCard;
 use App\Entity\CardTypes\StrongholdCard;
+use App\Enum\Orientation;
 use App\Enum\Side;
+use App\Enum\StackType;
 use App\Enum\Type;
 use App\Repository\CardRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
  * One of the stateful, physical cards in a deck *during a game*.
+ *
+ * The workflow place of a card is not stored: it is computed from the type of its stack and its orientation.
  */
 #[ORM\Entity(repositoryClass: CardRepository::class)]
 #[ORM\MappedSuperclass]
@@ -41,8 +45,8 @@ abstract class PhysicalCard
     #[ORM\JoinColumn(nullable: false)]
     private LogicalCard $logicalCard;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $currentPlace = null;
+    #[ORM\Column(length: 20, enumType: Orientation::class)]
+    private Orientation $orientation;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
@@ -68,12 +72,25 @@ abstract class PhysicalCard
     #[ORM\JoinColumn(nullable: false)]
     private Stack $stack;
 
-    public function __construct(string $id, LogicalCard $logicalCard, Stack $stack)
+    public function __construct(string $id, LogicalCard $logicalCard, Stack $stack, ?Orientation $orientation = null)
     {
         $this->id = $id;
         $this->logicalCard = $logicalCard;
         $this->stack = $stack;
+        $this->orientation = $orientation ?? static::getInitialOrientation();
     }
+
+    /**
+     * Orientation of a card of this type when the game starts. Later on, the transitions of the workflow
+     * set the orientation of the card.
+     */
+    abstract public static function getInitialOrientation(): Orientation;
+
+    /**
+     * Workflow place of a card of this type in a stack of this type with this orientation,
+     * or null if the card cannot be in that situation.
+     */
+    abstract public static function getPlace(StackType $stackType, Orientation $orientation): ?string;
 
     public function getId(): string
     {
@@ -85,14 +102,33 @@ abstract class PhysicalCard
         return $this->logicalCard;
     }
 
-    public function getCurrentPlace(): ?string
+    /**
+     * @throws \LogicException if the card is in a stack or orientation it cannot have
+     */
+    public function getCurrentPlace(): string
     {
-        return $this->currentPlace;
+        $stackType = $this->stack->getType();
+
+        return static::getPlace($stackType, $this->orientation) ?? throw new \LogicException(sprintf('Card %s (%s) cannot be %s in stack %s.', $this->title ?? $this->id, static::class, $this->orientation->value, $stackType->name));
     }
 
-    public function setCurrentPlace(?string $currentPlace): static
+    /**
+     * A character enters play in a stack of its own; any other card (e.g. an attachment) joins the stack
+     * of the card or game element it is put on.
+     */
+    public function entersPlayInNewStack(): bool
     {
-        $this->currentPlace = $currentPlace;
+        return $this->logicalCard->getType() === Type::Character;
+    }
+
+    public function getOrientation(): Orientation
+    {
+        return $this->orientation;
+    }
+
+    public function setOrientation(Orientation $orientation): static
+    {
+        $this->orientation = $orientation;
 
         return $this;
     }

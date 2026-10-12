@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\{Clan, Element, Role, Side, Type};
+use App\Enum\{Clan, Element, Role, Side, StackType, Type};
 use App\Repository\CardRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -389,6 +389,20 @@ class LogicalCard implements \Stringable
     public function setSide(Side $side): void
     {
         $this->side = $side;
+    }
+
+    /**
+     * Stack a card of this side starts the game in. Provinces and stronghold all start in the stronghold
+     * province stack: the provinces are moved to their own stacks once the stronghold province is chosen.
+     */
+    public function getInitialStackType(): StackType
+    {
+        return match ($this->side) {
+            Side::Conflict => StackType::ConflictDrawDeck,
+            Side::Dynasty => StackType::DynastyDrawDeck,
+            Side::Role => StackType::Role,
+            Side::Province, Side::Stronghold => StackType::StrongholdProvince,
+        };
     }
 
     public function getStrength(): ?string

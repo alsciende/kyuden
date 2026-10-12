@@ -4,13 +4,7 @@ declare(strict_types=1);
 
 namespace App\Workflow\Game;
 
-use App\Entity\CardTypes\ConflictCard;
-use App\Entity\CardTypes\DynastyCard;
-use App\Entity\CardTypes\ProvinceCard;
-use App\Entity\CardTypes\RoleCard;
-use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
-use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
 use App\Factory\CardFactory;
@@ -67,33 +61,20 @@ readonly class StartGameTransitionListener
      */
     private function initPlayer(Player $player): void
     {
-        $hand = $this->stackFactory->createStack($player, StackType::Hand);
-
-        foreach ($player->getDeck()->getContent() as $id) {
-            $card = $this->cardFactory->createCard(Uuid::v4()->toString(), $id, $hand);
-            $player->addCard($card);
-            $player->getGame()->addCard($card);
-            // all cards start in hand and will be moved to the correct stacks later
-            $card->setStack($hand);
+        $stacks = [];
+        foreach (StackType::cases() as $type) {
+            if ($type->isUnique()) {
+                $stacks[$type->value] = $this->stackFactory->createStack($player, $type);
+            }
         }
 
-        $this->stackFactory->createStack($player, StackType::ConflictDrawDeck)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof ConflictCard);
-
-        $this->stackFactory->createStack($player, StackType::ConflictDiscardPile);
-
-        $this->stackFactory->createStack($player, StackType::DynastyDrawDeck)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof DynastyCard);
-
-        $this->stackFactory->createStack($player, StackType::DynastyDiscardPile);
-
-        $this->stackFactory->createStack($player, StackType::Role)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof RoleCard);
-
-        // we put all the province cards in the first province stack, as well as the stronghold card,
-        // they will be moved to the correct stacks later
-        $this->stackFactory->createStack($player, StackType::StrongholdProvince)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof ProvinceCard)
-            ->addPlayerCards($player, fn (PhysicalCard $card): bool => $card instanceof StrongholdCard);
+        foreach ($player->getDeck()->getContent() as $id) {
+            $logicalCard = $this->cardFactory->getLogicalCard($id);
+            $this->cardFactory->createCard(
+                physicalCardId: Uuid::v4()->toString(),
+                logicalCard: $logicalCard,
+                stack: $stacks[$logicalCard->getInitialStackType()->value]
+            );
+        }
     }
 }

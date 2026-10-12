@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\CardTypes\ConflictCard;
+use App\Enum\StackType;
 use App\Exception\Rules\DrawingFromEmptyDeckException;
 use App\Message\DrawConflictCards;
 use App\Repository\GameRepository;
@@ -27,7 +27,7 @@ final readonly class DrawConflictCardsHandler
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $quantity = $message->getQuantity();
-        $cards = $player->getCardsByCurrentPlace(ConflictCard::STATE_DRAW_DECK)->slice(-$quantity);
+        $cards = $player->getUniqueStack(StackType::ConflictDrawDeck)->getTopCards($quantity);
         if (count($cards) < $quantity) {
             throw new DrawingFromEmptyDeckException('Conflict deck is empty.');
         }

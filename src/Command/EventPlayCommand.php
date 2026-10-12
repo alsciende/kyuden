@@ -24,31 +24,44 @@ readonly class EventPlayCommand
     ) {
     }
 
+    /**
+     * @return class-string
+     */
+    private function isClassExists($answer): string
+    {
+        if (! is_string($answer)) {
+            throw new \RuntimeException('Expecting a string, got ' . gettype($answer));
+        }
+
+        if (class_exists($answer) === false) {
+            throw new \RuntimeException('Class does not exist');
+        }
+
+        return $answer;
+    }
+
+    private function isValidJson($answer): string
+    {
+        if (! is_string($answer)) {
+            throw new \RuntimeException('Expecting a string, got ' . gettype($answer));
+        }
+
+        if (json_validate($answer) === false) {
+            throw new \RuntimeException('JSON is invalid');
+        }
+
+        return $answer;
+    }
+
     public function __invoke(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $nameQuestion = new Question('Class of message');
-        $nameQuestion->setValidator(
-            function (string $anwser): string {
-                if (class_exists($anwser) === false) {
-                    throw new \RuntimeException('Class does not exist');
-                }
-
-                return $anwser;
-            }
-        );
+        $nameQuestion->setValidator($this->isClassExists(...));
         /** @var string $name */
         $name = $io->askQuestion($nameQuestion);
         $payloadQuestion = new Question('Payload of message');
-        $payloadQuestion->setValidator(
-            function (string $answer): string {
-                if (json_validate($answer) === false) {
-                    throw new \RuntimeException('JSON is invalid');
-                }
-
-                return $answer;
-            }
-        );
+        $payloadQuestion->setValidator($this->isValidJson(...));
         /** @var string $payload */
         $payload = $io->askQuestion($payloadQuestion);
         $io->title("Playing event {$name} with payload {$payload}");

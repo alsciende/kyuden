@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Builder;
 
+use App\Enum\Orientation;
 use App\Enum\StackType;
 
 /**
@@ -11,7 +12,9 @@ use App\Enum\StackType;
  *
  * Methods taking a list of card codes accept string keys as aliases:
  * `->hand(['banzai' => '01-banzai', '01-fine-katana'])` lets the test retrieve the first card with
- * `$scenario->card('banzai')`. Cards are added to their stack in the given order (first card at position 0).
+ * `$scenario->card('banzai')`. Cards are added to their stack in the given order: the last one is on top.
+ *
+ * Cards are face down in decks and provinces (except the stronghold), face up elsewhere, unless stated otherwise.
  */
 final class PlayerBuilder
 {
@@ -106,12 +109,13 @@ final class PlayerBuilder
         ?string $as = null,
         ?string $dynasty = null,
         ?string $dynastyAs = null,
-        bool $faceup = false,
+        bool $dynastyFaceup = false,
+        Orientation $orientation = Orientation::FaceDown,
     ): self {
         $stack = new PlannedStack(StackType::RegularProvince);
-        $stack->cards[] = new PlannedCard($code, $as);
+        $stack->cards[] = new PlannedCard($code, $as, $orientation);
         if ($dynasty !== null) {
-            $stack->cards[] = new PlannedCard($dynasty, $dynastyAs, faceup: $faceup);
+            $stack->cards[] = new PlannedCard($dynasty, $dynastyAs, $dynastyFaceup ? Orientation::FaceUp : Orientation::FaceDown);
         }
         $this->stacks[] = $stack;
 
@@ -166,6 +170,8 @@ final class PlayerBuilder
     }
 
     /**
+     * Creates one in-play stack: a character followed by the attachments put on it.
+     *
      * @param array<array-key, string> $codes
      */
     public function inPlay(array $codes): self

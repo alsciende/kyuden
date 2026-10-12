@@ -50,6 +50,9 @@ class Stack
     }
 
     /**
+     * Cards in no particular order. Use getOrderedCards() or getTopCards() when the order matters:
+     * the order of this collection is not kept in sync with the positions (e.g. after a shuffle).
+     *
      * @return Collection<int, PhysicalCard>
      */
     public function getCards(): Collection
@@ -58,30 +61,30 @@ class Stack
     }
 
     /**
-     * @param array<PhysicalCard> $cards
+     * @return list<PhysicalCard> cards from the bottom (position 0) to the top
      */
-    public function addCards(array $cards): void
+    public function getOrderedCards(): array
     {
-        foreach ($cards as $card) {
-            $this->addCard($card);
-        }
+        $cards = $this->cards->getValues();
+        usort($cards, fn (PhysicalCard $a, PhysicalCard $b): int => $a->getPosition() <=> $b->getPosition());
+
+        return $cards;
     }
 
     /**
-     * @param \Closure(PhysicalCard): bool $closure
-     *
-     * @return $this
+     * @return list<PhysicalCard> at most $quantity cards from the top of the stack, the top card first
      */
-    public function addPlayerCards(Player $player, \Closure $closure): static
+    public function getTopCards(int $quantity): array
     {
-        $this->addCards(
-            array_filter(
-                $player->getPhysicalCards()->toArray(),
-                $closure
-            )
-        );
+        return array_slice(array_reverse($this->getOrderedCards()), 0, $quantity);
+    }
 
-        return $this;
+    /**
+     * @return PhysicalCard|null the card with the highest position, null if the stack is empty
+     */
+    public function getTopCard(): ?PhysicalCard
+    {
+        return $this->getTopCards(1)[0] ?? null;
     }
 
     public function addCard(PhysicalCard $card, bool $above = true): static
@@ -127,9 +130,7 @@ class Stack
 
     private function repositionCards(): void
     {
-        $cards = $this->cards->getValues();
-        usort($cards, fn (PhysicalCard $a, PhysicalCard $b): int => $a->getPosition() <=> $b->getPosition());
-        foreach ($cards as $i => $card) {
+        foreach ($this->getOrderedCards() as $i => $card) {
             $card->setPosition($i);
         }
     }

@@ -38,14 +38,13 @@ final readonly class FillProvinceHandler
 
     private function fillProvince(Player $player, PhysicalCard $province): void
     {
-        $stack = $player->getUniqueStack(StackType::DynastyDrawDeck);
-        $card = $stack->getCards()->first();
+        $card = $player->getUniqueStack(StackType::DynastyDrawDeck)->getTopCard();
         if (! $card instanceof DynastyCard) {
             throw new DrawingFromEmptyDeckException();
         }
 
         $this->dynastyCardStateMachine->apply($card, 'draw_card', [
-            'province' => $province,
+            'stack' => $province->getStack(),
         ]);
     }
 }
