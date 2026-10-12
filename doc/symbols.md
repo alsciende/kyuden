@@ -1,0 +1,15 @@
+\uF2A7 => earth
+\uF2A8 => air
+\uF2A9 => fire
+\uF2AA => void
+\uF2AB => water
+\uF2AC => military
+\uF2AD => political
+\uF630 => shadowlands
+\uF2230 => crab
+\uF2231 => crane
+\uF2232 => dragon
+\uF2233 => lion
+\uF2234 => phoenix
+\uF2235 => scorpion
+\uF2236 => unicorn
