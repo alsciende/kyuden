@@ -15,11 +15,23 @@ use App\Enum\StackType;
 use App\Message\ChooseStrongholdProvince;
 use App\Message\RevealDynastyCard;
 use App\Tests\AbstractKernelTestCase;
-use PHPUnit\Framework\Attributes\Depends;
 
+/**
+ * End-to-end scenario of a game setup, through the message bus. Kept as a safety net: isolated
+ * behaviours are tested with scenarios built by GameBuilder.
+ */
 class MessageHandlerTest extends AbstractKernelTestCase
 {
-    public function testCreateGameHandler(): string
+    public function testGameSetupScenario(): void
+    {
+        $gameId = $this->createGameStep();
+        $gameId = $this->joinGameStep($gameId);
+        $gameId = $this->chooseStrongholdProvinceStep($gameId);
+        $gameId = $this->setupGameStep($gameId);
+        $this->revealDynastyCardsStep($gameId);
+    }
+
+    private function createGameStep(): string
     {
         $game = $this->createGame();
 
@@ -29,8 +41,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         return $game->getId();
     }
 
-    #[Depends('testCreateGameHandler')]
-    public function testJoinGameHandler(string $gameId): string
+    private function joinGameStep(string $gameId): string
     {
         $game = $this->gameRepository->get($gameId);
         $this->assertInstanceOf(Game::class, $game);
@@ -74,8 +85,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         $this->messageBus->dispatch($message);
     }
 
-    #[Depends('testJoinGameHandler')]
-    public function testChooseStrongholdProvinceHandler(string $gameId): string
+    private function chooseStrongholdProvinceStep(string $gameId): string
     {
         $game = $this->gameRepository->get($gameId, 'choose_stronghold');
         $this->assertSame(2, $game->getPlayers()->count());
@@ -95,8 +105,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         return $gameId;
     }
 
-    #[Depends('testChooseStrongholdProvinceHandler')]
-    public function testSetupGameTransitionListener(string $gameId): string
+    private function setupGameStep(string $gameId): string
     {
         $game = $this->gameRepository->get($gameId, 'reveal_facedown_dynasty_cards');
 
@@ -127,8 +136,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         return $gameId;
     }
 
-    #[Depends('testSetupGameTransitionListener')]
-    public function testRevealDynastyCards(string $gameId): string
+    private function revealDynastyCardsStep(string $gameId): string
     {
         $game = $this->gameRepository->get($gameId, 'reveal_facedown_dynasty_cards');
 

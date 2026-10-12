@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Workflow\Game;
 
 use App\DataFixtures\AppFixtures;
-use App\Entity\Game;
-use App\Entity\Player;
 use App\Tests\AbstractKernelTestCase;
+use App\Tests\Builder\PlayerBuilder;
 use App\Workflow\Game\StartGameTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\Marking;
@@ -16,20 +15,17 @@ class StartGameTransitionListenerTest extends AbstractKernelTestCase
 {
     public function testInitPlayer(): void
     {
-        /** @var StartGameTransitionListener $service */
-        $service = self::getContainer()->get(StartGameTransitionListener::class);
+        $scenario = $this->scenario()
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->deck(AppFixtures::LION_STARTER_DECK))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->deck(AppFixtures::CRANE_STARTER_DECK))
+            ->build();
+        $john = $scenario->player('john');
 
-        $game = $this->createGame();
-        self::assertInstanceOf(Game::class, $game);
+        self::assertCount(0, $john->getStacks());
 
-        $player = $this->createPlayer($game, AppFixtures::LION_STARTER_DECK, 'john');
-        self::assertInstanceOf(Player::class, $player);
+        self::service(StartGameTransitionListener::class)(new TransitionEvent($scenario->game(), new Marking()));
 
-        self::assertEquals(0, $player->getStacks()->count());
-
-        $event = new TransitionEvent($game, self::createMock(Marking::class));
-        $service($event);
-
-        self::assertEquals(7, $player->getStacks()->count());
+        self::assertCount(7, $john->getStacks());
+        self::assertCount(50, $john->getPhysicalCards());
     }
 }

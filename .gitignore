@@ -18,3 +18,4 @@
 ###< qossmic/deptrac-shim ###
 
 /data/
+proxy.env

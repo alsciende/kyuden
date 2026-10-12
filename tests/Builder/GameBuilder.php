@@ -1,0 +1,307 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Builder;
+
+use App\DataFixtures\AppFixtures;
+use App\Entity\CardTypes\ConflictCard;
+use App\Entity\CardTypes\DynastyCard;
+use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\CardTypes\RoleCard;
+use App\Entity\CardTypes\StrongholdCard;
+use App\Entity\Deck;
+use App\Entity\Game;
+use App\Entity\LogicalCard;
+use App\Entity\PhysicalCard;
+use App\Entity\Player;
+use App\Entity\Stack;
+use App\Enum\StackType;
+use App\Exception\Data\DeckNotFoundException;
+use App\Exception\Data\LogicalCardNotFoundException;
+use App\Repository\DeckRepository;
+use App\Repository\LogicalCardRepository;
+use App\State\Manager\GameStateManager;
+use App\State\Manager\PlayerStateManager;
+use App\State\Model\GameState;
+use App\State\Model\PlayerState;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Uuid;
+
+/**
+ * Builds a game directly in a given state, without dispatching any action.
+ *
+ * The workflow places of the game and of each card are written directly: no transition, guard or
+ * listener is triggered. Card places are inferred from the stack they are put in.
+ *
+ * Players get all their unique stacks once the game has started (any place but join_game).
+ *
+ * Use build() for code that works on entities (guards, listeners called directly) and persist() for
+ * code that loads entities by id (message handlers).
+ */
+final class GameBuilder
+{
+    private string $place = 'join_game';
+
+    private ?string $firstPlayer = null;
+
+    /**
+     * @var array<string, PlayerBuilder>
+     */
+    private array $players = [];
+
+    /**
+     * @var list<Stack>
+     */
+    private array $builtStacks = [];
+
+    /**
+     * @var array<string, PhysicalCard>
+     */
+    private array $builtCards = [];
+
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly LogicalCardRepository $logicalCardRepository,
+        private readonly DeckRepository $deckRepository,
+        private readonly GameStateManager $gameStateManager,
+        private readonly PlayerStateManager $playerStateManager,
+    ) {
+    }
+
+    public function atPlace(string $place): self
+    {
+        $this->place = $place;
+
+        return $this;
+    }
+
+    /**
+     * @param \Closure(PlayerBuilder): mixed $configure
+     */
+    public function withPlayer(string $alias, ?\Closure $configure = null): self
+    {
+        $player = new PlayerBuilder($alias);
+        if ($configure !== null) {
+            $configure($player);
+        }
+        $this->players[$alias] = $player;
+
+        return $this;
+    }
+
+    /**
+     * Defaults to the first declared player once the game has started.
+     */
+    public function firstPlayer(string $alias): self
+    {
+        $this->firstPlayer = $alias;
+
+        return $this;
+    }
+
+    public function build(): Scenario
+    {
+        $this->builtStacks = [];
+        $this->builtCards = [];
+
+        $game = new Game(Uuid::v4()->toString());
+        $game->setCurrentPlace($this->place);
+
+        $players = [];
+        foreach ($this->players as $alias => $playerBuilder) {
+            $players[$alias] = $this->buildPlayer($game, $playerBuilder);
+        }
+
+        $firstPlayer = $this->firstPlayer ?? ($this->place === 'join_game' ? null : array_key_first($players));
+        if ($firstPlayer !== null) {
+            $player = $players[$firstPlayer] ?? throw new \OutOfBoundsException("No player aliased '{$firstPlayer}'.");
+            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setFirstPlayer($player));
+        }
+
+        return new Scenario($game, $players, $this->builtCards);
+    }
+
+    public function persist(): Scenario
+    {
+        $scenario = $this->build();
+
+        $this->entityManager->persist($scenario->game());
+        foreach ($scenario->game()->getPlayers() as $player) {
+            $this->entityManager->persist($player);
+        }
+        foreach ($this->builtStacks as $stack) {
+            $this->entityManager->persist($stack);
+        }
+        foreach ($scenario->game()->getPhysicalCards() as $card) {
+            $this->entityManager->persist($card);
+        }
+        $this->entityManager->flush();
+
+        return $scenario;
+    }
+
+    private function buildPlayer(Game $game, PlayerBuilder $builder): Player
+    {
+        $player = new Player(Uuid::v4()->toString());
+        $player->setUserId($builder->alias);
+        $player->setDeck($this->getDeck($builder->getDeckId() ?? AppFixtures::LION_STARTER_DECK));
+        $game->addPlayer($player);
+
+        // once the game has started, every player has all its unique stacks, even empty
+        $uniqueStacks = [];
+        if ($game->getCurrentPlace() !== 'join_game') {
+            foreach (StackType::cases() as $type) {
+                if ($type->isUnique()) {
+                    $uniqueStacks[$type->value] = $this->createStack($player, $type);
+                }
+            }
+        }
+
+        $starterDeckId = $builder->getStarterDeckId();
+        if ($starterDeckId !== null) {
+            $this->layOutStarterDeck($player, $uniqueStacks, $starterDeckId, $builder->getStarterDeckAliases());
+        }
+
+        $strongholdProvinceId = null;
+        foreach ($builder->getStacks() as $plannedStack) {
+            $stack = $uniqueStacks[$plannedStack->type->value] ?? $this->createStack($player, $plannedStack->type);
+            foreach ($plannedStack->cards as $plannedCard) {
+                $card = $this->createCard($player, $stack, $plannedCard);
+                if ($plannedCard->chosenStrongholdProvince) {
+                    $strongholdProvinceId = $card->getId();
+                }
+            }
+        }
+
+        $chosenAlias = $builder->getChosenStrongholdProvince();
+        if ($chosenAlias !== null) {
+            $province = $this->builtCards[$chosenAlias] ?? throw new \OutOfBoundsException("No card aliased '{$chosenAlias}'.");
+            $strongholdProvinceId = $province->getId();
+        }
+
+        $this->initPlayerState($player, $builder->getHonor(), $strongholdProvinceId);
+
+        return $player;
+    }
+
+    /**
+     * @param array<int, Stack>     $uniqueStacks indexed by stack type
+     * @param array<string, string> $aliases      alias => card code
+     */
+    private function layOutStarterDeck(Player $player, array $uniqueStacks, string $deckId, array $aliases): void
+    {
+        $aliasesByCode = array_flip($aliases);
+        foreach ($this->getDeck($deckId)->getContent() as $code) {
+            $stackType = match ($this->getClassname($this->getLogicalCard($code))) {
+                ConflictCard::class => StackType::ConflictDrawDeck,
+                DynastyCard::class => StackType::DynastyDrawDeck,
+                RoleCard::class => StackType::Role,
+                ProvinceCard::class, StrongholdCard::class => StackType::StrongholdProvince,
+                default => throw new \LogicException("Unexpected card class for {$code}."),
+            };
+            $stack = $uniqueStacks[$stackType->value] ?? throw new \LogicException('A starter deck can only be laid out once the game has started.');
+            $this->createCard($player, $stack, new PlannedCard($code, $aliasesByCode[$code] ?? null));
+            unset($aliasesByCode[$code]);
+        }
+    }
+
+    private function initPlayerState(Player $player, ?int $honor, ?string $strongholdProvinceId): void
+    {
+        $this->playerStateManager->withState($player, function (PlayerState $state) use ($honor, $strongholdProvinceId): void {
+            if ($honor !== null) {
+                $state->setHonor($honor);
+            }
+            if ($strongholdProvinceId !== null) {
+                $state->setStrongholdProvinceId($strongholdProvinceId);
+            }
+        });
+    }
+
+    private function createStack(Player $player, StackType $type): Stack
+    {
+        $stack = new Stack(Uuid::v4()->toString(), $player, $type);
+        $this->builtStacks[] = $stack;
+
+        return $stack;
+    }
+
+    private function createCard(Player $player, Stack $stack, PlannedCard $plannedCard): PhysicalCard
+    {
+        $logicalCard = $this->getLogicalCard($plannedCard->code);
+        $classname = $this->getClassname($logicalCard);
+
+        $card = new $classname(Uuid::v4()->toString(), $logicalCard, $stack);
+        $card->setTitle($logicalCard->getName());
+        $card->setCurrentPlace($this->getPlace($card, $stack->getType(), $plannedCard->faceup));
+        $stack->addCard($card);
+        $player->addCard($card);
+        $player->getGame()->addCard($card);
+
+        if ($plannedCard->alias !== null) {
+            if (isset($this->builtCards[$plannedCard->alias])) {
+                throw new \LogicException("Card alias '{$plannedCard->alias}' is used twice.");
+            }
+            $this->builtCards[$plannedCard->alias] = $card;
+        }
+
+        return $card;
+    }
+
+    /**
+     * Workflow place of a card, deduced from the stack it lies in.
+     */
+    private function getPlace(PhysicalCard $card, StackType $stackType, bool $faceup): string
+    {
+        $place = match (true) {
+            $card instanceof ConflictCard => $this->getConflictCardPlace($stackType),
+            $card instanceof DynastyCard => $this->getDynastyCardPlace($stackType, $faceup),
+            $card instanceof ProvinceCard => in_array($stackType, [StackType::RegularProvince, StackType::StrongholdProvince], true) ? ProvinceCard::STATE_FACEDOWN : null,
+            $card instanceof StrongholdCard => $stackType === StackType::StrongholdProvince ? StrongholdCard::STATE_IN_PLAY : null,
+            $card instanceof RoleCard => $stackType === StackType::Role ? RoleCard::STATE_IN_PLAY : null,
+            default => null,
+        };
+
+        return $place ?? throw new \LogicException(sprintf('Card %s (%s) cannot be put in stack %s.', $card->getTitle(), $card::class, $stackType->name));
+    }
+
+    private function getConflictCardPlace(StackType $stackType): ?string
+    {
+        return match ($stackType) {
+            StackType::ConflictDrawDeck => ConflictCard::STATE_DRAW_DECK,
+            StackType::Hand => ConflictCard::STATE_HAND,
+            StackType::InPlay => ConflictCard::STATE_IN_PLAY,
+            StackType::ConflictDiscardPile => ConflictCard::STATE_DISCARD_PILE,
+            default => null,
+        };
+    }
+
+    private function getDynastyCardPlace(StackType $stackType, bool $faceup): ?string
+    {
+        return match ($stackType) {
+            StackType::DynastyDrawDeck => DynastyCard::STATE_DRAW_DECK,
+            StackType::RegularProvince, StackType::StrongholdProvince => $faceup ? DynastyCard::STATE_PROVINCE_FACEUP : DynastyCard::STATE_PROVINCE_FACEDOWN,
+            StackType::InPlay => DynastyCard::STATE_IN_PLAY,
+            StackType::DynastyDiscardPile => DynastyCard::STATE_DISCARD_PILE,
+            default => null,
+        };
+    }
+
+    /**
+     * @return class-string<PhysicalCard>
+     */
+    private function getClassname(LogicalCard $logicalCard): string
+    {
+        return PhysicalCard::DISCRIMINATOR_MAP[$logicalCard->getSide()->value];
+    }
+
+    private function getLogicalCard(string $code): LogicalCard
+    {
+        return $this->logicalCardRepository->find($code) ?? throw new LogicalCardNotFoundException($code);
+    }
+
+    private function getDeck(string $deckId): Deck
+    {
+        return $this->deckRepository->find($deckId) ?? throw new DeckNotFoundException($deckId);
+    }
+}

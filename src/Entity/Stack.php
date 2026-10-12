@@ -87,8 +87,10 @@ class Stack
     public function addCard(PhysicalCard $card, bool $above = true): static
     {
         if (! $this->cards->contains($card)) {
+            if ($card->getStack() !== $this) {
+                $card->getStack()->removeCard($card);
+            }
             $this->cards->add($card);
-            $card->getStack()->removeCard($card);
             $card->setStack($this);
 
             if ($above) {

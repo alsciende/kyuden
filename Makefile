@@ -1,13 +1,13 @@
 EXEC          := docker compose exec
-EXEC_SYMFONY  := $(EXEC) -it -u www-data -e http_proxy=${http_proxy} -e https_proxy=${https_proxy} -e no_proxy=${no_proxy} symfony
+EXEC_SYMFONY  := $(EXEC) -it -u www-data --envfile proxy.env symfony
 EXEC_COMPOSER := $(EXEC_SYMFONY) composer
 PHP           := ${EXEC_SYMFONY} php
 
 install:
-	$(COMPOSER) install
+	$(EXEC_COMPOSER) install
 
 update:
-	$(COMPOSER) update
+	$(EXEC_COMPOSER) update
 
 build:
 	docker compose build
@@ -23,7 +23,7 @@ down:
 	docker compose down --remove-orphans
 
 sql:
-	$(EXEC) -it mysql mysql -u root -ppasswd
+	$(EXEC) -it database psql -U postgres
 
 check-symfony:
 	$(PHP) bin/console lint:container

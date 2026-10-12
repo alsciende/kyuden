@@ -13,8 +13,12 @@ use App\Model\User;
 use App\Repository\CardRepository;
 use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
+use App\Repository\LogicalCardRepository;
 use App\Repository\PlayerRepository;
+use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\Tests\Builder\GameBuilder;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Before;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\Exception\ExceptionInterface;
@@ -46,6 +50,35 @@ abstract class AbstractKernelTestCase extends KernelTestCase
         $this->playerStateManager = $container->get(PlayerStateManager::class);
         // @phpstan-ignore assign.propertyType
         $this->deckRepository = $container->get(DeckRepository::class);
+    }
+
+    /**
+     * Starts building a game directly in a given state.
+     */
+    protected function scenario(): GameBuilder
+    {
+        return new GameBuilder(
+            self::service(EntityManagerInterface::class),
+            self::service(LogicalCardRepository::class),
+            $this->deckRepository,
+            self::service(GameStateManager::class),
+            $this->playerStateManager,
+        );
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param class-string<T> $id
+     *
+     * @return T
+     */
+    protected static function service(string $id): object
+    {
+        $service = static::getContainer()->get($id);
+        self::assertInstanceOf($id, $service);
+
+        return $service;
     }
 
     protected function createGame(): ?Game
