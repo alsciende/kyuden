@@ -23,6 +23,8 @@ use Symfony\Component\Workflow\Event\GuardEvent;
 #[AsGuardListener(workflow: 'game', transition: 'break_reactions_passed')]
 #[AsGuardListener(workflow: 'game', transition: 'ring_effects_resolved')]
 #[AsGuardListener(workflow: 'game', transition: 'claim_reactions_passed')]
+#[AsGuardListener(workflow: 'game', transition: 'fate_actions_passed')]
+#[AsGuardListener(workflow: 'game', transition: 'province_discards_passed')]
 readonly class AllPlayersPassedGuardListener
 {
     public function __construct(

@@ -22,6 +22,7 @@ use Symfony\Component\Workflow\Event\EnterEvent;
 #[AsEnterListener(workflow: 'game', place: 'react_to_conflict_result')]
 #[AsEnterListener(workflow: 'game', place: 'react_to_broken_province')]
 #[AsEnterListener(workflow: 'game', place: 'react_to_ring_claim')]
+#[AsEnterListener(workflow: 'game', place: 'discard_from_provinces')]
 readonly class AllPlayersOpportunityEnterListener
 {
     public function __construct(

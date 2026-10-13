@@ -57,7 +57,7 @@ class ImperialFavorFlowTest extends AbstractKernelTestCase
         $state = $this->gameState($scenario);
         self::assertSame($scenario->player('jane')->getId(), $state->imperialFavorHolderId);
         self::assertSame(ConflictType::Political, $state->imperialFavorSide);
-        self::assertSame('fate_phase_begins', $scenario->game()->getCurrentPlace());
+        self::assertSame('fate_phase_action_window', $scenario->game()->getCurrentPlace());
     }
 
     public function testTheImperialFavorStaysWhereItIsOnATie(): void
@@ -67,7 +67,7 @@ class ImperialFavorFlowTest extends AbstractKernelTestCase
         $this->declareGlory($scenario, 4, 2);
 
         self::assertNull($this->gameState($scenario)->imperialFavorHolderId);
-        self::assertSame('fate_phase_begins', $scenario->game()->getCurrentPlace());
+        self::assertSame('fate_phase_action_window', $scenario->game()->getCurrentPlace());
     }
 
     public function testOnlyTheWinnerOfTheGloryCountClaimsTheImperialFavor(): void

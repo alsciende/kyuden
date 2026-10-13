@@ -60,7 +60,7 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
 ### Game flow
 
 - **Values from players**: since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on.
-- **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
+- **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`fate_phase_ended`).
 - **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order).
 - **Opportunities to act**: the players who have the opportunity to act are the active players of `GameState` (`activePlayerIds`); the handler of each action rejects a player who is not active (`NotActivePlayerException`). The enter listener of the step activates them (`FirstPlayerOpportunityEnterListener` and `AllPlayersOpportunityEnterListener` cover the common cases):
   - in steps resolved in player order, only the first player: the handler gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`;

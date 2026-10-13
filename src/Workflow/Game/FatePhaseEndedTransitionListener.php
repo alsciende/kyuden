@@ -13,8 +13,8 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
 /**
  * End of the round: forget what the players did during it.
  */
-#[AsTransitionListener(workflow: 'game', transition: 't36')]
-readonly class T36TransitionListener
+#[AsTransitionListener(workflow: 'game', transition: 'fate_phase_ended')]
+readonly class FatePhaseEndedTransitionListener
 {
     public function __construct(
         private PlayerStateManager $stateManager,

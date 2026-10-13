@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Entity\CardTypes\StrongholdCard;
 use App\Enum\StackType;
+use App\Enum\Type;
 use App\Exception\Rules\DeckConstructionException;
 use App\Repository\PlayerRepository;
 use App\State\Model\StatefulInterface;
@@ -83,6 +84,16 @@ class Player implements StatefulInterface
         return $this->getPhysicalCards()->filter(
             fn (PhysicalCard $card): bool => $card instanceof $className
         );
+    }
+
+    /**
+     * @return list<PhysicalCard> the characters in play controlled (owned) by the player
+     */
+    public function getCharactersInPlay(): array
+    {
+        return array_values($this->getPhysicalCards()->filter(
+            fn (PhysicalCard $card): bool => $card->getLogicalCard()->getType() === Type::Character && $card->getStack()->getType() === StackType::InPlay,
+        )->toArray());
     }
 
     public function getStronghold(): PhysicalCard

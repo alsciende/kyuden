@@ -19,6 +19,7 @@ use Symfony\Component\Workflow\Event\EnterEvent;
 #[AsEnterListener(workflow: 'game', place: 'play_cards_from_provinces')]
 #[AsEnterListener(workflow: 'game', place: 'draw_phase_action_window')]
 #[AsEnterListener(workflow: 'game', place: 'conflict_phase_action_window')]
+#[AsEnterListener(workflow: 'game', place: 'fate_phase_action_window')]
 readonly class FirstPlayerOpportunityEnterListener
 {
     public function __construct(

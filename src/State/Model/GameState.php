@@ -136,6 +136,22 @@ class GameState
         return $this->getRing($element)->claimedById === null && $this->conflict?->ring !== $element;
     }
 
+    /**
+     * Ids of every player in player order, starting with the first player. Not prefixed with `get`, so that the
+     * serializer of the state does not take it for a property.
+     *
+     * @return list<string>
+     */
+    public function playerIdsFromFirstPlayer(): array
+    {
+        $firstPlayerIndex = array_search($this->firstPlayerId, $this->playerIds, true);
+        if ($firstPlayerIndex === false) {
+            return $this->playerIds;
+        }
+
+        return [...array_slice($this->playerIds, $firstPlayerIndex), ...array_slice($this->playerIds, 0, $firstPlayerIndex)];
+    }
+
     public function setFirstPlayer(Player $player): self
     {
         $this->firstPlayerId = $player->getId();

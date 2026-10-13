@@ -2,9 +2,9 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the model and workflow skeleton of the conflict phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
 
-The conflict phase has its places and transitions (skeleton, see Conflict phase below), but no conflict can be declared yet: the game stops at `declare_conflict`. From `fate_phase_begins` onward, `game` transitions are placeholders (`t28`, `t29`, …) with no logic and no `auto` flag.
+Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
 ## Decisions taken for the dynasty phase
 
@@ -81,6 +81,13 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - **Glory count** (3.4.1): each player declares the glory of their ready characters with every modifier (`DeclareGloryCount`, turn record `PlayerState::gloryCount`, any order, can be declared again until every player has); `glory_counted` is automatic once every player has declared, and adds 1 per claimed ring. The highest total wins (`GameState::gloryCountWinnerId`), nobody on a tie.
 - **Imperial Favor** (3.4.2): the winner of the glory count is the only active player in `claim_imperial_favor` and sends `ClaimImperialFavor(side)` (`imperialFavorHolderId`, `imperialFavorSide` in `GameState`); on a tie, `imperial_favor_unclaimed` (automatic) leaves the favor as it is. The effect of the favor on the next round (+1 skill) is part of the totals declared by the players.
 - `GameState::currentConflict()` returns the conflict or throws: it is not named `getConflict()`, which the serializer would call as an accessor.
+
+## Decisions taken for the fate phase
+
+- The framework steps are automatic transitions whose listener does the work: `characters_discarded` (4.2, in player order from the first player, the engine picks the order of the characters), `fate_removed` (4.3), `fate_placed_on_rings` (4.4), `cards_readied` (4.5, every sideways card that can be readied, strongholds included), `rings_returned` (4.7), `first_player_token_passed` (4.8), `fate_phase_ended` (4.9, resets the turn records; formerly `t36`).
+- `fate_phase_action_window` is the action window between 4.4 and 4.5 (first player first, consecutive passes).
+- `discard_from_provinces` (4.6): the faceup cards of broken provinces are discarded on entering the step (`DiscardFromProvincesEnterListener`); then every player is active to discard faceup dynasty cards from their unbroken provinces (`DiscardCard`) and refill them (`FillProvince`), and passes. The engine does not check that a player only discards their own faceup cards.
+- Characters discarded with no fate go through `LeavePlayListener` (honor of honored / dishonored characters, attachments discarded).
 
 ## Decisions taken for `PlayCharacterFromProvince`
 

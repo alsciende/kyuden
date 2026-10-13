@@ -66,15 +66,16 @@ $gameTransitions = [
     // the glory count is a tie: the Imperial Favor remains in its current state
     WorkflowConfig::transition('imperial_favor_unclaimed', 'claim_imperial_favor', 'conflict_phase_ends', ['auto' => true]),
     WorkflowConfig::transition('conflict_phase_ended', 'conflict_phase_ends', 'fate_phase_begins', ['auto' => true]),
-    WorkflowConfig::transition('t28', 'fate_phase_begins', 'discard_characters_with_no_fate'),
-    WorkflowConfig::transition('t29', 'discard_characters_with_no_fate', 'remove_fate_from_characters'),
-    WorkflowConfig::transition('t30', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings'),
-    WorkflowConfig::transition('t31', 'place_fate_on_unclaimed_rings', 'ready_cards'),
-    WorkflowConfig::transition('t32', 'ready_cards', 'discard_from_provinces'),
-    WorkflowConfig::transition('t33', 'discard_from_provinces', 'return_rings'),
-    WorkflowConfig::transition('t34', 'return_rings', 'pass_first_player_token'),
-    WorkflowConfig::transition('t35', 'pass_first_player_token', 'fate_phase_ends'),
-    WorkflowConfig::transition('t36', 'fate_phase_ends', 'dynasty_phase_begins'),
+    WorkflowConfig::transition('fate_phase_began', 'fate_phase_begins', 'discard_characters_with_no_fate', ['auto' => true]),
+    WorkflowConfig::transition('characters_discarded', 'discard_characters_with_no_fate', 'remove_fate_from_characters', ['auto' => true]),
+    WorkflowConfig::transition('fate_removed', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings', ['auto' => true]),
+    WorkflowConfig::transition('fate_placed_on_rings', 'place_fate_on_unclaimed_rings', 'fate_phase_action_window', ['auto' => true]),
+    WorkflowConfig::transition('fate_actions_passed', 'fate_phase_action_window', 'ready_cards', ['auto' => true]),
+    WorkflowConfig::transition('cards_readied', 'ready_cards', 'discard_from_provinces', ['auto' => true]),
+    WorkflowConfig::transition('province_discards_passed', 'discard_from_provinces', 'return_rings', ['auto' => true]),
+    WorkflowConfig::transition('rings_returned', 'return_rings', 'pass_first_player_token', ['auto' => true]),
+    WorkflowConfig::transition('first_player_token_passed', 'pass_first_player_token', 'fate_phase_ends', ['auto' => true]),
+    WorkflowConfig::transition('fate_phase_ended', 'fate_phase_ends', 'dynasty_phase_begins', ['auto' => true]),
 ];
 // the game ends as soon as a player meets a victory condition, before any other automatic transition
 $gameTransitions[] = WorkflowConfig::transition(
@@ -144,6 +145,21 @@ return App::config([
                     [
                         // the attacking player may resolve the ring effect if they won the conflict
                         'name' => 'resolve_ring_effects',
+                        'metadata' => [
+                            'opportunities' => PassingRule::Final,
+                        ],
+                    ],
+                    [
+                        'name' => 'fate_phase_action_window',
+                        'metadata' => [
+                            'action_window' => true,
+                            'opportunities' => PassingRule::Consecutive,
+                        ],
+                    ],
+                    [
+                        // each player may discard faceup dynasty cards from their unbroken provinces (DiscardCard), then
+                        // refill them (FillProvince)
+                        'name' => 'discard_from_provinces',
                         'metadata' => [
                             'opportunities' => PassingRule::Final,
                         ],

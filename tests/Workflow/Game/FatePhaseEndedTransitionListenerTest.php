@@ -10,7 +10,7 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use Symfony\Component\Workflow\Registry;
 
-class T36TransitionListenerTest extends AbstractKernelTestCase
+class FatePhaseEndedTransitionListenerTest extends AbstractKernelTestCase
 {
     public function testTurnRecordsAreResetAtTheEndOfTheRound(): void
     {
@@ -20,7 +20,7 @@ class T36TransitionListenerTest extends AbstractKernelTestCase
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected()->honorBid(5))
             ->build();
 
-        self::service(Registry::class)->get($scenario->game())->apply($scenario->game(), 't36');
+        self::service(Registry::class)->get($scenario->game())->apply($scenario->game(), 'fate_phase_ended');
 
         foreach (['john', 'jane'] as $alias) {
             $state = $this->playerStateManager->getState($scenario->player($alias));
