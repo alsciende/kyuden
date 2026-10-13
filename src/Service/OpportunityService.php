@@ -11,8 +11,9 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 
 /**
- * Opportunity to act in steps resolved in player order: it goes to the next player in player order
- * who has not passed during the current step.
+ * Opportunity to act in steps with opportunities. In steps resolved in player order, a single player is active and
+ * the opportunity goes to the next player in player order who has not passed during the current step. In steps where
+ * players act simultaneously, every player is active until they pass.
  */
 readonly class OpportunityService
 {
@@ -24,9 +25,33 @@ readonly class OpportunityService
 
     /**
      * Gives the opportunity to act to the next player who has not passed. When every other player has passed,
-     * the player keeps it.
+     * the player keeps it. Players acting simultaneously keep their opportunity.
      */
     public function passToNextPlayer(Game $game, Player $player): void
+    {
+        if ($this->gameStateManager->getState($game)->countActivePlayers() > 1) {
+            return;
+        }
+
+        $this->activateNextPlayer($game, $player);
+    }
+
+    /**
+     * The player who has passed is no longer active. When no other player is active, the opportunity goes to the next
+     * player who has not passed.
+     */
+    public function pass(Game $game, Player $player): void
+    {
+        $this->gameStateManager->withState(
+            $game,
+            fn (GameState $state): GameState => $state->deactivatePlayer($player),
+        );
+        if ($this->gameStateManager->getState($game)->countActivePlayers() === 0) {
+            $this->activateNextPlayer($game, $player);
+        }
+    }
+
+    private function activateNextPlayer(Game $game, Player $player): void
     {
         $nextPlayer = $this->getNextPlayerToAct($game, $player);
         if ($nextPlayer instanceof Player) {

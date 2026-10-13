@@ -35,6 +35,8 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
    - `EventRecordingMiddleware`: saves the message as an `Event`.
 4. `Service/EventPlayer` deserializes a stored `Event` and re-dispatches it, so a game can be replayed from its event log. Messages must therefore stay serializable.
 
+A handler does what a message does in every place. What depends on the step goes in a listener of a domain event (`src/Event`, named in the past tense: `OpportunityPassedEvent`) dispatched by the handler: the listener (`src/EventListener`, named after the place and the event, e.g. `PlayCardsFromProvincesOpportunityPassedListener`) checks the game place. The event carries the entities and the values its listeners need, computed before the state changes when necessary (`firstToPass`). These events are also the hook for cards reacting to what happens. A message that must behave differently in some step is a different message.
+
 The HTTP API is a stub: `ApiGamesController` returns the default scaffold, and the event controller (receiving player events, converting them to messages and responding) is still TODO. Console commands (`src/Command`) are currently the main way to drive the engine.
 
 ### Workflows
@@ -48,6 +50,7 @@ Card transitions declare their effect in metadata, applied by the generic `Workf
 The `game` workflow models the round sequence; a new place exists when the phase **and** the available player actions differ. Place metadata:
 
 - `action_window`: players can trigger action abilities (`TriggerActionAbility`); the `trigger_action` transition of a card workflow (from a place to itself) lists where the abilities of a card can be used.
+- `opportunities`: players have opportunities to act, in player order or simultaneously, and can pass them (`PassOpportunity`); the step ends once every player has passed (`AllPlayersPassedGuardListener`).
 
 Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after the transition/place and the event type: `...GuardListener` (blocks a transition until conditions are met), `...TransitionListener`, `...EnterListener`.
 
@@ -56,7 +59,11 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
 - **Values from players**: since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on.
 - **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 - **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order).
-- **Opportunities to act**: steps resolved in player order use the active player of `GameState` (`activePlayerId`). The enter listener of the step activates the first player; the handler of each action rejects a player who is not active (`NotActivePlayerException`) and gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). A player who passes (`PlayerState::passed`, reset by the enter listener of the step) is skipped by `Service/OpportunityService`. An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`.
+- **Opportunities to act**: the players who have the opportunity to act are the active players of `GameState` (`activePlayerIds`); the handler of each action rejects a player who is not active (`NotActivePlayerException`). The enter listener of the step activates them:
+  - in steps resolved in player order, only the first player: the handler gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`;
+  - in steps where players act simultaneously (e.g. `reveal_honor_dials`), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).
+
+  A player who passes (`PassOpportunity`, in a place marked `opportunities`; `PlayerState::passed`, reset by the enter listener of the step) is no longer active and is skipped by `Service/OpportunityService`.
 - **Costs and effects**: board manipulations (`BowCard`, `LoseHonor`…) are accepted in any place, from any player of the game, on any card or player, since the engine does not know which ability is being resolved.
 
 ### Other services

@@ -27,4 +27,26 @@ class GameStateTest extends TestCase
 
         $state->getNextPlayerId(new Player('jack'));
     }
+
+    public function testEveryPlayerCanBeActive(): void
+    {
+        [$john, $jane] = [new Player('john'), new Player('jane')];
+        $state = new GameState()->setPlayerOrder($john, $jane)->activateAllPlayers();
+
+        self::assertTrue($state->isActivePlayer($john));
+        self::assertTrue($state->isActivePlayer($jane));
+        self::assertSame(2, $state->countActivePlayers());
+    }
+
+    public function testADeactivatedPlayerIsNoLongerActive(): void
+    {
+        [$john, $jane] = [new Player('john'), new Player('jane')];
+        $state = new GameState()->setPlayerOrder($john, $jane)->activateAllPlayers()->deactivatePlayer($john);
+
+        self::assertFalse($state->isActivePlayer($john));
+        self::assertTrue($state->isActivePlayer($jane));
+        self::assertSame(1, $state->countActivePlayers());
+
+        self::assertSame(0, $state->deactivatePlayer($jane)->countActivePlayers());
+    }
 }

@@ -47,7 +47,10 @@ final class GameBuilder
 
     private ?string $firstPlayer = null;
 
-    private ?string $activePlayer = null;
+    /**
+     * @var list<string>
+     */
+    private array $activePlayers = [];
 
     /**
      * @var array<string, PlayerBuilder>
@@ -109,7 +112,15 @@ final class GameBuilder
      */
     public function activePlayer(string $alias): self
     {
-        $this->activePlayer = $alias;
+        return $this->activePlayers($alias);
+    }
+
+    /**
+     * Players who have the opportunity to act simultaneously.
+     */
+    public function activePlayers(string ...$aliases): self
+    {
+        $this->activePlayers = array_values($aliases);
 
         return $this;
     }
@@ -138,9 +149,16 @@ final class GameBuilder
             $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setFirstPlayer($player));
         }
 
-        if ($this->activePlayer !== null) {
-            $player = $players[$this->activePlayer] ?? throw new \OutOfBoundsException("No player aliased '{$this->activePlayer}'.");
-            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setActivePlayer($player));
+        if ($this->activePlayers !== []) {
+            $activePlayerIds = array_map(
+                fn (string $alias): string => ($players[$alias] ?? throw new \OutOfBoundsException("No player aliased '{$alias}'."))->getId(),
+                $this->activePlayers,
+            );
+            $this->gameStateManager->withState($game, function (GameState $state) use ($activePlayerIds): GameState {
+                $state->activePlayerIds = $activePlayerIds;
+
+                return $state;
+            });
         }
 
         return new Scenario($game, $players, $this->builtCards);

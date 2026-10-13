@@ -156,7 +156,7 @@ class MessageHandlerTest extends AbstractKernelTestCase
         $this->assertSame('collect_fate', $game->getCurrentPlace());
         // players collect fate in player order
         $gameState = self::service(GameStateManager::class)->getState($game);
-        $this->assertSame($gameState->firstPlayerId, $gameState->activePlayerId);
+        $this->assertSame([$gameState->firstPlayerId], $gameState->activePlayerIds);
 
         return $gameId;
     }

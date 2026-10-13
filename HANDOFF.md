@@ -2,14 +2,26 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) and the honor bid of the draw phase (latest: `BidHonor`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid and the reveal of the honor dials of the draw phase (latest: `honor_dials_revealed` and `SetHonorBid`).
 
-From `reveal_honor_dials` onward, `game` transitions are placeholders (`t7`, `t8`, …) with no logic and no `auto` flag.
+From `transfer_honor` onward, `game` transitions are placeholders (`t8`, `t9`, …) with no logic and no `auto` flag.
 
 ## Decisions taken for the dynasty phase
 
 - `collect_fate` and `play_cards_from_provinces` are resolved in player order (active player of `GameState`).
-- In `play_cards_from_provinces`, `PassDynasty` passes: the first to pass gains 1 fate, the last to pass ends the step.
+- In `play_cards_from_provinces`, `PassOpportunity` passes: the first to pass gains 1 fate (`PlayCardsFromProvincesOpportunityPassedListener`), the last to pass ends the step.
+
+## Decisions taken for `PassOpportunity`
+
+- Generic pass, allowed in any `game` place with the `opportunities` metadata (`play_cards_from_provinces`, `reveal_honor_dials`). The rules of a step go in listeners of `OpportunityPassedEvent`, which check the game place.
+- Passing is final: the player is no longer active and is skipped until the end of the step, which ends once every player has passed (`AllPlayersPassedGuardListener`, one `AsGuardListener` attribute per transition).
+- Several players can be active at once (`GameState::activePlayerIds`): players acting simultaneously keep their opportunity until they pass, and `EndOpportunity` changes nothing for them. The opportunity goes to the next player only when no player is active anymore.
+
+## Decisions taken for the reveal of the honor dials
+
+- `reveal_honor_dials` is a step where every player is active (`RevealHonorDialsEnterListener`), to react to the honor dials being revealed (e.g. Kitsuki Jusai, cards changing a bid by 1), then pass. `honor_dials_revealed` moves on to `transfer_honor` once every player has passed. Passing is final, although a player could react to an opponent's reaction: acceptable since each of these cards reacts once.
+- `SetHonorBid` changes the bid on the dial of a player. Like the other effect messages, it is accepted in any place, from any player of the game, on any player. The player must have bid this round (`NoHonorBidException`); the bid can be 0 (cards decrease it "to a minimum of 0"), not negative.
+- The bids are not revealed by the engine: their secrecy is not enforced.
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -132,7 +144,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 ### Other steps
 
-- **Action windows** (conflict phase): passing does not forfeit the window; it closes when every player has passed in sequence. `passed` will need to be reset when a player acts, and a generic pass message (without the +1 fate of `PassDynasty`) will be needed.
+- **Action windows** (conflict phase): passing does not forfeit the window; it closes when every player has passed in sequence. `passed` will need to be reset when a player acts, and `PassOpportunity` will need to support this mode (e.g. with a place metadata).
 
 ### Game rules not enforced yet
 

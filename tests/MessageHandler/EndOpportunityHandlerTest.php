@@ -66,4 +66,19 @@ class EndOpportunityHandlerTest extends AbstractKernelTestCase
 
         $this->end($scenario, 'jane');
     }
+
+    public function testPlayersActingSimultaneouslyKeepTheirOpportunityToAct(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_honor_dials')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->activePlayers('john', 'jane')
+            ->persist();
+
+        $this->end($scenario, 'john');
+
+        self::assertTrue($this->isActivePlayer($scenario, 'john'));
+        self::assertTrue($this->isActivePlayer($scenario, 'jane'));
+    }
 }

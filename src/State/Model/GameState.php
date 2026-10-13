@@ -18,9 +18,12 @@ class GameState
     public ?string $firstPlayerId = null;
 
     /**
-     * Player who has the opportunity to act, in steps resolved in player order. Set when such a step begins.
+     * Players who have the opportunity to act. Set when a step with opportunities begins: a single player in steps
+     * resolved in player order, every player in steps where they act simultaneously.
+     *
+     * @var list<string>
      */
-    public ?string $activePlayerId = null;
+    public array $activePlayerIds = [];
 
     public function setPlayerOrder(Player ...$players): self
     {
@@ -56,9 +59,12 @@ class GameState
         return $this;
     }
 
+    /**
+     * The player becomes the only active player.
+     */
     public function setActivePlayer(Player $player): self
     {
-        $this->activePlayerId = $player->getId();
+        $this->activePlayerIds = [$player->getId()];
 
         return $this;
     }
@@ -68,13 +74,42 @@ class GameState
      */
     public function activateFirstPlayer(): self
     {
-        $this->activePlayerId = $this->firstPlayerId;
+        $this->activePlayerIds = $this->firstPlayerId === null ? [] : [$this->firstPlayerId];
+
+        return $this;
+    }
+
+    /**
+     * In steps where players act simultaneously, every player is active.
+     */
+    public function activateAllPlayers(): self
+    {
+        $this->activePlayerIds = $this->playerIds;
+
+        return $this;
+    }
+
+    public function deactivatePlayer(Player $player): self
+    {
+        $this->activePlayerIds = array_values(array_filter(
+            $this->activePlayerIds,
+            fn (string $playerId): bool => $playerId !== $player->getId(),
+        ));
 
         return $this;
     }
 
     public function isActivePlayer(Player $player): bool
     {
-        return $this->activePlayerId === $player->getId();
+        return in_array($player->getId(), $this->activePlayerIds, true);
+    }
+
+    /**
+     * Several active players act simultaneously. Not prefixed with `get`, `is` or `has`, so that the serializer of the
+     * state does not take it for a property.
+     */
+    public function countActivePlayers(): int
+    {
+        return count($this->activePlayerIds);
     }
 }

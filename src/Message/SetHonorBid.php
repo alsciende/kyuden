@@ -7,14 +7,15 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The active player passes during the play cards from provinces step: they cannot act anymore until the end of the phase.
+ * The bid on the honor dial of the player changes, e.g. to resolve a reaction to the honor dials being revealed.
  */
 #[AppAction]
-final readonly class PassDynasty implements PlayerActionInterface
+final readonly class SetHonorBid implements PlayerActionInterface
 {
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private int $bid,
     ) {
     }
 
@@ -28,5 +29,10 @@ final readonly class PassDynasty implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    public function getBid(): int
+    {
+        return $this->bid;
     }
 }

@@ -9,8 +9,12 @@ use App\State\Manager\PlayerStateManager;
 use Symfony\Component\Workflow\Attribute\AsGuardListener;
 use Symfony\Component\Workflow\Event\GuardEvent;
 
+/**
+ * Steps with opportunities end once every player has passed.
+ */
 #[AsGuardListener(workflow: 'game', transition: 'dynasty_actions_passed')]
-readonly class DynastyActionsPassedGuardListener
+#[AsGuardListener(workflow: 'game', transition: 'honor_dials_revealed')]
+readonly class AllPlayersPassedGuardListener
 {
     public function __construct(
         private PlayerStateManager $stateManager,

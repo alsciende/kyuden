@@ -38,11 +38,20 @@ return App::config([
                 'initial_marking' => 'join_game',
                 // places not listed here are taken from the transitions;
                 // `action_window`: players can trigger action abilities (TriggerActionAbility)
+                // `opportunities`: players act in player order and can pass their opportunity to act (PassOpportunity)
                 'places' => [
                     [
                         'name' => 'play_cards_from_provinces',
                         'metadata' => [
                             'action_window' => true,
+                            'opportunities' => true,
+                        ],
+                    ],
+                    [
+                        // reactions to the honor dials being revealed, e.g. changing a bid (SetHonorBid)
+                        'name' => 'reveal_honor_dials',
+                        'metadata' => [
+                            'opportunities' => true,
                         ],
                     ],
                 ],
@@ -57,7 +66,7 @@ return App::config([
                     WorkflowConfig::transition('dynasty_phase_ended', 'dynasty_phase_ends', 'draw_phase_begins', ['auto' => true]),
                     WorkflowConfig::transition('draw_phase_began', 'draw_phase_begins', 'honor_bid', ['auto' => true]),
                     WorkflowConfig::transition('honor_bids_confirmed', 'honor_bid', 'reveal_honor_dials', ['auto' => true]),
-                    WorkflowConfig::transition('t7', 'reveal_honor_dials', 'transfer_honor'),
+                    WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
                     WorkflowConfig::transition('t8', 'transfer_honor', 'draw_cards'),
                     WorkflowConfig::transition('t9', 'draw_cards', 'draw_phase_ends'),
                     WorkflowConfig::transition('t10', 'draw_phase_ends', 'conflict_phase_begins'),

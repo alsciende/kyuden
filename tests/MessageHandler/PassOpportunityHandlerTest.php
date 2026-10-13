@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
-use App\Exception\Data\WorkflowException;
+use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
-use App\Message\PassDynasty;
-use App\MessageHandler\PassDynastyHandler;
+use App\Message\PassOpportunity;
+use App\MessageHandler\PassOpportunityHandler;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 
-class PassDynastyHandlerTest extends AbstractKernelTestCase
+class PassOpportunityHandlerTest extends AbstractKernelTestCase
 {
     /**
      * @param \Closure(PlayerBuilder): mixed|null $jane
@@ -28,16 +28,16 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function pass(Scenario $scenario, string $player): PassDynasty
+    private function pass(Scenario $scenario, string $player): PassOpportunity
     {
-        return new PassDynasty($scenario->game()->getId(), $scenario->player($player)->getId());
+        return new PassOpportunity($scenario->game()->getId(), $scenario->player($player)->getId());
     }
 
     public function testTheFirstPlayerToPassGainsOneFate(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces();
 
-        self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
 
         $state = $this->playerStateManager->getState($scenario->player('john'));
         self::assertSame(3, $state->getFate());
@@ -49,7 +49,7 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->passed());
 
-        self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
 
         $state = $this->playerStateManager->getState($scenario->player('john'));
         self::assertSame(2, $state->getFate());
@@ -66,7 +66,7 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
             ->activePlayer('john')
             ->persist();
 
-        self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
 
         // jane passed first
         self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getFate());
@@ -79,16 +79,16 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
 
         $this->expectException(NotActivePlayerException::class);
 
-        self::service(PassDynastyHandler::class)($this->pass($scenario, 'jane'));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'jane'));
     }
 
-    public function testRejectsAPassOutsideTheDynastyPhase(): void
+    public function testRejectsAPassInAStepWithoutOpportunities(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces(place: 'collect_fate');
 
-        $this->expectException(WorkflowException::class);
+        $this->expectException(NotInOpportunitiesStepException::class);
 
-        self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
     }
 
     public function testPlayersBidHonorOnceTheLastPlayerHasPassed(): void
@@ -99,5 +99,36 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
         self::assertSame('honor_bid', $scenario->game()->getCurrentPlace());
+    }
+
+    public function testPlayersActingSimultaneouslyKeepActingWhenAPlayerPasses(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_honor_dials')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->withPlayer('jack')
+            ->activePlayers('john', 'jane', 'jack')
+            ->persist();
+
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'jane'));
+
+        $state = self::service(GameStateManager::class)->getState($scenario->game());
+        self::assertSame([$scenario->player('john')->getId(), $scenario->player('jack')->getId()], $state->activePlayerIds);
+    }
+
+    public function testThePlayersTransferHonorOnceTheLastPlayerHasPassedAfterTheHonorDialsAreRevealed(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_honor_dials')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->activePlayers('john')
+            ->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+
+        self::assertSame('transfer_honor', $scenario->game()->getCurrentPlace());
     }
 }
