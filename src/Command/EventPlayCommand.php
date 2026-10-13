@@ -25,6 +25,7 @@ readonly class EventPlayCommand
     }
 
     /**
+     * @param mixed $answer
      * @return class-string
      */
     private function isClassExists($answer): string
@@ -40,6 +41,10 @@ readonly class EventPlayCommand
         return $answer;
     }
 
+    /**
+     * @param mixed $answer
+     * @return string
+     */
     private function isValidJson($answer): string
     {
         if (! is_string($answer)) {

@@ -31,6 +31,10 @@ final class PlayerBuilder
 
     private ?int $honor = null;
 
+    private int $fate = 0;
+
+    private bool $fateCollected = false;
+
     /**
      * @var list<PlannedStack>
      */
@@ -69,6 +73,23 @@ final class PlayerBuilder
     public function honor(int $honor): self
     {
         $this->honor = $honor;
+
+        return $this;
+    }
+
+    public function fate(int $fate): self
+    {
+        $this->fate = $fate;
+
+        return $this;
+    }
+
+    /**
+     * Records that the player has already collected fate this round.
+     */
+    public function fateCollected(): self
+    {
+        $this->fateCollected = true;
 
         return $this;
     }
@@ -211,6 +232,16 @@ final class PlayerBuilder
     public function getHonor(): ?int
     {
         return $this->honor;
+    }
+
+    public function getFate(): int
+    {
+        return $this->fate;
+    }
+
+    public function isFateCollected(): bool
+    {
+        return $this->fateCollected;
     }
 
     /**

@@ -16,17 +16,16 @@ return RectorConfig::configure()
         __DIR__ . '/tests',
     ])
     ->withSymfonyContainerXml(__DIR__ . '/var/cache/dev/App_KernelDevDebugContainer.xml')
+    ->withComposerBased(
+        symfony: true
+    )
     ->withSets([
-        SymfonySetList::SYMFONY_CODE_QUALITY,
-        SymfonySetList::SYMFONY_CONSTRUCTOR_INJECTION,
-        SymfonySetList::SYMFONY_73,
         SetList::TYPE_DECLARATION,
         PHPUnitSetList::PHPUNIT_100,
         LevelSetList::UP_TO_PHP_84,
     ])
     ->withSkip([
         ClassPropertyAssignToConstructorPromotionRector::class,
-        EventListenerToEventSubscriberRector::class,
     ])
     ->withAttributesSets(symfony: true)
     ->withPhpSets();

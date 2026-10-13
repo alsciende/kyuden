@@ -64,9 +64,11 @@ The `game` workflow models the round sequence; a new place exists when the phase
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the start of the dynasty phase up to revealing facedown dynasty cards (latest: `RevealDynastyCard`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the start of the dynasty phase up to collecting fate (latest: `CollectFate`).
 
-From `collect_fate` onward, `game` transitions are placeholders (`t2`, `t3`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
+Since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on. What a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
+
+From `play_cards_from_provinces` onward, `game` transitions are placeholders (`t3`, `t4`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
 
 ## Game rules reference
 

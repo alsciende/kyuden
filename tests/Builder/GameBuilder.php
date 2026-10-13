@@ -182,7 +182,7 @@ final class GameBuilder
             $strongholdProvinceId = $province->getId();
         }
 
-        $this->initPlayerState($player, $builder->getHonor(), $strongholdProvinceId);
+        $this->initPlayerState($player, $builder, $strongholdProvinceId);
 
         return $player;
     }
@@ -208,9 +208,11 @@ final class GameBuilder
         }
     }
 
-    private function initPlayerState(Player $player, ?int $honor, ?string $strongholdProvinceId): void
+    private function initPlayerState(Player $player, PlayerBuilder $builder, ?string $strongholdProvinceId): void
     {
-        $this->playerStateManager->withState($player, function (PlayerState $state) use ($honor, $strongholdProvinceId): void {
+        $honor = $builder->getHonor();
+        $this->playerStateManager->withState($player, function (PlayerState $state) use ($builder, $honor, $strongholdProvinceId): void {
+            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected());
             if ($honor !== null) {
                 $state->setHonor($honor);
             }

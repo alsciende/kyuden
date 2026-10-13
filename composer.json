@@ -104,7 +104,6 @@
         "symfony/browser-kit": "*",
         "symfony/css-selector": "*",
         "symfony/maker-bundle": "^1.52",
-        "symfony/stopwatch": "*",
-        "symplify/easy-coding-standard": "^12.3"
+        "symfony/stopwatch": "*"
     }
 }

@@ -42,7 +42,7 @@ return App::config([
                     WorkflowConfig::transition('setup_game', 'choose_stronghold', 'dynasty_phase_begins', ['auto' => true]),
                     WorkflowConfig::transition('dynasty_phase_began', 'dynasty_phase_begins', 'reveal_facedown_dynasty_cards', ['auto' => true]),
                     WorkflowConfig::transition('dynasty_cards_revealed', 'reveal_facedown_dynasty_cards', 'collect_fate', ['auto' => true]),
-                    WorkflowConfig::transition('t2', 'collect_fate', 'play_cards_from_provinces'),
+                    WorkflowConfig::transition('fate_collected', 'collect_fate', 'play_cards_from_provinces', ['auto' => true]),
                     WorkflowConfig::transition('t3', 'play_cards_from_provinces', 'dynasty_phase_ends'),
                     WorkflowConfig::transition('t4', 'dynasty_phase_ends', 'draw_phase_begins'),
                     WorkflowConfig::transition('t5', 'draw_phase_begins', 'honor_bid'),

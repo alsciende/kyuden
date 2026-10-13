@@ -28,16 +28,13 @@ sql:
 check-symfony:
 	$(PHP) bin/console lint:container
 
-ecs:
-	$(PHP) vendor/bin/ecs --fix
-
 rector:
 	$(PHP) vendor/bin/rector
 
 phpstan:
 	$(PHP) vendor/bin/phpstan -v --memory-limit=1G
 
-lint: check-symfony ecs rector phpstan
+lint: check-symfony rector phpstan
 
 test:
 	$(PHP) vendor/bin/phpunit

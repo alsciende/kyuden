@@ -14,6 +14,12 @@ class PlayerState
 
     private ?string $strongholdProvinceId = null;
     private ?int $honor = null;
+    private int $fate = 0;
+
+    /**
+     * Turn records: what the player has done during the current round. Reset at the end of the round.
+     */
+    private bool $fateCollected = false;
 
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
@@ -53,5 +59,39 @@ class PlayerState
     public function decrementHonor(int $loss): self
     {
         return $this->setHonor($this->honor - $loss);
+    }
+
+    public function getFate(): int
+    {
+        return $this->fate;
+    }
+
+    public function setFate(int $fate): self
+    {
+        $this->fate = $fate;
+
+        return $this;
+    }
+
+    public function incrementFate(int $gain): self
+    {
+        return $this->setFate($this->fate + $gain);
+    }
+
+    public function isFateCollected(): bool
+    {
+        return $this->fateCollected;
+    }
+
+    public function setFateCollected(bool $fateCollected): self
+    {
+        $this->fateCollected = $fateCollected;
+
+        return $this;
+    }
+
+    public function resetTurnRecords(): self
+    {
+        return $this->setFateCollected(false);
     }
 }
