@@ -457,7 +457,7 @@ A first player is chosen during setup, and the first player token is used to ind
 - The first player has the first opportunity to initiate interrupt or reaction abilities at each appropriate game moment.
 - For any question as to who should perform an act or make a decision first, in the absence of any other direction by card or rules text, the first player does so first, followed by the player to the first player's left and continuing in clockwise order.
 - In the team conquest format, the first player token is given to a team rather than a player. Each player on that team is considered to be the first player. During action windows, each team has an action opportunity (rather than each player). When a team wishes to take an action, one of the players on that team takes the action, then a player on the opposing team has an opportunity to take an action. This continues until both teams pass in sequence, and the action window closes.
-- h At the end of the fate phase, the first player token is passed to the opposing team and they become the firstplayer team.
+- h At the end of the fate phase, the first player token is passed to the opposing team and they become the first player team.
 
 Related : Active Player, Setup, Priority of Simultaneous Resolution, [Timing and Gameplay](timing-and-gameplay.md)
 

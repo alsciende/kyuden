@@ -35,7 +35,7 @@ final class PlayerBuilder
 
     private bool $fateCollected = false;
 
-    private bool $dynastyPassed = false;
+    private bool $passed = false;
 
     /**
      * @var list<PlannedStack>
@@ -97,11 +97,11 @@ final class PlayerBuilder
     }
 
     /**
-     * Records that the player has passed during the play cards from provinces step.
+     * Records that the player has passed during the current step.
      */
-    public function dynastyPassed(): self
+    public function passed(): self
     {
-        $this->dynastyPassed = true;
+        $this->passed = true;
 
         return $this;
     }
@@ -256,9 +256,9 @@ final class PlayerBuilder
         return $this->fateCollected;
     }
 
-    public function isDynastyPassed(): bool
+    public function isPassed(): bool
     {
-        return $this->dynastyPassed;
+        return $this->passed;
     }
 
     /**

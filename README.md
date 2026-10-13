@@ -57,9 +57,9 @@ Audit trails are enabled, generating logs in the `workflow` channel.
 
 ### State
 
-`App\Entity\Game` and `App\Entity\Player` entities have a `state` field which is a JSON representation of their state. This is represented by the `App\State\GameState` and `App\State\Model\StatefulInterface` interface.
+`App\Entity\Game`, `App\Entity\Player` and `App\Entity\PhysicalCard` entities have a `state` field which is a JSON representation of their state. They implement the `App\State\Model\StatefulInterface` interface.
 
-Services `App\Service\GameStateManager` and `App\Service\PlayerStateManager` decode this field to a `App\State\GameState` and `App\State\PlayerState` object respectively.
+Services `App\State\Manager\GameStateManager`, `App\State\Manager\PlayerStateManager` and `App\State\Manager\CardStateManager` decode this field to a `App\State\Model\GameState`, `App\State\Model\PlayerState` and `App\State\Model\CardState` object respectively.
 
 The main way to interact with the state is via their `withState` methods, which decode the state to a closure callback and encode it afterward.
 

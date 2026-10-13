@@ -41,19 +41,19 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
 
         $state = $this->playerStateManager->getState($scenario->player('john'));
         self::assertSame(3, $state->getFate());
-        self::assertTrue($state->isDynastyPassed());
+        self::assertTrue($state->isPassed());
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('jane')));
     }
 
     public function testTheLastPlayerToPassGainsNoFate(): void
     {
-        $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->dynastyPassed());
+        $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->passed());
 
         self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
 
         $state = $this->playerStateManager->getState($scenario->player('john'));
         self::assertSame(2, $state->getFate());
-        self::assertTrue($state->isDynastyPassed());
+        self::assertTrue($state->isPassed());
     }
 
     public function testPlayersWhoHavePassedNoLongerGetTheOpportunityToAct(): void
@@ -61,7 +61,7 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
         $scenario = $this->scenario()
             ->atPlace('play_cards_from_provinces')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fate(2))
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->dynastyPassed())
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
             ->withPlayer('jack')
             ->activePlayer('john')
             ->persist();
@@ -93,7 +93,7 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
 
     public function testTheDynastyPhaseEndsOnceTheLastPlayerHasPassed(): void
     {
-        $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->dynastyPassed());
+        $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->passed());
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));

@@ -16,6 +16,10 @@ use App\Repository\PlayerRepository;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
+/**
+ * Puts the top card of the dynasty deck face down on the province: during setup, and during the play cards
+ * from provinces step once a card has left the province. The player does not need to be the active player.
+ */
 #[AsMessageHandler]
 final readonly class FillProvinceHandler
 {
@@ -29,7 +33,7 @@ final readonly class FillProvinceHandler
 
     public function __invoke(FillProvince $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'choose_stronghold');
+        $game = $this->gameRepository->get($message->getGameId(), ['choose_stronghold', 'play_cards_from_provinces']);
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $card = $this->cardRepository->get($message->getProvinceId(), $game);
 

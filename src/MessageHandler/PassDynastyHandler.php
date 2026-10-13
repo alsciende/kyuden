@@ -10,9 +10,9 @@ use App\Exception\Rules\NotActivePlayerException;
 use App\Message\PassDynasty;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\OpportunityService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
-use App\State\Model\GameState;
 use App\State\Model\PlayerState;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -29,6 +29,7 @@ final readonly class PassDynastyHandler
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
         private PlayerStateManager $stateManager,
+        private OpportunityService $opportunityService,
     ) {
     }
 
@@ -45,38 +46,16 @@ final readonly class PassDynastyHandler
             $player,
             fn (PlayerState $state): PlayerState => $state
                 ->incrementFate($firstToPass ? self::FIRST_TO_PASS_FATE : 0)
-                ->setDynastyPassed(true),
+                ->setPassed(true),
         );
 
-        $nextPlayer = $this->getNextPlayerToAct($game, $player);
-        if ($nextPlayer instanceof Player) {
-            $this->gameStateManager->withState(
-                $game,
-                fn (GameState $state): GameState => $state->setActivePlayer($nextPlayer),
-            );
-        }
+        $this->opportunityService->passToNextPlayer($game, $player);
     }
 
     private function hasAnyPlayerPassed(Game $game): bool
     {
         return $game->getPlayers()->exists(
-            fn (int $key, Player $player): bool => $this->stateManager->getState($player)->isDynastyPassed(),
+            fn (int $key, Player $player): bool => $this->stateManager->getState($player)->isPassed(),
         );
-    }
-
-    /**
-     * Players who have passed relinquish their opportunities to act: the next player in player order who has not passed,
-     * or null when every player has passed.
-     */
-    private function getNextPlayerToAct(Game $game, Player $player): ?Player
-    {
-        foreach ($this->gameStateManager->getState($game)->getPlayerIdsAfter($player) as $playerId) {
-            $next = $game->getPlayer($playerId);
-            if (! $this->stateManager->getState($next)->isDynastyPassed()) {
-                return $next;
-            }
-        }
-
-        return null;
     }
 }

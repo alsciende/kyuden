@@ -234,7 +234,7 @@ final class GameBuilder
     {
         $honor = $builder->getHonor();
         $this->playerStateManager->withState($player, function (PlayerState $state) use ($builder, $honor, $strongholdProvinceId): void {
-            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected())->setDynastyPassed($builder->isDynastyPassed());
+            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected())->setPassed($builder->isPassed());
             if ($honor !== null) {
                 $state->setHonor($honor);
             }

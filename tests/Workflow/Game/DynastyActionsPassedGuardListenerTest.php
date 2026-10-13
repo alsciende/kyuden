@@ -14,8 +14,8 @@ class DynastyActionsPassedGuardListenerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('play_cards_from_provinces')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $johnPassed ? $p->dynastyPassed() : $p)
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $janePassed ? $p->dynastyPassed() : $p)
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $johnPassed ? $p->passed() : $p)
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $janePassed ? $p->passed() : $p)
             ->build();
 
         return self::service(Registry::class)->get($scenario->game())->can($scenario->game(), 'dynasty_actions_passed');

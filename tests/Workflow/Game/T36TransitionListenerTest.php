@@ -14,8 +14,8 @@ class T36TransitionListenerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('fate_phase_ends')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fate(3)->fateCollected()->dynastyPassed())
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected()->dynastyPassed())
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fate(3)->fateCollected())
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected())
             ->build();
 
         self::service(Registry::class)->get($scenario->game())->apply($scenario->game(), 't36');
@@ -23,7 +23,6 @@ class T36TransitionListenerTest extends AbstractKernelTestCase
         foreach (['john', 'jane'] as $alias) {
             $state = $this->playerStateManager->getState($scenario->player($alias));
             self::assertFalse($state->isFateCollected());
-            self::assertFalse($state->isDynastyPassed());
         }
         self::assertSame(3, $this->playerStateManager->getState($scenario->player('john'))->getFate());
     }

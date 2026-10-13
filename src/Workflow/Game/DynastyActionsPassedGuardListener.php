@@ -23,7 +23,7 @@ readonly class DynastyActionsPassedGuardListener
         $game = $event->getSubject();
 
         foreach ($game->getPlayers() as $player) {
-            if ($this->stateManager->getState($player)->isDynastyPassed() === false) {
+            if ($this->stateManager->getState($player)->isPassed() === false) {
                 $event->setBlocked(true, 'Every player must pass before proceeding.');
 
                 return;

@@ -14,6 +14,8 @@ use App\Enum\Side;
 use App\Enum\StackType;
 use App\Enum\Type;
 use App\Repository\CardRepository;
+use App\State\Model\StatefulInterface;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -27,7 +29,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\DiscriminatorColumn(name: 'side', type: 'string', length: 10)]
 #[ORM\DiscriminatorMap(self::DISCRIMINATOR_MAP)]
 #[ORM\Table('physical_cards')]
-abstract class PhysicalCard
+abstract class PhysicalCard implements StatefulInterface
 {
     public const array DISCRIMINATOR_MAP = [
         Side::Conflict->value => ConflictCard::class,
@@ -55,10 +57,10 @@ abstract class PhysicalCard
     private ?int $position = null;
 
     /**
-     * @var array<string,mixed>
+     * What is not a physical position of the card (fate tokens…), decoded by CardStateManager.
      */
-    #[ORM\Column]
-    protected array $state = [];
+    #[ORM\Column(type: Types::TEXT)]
+    private string $state = '{}';
 
     #[ORM\ManyToOne(inversedBy: 'physicalCards')]
     #[ORM\JoinColumn(nullable: false)]
@@ -92,6 +94,7 @@ abstract class PhysicalCard
      */
     abstract public static function getPlace(StackType $stackType, Orientation $orientation): ?string;
 
+    #[\Override]
     public function getId(): string
     {
         return $this->id;
@@ -155,22 +158,16 @@ abstract class PhysicalCard
         $this->position = $position;
     }
 
-    /**
-     * @return array<string,mixed>
-     */
-    public function getState(): array
+    #[\Override]
+    public function getState(): string
     {
         return $this->state;
     }
 
-    /**
-     * @return $this
-     */
-    public function setState(string $key, mixed $value): static
+    #[\Override]
+    public function setState(string $state): void
     {
-        $this->state[$key] = $value;
-
-        return $this;
+        $this->state = $state;
     }
 
     public function getGame(): Game

@@ -20,7 +20,10 @@ class GameRepository extends ServiceEntityRepository
         parent::__construct($registry, Game::class);
     }
 
-    public function get(string $gameId, ?string $expectedPlace = null): Game
+    /**
+     * @param string|list<string>|null $expectedPlace the place, or one of the places, the game must be in
+     */
+    public function get(string $gameId, string|array|null $expectedPlace = null): Game
     {
         $game = $this->find($gameId);
 
@@ -28,8 +31,8 @@ class GameRepository extends ServiceEntityRepository
             throw new GameNotFoundException($gameId);
         }
 
-        if (is_string($expectedPlace) && $game->getCurrentPlace() !== $expectedPlace) {
-            throw new WorkflowException($expectedPlace, $game->getCurrentPlace() ?? '<undefined>');
+        if ($expectedPlace !== null && ! in_array($game->getCurrentPlace(), (array) $expectedPlace, true)) {
+            throw new WorkflowException(implode(' or ', (array) $expectedPlace), $game->getCurrentPlace() ?? '<undefined>');
         }
 
         return $game;

@@ -29,7 +29,7 @@ Console commands (`src/Command`) are currently the main way to drive the engine:
 - `Stack`: ordered collection of physical cards (deck, hand, province, etc.; see `Enum/StackType`). The top card has the highest `position`. When order matters, use `getOrderedCards()` / `getTopCards()`: the order of `getCards()` is not kept in sync with positions (e.g. after a shuffle).
 - `Enum/Orientation`: physical orientation of a card (`FaceDown`, `FaceUp`, `Sideways`, `UpsideDown`), stored on `PhysicalCard`. A new card takes the initial orientation of its class (`getInitialOrientation()`: face down, except stronghold and role); afterwards only workflow transitions change it.
 - `Deck`: list of card codes; turned into physical cards by `Factory/CardFactory` when a game starts.
-- `Game` and `Player` carry a JSON `state` field, decoded by the managers in `src/State/Manager` into `GameState` / `PlayerState`. Modify it through `withState(closure)`, which decodes, runs the callback and re-encodes.
+- `Game`, `Player` and `PhysicalCard` carry a JSON `state` field, decoded by the managers in `src/State/Manager` into `GameState` / `PlayerState` / `CardState` (fate on the card). Modify it through `withState(closure)`, which decodes, runs the callback and re-encodes.
 - `Event`: persisted record of every handled action.
 - `Candidate`: a player waiting in the matchmaking queue.
 
@@ -64,11 +64,13 @@ The `game` workflow models the round sequence; a new place exists when the phase
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `PassDynasty`; playing characters from provinces is not implemented yet).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `PlayCharacterFromProvince` and `EndOpportunity`; discarding duplicates and action abilities are not implemented yet). Open points are listed in `HANDOFF.md`.
 
 Since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on. What a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 
-The player order is stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order). Steps resolved in player order use the active player of `GameState` (`activePlayerId`): the enter listener of the step activates the first player, the handler of each action rejects a player who is not active (`NotActivePlayerException`) and gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). Implemented for `collect_fate` and `play_cards_from_provinces` (only `PassDynasty` so far: the first to pass gains 1 fate, the last to pass ends the step).
+The player order is stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order). Steps resolved in player order use the active player of `GameState` (`activePlayerId`): the enter listener of the step activates the first player, the handler of each action rejects a player who is not active (`NotActivePlayerException`) and gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). Implemented for `collect_fate` and `play_cards_from_provinces`.
+
+In `play_cards_from_provinces`, a player who passes (`PlayerState::passed`, reset by the enter listener of the step) is skipped by `Service/OpportunityService`. `PassDynasty` passes (the first to pass gains 1 fate, the last to pass ends the step). `PlayCharacterFromProvince` keeps the opportunity to act with the player, who may have to resolve what follows (e.g. `FillProvince` to refill the province) before ending it with `EndOpportunity`, an action not tied to a step.
 
 From `dynasty_phase_ends` onward, `game` transitions are placeholders (`t4`, `t5`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
 

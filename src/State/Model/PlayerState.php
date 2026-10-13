@@ -6,6 +6,7 @@ namespace App\State\Model;
 
 use App\Exception\Rules\MaximumHonorReachedException;
 use App\Exception\Rules\MinimumHonorReachedException;
+use App\Exception\Rules\NotEnoughFateException;
 
 class PlayerState
 {
@@ -21,7 +22,10 @@ class PlayerState
      */
     private bool $fateCollected = false;
 
-    private bool $dynastyPassed = false;
+    /**
+     * The player has passed during the current step. Reset when a step in which players can pass begins.
+     */
+    private bool $passed = false;
 
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
@@ -80,6 +84,18 @@ class PlayerState
         return $this->setFate($this->fate + $gain);
     }
 
+    /**
+     * @throws NotEnoughFateException if the fate pool does not hold that much fate
+     */
+    public function spendFate(int $amount): self
+    {
+        if ($amount > $this->fate) {
+            throw new NotEnoughFateException($amount, $this->fate);
+        }
+
+        return $this->setFate($this->fate - $amount);
+    }
+
     public function isFateCollected(): bool
     {
         return $this->fateCollected;
@@ -93,22 +109,22 @@ class PlayerState
     }
 
     /**
-     * The player has passed during the play cards from provinces step: they cannot act anymore until the end of the phase.
+     * The player has passed during the current step: the opportunity to act skips them.
      */
-    public function isDynastyPassed(): bool
+    public function isPassed(): bool
     {
-        return $this->dynastyPassed;
+        return $this->passed;
     }
 
-    public function setDynastyPassed(bool $dynastyPassed): self
+    public function setPassed(bool $passed): self
     {
-        $this->dynastyPassed = $dynastyPassed;
+        $this->passed = $passed;
 
         return $this;
     }
 
     public function resetTurnRecords(): self
     {
-        return $this->setFateCollected(false)->setDynastyPassed(false);
+        return $this->setFateCollected(false);
     }
 }
