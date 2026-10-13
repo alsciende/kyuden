@@ -36,6 +36,16 @@ return App::config([
                 ],
                 'supports' => [Game::class],
                 'initial_marking' => 'join_game',
+                // places not listed here are taken from the transitions;
+                // `action_window`: players can trigger action abilities (TriggerActionAbility)
+                'places' => [
+                    [
+                        'name' => 'play_cards_from_provinces',
+                        'metadata' => [
+                            'action_window' => true,
+                        ],
+                    ],
+                ],
                 // we are in a different place if the phase of the game is different AND the available player actions are different
                 'transitions' => [
                     WorkflowConfig::transition('start_game', 'join_game', 'choose_stronghold', ['auto' => true]), // select first player
@@ -104,6 +114,7 @@ return App::config([
                         'orientation' => Orientation::FaceUp,
                     ]),
                     ...WorkflowConfig::bowAndReady(ConflictCard::STATE_IN_PLAY),
+                    ...WorkflowConfig::triggerAction(ConflictCard::STATE_IN_PLAY),
                 ],
             ),
             'dynasty_card' => WorkflowConfig::cardWorkflow(
@@ -129,6 +140,8 @@ return App::config([
                         'orientation' => Orientation::FaceUp,
                     ]),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_IN_PLAY),
+                    // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerActionGuardListener)
+                    ...WorkflowConfig::triggerAction(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_PROVINCE_FACEUP),
                 ],
             ),
             'province_card' => WorkflowConfig::cardWorkflow(
@@ -147,6 +160,7 @@ return App::config([
                     WorkflowConfig::transition('restore', ProvinceCard::STATE_BROKEN, ProvinceCard::STATE_UNBROKEN, [
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    ...WorkflowConfig::triggerAction(ProvinceCard::STATE_UNBROKEN),
                 ],
             ),
             'role_card' => WorkflowConfig::cardWorkflow(
@@ -157,7 +171,10 @@ return App::config([
             'stronghold_card' => WorkflowConfig::cardWorkflow(
                 StrongholdCard::class,
                 [StrongholdCard::STATE_IN_PLAY],
-                WorkflowConfig::bowAndReady(StrongholdCard::STATE_IN_PLAY),
+                [
+                    ...WorkflowConfig::bowAndReady(StrongholdCard::STATE_IN_PLAY),
+                    ...WorkflowConfig::triggerAction(StrongholdCard::STATE_IN_PLAY),
+                ],
             ),
         ],
     ],

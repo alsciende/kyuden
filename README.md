@@ -51,6 +51,8 @@ There are 6 workflows, defined in `config/packages/workflows.php`, one for `App\
 
 The place of a card is not stored: it is computed from the type of its `App\Entity\Stack` and its `App\Enum\Orientation` (see `App\Workflow\CardMarkingStore`). Card transitions describe the move or turn they make in their metadata (`stack`, `orientation`), applied by `App\Workflow\CardTransitionListener`. A card is created with the initial orientation of its type; a transition that moves a card always gives its orientation.
 
+The places of the `game` workflow where players can trigger action abilities carry the `action_window` metadata. The `trigger_action` transition of a card workflow (a transition from a place to itself) lists where the abilities of a card can be used.
+
 Engine will listen to changes in the workflow with EventListeners located in `src/Workflow`. Some will try to block a transition (GuardListener), some will react to a transition (TransitionListener), etc.
 
 Audit trails are enabled, generating logs in the `workflow` channel.

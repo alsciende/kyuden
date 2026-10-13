@@ -1,6 +1,6 @@
 # HANDOFF
 
-Points to address after `PlayCharacterFromProvince` (step 1.4, play cards from provinces).
+Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (step 1.4, play cards from provinces).
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -11,12 +11,24 @@ Points to address after `PlayCharacterFromProvince` (step 1.4, play cards from p
 - No uniqueness check for now.
 - `PlayerState::passed` is generic: it is reset when a step in which players can pass begins (enter listener), not at the end of the round.
 
+## Decisions taken for `TriggerActionAbility`
+
+- The message only carries the card: no cost. The player pays costs and resolves effects with other actions, then ends their opportunity with `EndOpportunity`.
+- Allowed in any `game` place with the `action_window` place metadata (only `play_cards_from_provinces` for now).
+- The card must be where its abilities can be used, as listed by the `trigger_action` transition of its workflow: in play (dynasty, conflict, stronghold), unbroken province, or faceup holding in a province (`Workflow/DynastyCard/TriggerActionGuardListener`). Role cards are not covered.
+- Not checked: the presence of an action ability on the card, the once-per-round limit ("Limit X per", "Max X per").
+- The owner of the card is checked instead of its controller (control is not modeled).
+
 ## Next steps
 
 ### Step 1.4 (play cards from provinces)
 
 - **Discard a duplicate** (`DiscardDuplicate`): discard a copy of a unique character from hand or province to place 1 fate on the copy in play; the province is then refilled.
-- **Trigger an action ability**: the engine does not apply card effects; define what the player dispatches to use their opportunity this way.
+
+### Action abilities
+
+- **Costs and effects of abilities**: no action exists yet to bow or ready a card, spend fate, lose honor, move fate, sacrifice or dishonor a card. `TriggerActionAbility` is of little use until some of them exist.
+- **Event cards** (`PlayEvent`): an event with an action trigger is played from hand and goes to the discard pile; the current `conflict_card.play_card` transition leads to `in_play`.
 
 ### Other steps
 
