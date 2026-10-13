@@ -91,13 +91,13 @@ class PassDynastyHandlerTest extends AbstractKernelTestCase
         self::service(PassDynastyHandler::class)($this->pass($scenario, 'john'));
     }
 
-    public function testTheDynastyPhaseEndsOnceTheLastPlayerHasPassed(): void
+    public function testPlayersBidHonorOnceTheLastPlayerHasPassed(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces(fn (PlayerBuilder $p): PlayerBuilder => $p->passed());
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
-        self::assertSame('dynasty_phase_ends', $scenario->game()->getCurrentPlace());
+        self::assertSame('honor_bid', $scenario->game()->getCurrentPlace());
     }
 }

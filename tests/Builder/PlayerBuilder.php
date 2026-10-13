@@ -35,6 +35,8 @@ final class PlayerBuilder
 
     private bool $fateCollected = false;
 
+    private ?int $honorBid = null;
+
     private bool $passed = false;
 
     /**
@@ -92,6 +94,16 @@ final class PlayerBuilder
     public function fateCollected(): self
     {
         $this->fateCollected = true;
+
+        return $this;
+    }
+
+    /**
+     * Records the honor bid of the player for this round.
+     */
+    public function honorBid(int $bid): self
+    {
+        $this->honorBid = $bid;
 
         return $this;
     }
@@ -254,6 +266,11 @@ final class PlayerBuilder
     public function isFateCollected(): bool
     {
         return $this->fateCollected;
+    }
+
+    public function getHonorBid(): ?int
+    {
+        return $this->honorBid;
     }
 
     public function isPassed(): bool

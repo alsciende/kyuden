@@ -6,6 +6,8 @@ Server-side engine to play **Legend of the Five Rings LCG** (Fantasy Flight Game
 
 MVP scope: the engine acts as a **board**. It enforces the game flow (rounds, phases, framework steps) but **does not enforce card rules**.
 
+Only the **Stronghold format** (two players) is in scope: ignore the rules specific to other formats (skirmish, enlightenment, team conquest…) in `doc/`.
+
 `README.md` holds the architecture reference; keep it in sync when the architecture changes.
 
 ## Commands
@@ -64,7 +66,7 @@ The `game` workflow models the round sequence; a new place exists when the phase
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `LoseHonor` / `GainHonor` / `TransferHonor`; discarding duplicates is not implemented yet). Open points are listed in `HANDOFF.md`.
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) and the honor bid of the draw phase (latest: `BidHonor`). Open points are listed in `HANDOFF.md`.
 
 Since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on. What a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 
@@ -76,7 +78,9 @@ In `play_cards_from_provinces`, a player who passes (`PlayerState::passed`, rese
 
 `BowCard` / `ReadyCard` are the first cost/effect messages: accepted in any place, from any player of the game, on any card (an opponent's included); `Workflow/BowAndReadyGuardListener` only lets a ready card be bowed and a bowed card be readied. `LoseHonor` / `GainHonor` / `TransferHonor` are accepted the same way, in any place; their `playerId` is the player whose honor changes (the giver for a transfer).
 
-From `dynasty_phase_ends` onward, `game` transitions are placeholders (`t4`, `t5`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
+Players bid honor simultaneously (`BidHonor`, any order, once per round): the bid is a turn record of `PlayerState` (`honorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid. The secrecy of the bid is not enforced (the `Event` log stores it).
+
+From `reveal_honor_dials` onward, `game` transitions are placeholders (`t7`, `t8`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
 
 ## Game rules reference
 

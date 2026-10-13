@@ -22,6 +22,8 @@ class PlayerState
      */
     private bool $fateCollected = false;
 
+    private ?int $honorBid = null;
+
     /**
      * The player has passed during the current step. Reset when a step in which players can pass begins.
      */
@@ -109,6 +111,21 @@ class PlayerState
     }
 
     /**
+     * Number selected on the honor dial during the draw phase; null until the player has bid this round.
+     */
+    public function getHonorBid(): ?int
+    {
+        return $this->honorBid;
+    }
+
+    public function setHonorBid(?int $honorBid): self
+    {
+        $this->honorBid = $honorBid;
+
+        return $this;
+    }
+
+    /**
      * The player has passed during the current step: the opportunity to act skips them.
      */
     public function isPassed(): bool
@@ -125,6 +142,6 @@ class PlayerState
 
     public function resetTurnRecords(): self
     {
-        return $this->setFateCollected(false);
+        return $this->setFateCollected(false)->setHonorBid(null);
     }
 }
