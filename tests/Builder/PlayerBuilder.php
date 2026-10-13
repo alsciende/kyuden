@@ -6,6 +6,7 @@ namespace App\Tests\Builder;
 
 use App\Enum\ConflictType;
 use App\Enum\Orientation;
+use App\Enum\PersonalHonor;
 use App\State\Model\PlayerState;
 use App\Enum\StackType;
 
@@ -245,16 +246,18 @@ final class PlayerBuilder
     }
 
     /**
-     * Creates one in-play stack: a character followed by the attachments put on it. A bowed character is sideways.
+     * Creates one in-play stack: a character followed by the attachments put on it. The bowed status (sideways), the
+     * fate and the personal honor apply to the character.
      *
      * @param array<array-key, string> $codes
      */
-    public function inPlay(array $codes, bool $bowed = false): self
+    public function inPlay(array $codes, bool $bowed = false, int $fate = 0, PersonalHonor $personalHonor = PersonalHonor::Ordinary): self
     {
         $stack = new PlannedStack(StackType::InPlay);
         foreach ($codes as $as => $code) {
-            $orientation = $bowed && $stack->cards === [] ? Orientation::Sideways : null;
-            $stack->cards[] = new PlannedCard($code, is_string($as) ? $as : null, $orientation);
+            $stack->cards[] = $stack->cards === []
+                ? new PlannedCard($code, is_string($as) ? $as : null, $bowed ? Orientation::Sideways : null, fate: $fate, personalHonor: $personalHonor)
+                : new PlannedCard($code, is_string($as) ? $as : null);
         }
         $this->stacks[] = $stack;
 

@@ -73,6 +73,11 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - **Unopposed** (3.2.4): the defending player loses 1 honor when the attacking player wins with no defender left in the conflict (`UnopposedAppliedTransitionListener`).
 - **Breaking provinces** (3.2.5): each attacked unbroken province whose strength is at most the excess skill of the winning attacker breaks (`province_card.break`); the broken ones are recorded in `ConflictState::brokenProvinceIds`.
 - **Discarding from a broken province**: `DiscardCard` (any card, any player, any place: `discard_card` transition of the conflict and dynasty card workflows; the dynasty one now also starts from the provinces, so a faceup holding can be discarded), then `FillProvince`, during `react_to_broken_province`.
+- **Ring effects** (3.2.6): in `resolve_ring_effects`, the attacking player who won is the only active player and the others count as having passed (`ResolveRingEffectsEnterListener`); when the attacking player did not win, every player has passed and the step ends at once. The attacking player resolves the effect with effect messages, then passes: Air `TransferHonor` / `GainHonor`; Earth `DrawConflictCards` + `DiscardRandomCardFromHand` (the engine picks the card); Fire `HonorCharacter` / `DishonorCharacter`; Water `ReadyCard` / `BowCard`; Void `RemoveFate`. The engine does not check that the effect matches the ring.
+- **Personal honor** is `CardState::personalHonor` (`Enum/PersonalHonor`); honoring an honored character or dishonoring a dishonored one is rejected (`PersonalHonorException`). Its effect on skill and glory is part of the totals declared by the players.
+- **Ring claimed** (3.2.7): the winner claims the contested ring (`RingClaimedTransitionListener`); with no winner the ring is back in the unclaimed pool once the conflict is cleared (`conflict_ended`).
+- **Return home** (3.2.8): ready participants bow, then the participant lists are emptied (`ReturnedHomeTransitionListener`).
+- **Leaving play** (`Workflow/LeavePlayListener`, on `workflow.leave` for any card transition from `in_play` to another place): the controller of an honored / dishonored character gains / loses 1 honor, the `CardState` is reset (fate back to the token pool, ordinary status), the attachments on a character are discarded (ancestral ones too: the keyword is not modeled) and the character is removed from the conflict. This closes the "card state when leaving play" point of Model.
 - `GameState::currentConflict()` returns the conflict or throws: it is not named `getConflict()`, which the serializer would call as an accessor.
 
 ## Decisions taken for `PlayCharacterFromProvince`
@@ -126,7 +131,7 @@ Analysis of the 488 cards of the fixtures with an `Action:` ability (200 charact
 **Physical status of a card in play**
 
 - `BowCard` / `ReadyCard` (81 / 36): any card type (character, attachment, stronghold). Done.
-- `HonorCharacter` / `DishonorCharacter` (50 / 50): one step at a time ("honor it again" = two messages). Status goes in `CardState`.
+- `HonorCharacter` / `DishonorCharacter` (50 / 50): one step at a time ("honor it again" = two messages). Status goes in `CardState`. Done.
 - `DiscardStatusToken` (18; Soshi Illusionist, Liar's Mask), `MoveStatusToken` (Origami Master, Bayushi Dairu).
 
 **Fate**
@@ -182,7 +187,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 1. **Who may send effect messages**: about 30 cards make the opponent act during the player's action ("your opponent selects one", "must choose", "each player chooses"). `NotActivePlayerException` would block them. Effect messages should be accepted from any player while an ability is being resolved (opened by `TriggerActionAbility`, closed by `EndOpportunity`), not only from the active player.
 2. **Targets**: most effects target an opponent's card, so messages take any `cardId`, not only the sender's cards.
 3. **Randomness and visibility** are the only places where the engine does more than move pieces.
-4. **Resetting `CardState` when a card leaves play** (see Model below) becomes mandatory as soon as `SacrificeCard`, `DiscardCard` or `ReturnCardToHand` exist.
+4. ~~**Resetting `CardState` when a card leaves play**~~ (done, `LeavePlayListener`).
 
 **Suggested priorities** for the dynasty phase action window:
 
@@ -202,15 +207,13 @@ Plan, in this order:
 2. ~~Model and workflow skeleton~~ (done): rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
 3. ~~`DeclareConflict` / `PassConflict`~~ (done), with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
 4. ~~`DeclareDefenders` (possibly none), then the conflict action window (defender first)~~ (done).
-5. Resolution: ~~result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`)~~ (done), ring effect, ring claimed, return home.
+5. ~~Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home~~ (done).
 6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
 
 State of the skeleton:
 
 - Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
 - Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `glory_counted`, until the players declare their totals.
-- Missing enter listeners: `resolve_ring_effects` (attacking player if they won, otherwise nobody).
-- The automatic steps `ring_claimed` and `returned_home` have no listener yet.
 - Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
 
 Decisions already taken:
@@ -232,4 +235,3 @@ Decisions already taken:
 
 - **Honor not set**: the honor of a player is not checked to be set (`null` before `SetHonor`).
 
-- **Card state when leaving play**: `CardState` (fate on the card) is not reset when a card leaves play; it must be before the card can enter play again (discard, return to hand…). Personal honor status will go there too.

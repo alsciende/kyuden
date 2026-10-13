@@ -8,6 +8,6 @@ class NotEnoughFateException extends RulesException
 {
     public function __construct(int $amount, int $fate)
     {
-        parent::__construct(sprintf('Player cannot spend %d fate: their fate pool holds %d fate.', $amount, $fate));
+        parent::__construct(sprintf('Cannot spend or remove %d fate: there is only %d fate.', $amount, $fate));
     }
 }

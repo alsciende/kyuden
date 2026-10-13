@@ -11,6 +11,7 @@ use App\Enum\Orientation;
 use App\Enum\StackType;
 use App\Enum\Type;
 use App\Exception\Rules\CannotParticipateException;
+use App\Exception\Rules\NotInPlayException;
 use App\Exception\Rules\NotOwnedCardException;
 use App\Exception\Rules\ProvinceNotAttackableException;
 use App\Exception\Rules\WrongCardTypeException;
@@ -71,11 +72,11 @@ readonly class ConflictService
     }
 
     /**
-     * A character in play, controlled by the player.
+     * A character in play, controlled by the player if one is given.
      */
-    public function assertCharacterInPlay(PhysicalCard $card, Player $player): void
+    public function assertCharacterInPlay(PhysicalCard $card, ?Player $player = null): void
     {
-        if ($card->getPlayer() !== $player) {
+        if ($player instanceof Player && $card->getPlayer() !== $player) {
             throw new NotOwnedCardException($card, $player);
         }
 
@@ -84,7 +85,7 @@ readonly class ConflictService
         }
 
         if ($card->getStack()->getType() !== StackType::InPlay) {
-            throw new CannotParticipateException($card, 'it is not in play');
+            throw new NotInPlayException($card);
         }
     }
 

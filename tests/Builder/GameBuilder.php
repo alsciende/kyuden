@@ -24,8 +24,10 @@ use App\Exception\Data\DeckNotFoundException;
 use App\Exception\Data\LogicalCardNotFoundException;
 use App\Repository\DeckRepository;
 use App\Repository\LogicalCardRepository;
+use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\CardState;
 use App\State\Model\ConflictState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
@@ -83,6 +85,7 @@ final class GameBuilder
         private readonly DeckRepository $deckRepository,
         private readonly GameStateManager $gameStateManager,
         private readonly PlayerStateManager $playerStateManager,
+        private readonly CardStateManager $cardStateManager,
     ) {
     }
 
@@ -362,6 +365,10 @@ final class GameBuilder
         $stack->addCard($card);
         $player->addCard($card);
         $player->getGame()->addCard($card);
+        $this->cardStateManager->withState(
+            $card,
+            fn (CardState $state): CardState => $state->setFate($plannedCard->fate)->setPersonalHonor($plannedCard->personalHonor),
+        );
 
         if ($plannedCard->alias !== null) {
             if (isset($this->builtCards[$plannedCard->alias])) {

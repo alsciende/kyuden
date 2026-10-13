@@ -15,6 +15,7 @@ use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
 use App\Repository\LogicalCardRepository;
 use App\Repository\PlayerRepository;
+use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\Tests\Builder\GameBuilder;
@@ -63,6 +64,7 @@ abstract class AbstractKernelTestCase extends KernelTestCase
             $this->deckRepository,
             self::service(GameStateManager::class),
             $this->playerStateManager,
+            self::service(CardStateManager::class),
         );
     }
 
