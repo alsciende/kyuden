@@ -19,6 +19,12 @@ Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (
 - Not checked: the presence of an action ability on the card, the once-per-round limit ("Limit X per", "Max X per").
 - The owner of the card is checked instead of its controller (control is not modeled).
 
+## Decisions taken for `BowCard` / `ReadyCard`
+
+- Accepted in any game place, from any player of the game (not only the active one), on any card (including an opponent's): costs, effects and framework steps decide who bows or readies what, and the engine does not apply them. This follows architecture points 1 and 2 below, without tying the messages to an ability being resolved.
+- Only a ready card can be bowed and only a bowed card can be readied (`Workflow/BowAndReadyGuardListener`, generic for every card workflow, since `bow` / `ready` stay in the same place).
+- Cards without `bow` / `ready` transitions (provinces, roles) are rejected by the workflow (`UndefinedTransitionException`).
+
 ## Next steps
 
 ### Step 1.4 (play cards from provinces)
@@ -27,8 +33,83 @@ Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (
 
 ### Action abilities
 
-- **Costs and effects of abilities**: no action exists yet to bow or ready a card, spend fate, lose honor, move fate, sacrifice or dishonor a card. `TriggerActionAbility` is of little use until some of them exist.
+- **Costs and effects of abilities**: `BowCard` / `ReadyCard` exist; no action exists yet to spend fate, lose honor, move fate, sacrifice or dishonor a card. `TriggerActionAbility` is of little use until some of them exist. See the analysis below.
 - **Event cards** (`PlayEvent`): an event with an action trigger is played from hand and goes to the discard pile; the current `conflict_card.play_card` transition leads to `in_play`.
+
+#### Messages needed for costs and effects
+
+Analysis of the 488 cards of the fixtures with an `Action:` ability (200 characters, 174 events, 44 attachments, 32 holdings, 25 provinces, 13 strongholds), grouped as generic board manipulations. Counts are approximate (keyword matches).
+
+**Physical status of a card in play**
+
+- `BowCard` / `ReadyCard` (81 / 36): any card type (character, attachment, stronghold). Done.
+- `HonorCharacter` / `DishonorCharacter` (50 / 50): one step at a time ("honor it again" = two messages). Status goes in `CardState`.
+- `DiscardStatusToken` (18; Soshi Illusionist, Liar's Mask), `MoveStatusToken` (Origami Master, Bayushi Dairu).
+
+**Fate**
+
+Fate moves between many holders: player pool → ring ("spend 1 fate to an unclaimed ring") or → supply ("spend 1 fate"), character → supply ("remove") or → owner's pool (Jade Tetsubō, Yogo Junzo), supply → character ("place"), character → character (Karmic Twist), player → player ("give your opponent 1 fate", Levy), supply → player ("gain 1 fate"), ring → ring or character (Jade Masterpiece, Being and Becoming).
+
+Recommendation: a single `MoveFate(source, target, amount)` with typed holders (player pool, card, ring, supply). Rings are not modeled yet: start with pools, cards and supply.
+
+**Player honor**
+
+- `LoseHonor` (~30): the most common cost; honor goes to the supply.
+- `GainHonor` exists.
+- `TransferHonor(from, to)` (~9): "give your opponent 1 honor", "take 1 honor from that opponent".
+
+**Moving cards between stacks**
+
+- `SacrificeCard` / `DiscardCard` (29 / ~30): same physical effect (in play → discard pile), kept apart for a readable event log (sacrifice is a cost).
+- `ReturnCardToHand` (7; Adept of Shadows, Court Mask, Niten).
+- `DiscardFromHand` (chosen card) and `DiscardRandomFromHand` (the engine picks; Kuni Yori, Thunder Guard Elite).
+- `DrawConflictCards` exists (19).
+- `PutCardIntoPlay` (20): enters play without paying costs, from discard pile, hand, province or deck. Different from `PlayCharacterFromProvince`, which pays.
+- `PutCardOnDeck(top|bottom)` (Chrysanthemum Steward, Overhear, Kaiu Siege Force, "put the rest on the bottom"); shuffling uses the existing `Shuffle*Deck`.
+- `RemoveFromGame` (rare: Isawa Tadaka, Kyūden Isawa).
+- `MoveAttachment(attachment, character)` (Giver of Gifts, Invocation of Ash, Iuchi Rimei, Calling in Favors).
+
+**Provinces and dynasty cards**
+
+- Turn a card in a province faceup / facedown (~48 mentions): check that `RevealDynastyCard` fits; `TurnDynastyCardFacedown` is missing (Governor's Spy).
+- `RevealProvince` / `TurnProvinceFacedown` (Border Fortress, Shoshi ni Kie, Untamed Steppe, Saadiyah al-Mozedu).
+- `DiscardFromProvince` (Asahina Augur, Bustling Academy, Crippling Taxes), then `FillProvince`, which needs an option to refill faceup (Windswept Yurt, Isawa Eju, A Season of War).
+- `MoveProvinceCard` / `SwitchProvinceCards` (Borderlands Fortifications, Asahina Takako, Logistics, Soshi Diviner, Recalled Defenses).
+
+**Information: look, search, reveal**
+
+Search ×14, look at ×21, reveal ×35. The engine does not change the state here but controls what each player sees:
+
+- `LookAtTopCards(stack, n)`: private notification (Shrewd Yasuki, Magnificent Lighthouse, including an opponent's deck).
+- `SearchStack(stack)`: the player sees the whole stack (Shosuro Hametsu, Agasha Swordsmith).
+- `RevealCard`: public notification.
+- `LookAtHand(player)` (Kitsuki Investigator, Perceptive Kitsuki, Bayushi's Whisperers).
+
+The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutCardOnDeck`, discard.
+
+**Postponed until the conflict phase is modeled**
+
+- `MoveToConflict` / `MoveHome` (32 / 37).
+- Duels (34): initiate, honor bid, result.
+- Skill and glory modifiers "until the end of the conflict" (the most common effect: ~150 mil/pol mentions, 92 "until the end of the conflict"). Either a generic `AddSkillModifier(card, mil, pol, glory, duration)`, or (preferred, consistent with `CollectFate`) players declare the totals when the conflict is resolved.
+- Rings (claim, return, switch, move the contested ring), discarding the Imperial Favor, taking control of a card, switching the conflict type, province strength.
+
+**Architecture points raised by these cards**
+
+1. **Who may send effect messages**: about 30 cards make the opponent act during the player's action ("your opponent selects one", "must choose", "each player chooses"). `NotActivePlayerException` would block them. Effect messages should be accepted from any player while an ability is being resolved (opened by `TriggerActionAbility`, closed by `EndOpportunity`), not only from the active player.
+2. **Targets**: most effects target an opponent's card, so messages take any `cardId`, not only the sender's cards.
+3. **Randomness and visibility** are the only places where the engine does more than move pieces.
+4. **Resetting `CardState` when a card leaves play** (see Model below) becomes mandatory as soon as `SacrificeCard`, `DiscardCard` or `ReturnCardToHand` exist.
+
+**Suggested priorities** for the dynasty phase action window:
+
+1. ~~`BowCard` / `ReadyCard`~~ (done)
+2. `LoseHonor`, `TransferHonor`
+3. `MoveFate`
+4. `HonorCharacter` / `DishonorCharacter` / `DiscardStatusToken`
+5. `SacrificeCard` / `DiscardCard`, `DiscardFromHand`
+6. Province messages (turn, discard, `FillProvince` faceup)
+7. Information messages (look, search, reveal) with `PutCardOnDeck` and `TakeCardIntoHand`
 
 ### Other steps
 

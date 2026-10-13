@@ -10,7 +10,7 @@ use App\Repository\PlayerRepository;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
-final readonly class <?= $class_name ?>Handler
+final readonly class <?= $class_name . "\n" ?>
 {
     public function __construct(
         private GameRepository $gameRepository,

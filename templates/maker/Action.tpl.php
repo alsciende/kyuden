@@ -7,7 +7,7 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 #[AppAction]
-final readonly class <?= $class_name ?>  implements PlayerActionInterface
+final readonly class <?= $class_name ?> implements PlayerActionInterface
 {
     public function __construct(
         private string $gameId,
