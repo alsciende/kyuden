@@ -1,6 +1,15 @@
 # HANDOFF
 
-Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (step 1.4, play cards from provinces).
+## Current status
+
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) and the honor bid of the draw phase (latest: `BidHonor`).
+
+From `reveal_honor_dials` onward, `game` transitions are placeholders (`t7`, `t8`, …) with no logic and no `auto` flag.
+
+## Decisions taken for the dynasty phase
+
+- `collect_fate` and `play_cards_from_provinces` are resolved in player order (active player of `GameState`).
+- In `play_cards_from_provinces`, `PassDynasty` passes: the first to pass gains 1 fate, the last to pass ends the step.
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -29,6 +38,11 @@ Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (
 
 - Accepted in any game place, like `BowCard` / `ReadyCard`. The `playerId` of the message is the player whose honor changes (the giver for `TransferHonor`, whose `recipientId` is the receiver): "take 1 honor from that opponent" is a transfer from that opponent.
 - The amount cannot be negative (`\InvalidArgumentException`); a player cannot transfer honor to themselves.
+
+## Decisions taken for `BidHonor`
+
+- Players bid simultaneously (any order, once per round): the bid is a turn record of `PlayerState` (`honorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid.
+- The secrecy of the bid is not enforced (the `Event` log stores it).
 
 ## Next steps
 

@@ -1,72 +1,67 @@
-# Web Client
+# L5R Game Engine
 
-## Goal
+Server-side engine to play **Legend of the Five Rings LCG** (Fantasy Flight Games). PHP 8.4, Symfony 7.4, Doctrine ORM on PostgreSQL, Symfony Messenger, Symfony Workflow, Mercure.
 
-Build an engine to play Legends of the Five Rings LCG as published by Fantasy Flight Games.
+## MVP scope
 
-## MVP features
+- The engine acts as a **board**: it enforces the game flow (rounds, phases, framework steps) but **does not enforce card rules**.
+- Only the **Stronghold format** (two players) is in scope.
 
-- the engine will act as a board on which to play the game
-- enforce the game workflow of turns, phases and steps
-- do not enforce any game rules regarding cards
+The state of the implementation and the open points are listed in `HANDOFF.md`.
 
 ## Architecture
 
-### Entities
+### Domain model (`src/Entity`)
 
-`App\Entity\LogicalCard` is what we list in a pack or a decklist. It holds the game information about a card: title, cost, text, etc.
-
-`App\Entity\LogicalCard` are grouped in `App\Entity\Pack` by `App\Entity\Printing`.
-
-`App\Entity\PhysicalCard` is an occurrence of a card that can be in multiples in a deck. This is the card that is drawn, played, discarded, etc.
-
-`App\Entity\PhysicalCard` are associated to a `App\Entity\Player` in a `App\Entity\Game`.
-
-`App\Entity\PhysicalCard` is a mapped superclass on the actual card types in `src/Entity/CardTypes`.
-
-`App\Entity\PhysicalCard` in play are organized in `App\Entity\Stack`: ordered collection of cards.
-
-`App\Entity\Deck` is a collection of card codes that should refer to known `App\Entity\LogicalCard`. When a game starts, the deck is used to generate the `App\Entity\PhysicalCard` set.
-
-
-
-### User Events and Action Messages
-
-- Events are received by the `App\Controller\EventController`, converted to messages, and dispatched to the bus (TODO)
-- Messages are instances of `App\Message\ActionInterface` and use the attribute `App\Attribute\AppAction`.
-- This attribute is used to add a resource tag to the message and make them discoverable by the `App\Service\ActionMessageRegistry` service.
-- Messages are routed to the middlewares in the order they are listed in messenger.yaml, but each middleware starts by forwarding the message down the chain:
-  - doctrine_transaction (`\Symfony\Bridge\Doctrine\Messenger\DoctrineTransactionMiddleware`)
-  - `App\Middleware\WorkflowTransitionMiddleware`
-  - `App\Middleware\EventRecordingMiddleware`
-- Messages are routed to their main handler in src/MessageHandler, which changes the game state accordingly
-- `App\Middleware\EventRecordingMiddleware` saves an event to the database to record the handling of that message
-- `App\Middleware\WorkflowTransitionMiddleware` checks if any workflow transition can happen automatically
-- doctrine_transaction middleware commits everything to the database
-- `App\Controller\EventController` sends a response (TODO)
-
-### Workflow
-
-There are 6 workflows, defined in `config/packages/workflows.php`, one for `App\Entity\Game` and one for every subclass of `App\Entity\PhysicalCard`. They are state_machine, meaning one state at a time.
-
-The place of a card is not stored: it is computed from the type of its `App\Entity\Stack` and its `App\Enum\Orientation` (see `App\Workflow\CardMarkingStore`). Card transitions describe the move or turn they make in their metadata (`stack`, `orientation`), applied by `App\Workflow\CardTransitionListener`. A card is created with the initial orientation of its type; a transition that moves a card always gives its orientation.
-
-The places of the `game` workflow where players can trigger action abilities carry the `action_window` metadata. The `trigger_action` transition of a card workflow (a transition from a place to itself) lists where the abilities of a card can be used.
-
-Engine will listen to changes in the workflow with EventListeners located in `src/Workflow`. Some will try to block a transition (GuardListener), some will react to a transition (TransitionListener), etc.
-
-Audit trails are enabled, generating logs in the `workflow` channel.
+- `LogicalCard`: the card as printed (title, cost, text), grouped in `Pack` via `Printing`.
+- `PhysicalCard`: one copy of a card in a game, owned by a `Player`. Mapped superclass with one subclass per type in `src/Entity/CardTypes` (Conflict, Dynasty, Province, Role, Stronghold).
+- `Stack`: ordered collection of physical cards (deck, hand, province, etc.; see `Enum/StackType`). The top card has the highest `position`. When order matters, use `getOrderedCards()` / `getTopCards()`: the order of `getCards()` is not kept in sync with positions (e.g. after a shuffle).
+- `Enum/Orientation`: physical orientation of a card (`FaceDown`, `FaceUp`, `Sideways`, `UpsideDown`), stored on `PhysicalCard`. A new card takes the initial orientation of its class (`getInitialOrientation()`: face down, except stronghold and role); afterwards only workflow transitions change it.
+- `Deck`: list of card codes; turned into physical cards by `Factory/CardFactory` when a game starts.
+- `Event`: persisted record of every handled action.
+- `Candidate`: a player waiting in the matchmaking queue.
 
 ### State
 
-`App\Entity\Game`, `App\Entity\Player` and `App\Entity\PhysicalCard` entities have a `state` field which is a JSON representation of their state. They implement the `App\State\Model\StatefulInterface` interface.
+`Game`, `Player` and `PhysicalCard` implement `State/Model/StatefulInterface`: they carry a JSON `state` field, decoded by the managers in `src/State/Manager` (`GameStateManager`, `PlayerStateManager`, `CardStateManager`) into `GameState` / `PlayerState` / `CardState` (fate on the card). Modify it through `withState(closure)`, which decodes, runs the callback and re-encodes.
 
-Services `App\State\Manager\GameStateManager`, `App\State\Manager\PlayerStateManager` and `App\State\Manager\CardStateManager` decode this field to a `App\State\Model\GameState`, `App\State\Model\PlayerState` and `App\State\Model\CardState` object respectively.
+### Action pipeline
 
-The main way to interact with the state is via their `withState` methods, which decode the state to a closure callback and encode it afterward.
+1. A player action is a Messenger message in `src/Message`, implementing `ActionInterface` (or `PlayerActionInterface` when it has a player) and tagged with `#[AppAction]`, which makes it discoverable by `Service/ActionMessageRegistry`. Messages hold ids (game, player, card) as strings, not entities.
+2. Its handler in `src/MessageHandler` (`#[AsMessageHandler]`, `final readonly`) loads entities through repositories and changes the state, usually by applying a transition on the relevant workflow.
+3. Middlewares (order in `config/packages/messenger.yaml`; each forwards down the chain first, then acts):
+   - Doctrine transaction: commits everything at the end.
+   - `WorkflowTransitionMiddleware`: repeatedly applies any enabled game transition marked `metadata.auto: true`.
+   - `EventRecordingMiddleware`: saves the message as an `Event`.
+4. `Service/EventPlayer` deserializes a stored `Event` and re-dispatches it, so a game can be replayed from its event log. Messages must therefore stay serializable.
 
-### Notifications
+The HTTP API is a stub: `ApiGamesController` returns the default scaffold, and the event controller (receiving player events, converting them to messages and responding) is still TODO. Console commands (`src/Command`) are currently the main way to drive the engine.
 
-When users need to be notified of changes, a `App\Notification\NotificationInterface` object is issued to a `App\Notifier\NotifierInterface` service.
+### Workflows
 
-The main `App\Notifier\NotifierInterface` service is `App\Notifier\MercureNotifier` which sends notifications as server-sent events via a Mercure hub.
+Six `state_machine` workflows defined in PHP in `config/packages/workflows.php` (Symfony 7.4 array-shape config, `App::config()`; keys are checked by PHPStan against `config/reference.php`): `game` plus one per card type (e.g. dynasty card: `draw_card`, `turn_faceup`, `turn_facedown`, `play`, `discard`). Use the place constants of the card classes and enums in metadata (`StackType::Hand`, `Orientation::FaceUp`), and the helpers of `Workflow/WorkflowConfig` (`transition()`, `cardWorkflow()`, `bowAndReady()`, `triggerAction()`). Only the `game` places carrying metadata are declared (`places`); the others come from the transitions. Audit trail is on (`workflow` log channel).
+
+**Card place = stack type + orientation.** A card's workflow place is not stored: `PhysicalCard::getCurrentPlace()` computes it with the `getPlace(StackType, Orientation)` mapping of each card class (e.g. a province `UpsideDown` is broken, a dynasty card `FaceUp` in a province is `on_province_faceup`). A place stands for a set of available transitions, so orientations that do not change them share a place: a bowed card (`Sideways`) is still `in_play`, and `bow` / `ready` are transitions from `in_play` to itself. Only what is not a physical position (honor status, fate tokens…) goes in the card `state`. Card workflows use `Workflow/CardMarkingStore`, which reads that computed place and, after a transition, checks that the card really ended up in the target place.
+
+Card transitions declare their effect in metadata, applied by the generic `Workflow/CardTransitionListener`: `stack` (StackType the card moves to) and `orientation` (Orientation it takes; required on a move, otherwise the card keeps its orientation). Target stack: a character entering play gets a new stack (`PhysicalCard::entersPlayInNewStack()`); otherwise the context `stack` (e.g. the character or province an attachment goes on, possibly an opponent's), else the player's unique stack. `CardMarkingStore` rejects a target stack the card cannot be in. Write a specific listener only for what metadata cannot express. Never move or turn a card outside a transition.
+
+The `game` workflow models the round sequence; a new place exists when the phase **and** the available player actions differ. Place metadata:
+
+- `action_window`: players can trigger action abilities (`TriggerActionAbility`); the `trigger_action` transition of a card workflow (from a place to itself) lists where the abilities of a card can be used.
+
+Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after the transition/place and the event type: `...GuardListener` (blocks a transition until conditions are met), `...TransitionListener`, `...EnterListener`.
+
+### Game flow
+
+- **Values from players**: since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on.
+- **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
+- **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order).
+- **Opportunities to act**: steps resolved in player order use the active player of `GameState` (`activePlayerId`). The enter listener of the step activates the first player; the handler of each action rejects a player who is not active (`NotActivePlayerException`) and gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). A player who passes (`PlayerState::passed`, reset by the enter listener of the step) is skipped by `Service/OpportunityService`. An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`.
+- **Costs and effects**: board manipulations (`BowCard`, `LoseHonor`…) are accepted in any place, from any player of the game, on any card or player, since the engine does not know which ability is being resolved.
+
+### Other services
+
+- Matchmaking: `Service/MatchMaking/FifoMatchMakingService`, then `Service/GameLauncher/AutomaticGameLauncher` creates the game.
+- Notifications: `NotificationInterface` objects sent through `NotifierInterface`; `MercureNotifier` publishes server-sent events, `LoggerNotifier` logs them.
+- Security: access-token authentication (`Security/AccessTokenHandler`).
+- Exceptions: `Exception/Data` (missing/mismatched data) vs `Exception/Rules` (game-rule violations).
