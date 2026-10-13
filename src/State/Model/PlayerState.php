@@ -21,6 +21,8 @@ class PlayerState
      */
     private bool $fateCollected = false;
 
+    private bool $dynastyPassed = false;
+
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
         $this->strongholdProvinceId = $strongholdProvinceId;
@@ -90,8 +92,23 @@ class PlayerState
         return $this;
     }
 
+    /**
+     * The player has passed during the play cards from provinces step: they cannot act anymore until the end of the phase.
+     */
+    public function isDynastyPassed(): bool
+    {
+        return $this->dynastyPassed;
+    }
+
+    public function setDynastyPassed(bool $dynastyPassed): self
+    {
+        $this->dynastyPassed = $dynastyPassed;
+
+        return $this;
+    }
+
     public function resetTurnRecords(): self
     {
-        return $this->setFateCollected(false);
+        return $this->setFateCollected(false)->setDynastyPassed(false);
     }
 }

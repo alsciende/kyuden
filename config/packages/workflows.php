@@ -43,7 +43,7 @@ return App::config([
                     WorkflowConfig::transition('dynasty_phase_began', 'dynasty_phase_begins', 'reveal_facedown_dynasty_cards', ['auto' => true]),
                     WorkflowConfig::transition('dynasty_cards_revealed', 'reveal_facedown_dynasty_cards', 'collect_fate', ['auto' => true]),
                     WorkflowConfig::transition('fate_collected', 'collect_fate', 'play_cards_from_provinces', ['auto' => true]),
-                    WorkflowConfig::transition('t3', 'play_cards_from_provinces', 'dynasty_phase_ends'),
+                    WorkflowConfig::transition('dynasty_actions_passed', 'play_cards_from_provinces', 'dynasty_phase_ends', ['auto' => true]),
                     WorkflowConfig::transition('t4', 'dynasty_phase_ends', 'draw_phase_begins'),
                     WorkflowConfig::transition('t5', 'draw_phase_begins', 'honor_bid'),
                     WorkflowConfig::transition('t6', 'honor_bid', 'reveal_honor_dials'),

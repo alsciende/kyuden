@@ -14,6 +14,7 @@ use App\Entity\Player;
 use App\Enum\StackType;
 use App\Message\ChooseStrongholdProvince;
 use App\Message\RevealDynastyCard;
+use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 
 /**
@@ -153,6 +154,9 @@ class MessageHandlerTest extends AbstractKernelTestCase
         }
 
         $this->assertSame('collect_fate', $game->getCurrentPlace());
+        // players collect fate in player order
+        $gameState = self::service(GameStateManager::class)->getState($game);
+        $this->assertSame($gameState->firstPlayerId, $gameState->activePlayerId);
 
         return $gameId;
     }

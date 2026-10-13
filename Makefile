@@ -1,5 +1,5 @@
-EXEC          := docker compose exec
-EXEC_SYMFONY  := $(EXEC) -it -u www-data --envfile proxy.env symfony
+EXEC          := docker compose --env-file proxy.env exec
+EXEC_SYMFONY  := $(EXEC) -it -u www-data symfony
 EXEC_COMPOSER := $(EXEC_SYMFONY) composer
 PHP           := ${EXEC_SYMFONY} php
 

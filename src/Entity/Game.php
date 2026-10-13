@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Exception\Data\PlayerNotFoundException;
 use App\Repository\GameRepository;
 use App\State\Model\StatefulInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -90,6 +91,17 @@ class Game implements StatefulInterface
         }
 
         return $this;
+    }
+
+    public function getPlayer(string $playerId): Player
+    {
+        foreach ($this->players as $player) {
+            if ($player->getId() === $playerId) {
+                return $player;
+            }
+        }
+
+        throw new PlayerNotFoundException($playerId);
     }
 
     /**

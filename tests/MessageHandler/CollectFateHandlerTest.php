@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Exception\Rules\FateAlreadyCollectedException;
+use App\Exception\Rules\NotActivePlayerException;
 use App\Message\CollectFate;
 use App\MessageHandler\CollectFateHandler;
+use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -16,12 +18,13 @@ class CollectFateHandlerTest extends AbstractKernelTestCase
     /**
      * @param \Closure(PlayerBuilder): mixed|null $john
      */
-    private function scenarioAtCollectFate(?\Closure $john = null): Scenario
+    private function scenarioAtCollectFate(?\Closure $john = null, string $activePlayer = 'john'): Scenario
     {
         return $this->scenario()
             ->atPlace('collect_fate')
             ->withPlayer('john', $john)
             ->withPlayer('jane')
+            ->activePlayer($activePlayer)
             ->persist();
     }
 
@@ -39,6 +42,25 @@ class CollectFateHandlerTest extends AbstractKernelTestCase
         $state = $this->playerStateManager->getState($scenario->player('john'));
         self::assertSame(9, $state->getFate());
         self::assertTrue($state->isFateCollected());
+    }
+
+    public function testGivesTheOpportunityToActToTheNextPlayer(): void
+    {
+        $scenario = $this->scenarioAtCollectFate();
+
+        self::service(CollectFateHandler::class)($this->collect($scenario, 'john', 7));
+
+        $state = self::service(GameStateManager::class)->getState($scenario->game());
+        self::assertTrue($state->isActivePlayer($scenario->player('jane')));
+    }
+
+    public function testRejectsAPlayerWhoIsNotActive(): void
+    {
+        $scenario = $this->scenarioAtCollectFate();
+
+        $this->expectException(NotActivePlayerException::class);
+
+        self::service(CollectFateHandler::class)($this->collect($scenario, 'jane', 7));
     }
 
     public function testRejectsASecondCollectionInTheSameRound(): void
@@ -61,7 +83,7 @@ class CollectFateHandlerTest extends AbstractKernelTestCase
 
     public function testCardsCanBePlayedOnceTheLastPlayerHasCollected(): void
     {
-        $scenario = $this->scenarioAtCollectFate(fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected());
+        $scenario = $this->scenarioAtCollectFate(fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected(), activePlayer: 'jane');
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->collect($scenario, 'jane', 7));

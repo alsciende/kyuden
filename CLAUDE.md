@@ -64,11 +64,13 @@ The `game` workflow models the round sequence; a new place exists when the phase
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the start of the dynasty phase up to collecting fate (latest: `CollectFate`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `PassDynasty`; playing characters from provinces is not implemented yet).
 
 Since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on. What a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 
-From `play_cards_from_provinces` onward, `game` transitions are placeholders (`t3`, `t4`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
+The player order is stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order). Steps resolved in player order use the active player of `GameState` (`activePlayerId`): the enter listener of the step activates the first player, the handler of each action rejects a player who is not active (`NotActivePlayerException`) and gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). Implemented for `collect_fate` and `play_cards_from_provinces` (only `PassDynasty` so far: the first to pass gains 1 fate, the last to pass ends the step).
+
+From `dynasty_phase_ends` onward, `game` transitions are placeholders (`t4`, `t5`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
 
 ## Game rules reference
 
@@ -84,7 +86,7 @@ From `play_cards_from_provinces` onward, `game` transitions are placeholders (`t
 ## Tests
 
 - `dama/doctrine-test-bundle` wraps each test in a rolled-back transaction: tests cannot share data, so never chain them with `#[Depends]`. Logical cards and starter decks come from the fixtures loaded by `make db`.
-- Build the game state a test needs with `$this->scenario()` (`tests/Builder/GameBuilder.php`) instead of dispatching the actions leading to it. It writes the game place directly, puts cards directly in their stacks (unless stated: face down in decks and provinces except the stronghold, face up elsewhere), and exposes players and cards by alias through `Scenario`. `build()` keeps everything in memory; `persist()` flushes, for handlers that load entities by id.
+- Build the game state a test needs with `$this->scenario()` (`tests/Builder/GameBuilder.php`) instead of dispatching the actions leading to it. Once the game has started, the player order is the declaration order of the players. It writes the game place directly, puts cards directly in their stacks (unless stated: face down in decks and provinces except the stronghold, face up elsewhere), and exposes players and cards by alias through `Scenario`. `build()` keeps everything in memory; `persist()` flushes, for handlers that load entities by id.
 - Test at the narrowest level: guards with `Registry::get($game)->can()`, listeners and handlers by invoking them directly (no auto transitions), the message bus only to check automatic transitions.
 - `tests/MessageHandler/MessageHandlerTest.php` is the single end-to-end setup scenario, kept as a safety net.
 

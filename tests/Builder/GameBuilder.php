@@ -47,6 +47,8 @@ final class GameBuilder
 
     private ?string $firstPlayer = null;
 
+    private ?string $activePlayer = null;
+
     /**
      * @var array<string, PlayerBuilder>
      */
@@ -102,6 +104,16 @@ final class GameBuilder
         return $this;
     }
 
+    /**
+     * Player who has the opportunity to act. None by default.
+     */
+    public function activePlayer(string $alias): self
+    {
+        $this->activePlayer = $alias;
+
+        return $this;
+    }
+
     public function build(): Scenario
     {
         $this->builtStacks = [];
@@ -115,10 +127,20 @@ final class GameBuilder
             $players[$alias] = $this->buildPlayer($game, $playerBuilder);
         }
 
+        // once the game has started, the player order is the order in which players are declared
+        if ($this->place !== 'join_game') {
+            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setPlayerOrder(...array_values($players)));
+        }
+
         $firstPlayer = $this->firstPlayer ?? ($this->place === 'join_game' ? null : array_key_first($players));
         if ($firstPlayer !== null) {
             $player = $players[$firstPlayer] ?? throw new \OutOfBoundsException("No player aliased '{$firstPlayer}'.");
             $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setFirstPlayer($player));
+        }
+
+        if ($this->activePlayer !== null) {
+            $player = $players[$this->activePlayer] ?? throw new \OutOfBoundsException("No player aliased '{$this->activePlayer}'.");
+            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setActivePlayer($player));
         }
 
         return new Scenario($game, $players, $this->builtCards);
@@ -212,7 +234,7 @@ final class GameBuilder
     {
         $honor = $builder->getHonor();
         $this->playerStateManager->withState($player, function (PlayerState $state) use ($builder, $honor, $strongholdProvinceId): void {
-            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected());
+            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected())->setDynastyPassed($builder->isDynastyPassed());
             if ($honor !== null) {
                 $state->setHonor($honor);
             }
