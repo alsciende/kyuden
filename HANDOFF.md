@@ -2,9 +2,9 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid and the reveal of the honor dials of the draw phase (latest: `honor_dials_revealed` and `SetHonorBid`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials and the honor transfer of the draw phase (latest: `honor_transferred`).
 
-From `transfer_honor` onward, `game` transitions are placeholders (`t8`, `t9`, …) with no logic and no `auto` flag.
+From `draw_cards` onward, `game` transitions are placeholders (`t9`, `t10`, …) with no logic and no `auto` flag.
 
 ## Decisions taken for the dynasty phase
 
@@ -22,6 +22,12 @@ From `transfer_honor` onward, `game` transitions are placeholders (`t8`, `t9`, �
 - `reveal_honor_dials` is a step where every player is active (`RevealHonorDialsEnterListener`), to react to the honor dials being revealed (e.g. Kitsuki Jusai, cards changing a bid by 1), then pass. `honor_dials_revealed` moves on to `transfer_honor` once every player has passed. Passing is final, although a player could react to an opponent's reaction: acceptable since each of these cards reacts once.
 - `SetHonorBid` changes the bid on the dial of a player. Like the other effect messages, it is accepted in any place, from any player of the game, on any player. The player must have bid this round (`NoHonorBidException`); the bid can be 0 (cards decrease it "to a minimum of 0"), not negative.
 - The bids are not revealed by the engine: their secrecy is not enforced.
+
+## Decisions taken for the honor transfer
+
+- `honor_transferred` is automatic: the engine computes the transfer from the recorded bids (`HonorTransferredTransitionListener`), after the changes made with `SetHonorBid` during `reveal_honor_dials`. No player action: cards modifying the transfer itself are handled with the effect messages (`TransferHonor`, `GainHonor`…) in a later window.
+- The highest bidder gives the difference to the lowest bidder; nothing happens on equal bids. Every player must have bid (`NoHonorBidException`).
+- Reaching 0 or 25 honor during the transfer throws, like the effect messages (see Honor limits below), which rolls back the action that triggered it (the last `PassOpportunity`).
 
 ## Decisions taken for `PlayCharacterFromProvince`
 

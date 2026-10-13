@@ -121,14 +121,16 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('reveal_honor_dials')
-            ->withPlayer('john')
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(1))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(4)->passed())
             ->activePlayers('john')
             ->persist();
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
-        self::assertSame('transfer_honor', $scenario->game()->getCurrentPlace());
+        self::assertSame('draw_cards', $scenario->game()->getCurrentPlace());
+        self::assertSame(13, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
+        self::assertSame(7, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
     }
 }
