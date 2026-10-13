@@ -59,7 +59,15 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Not done: conceding, notifying the players (Mercure).
 - Breaking the stronghold province of a player eliminates them (`VictoryCondition::StrongholdProvinceBroken`), like having no honor: the game ends right after `provinces_broken`.
 
-## Decisions taken for declaring conflicts
+## Decisions taken for the conflict phase
+
+- **Places**: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province`, `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window` (3.3). Transitions applied by a handler: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`; every other one is automatic.
+- **Reactions**: players must be able to react often for now; it will be locked once the game has been tested. Reaction windows (`react_to_*`: every player active, passing final, like `reveal_honor_dials`) after the declaration of the conflict, the result, the broken province and the ring being claimed.
+- **Participation** in the conflict is stored in `GameState::conflict` (ids of the participating cards), not in `CardState`.
+- **Values from players**: the skill totals, the province strength and the glory count are declared by the players (see below); the engine applies the rules to them.
+- **Conflict opportunities**: two per player and per round (turn records of `PlayerState`: a counter, for cards granting additional conflicts, and the declared types). Declaring uses the opportunity of that type; passing (`PassConflict`) uses one opportunity with no type. A conflict can be declared while an opportunity remains and its type has not been declared this round.
+- **Conflicts at multiple provinces** (A War on Two Fronts): the conflict keeps the province with the contested ring (`provinceId`) and the list of attacked provinces; each attacked province has its own strength and is broken separately.
+- **Rings** are set by `start_game` (unclaimed, no fate).
 
 - `declare_conflict` gives the opportunity to the next player in player order with a conflict opportunity left (`DeclareConflictEnterListener`): the first player at the beginning of the phase, then the player after the one who used the last conflict opportunity (`GameState::lastConflictPlayerId`, reset by `conflict_phase_began`).
 - `DeclareConflict` carries the ring, the type, the province, the attackers and the characters evaded by covert (`evadedIds`). Checked: active player, unclaimed ring, province of an opponent (who becomes the defending player), not broken, the stronghold province only once 3 other provinces of its owner are broken (`Service/ConflictService`), at least one attacker, attackers are ready characters in play of the player, evaded characters are characters in play of the defending player, and an opportunity of that type is left (`PlayerState::useConflictOpportunity()`). Not checked: the covert keyword and the number of evaded characters, other eligibility restrictions from cards.
@@ -140,7 +148,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ### Action abilities
 
-- **Costs and effects of abilities**: `BowCard` / `ReadyCard` exist; no action exists yet to spend fate, lose honor, move fate, sacrifice or dishonor a card. `TriggerActionAbility` is of little use until some of them exist. See the analysis below.
+- **Costs and effects of abilities**: `BowCard` / `ReadyCard`, `LoseHonor` / `GainHonor` / `TransferHonor`, `HonorCharacter` / `DishonorCharacter`, `RemoveFate`, `DiscardCard`, `DiscardRandomCardFromHand`, `MoveToConflict` / `MoveHome` exist. Missing: spending or moving fate (`MoveFate`), sacrificing, returning to hand, the province and information messages. See the analysis below.
 
 #### Messages needed for costs and effects
 
@@ -219,35 +227,18 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 ### Conflict phase
 
-Plan, in this order:
-
-1. ~~Action windows with consecutive passes~~ (done, with the draw phase action window).
-2. ~~Model and workflow skeleton~~ (done): rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
-3. ~~`DeclareConflict` / `PassConflict`~~ (done), with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
-4. ~~`DeclareDefenders` (possibly none), then the conflict action window (defender first)~~ (done).
-5. ~~Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home~~ (done).
-6. ~~Imperial Favor: glory count, `ClaimImperialFavor(side)`~~ (done).
-
-State of the skeleton:
-
-- Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
-- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`.
-- Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
-
-Decisions already taken:
-
-- **Participation** in the conflict is stored in `GameState` (ids of the participating cards), not in `CardState`: a card leaving play will have to be removed from the conflict.
-- **Values from players**: each player declares the total skill of their side; an automatic transition waits for both, then the engine computes the winner (ties go to the attacker, a total of 1 or more is needed to win, no winner when both count 0), unopposed and the excess skill. Same for the province strength and the glory count (the engine can add 1 per claimed ring).
-- **Conflict opportunities**: two per player and per round. Declaring uses the opportunity of that type; passing (`PassConflict`) uses one opportunity with no type. A conflict can be declared while an opportunity remains and its type has not been declared this round. Turn records: remaining opportunities (a counter, for cards granting additional conflicts) and declared types.
-- **Conflicts at multiple provinces** (A War on Two Fronts): the conflict keeps the province with the contested ring and the list of attacked provinces; `DeclareConflict` targets one province, a later effect message adds the other one. The province strength is declared for each province.
-- **Discarding from a broken province**: a step with an opportunity for the attacker.
-- **Reactions**: players must be able to react often for now; it will be locked once the game has been tested. Reaction windows (every player active, passing final, like `reveal_honor_dials`) after the declaration of the conflict, the result, the broken province and the ring being claimed.
+- **A War on Two Fronts**: an effect message adding an attacked province to the conflict (`ConflictState::attackedProvinceIds` is ready for it).
+- **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card, duels (initiate, bid, result).
+- **Reactions**: reaction windows only exist where listed above; reactions to other framework steps (e.g. characters discarded during the fate phase) go through the next window. To be locked down once the game has been tested.
+- **Skill announcements**: after each action of the conflict action window, a player should announce the current skill of both sides (3.2.2); not recorded.
 
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
 - **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player, accepted in any place).
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
+- **Mulligan**: players cannot replace cards of their starting hand or provinces during setup.
+- **Limited** keyword and "max X per conflict / round" restrictions on playing cards.
 
 ### Model
 
