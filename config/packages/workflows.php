@@ -68,7 +68,7 @@ return App::config([
                     WorkflowConfig::transition('honor_bids_confirmed', 'honor_bid', 'reveal_honor_dials', ['auto' => true]),
                     WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
                     WorkflowConfig::transition('honor_transferred', 'transfer_honor', 'draw_cards', ['auto' => true]),
-                    WorkflowConfig::transition('t9', 'draw_cards', 'draw_phase_ends'),
+                    WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_ends', ['auto' => true]),
                     WorkflowConfig::transition('t10', 'draw_phase_ends', 'conflict_phase_begins'),
                     WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
                     WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),

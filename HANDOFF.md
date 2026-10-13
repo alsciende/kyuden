@@ -2,9 +2,9 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials and the honor transfer of the draw phase (latest: `honor_transferred`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (latest: `cards_drawn`).
 
-From `draw_cards` onward, `game` transitions are placeholders (`t9`, `t10`, …) with no logic and no `auto` flag.
+From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`, …) with no logic and no `auto` flag.
 
 ## Decisions taken for the dynasty phase
 
@@ -28,6 +28,12 @@ From `draw_cards` onward, `game` transitions are placeholders (`t9`, `t10`, …)
 - `honor_transferred` is automatic: the engine computes the transfer from the recorded bids (`HonorTransferredTransitionListener`), after the changes made with `SetHonorBid` during `reveal_honor_dials`. No player action: cards modifying the transfer itself are handled with the effect messages (`TransferHonor`, `GainHonor`…) in a later window.
 - The highest bidder gives the difference to the lowest bidder; nothing happens on equal bids. Every player must have bid (`NoHonorBidException`).
 - Reaching 0 or 25 honor during the transfer throws, like the effect messages (see Honor limits below), which rolls back the action that triggered it (the last `PassOpportunity`).
+
+## Decisions taken for the card draw
+
+- `cards_drawn` is automatic: each player draws as many conflict cards as their honor bid (`CardsDrawnTransitionListener`, through `DrawConflictCards` on `transition.bus`), after the changes made with `SetHonorBid`. No player action: cards drawing more are handled with `DrawConflictCards` in a later window. Every player must have bid (`NoHonorBidException`); a bid of 0 draws nothing.
+- The action window after the draw (between 2.5 and 2.6) is not modeled yet: `cards_drawn` goes straight to `draw_phase_ends`. It needs the action window mode described in Other steps.
+- Drawing from an empty conflict deck throws (see Game rules not enforced yet).
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -150,12 +156,13 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 ### Other steps
 
+- **Draw phase action window**: a place between `draw_cards` and `draw_phase_ends` with `action_window` and `opportunities`, the first player active, once the action window mode below exists.
 - **Action windows** (conflict phase): passing does not forfeit the window; it closes when every player has passed in sequence. `passed` will need to be reset when a player acts, and `PassOpportunity` will need to support this mode (e.g. with a place metadata).
 
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
-- **Empty dynasty deck**: refilling from an empty deck currently throws `DrawingFromEmptyDeckException`; the real rule (lose honor, shuffle the discard pile into a new deck) is not implemented.
+- **Empty decks**: refilling a province or drawing from an empty deck (including the draw of the draw phase) currently throws `DrawingFromEmptyDeckException`; the real rule (lose 5 honor, shuffle the discard pile into a new deck, then keep drawing) is not implemented.
 - **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player).
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 

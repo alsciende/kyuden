@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Enum\StackType;
 use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\PassOpportunity;
@@ -117,20 +118,23 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         self::assertSame([$scenario->player('john')->getId(), $scenario->player('jack')->getId()], $state->activePlayerIds);
     }
 
-    public function testThePlayersTransferHonorOnceTheLastPlayerHasPassedAfterTheHonorDialsAreRevealed(): void
+    public function testThePlayersTransferHonorAndDrawOnceTheLastPlayerHasPassedAfterTheHonorDialsAreRevealed(): void
     {
+        $deck = ['01-fine-katana', '01-banzai', '01-fine-katana', '01-banzai'];
         $scenario = $this->scenario()
             ->atPlace('reveal_honor_dials')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(1))
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(4)->passed())
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(1)->conflictDeck($deck))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(4)->passed()->conflictDeck($deck))
             ->activePlayers('john')
             ->persist();
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
-        self::assertSame('draw_cards', $scenario->game()->getCurrentPlace());
+        self::assertSame('draw_phase_ends', $scenario->game()->getCurrentPlace());
         self::assertSame(13, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
         self::assertSame(7, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
+        self::assertCount(1, $scenario->player('john')->getUniqueStack(StackType::Hand)->getCards());
+        self::assertCount(4, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
     }
 }
