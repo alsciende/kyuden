@@ -39,23 +39,33 @@ $gameTransitions = [
     WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_action_window', ['auto' => true]),
     WorkflowConfig::transition('draw_actions_passed', 'draw_phase_action_window', 'draw_phase_ends', ['auto' => true]),
     WorkflowConfig::transition('draw_phase_ended', 'draw_phase_ends', 'conflict_phase_begins', ['auto' => true]),
-    WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
-    WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),
-    WorkflowConfig::transition('t13', 'declare_defenders', 'conflict_action_window'),
-    WorkflowConfig::transition('t14', 'conflict_action_window', 'determine_result'),
-    WorkflowConfig::transition('t15', 'determine_result', 'apply_unopposed'),
-    WorkflowConfig::transition('t16', 'apply_unopposed', 'break_province'),
-    WorkflowConfig::transition('t17', 'break_province', 'resolve_ring_effects'),
-    WorkflowConfig::transition('t18', 'resolve_ring_effects', 'claim_ring'),
-    WorkflowConfig::transition('t19', 'claim_ring', 'return_home'),
-    WorkflowConfig::transition('t20', 'return_home', 'conflict_ends'),
-    WorkflowConfig::transition('t21', 'conflict_ends', 'declare_conflict'),
-    WorkflowConfig::transition('t22', 'conflict_phase_begins', 'determine_imperial_favor'),
-    WorkflowConfig::transition('t23', 'conflict_ends', 'determine_imperial_favor'),
-    WorkflowConfig::transition('t24', 'determine_imperial_favor', 'glory_count'),
-    WorkflowConfig::transition('t25', 'glory_count', 'claim_imperial_favor'),
-    WorkflowConfig::transition('t26', 'claim_imperial_favor', 'conflict_phase_ends'),
-    WorkflowConfig::transition('t27', 'conflict_phase_ends', 'fate_phase_begins'),
+    // 3.1, then the loop of 3.3: the action window opens again after each conflict or conflict opportunity passed
+    WorkflowConfig::transition('conflict_phase_began', 'conflict_phase_begins', 'conflict_phase_action_window', ['auto' => true]),
+    WorkflowConfig::transition('conflict_phase_actions_passed', 'conflict_phase_action_window', 'declare_conflict', ['auto' => true]),
+    WorkflowConfig::transition('conflict_opportunities_exhausted', 'conflict_phase_action_window', 'determine_imperial_favor', ['auto' => true]),
+    WorkflowConfig::transition('conflict_passed', 'declare_conflict', 'conflict_ends'),
+    // conflict resolution (3.2 to 3.2.8)
+    WorkflowConfig::transition('conflict_declared', 'declare_conflict', 'react_to_conflict_declaration'),
+    WorkflowConfig::transition('declaration_reactions_passed', 'react_to_conflict_declaration', 'declare_defenders', ['auto' => true]),
+    WorkflowConfig::transition('defenders_declared', 'declare_defenders', 'conflict_action_window'),
+    WorkflowConfig::transition('conflict_actions_passed', 'conflict_action_window', 'determine_result', ['auto' => true]),
+    // TODO automatic once the players declare their skill
+    WorkflowConfig::transition('result_determined', 'determine_result', 'react_to_conflict_result'),
+    WorkflowConfig::transition('result_reactions_passed', 'react_to_conflict_result', 'apply_unopposed', ['auto' => true]),
+    WorkflowConfig::transition('unopposed_applied', 'apply_unopposed', 'break_province', ['auto' => true]),
+    WorkflowConfig::transition('provinces_broken', 'break_province', 'react_to_broken_province', ['auto' => true]),
+    WorkflowConfig::transition('break_reactions_passed', 'react_to_broken_province', 'resolve_ring_effects', ['auto' => true]),
+    WorkflowConfig::transition('ring_effects_resolved', 'resolve_ring_effects', 'claim_ring', ['auto' => true]),
+    WorkflowConfig::transition('ring_claimed', 'claim_ring', 'react_to_ring_claim', ['auto' => true]),
+    WorkflowConfig::transition('claim_reactions_passed', 'react_to_ring_claim', 'return_home', ['auto' => true]),
+    WorkflowConfig::transition('returned_home', 'return_home', 'conflict_ends', ['auto' => true]),
+    WorkflowConfig::transition('conflict_ended', 'conflict_ends', 'conflict_phase_action_window', ['auto' => true]),
+    // 3.4 to 3.5
+    WorkflowConfig::transition('imperial_favor_contest_began', 'determine_imperial_favor', 'glory_count', ['auto' => true]),
+    // TODO automatic once the players declare their glory count
+    WorkflowConfig::transition('glory_counted', 'glory_count', 'claim_imperial_favor'),
+    WorkflowConfig::transition('imperial_favor_claimed', 'claim_imperial_favor', 'conflict_phase_ends'),
+    WorkflowConfig::transition('conflict_phase_ended', 'conflict_phase_ends', 'fate_phase_begins', ['auto' => true]),
     WorkflowConfig::transition('t28', 'fate_phase_begins', 'discard_characters_with_no_fate'),
     WorkflowConfig::transition('t29', 'discard_characters_with_no_fate', 'remove_fate_from_characters'),
     WorkflowConfig::transition('t30', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings'),
@@ -116,6 +126,33 @@ return App::config([
                             'opportunities' => PassingRule::Consecutive,
                         ],
                     ],
+                    [
+                        'name' => 'conflict_phase_action_window',
+                        'metadata' => [
+                            'action_window' => true,
+                            'opportunities' => PassingRule::Consecutive,
+                        ],
+                    ],
+                    [
+                        // the defending player has the first opportunity to act
+                        'name' => 'conflict_action_window',
+                        'metadata' => [
+                            'action_window' => true,
+                            'opportunities' => PassingRule::Consecutive,
+                        ],
+                    ],
+                    [
+                        // the attacking player may resolve the ring effect if they won the conflict
+                        'name' => 'resolve_ring_effects',
+                        'metadata' => [
+                            'opportunities' => PassingRule::Final,
+                        ],
+                    ],
+                    ...array_map(
+                        // reactions to a framework step: every player can react, then passes
+                        fn (string $place): array => ['name' => $place, 'metadata' => ['opportunities' => PassingRule::Final]],
+                        ['react_to_conflict_declaration', 'react_to_conflict_result', 'react_to_broken_province', 'react_to_ring_claim'],
+                    ),
                 ],
                 'transitions' => $gameTransitions,
             ],

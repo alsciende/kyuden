@@ -8,26 +8,29 @@ use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use Symfony\Component\Workflow\Registry;
+use App\Workflow\Game\AllPlayersOpportunityEnterListener;
+use Symfony\Component\Workflow\Event\EnterEvent;
+use Symfony\Component\Workflow\Marking;
 
-class RevealHonorDialsEnterListenerTest extends AbstractKernelTestCase
+class AllPlayersOpportunityEnterListenerTest extends AbstractKernelTestCase
 {
-    private function revealHonorDials(): Scenario
+    private function enter(): Scenario
     {
         $scenario = $this->scenario()
             ->atPlace('honor_bid')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(2)->passed())
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(4)->passed())
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->activePlayer('john')
             ->build();
 
-        self::service(Registry::class)->get($scenario->game())->apply($scenario->game(), 'honor_bids_confirmed');
+        self::service(AllPlayersOpportunityEnterListener::class)(new EnterEvent($scenario->game(), new Marking()));
 
         return $scenario;
     }
 
     public function testEveryPlayerHasTheOpportunityToAct(): void
     {
-        $scenario = $this->revealHonorDials();
+        $scenario = $this->enter();
 
         $state = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
@@ -36,7 +39,7 @@ class RevealHonorDialsEnterListenerTest extends AbstractKernelTestCase
 
     public function testNoPlayerHasPassedWhenTheStepBegins(): void
     {
-        $scenario = $this->revealHonorDials();
+        $scenario = $this->enter();
 
         foreach (['john', 'jane'] as $alias) {
             self::assertFalse($this->playerStateManager->getState($scenario->player($alias))->isPassed());

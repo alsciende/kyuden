@@ -138,9 +138,9 @@ final class GameBuilder
             $players[$alias] = $this->buildPlayer($game, $playerBuilder);
         }
 
-        // once the game has started, the player order is the order in which players are declared
+        // once the game has started, the player order is the order in which players are declared, and the rings are unclaimed
         if ($this->place !== 'join_game') {
-            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setPlayerOrder(...array_values($players)));
+            $this->gameStateManager->withState($game, fn (GameState $state): GameState => $state->setPlayerOrder(...array_values($players))->initRings());
         }
 
         $firstPlayer = $this->firstPlayer ?? ($this->place === 'join_game' ? null : array_key_first($players));
@@ -252,7 +252,12 @@ final class GameBuilder
     {
         $honor = $builder->getHonor();
         $this->playerStateManager->withState($player, function (PlayerState $state) use ($builder, $honor, $strongholdProvinceId): void {
-            $state->setFate($builder->getFate())->setFateCollected($builder->isFateCollected())->setHonorBid($builder->getHonorBid())->setPassed($builder->isPassed());
+            $state->setFate($builder->getFate())
+                ->setFateCollected($builder->isFateCollected())
+                ->setHonorBid($builder->getHonorBid())
+                ->setPassed($builder->isPassed())
+                ->setConflictOpportunities($builder->getConflictOpportunities())
+                ->setDeclaredConflictTypes($builder->getDeclaredConflictTypes());
             if ($honor !== null) {
                 $state->setHonor($honor);
             }

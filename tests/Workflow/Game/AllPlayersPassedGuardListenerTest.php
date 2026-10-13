@@ -30,6 +30,13 @@ class AllPlayersPassedGuardListenerTest extends AbstractKernelTestCase
         yield 'play cards from provinces' => ['play_cards_from_provinces', 'dynasty_actions_passed'];
         yield 'reveal honor dials' => ['reveal_honor_dials', 'honor_dials_revealed'];
         yield 'draw phase action window' => ['draw_phase_action_window', 'draw_actions_passed'];
+        yield 'conflict phase action window' => ['conflict_phase_action_window', 'conflict_phase_actions_passed'];
+        yield 'reactions to the conflict declaration' => ['react_to_conflict_declaration', 'declaration_reactions_passed'];
+        yield 'conflict action window' => ['conflict_action_window', 'conflict_actions_passed'];
+        yield 'reactions to the conflict result' => ['react_to_conflict_result', 'result_reactions_passed'];
+        yield 'reactions to the broken province' => ['react_to_broken_province', 'break_reactions_passed'];
+        yield 'ring effects' => ['resolve_ring_effects', 'ring_effects_resolved'];
+        yield 'reactions to the ring claim' => ['react_to_ring_claim', 'claim_reactions_passed'];
     }
 
     #[DataProvider('steps')]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\State\Model;
 
+use App\Enum\ConflictType;
 use App\Exception\Rules\NotEnoughFateException;
 
 class PlayerState
@@ -13,6 +14,11 @@ class PlayerState
      */
     public const int MINIMUM_HONOR = 0;
     public const int MAXIMUM_HONOR = 25;
+
+    /**
+     * Stronghold format: one opportunity to declare a military conflict and one to declare a political conflict.
+     */
+    public const int CONFLICT_OPPORTUNITIES = 2;
 
     private ?string $strongholdProvinceId = null;
     private ?int $honor = null;
@@ -24,6 +30,18 @@ class PlayerState
     private bool $fateCollected = false;
 
     private ?int $honorBid = null;
+
+    /**
+     * Conflict opportunities left this round: declaring a conflict or passing a conflict opportunity uses one.
+     */
+    private int $conflictOpportunities = self::CONFLICT_OPPORTUNITIES;
+
+    /**
+     * Types of the conflicts declared this round: a player declares at most one conflict of each type.
+     *
+     * @var list<ConflictType>
+     */
+    private array $declaredConflictTypes = [];
 
     /**
      * The player has passed during the current step. Reset when a step in which players can pass begins.
@@ -122,6 +140,36 @@ class PlayerState
         return $this;
     }
 
+    public function getConflictOpportunities(): int
+    {
+        return $this->conflictOpportunities;
+    }
+
+    public function setConflictOpportunities(int $conflictOpportunities): self
+    {
+        $this->conflictOpportunities = $conflictOpportunities;
+
+        return $this;
+    }
+
+    /**
+     * @return list<ConflictType>
+     */
+    public function getDeclaredConflictTypes(): array
+    {
+        return $this->declaredConflictTypes;
+    }
+
+    /**
+     * @param list<ConflictType> $declaredConflictTypes
+     */
+    public function setDeclaredConflictTypes(array $declaredConflictTypes): self
+    {
+        $this->declaredConflictTypes = $declaredConflictTypes;
+
+        return $this;
+    }
+
     /**
      * The player has passed during the current step: the opportunity to act skips them.
      */
@@ -139,6 +187,9 @@ class PlayerState
 
     public function resetTurnRecords(): self
     {
-        return $this->setFateCollected(false)->setHonorBid(null);
+        return $this->setFateCollected(false)
+            ->setHonorBid(null)
+            ->setConflictOpportunities(self::CONFLICT_OPPORTUNITIES)
+            ->setDeclaredConflictTypes([]);
     }
 }

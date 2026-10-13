@@ -13,10 +13,16 @@ use Symfony\Component\Workflow\Attribute\AsEnterListener;
 use Symfony\Component\Workflow\Event\EnterEvent;
 
 /**
- * The opportunity to act alternates between the players, starting with the first player. No player has passed yet.
+ * Steps where the players act simultaneously, e.g. to react to a framework step: every player has the opportunity to
+ * act until they pass. No player has passed yet.
+ * When the honor dials are revealed (their secrecy is not enforced), players can change a bid (SetHonorBid).
  */
-#[AsEnterListener(workflow: 'game', place: 'play_cards_from_provinces')]
-readonly class PlayCardsFromProvincesEnterListener
+#[AsEnterListener(workflow: 'game', place: 'reveal_honor_dials')]
+#[AsEnterListener(workflow: 'game', place: 'react_to_conflict_declaration')]
+#[AsEnterListener(workflow: 'game', place: 'react_to_conflict_result')]
+#[AsEnterListener(workflow: 'game', place: 'react_to_broken_province')]
+#[AsEnterListener(workflow: 'game', place: 'react_to_ring_claim')]
+readonly class AllPlayersOpportunityEnterListener
 {
     public function __construct(
         private GameStateManager $stateManager,
@@ -31,7 +37,7 @@ readonly class PlayCardsFromProvincesEnterListener
 
         $this->stateManager->withState(
             $game,
-            fn (GameState $state): GameState => $state->activateFirstPlayer(),
+            fn (GameState $state): GameState => $state->activateAllPlayers(),
         );
         foreach ($game->getPlayers() as $player) {
             $this->playerStateManager->withState(

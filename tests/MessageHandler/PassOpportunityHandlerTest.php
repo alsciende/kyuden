@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\Game;
+use App\Enum\ConflictType;
 use App\Enum\StackType;
 use App\Enum\VictoryCondition;
 use App\Exception\Rules\NotInOpportunitiesStepException;
@@ -184,6 +185,38 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
         $this->messageBus->dispatch($this->pass($scenario, 'jane'));
 
-        self::assertSame('conflict_phase_begins', $scenario->game()->getCurrentPlace());
+        // the action window of the conflict phase opens with the first player
+        self::assertSame('conflict_phase_action_window', $scenario->game()->getCurrentPlace());
+        self::assertSame([$scenario->player('john')->getId()], self::service(GameStateManager::class)->getState($scenario->game())->activePlayerIds);
+    }
+
+    public function testAConflictIsDeclaredOnceEveryPlayerHasPassedTheConflictPhaseActionWindow(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->activePlayer('john')
+            ->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+
+        self::assertSame('declare_conflict', $scenario->game()->getCurrentPlace());
+    }
+
+    public function testTheContestForTheImperialFavorBeginsOnceNoPlayerHasAConflictOpportunityLeft(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->declaredConflicts(ConflictType::Military, ConflictType::Political))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->declaredConflicts(ConflictType::Political)->conflictOpportunities(0)->passed())
+            ->activePlayer('john')
+            ->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+
+        self::assertSame('glory_count', $scenario->game()->getCurrentPlace());
     }
 }

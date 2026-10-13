@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Builder;
 
+use App\Enum\ConflictType;
 use App\Enum\Orientation;
+use App\State\Model\PlayerState;
 use App\Enum\StackType;
 
 /**
@@ -38,6 +40,13 @@ final class PlayerBuilder
     private ?int $honorBid = null;
 
     private bool $passed = false;
+
+    private int $conflictOpportunities = PlayerState::CONFLICT_OPPORTUNITIES;
+
+    /**
+     * @var list<ConflictType>
+     */
+    private array $declaredConflictTypes = [];
 
     /**
      * @var list<PlannedStack>
@@ -114,6 +123,27 @@ final class PlayerBuilder
     public function passed(): self
     {
         $this->passed = true;
+
+        return $this;
+    }
+
+    /**
+     * Records the conflict opportunities the player has left this round.
+     */
+    public function conflictOpportunities(int $conflictOpportunities): self
+    {
+        $this->conflictOpportunities = $conflictOpportunities;
+
+        return $this;
+    }
+
+    /**
+     * Records the conflicts the player has declared this round, using one conflict opportunity each.
+     */
+    public function declaredConflicts(ConflictType ...$types): self
+    {
+        $this->declaredConflictTypes = array_values($types);
+        $this->conflictOpportunities -= count($types);
 
         return $this;
     }
@@ -271,6 +301,19 @@ final class PlayerBuilder
     public function getHonorBid(): ?int
     {
         return $this->honorBid;
+    }
+
+    public function getConflictOpportunities(): int
+    {
+        return $this->conflictOpportunities;
+    }
+
+    /**
+     * @return list<ConflictType>
+     */
+    public function getDeclaredConflictTypes(): array
+    {
+        return $this->declaredConflictTypes;
     }
 
     public function isPassed(): bool

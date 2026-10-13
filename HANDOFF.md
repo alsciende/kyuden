@@ -2,9 +2,9 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the model and workflow skeleton of the conflict phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
 
-From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`, `t12`, …) with no logic and no `auto` flag.
+The conflict phase has its places and transitions (skeleton, see Conflict phase below), but no conflict can be declared yet: the game stops at `declare_conflict`. From `fate_phase_begins` onward, `game` transitions are placeholders (`t28`, `t29`, …) with no logic and no `auto` flag.
 
 ## Decisions taken for the dynasty phase
 
@@ -38,7 +38,7 @@ From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`,
 
 - The `opportunities` place metadata is an `Enum/PassingRule`: `Final` for the steps where passing is final (`play_cards_from_provinces`, the special action window 1.4, and `reveal_honor_dials`), `Consecutive` for action windows (`draw_phase_action_window` for now).
 - In an action window, `EndOpportunity` means the player has acted: it resets the passes of every player (`OpportunityService::passToNextPlayer()`), then gives the opportunity to the next player. `PassOpportunity` is unchanged: the window closes once every player has passed since the last action (`AllPlayersPassedGuardListener`). An `EndOpportunity` with no action before it counts as an action.
-- `DrawPhaseActionWindowEnterListener` activates the first player and resets the passes. The conflict action window (3.2.2) will activate the defender instead.
+- `FirstPlayerOpportunityEnterListener` activates the first player and resets the passes (also used by `play_cards_from_provinces`); `AllPlayersOpportunityEnterListener` does the same with every player (`reveal_honor_dials`, reaction windows). The conflict action window (3.2.2) will activate the defender instead.
 
 ## Decisions taken for running out of cards
 
@@ -182,11 +182,19 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 Plan, in this order:
 
 1. ~~Action windows with consecutive passes~~ (done, with the draw phase action window).
-2. Model and workflow skeleton: rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
+2. ~~Model and workflow skeleton~~ (done): rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
 3. `DeclareConflict` / `PassConflict`, with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
 4. `DeclareDefenders` (possibly none), then the conflict action window (defender first).
 5. Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home.
 6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
+
+State of the skeleton:
+
+- Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
+- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `result_determined` and `glory_counted`, until the players declare their totals.
+- Missing enter listeners: `declare_conflict` (next player in player order with a conflict opportunity left), `declare_defenders` (defending player), `conflict_action_window` (defending player first), `resolve_ring_effects` (attacking player if they won, otherwise nobody).
+- The automatic steps (`unopposed_applied`, `provinces_broken`, `ring_claimed`, `returned_home`) have no listener yet.
+- Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
 
 Decisions already taken:
 

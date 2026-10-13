@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\State\Model;
 
 use App\Entity\Player;
+use App\Enum\ConflictType;
+use App\Enum\Element;
+use App\State\Model\ConflictState;
 use App\State\Model\GameState;
 use PHPUnit\Framework\TestCase;
 
@@ -48,5 +51,26 @@ class GameStateTest extends TestCase
         self::assertSame(1, $state->countActivePlayers());
 
         self::assertSame(0, $state->deactivatePlayer($jane)->countActivePlayers());
+    }
+
+    public function testEveryRingIsUnclaimedWithNoFateOnceSet(): void
+    {
+        $state = new GameState()->initRings();
+
+        foreach (Element::cases() as $element) {
+            self::assertTrue($state->isRingUnclaimed($element));
+            self::assertSame(0, $state->getRing($element)->fate);
+        }
+    }
+
+    public function testClaimedAndContestedRingsAreNotUnclaimed(): void
+    {
+        $state = new GameState()->initRings();
+        $state->getRing(Element::Air)->claimedById = 'john';
+        $state->conflict = new ConflictState('john', 'jane', Element::Fire, ConflictType::Military, 'province');
+
+        self::assertFalse($state->isRingUnclaimed(Element::Air));
+        self::assertFalse($state->isRingUnclaimed(Element::Fire));
+        self::assertTrue($state->isRingUnclaimed(Element::Void));
     }
 }

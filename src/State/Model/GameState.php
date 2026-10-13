@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\State\Model;
 
 use App\Entity\Player;
+use App\Enum\ConflictType;
+use App\Enum\Element;
 use App\Enum\VictoryCondition;
 
 class GameState
@@ -25,6 +27,25 @@ class GameState
      * @var list<string>
      */
     public array $activePlayerIds = [];
+
+    /**
+     * The five rings, by element value. Set when the game starts.
+     *
+     * @var array<string, RingState>
+     */
+    public array $rings = [];
+
+    /**
+     * The conflict being resolved; null outside of a conflict.
+     */
+    public ?ConflictState $conflict = null;
+
+    /**
+     * Player who has the Imperial Favor, and the side it is set to; null while nobody has claimed it.
+     */
+    public ?string $imperialFavorHolderId = null;
+
+    public ?ConflictType $imperialFavorSide = null;
 
     /**
      * Set when the game ends (`end_game` transition).
@@ -58,6 +79,32 @@ class GameState
     public function getNextPlayerId(Player $player): string
     {
         return $this->getPlayerIdsAfter($player)[0] ?? throw new \LogicException('The game has a single player.');
+    }
+
+    /**
+     * Every ring is unclaimed, with no fate on it.
+     */
+    public function initRings(): self
+    {
+        $this->rings = [];
+        foreach (Element::cases() as $element) {
+            $this->rings[$element->value] = new RingState();
+        }
+
+        return $this;
+    }
+
+    public function getRing(Element $element): RingState
+    {
+        return $this->rings[$element->value] ?? throw new \LogicException("The {$element->value} ring is not set.");
+    }
+
+    /**
+     * In the unclaimed ring pool: neither claimed nor contested.
+     */
+    public function isRingUnclaimed(Element $element): bool
+    {
+        return $this->getRing($element)->claimedById === null && $this->conflict?->ring !== $element;
     }
 
     public function setFirstPlayer(Player $player): self

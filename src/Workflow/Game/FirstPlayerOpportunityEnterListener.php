@@ -13,11 +13,13 @@ use Symfony\Component\Workflow\Attribute\AsEnterListener;
 use Symfony\Component\Workflow\Event\EnterEvent;
 
 /**
- * The bids are revealed (their secrecy is not enforced): every player can react, e.g. to change a bid (SetHonorBid),
- * then passes. No player has passed yet.
+ * Steps resolved in player order: the opportunity to act alternates between the players, starting with the first
+ * player. No player has passed yet.
  */
-#[AsEnterListener(workflow: 'game', place: 'reveal_honor_dials')]
-readonly class RevealHonorDialsEnterListener
+#[AsEnterListener(workflow: 'game', place: 'play_cards_from_provinces')]
+#[AsEnterListener(workflow: 'game', place: 'draw_phase_action_window')]
+#[AsEnterListener(workflow: 'game', place: 'conflict_phase_action_window')]
+readonly class FirstPlayerOpportunityEnterListener
 {
     public function __construct(
         private GameStateManager $stateManager,
@@ -32,7 +34,7 @@ readonly class RevealHonorDialsEnterListener
 
         $this->stateManager->withState(
             $game,
-            fn (GameState $state): GameState => $state->activateAllPlayers(),
+            fn (GameState $state): GameState => $state->activateFirstPlayer(),
         );
         foreach ($game->getPlayers() as $player) {
             $this->playerStateManager->withState(

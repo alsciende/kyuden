@@ -23,7 +23,7 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 
 ### State
 
-`Game`, `Player` and `PhysicalCard` implement `State/Model/StatefulInterface`: they carry a JSON `state` field, decoded by the managers in `src/State/Manager` (`GameStateManager`, `PlayerStateManager`, `CardStateManager`) into `GameState` / `PlayerState` / `CardState` (fate on the card). Modify it through `withState(closure)`, which decodes, runs the callback and re-encodes.
+`Game`, `Player` and `PhysicalCard` implement `State/Model/StatefulInterface`: they carry a JSON `state` field, decoded by the managers in `src/State/Manager` (`GameStateManager`, `PlayerStateManager`, `CardStateManager`) into `GameState` / `PlayerState` / `CardState` (fate on the card). `GameState` also holds the rings (`RingState`: fate, claiming player), the Imperial Favor and the conflict being resolved (`ConflictState`: players, contested ring, type, attacked provinces, participating characters by card id). Modify it through `withState(closure)`, which decodes, runs the callback and re-encodes.
 
 ### Action pipeline
 
@@ -62,9 +62,9 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
 - **Values from players**: since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on.
 - **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 - **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order).
-- **Opportunities to act**: the players who have the opportunity to act are the active players of `GameState` (`activePlayerIds`); the handler of each action rejects a player who is not active (`NotActivePlayerException`). The enter listener of the step activates them:
+- **Opportunities to act**: the players who have the opportunity to act are the active players of `GameState` (`activePlayerIds`); the handler of each action rejects a player who is not active (`NotActivePlayerException`). The enter listener of the step activates them (`FirstPlayerOpportunityEnterListener` and `AllPlayersOpportunityEnterListener` cover the common cases):
   - in steps resolved in player order, only the first player: the handler gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`;
-  - in steps where players act simultaneously (e.g. `reveal_honor_dials`), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).
+  - in steps where players act simultaneously (e.g. `reveal_honor_dials`, the `react_to_*` reaction windows of a conflict), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).
 
   A player who passes (`PassOpportunity`, in a place marked `opportunities`; `PlayerState::passed`, reset by the enter listener of the step) is no longer active and is skipped by `Service/OpportunityService`. In an action window (`PassingRule::Consecutive`), a player who ends an opportunity in which they acted (`EndOpportunity`) resets every pass, so the players who had passed get opportunities to act again.
 - **End of the game**: `Service/VictoryService` checks the victory conditions from the state (a player with 25 or more honor wins; a player with no honor is eliminated and the last one standing wins; ties go to the first player, then in player order). The guard of `end_game` uses it, and its transition listener records `winnerId` and `victoryCondition` in `GameState`. Honor cannot go below 0 (`PlayerState::setHonor()`).

@@ -28,7 +28,7 @@ readonly class StartGameTransitionListener
     }
 
     /**
-     * Fix the player order, select first player and create all cards and stacks.
+     * Fix the player order, select first player, set the rings and create all cards and stacks.
      */
     public function __invoke(TransitionEvent $event): void
     {
@@ -40,6 +40,7 @@ readonly class StartGameTransitionListener
             fn (GameState $state): GameState => $state
                 ->setPlayerOrder(...$game->getPlayers()->toArray())
                 ->setFirstPlayer($this->selectRandomFirstPlayer($game))
+                ->initRings()
         );
 
         $this->logger->debug('StartGameTransitionListener', [
