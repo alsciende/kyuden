@@ -12,7 +12,7 @@ use App\Exception\Data\DataException;
 use App\Factory\StackFactory;
 use App\Message\DrawConflictCards;
 use App\Message\FillProvince;
-use App\Message\GainHonor;
+use App\Message\SetHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
 use App\State\Manager\PlayerStateManager;
@@ -44,7 +44,7 @@ readonly class SetupGameTransitionListener
 
     /**
      * Shuffle decks.
-     * Gain Starting Honor.
+     * Set Starting Honor.
      * Fill Provinces.
      * Draw Starting Hand.
      */
@@ -58,14 +58,14 @@ readonly class SetupGameTransitionListener
             new ShuffleConflictDeck($player->getGame()->getId(), $player->getId())
         );
 
-        // gain starting honor
+        // set starting honor
         $stronghold = $player->getStronghold();
         $honor = $stronghold->getLogicalCard()->getHonor();
         if ($honor === null) {
             throw new DataException('Stronghold has no honor');
         }
         $this->transitionBus->dispatch(
-            new GainHonor($player->getGame()->getId(), $player->getId(), $honor)
+            new SetHonor($player->getGame()->getId(), $player->getId(), $honor)
         );
 
         // fill provinces

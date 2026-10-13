@@ -15,7 +15,7 @@ Everything runs in Docker (service `symfony`) through the Makefile:
 - `make up` / `make down` / `make build` / `make sh`
 - `make db`: drop and recreate the schema, then load fixtures (packs, cards, starter decks)
 - `make test`: PHPUnit
-- `make lint`: `lint:container` + ECS (`--fix`) + Rector + PHPStan; run it before considering a change done
+- `make lint`: `lint:container` + Rector + PHPStan; run it before considering a change done
 - `make sql`: `psql` shell on the `database` service
 
 Console commands (`src/Command`) are currently the main way to drive the engine: create decks/candidates, matchmaking, create a game, list/play events, apply a game transition, dump a game.
@@ -91,5 +91,5 @@ From `play_cards_from_provinces` onward, `game` transitions are placeholders (`t
 ## Conventions
 
 - `declare(strict_types=1);` in every file; `readonly` services with constructor promotion; `#[\Override]` on interface implementations.
-- Code style is enforced by ECS, Rector and PHPStan (`ecs.php`, `rector.php`, `phpstan.neon`).
+- Code style is enforced by Rector and PHPStan (`rector.php`, `phpstan.neon`).
 - Tests live in `tests/`, mirroring `src/`; kernel tests extend `AbstractKernelTestCase`.
