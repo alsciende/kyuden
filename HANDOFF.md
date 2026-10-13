@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (latest: `cards_drawn`).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`) and running out of cards (latest).
 
 From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`, …) with no logic and no `auto` flag.
 
@@ -33,7 +33,13 @@ From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`
 
 - `cards_drawn` is automatic: each player draws as many conflict cards as their honor bid (`CardsDrawnTransitionListener`, through `DrawConflictCards` on `transition.bus`), after the changes made with `SetHonorBid`. No player action: cards drawing more are handled with `DrawConflictCards` in a later window. Every player must have bid (`NoHonorBidException`); a bid of 0 draws nothing.
 - The action window after the draw (between 2.5 and 2.6) is not modeled yet: `cards_drawn` goes straight to `draw_phase_ends`. It needs the action window mode described in Other steps.
-- Drawing from an empty conflict deck throws (see Game rules not enforced yet).
+
+## Decisions taken for running out of cards
+
+- `Service/DrawDeckService::getTopCard()` applies the rule ("Running Out of Cards" in the glossary) to both decks: when a player attempts to draw a conflict card (`DrawConflictCards`) or to fill a province (`FillProvince`) from an empty deck, they lose 5 honor, the discard pile goes back into the deck (`put_back` transition of the conflict and dynasty card workflows), then the deck is shuffled. The rule applies on the attempt, not when the deck becomes empty.
+- `DrawConflictCards` draws the cards one by one, so a draw that empties the deck goes on in the new deck.
+- When the discard pile is empty too, the player still loses 5 honor and draws as many cards as possible (the province stays empty); no exception.
+- Reaching 0 honor this way throws, like the other honor losses (see Honor limits), which rolls the action back.
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -162,7 +168,6 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
-- **Empty decks**: refilling a province or drawing from an empty deck (including the draw of the draw phase) currently throws `DrawingFromEmptyDeckException`; the real rule (lose 5 honor, shuffle the discard pile into a new deck, then keep drawing) is not implemented.
 - **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player).
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 

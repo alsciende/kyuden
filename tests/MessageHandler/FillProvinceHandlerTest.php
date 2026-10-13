@@ -46,6 +46,25 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
         self::assertSame($scenario->card('province')->getStack(), $toturi->getStack());
     }
 
+    public function testRefillsFromTheDiscardPileWhenTheDynastyDeckIsEmpty(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->honor(10)
+                ->province('01-entrenched-position', as: 'province')
+                ->dynastyDiscardPile(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane')
+            ->persist();
+
+        $this->fill($scenario);
+
+        $toturi = $scenario->card('toturi');
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $toturi->getCurrentPlace());
+        self::assertSame($scenario->card('province')->getStack(), $toturi->getStack());
+        self::assertSame(5, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
+    }
+
     public function testRejectsARefillInAnotherStep(): void
     {
         $scenario = $this->scenarioAt('collect_fate');

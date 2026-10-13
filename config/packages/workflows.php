@@ -148,6 +148,11 @@ return App::config([
                         'stack' => StackType::DynastyDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    // the discard pile forms a new deck when the deck runs out of cards (App\Service\DrawDeckService)
+                    WorkflowConfig::transition('put_back', DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_DRAW_DECK, [
+                        'stack' => StackType::DynastyDrawDeck,
+                        'orientation' => Orientation::FaceDown,
+                    ]),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_IN_PLAY),
                     // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerActionGuardListener)
                     ...WorkflowConfig::triggerAction(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_PROVINCE_FACEUP),

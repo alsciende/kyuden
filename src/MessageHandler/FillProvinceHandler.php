@@ -8,17 +8,19 @@ use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
-use App\Exception\Rules\DrawingFromEmptyDeckException;
 use App\Message\FillProvince;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\DrawDeckService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
  * Puts the top card of the dynasty deck face down on the province: during setup, and during the play cards
  * from provinces step once a card has left the province. The player does not need to be the active player.
+ * An empty deck is replaced by the shuffled discard pile (DrawDeckService); when the discard pile is empty too, the
+ * province stays empty.
  */
 #[AsMessageHandler]
 final readonly class FillProvinceHandler
@@ -28,6 +30,7 @@ final readonly class FillProvinceHandler
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private WorkflowInterface $dynastyCardStateMachine,
+        private DrawDeckService $drawDeckService,
     ) {
     }
 
@@ -42,9 +45,9 @@ final readonly class FillProvinceHandler
 
     private function fillProvince(Player $player, PhysicalCard $province): void
     {
-        $card = $player->getUniqueStack(StackType::DynastyDrawDeck)->getTopCard();
+        $card = $this->drawDeckService->getTopCard($player, StackType::DynastyDrawDeck);
         if (! $card instanceof DynastyCard) {
-            throw new DrawingFromEmptyDeckException();
+            return;
         }
 
         $this->dynastyCardStateMachine->apply($card, 'draw_card', [

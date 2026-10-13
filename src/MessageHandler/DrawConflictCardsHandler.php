@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Enum\StackType;
-use App\Exception\Rules\DrawingFromEmptyDeckException;
 use App\Message\DrawConflictCards;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\DrawDeckService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
+/**
+ * Draws the cards one by one: an empty deck is replaced by the shuffled discard pile (DrawDeckService). When the
+ * discard pile is empty too, the player draws as many cards as possible.
+ */
 #[AsMessageHandler]
 final readonly class DrawConflictCardsHandler
 {
@@ -19,6 +23,7 @@ final readonly class DrawConflictCardsHandler
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private WorkflowInterface $conflictCardStateMachine,
+        private DrawDeckService $drawDeckService,
     ) {
     }
 
@@ -26,17 +31,13 @@ final readonly class DrawConflictCardsHandler
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $quantity = $message->getQuantity();
-        $cards = $player->getUniqueStack(StackType::ConflictDrawDeck)->getTopCards($quantity);
-        if (count($cards) < $quantity) {
-            throw new DrawingFromEmptyDeckException('Conflict deck is empty.');
-        }
+        for ($i = 0; $i < $message->getQuantity(); ++$i) {
+            $card = $this->drawDeckService->getTopCard($player, StackType::ConflictDrawDeck);
+            if ($card === null) {
+                return;
+            }
 
-        foreach ($cards as $card) {
-            $this->conflictCardStateMachine->apply(
-                $card,
-                'draw_card'
-            );
+            $this->conflictCardStateMachine->apply($card, 'draw_card');
         }
     }
 }
