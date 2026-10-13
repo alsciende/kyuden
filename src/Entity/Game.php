@@ -19,6 +19,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table('games')]
 class Game implements StatefulInterface
 {
+    /**
+     * Final place of the `game` workflow: no action is accepted anymore.
+     */
+    public const string STATE_ENDED = 'game_ended';
+
     #[ORM\Id]
     #[ORM\Column]
     private string $id;

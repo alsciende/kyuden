@@ -7,7 +7,6 @@ namespace App\Tests\Service;
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
 use App\Enum\StackType;
-use App\Exception\Rules\MinimumHonorReachedException;
 use App\Service\DrawDeckService;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -106,9 +105,9 @@ class DrawDeckServiceTest extends AbstractKernelTestCase
             ->withPlayer('jane')
             ->build();
 
-        $this->expectException(MinimumHonorReachedException::class);
-
         self::service(DrawDeckService::class)->getTopCard($scenario->player('john'), StackType::ConflictDrawDeck);
+
+        self::assertSame(0, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 
     public function testRejectsAStackThatIsNotADrawDeck(): void

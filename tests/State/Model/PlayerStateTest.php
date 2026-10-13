@@ -25,4 +25,18 @@ class PlayerStateTest extends TestCase
 
         $state->spendFate(3);
     }
+
+    public function testHonorStopsAtTheMinimum(): void
+    {
+        $state = new PlayerState()->setHonor(3)->decrementHonor(5);
+
+        self::assertSame(PlayerState::MINIMUM_HONOR, $state->getHonor());
+    }
+
+    public function testHonorCanExceedTheMaximum(): void
+    {
+        $state = new PlayerState()->setHonor(24)->incrementHonor(3);
+
+        self::assertSame(27, $state->getHonor());
+    }
 }

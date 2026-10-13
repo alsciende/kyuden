@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Entity\Game;
 use App\Enum\StackType;
+use App\Enum\VictoryCondition;
 use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\PassOpportunity;
@@ -136,5 +138,26 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         self::assertSame(7, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
         self::assertCount(1, $scenario->player('john')->getUniqueStack(StackType::Hand)->getCards());
         self::assertCount(4, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
+    }
+
+    public function testTheGameEndsBeforeTheDrawWhenTheHonorTransferLeavesAPlayerWithNoHonor(): void
+    {
+        $deck = ['01-fine-katana', '01-banzai', '01-fine-katana', '01-banzai'];
+        $scenario = $this->scenario()
+            ->atPlace('reveal_honor_dials')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->honorBid(1)->conflictDeck($deck))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(3)->honorBid(4)->passed()->conflictDeck($deck))
+            ->activePlayers('john')
+            ->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+
+        $state = self::service(GameStateManager::class)->getState($scenario->game());
+        self::assertSame(Game::STATE_ENDED, $scenario->game()->getCurrentPlace());
+        self::assertSame($scenario->player('john')->getId(), $state->winnerId);
+        self::assertSame(VictoryCondition::HonorLoss, $state->victoryCondition);
+        self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
+        self::assertCount(0, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
     }
 }

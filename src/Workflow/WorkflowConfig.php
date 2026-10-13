@@ -40,6 +40,25 @@ final class WorkflowConfig
     }
 
     /**
+     * Every place the transitions start from or lead to, in order of appearance.
+     *
+     * @param list<TransitionConfig> $transitions
+     *
+     * @return list<string>
+     */
+    public static function placesOf(array $transitions, string ...$except): array
+    {
+        $places = [];
+        foreach ($transitions as $transition) {
+            foreach ([...$transition['from'], ...$transition['to']] as $place) {
+                $places[] = $place['place'];
+            }
+        }
+
+        return array_values(array_diff(array_unique($places), $except));
+    }
+
+    /**
      * Card workflows share their marking store: the place of a card is computed from its stack and orientation.
      * Transition metadata (`stack`, `orientation`) is applied by CardTransitionListener.
      *

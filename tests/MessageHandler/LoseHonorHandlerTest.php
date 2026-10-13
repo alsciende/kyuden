@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
-use App\Exception\Rules\MinimumHonorReachedException;
 use App\Message\LoseHonor;
 use App\MessageHandler\LoseHonorHandler;
 use App\Tests\AbstractKernelTestCase;
@@ -45,12 +44,12 @@ class LoseHonorHandlerTest extends AbstractKernelTestCase
         $this->loseHonor($scenario, -2);
     }
 
-    public function testRejectsALossReachingMinimumHonor(): void
+    public function testCannotLoseMoreHonorThanThePlayerHas(): void
     {
         $scenario = $this->scenarioWithHonor(2);
 
-        $this->expectException(MinimumHonorReachedException::class);
+        $this->loseHonor($scenario, 3);
 
-        $this->loseHonor($scenario, 2);
+        self::assertSame(0, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 }

@@ -29,9 +29,10 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 
 1. A player action is a Messenger message in `src/Message`, implementing `ActionInterface` (or `PlayerActionInterface` when it has a player) and tagged with `#[AppAction]`, which makes it discoverable by `Service/ActionMessageRegistry`. Messages hold ids (game, player, card) as strings, not entities.
 2. Its handler in `src/MessageHandler` (`#[AsMessageHandler]`, `final readonly`) loads entities through repositories and changes the state, usually by applying a transition on the relevant workflow.
-3. Middlewares (order in `config/packages/messenger.yaml`; each forwards down the chain first, then acts):
+3. Middlewares (order in `config/packages/messenger.yaml`; each forwards down the chain first, then acts, except `GameEndedMiddleware`):
    - Doctrine transaction: commits everything at the end.
-   - `WorkflowTransitionMiddleware`: repeatedly applies any enabled game transition marked `metadata.auto: true`.
+   - `GameEndedMiddleware`: rejects any action on a game that has ended (`GameEndedException`), before its handling.
+   - `WorkflowTransitionMiddleware`: repeatedly applies the enabled game transition marked `metadata.auto: true` with the highest `metadata.priority` (0 by default); two enabled automatic transitions sharing the highest priority throw a `LogicException`.
    - `EventRecordingMiddleware`: saves the message as an `Event`.
 4. `Service/EventPlayer` deserializes a stored `Event` and re-dispatches it, so a game can be replayed from its event log. Messages must therefore stay serializable.
 
@@ -52,6 +53,8 @@ The `game` workflow models the round sequence; a new place exists when the phase
 - `action_window`: players can trigger action abilities (`TriggerActionAbility`); the `trigger_action` transition of a card workflow (from a place to itself) lists where the abilities of a card can be used.
 - `opportunities`: players have opportunities to act, in player order or simultaneously, and can pass them (`PassOpportunity`); the step ends once every player has passed (`AllPlayersPassedGuardListener`).
 
+Transition metadata: `auto` and `priority` (see `WorkflowTransitionMiddleware`). `end_game` leads from every place of a started game (`WorkflowConfig::placesOf()`) to the final place `game_ended` (`Game::STATE_ENDED`); it is automatic with the highest priority, so the game ends as soon as a player meets a victory condition, before any other automatic transition.
+
 Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after the transition/place and the event type: `...GuardListener` (blocks a transition until conditions are met), `...TransitionListener`, `...EnterListener`.
 
 ### Game flow
@@ -64,6 +67,7 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
   - in steps where players act simultaneously (e.g. `reveal_honor_dials`), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).
 
   A player who passes (`PassOpportunity`, in a place marked `opportunities`; `PlayerState::passed`, reset by the enter listener of the step) is no longer active and is skipped by `Service/OpportunityService`.
+- **End of the game**: `Service/VictoryService` checks the victory conditions from the state (a player with 25 or more honor wins; a player with no honor is eliminated and the last one standing wins; ties go to the first player, then in player order). The guard of `end_game` uses it, and its transition listener records `winnerId` and `victoryCondition` in `GameState`. Honor cannot go below 0 (`PlayerState::setHonor()`).
 - **Costs and effects**: board manipulations (`BowCard`, `LoseHonor`…) are accepted in any place, from any player of the game, on any card or player, since the engine does not know which ability is being resolved.
 
 ### Other services

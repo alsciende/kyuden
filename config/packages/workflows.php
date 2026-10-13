@@ -22,6 +22,56 @@ use App\Enum\Orientation;
 use App\Enum\StackType;
 use App\Workflow\WorkflowConfig;
 
+// we are in a different place if the phase of the game is different AND the available player actions are different
+$gameTransitions = [
+    WorkflowConfig::transition('start_game', 'join_game', 'choose_stronghold', ['auto' => true]), // select first player
+    WorkflowConfig::transition('setup_game', 'choose_stronghold', 'dynasty_phase_begins', ['auto' => true]),
+    WorkflowConfig::transition('dynasty_phase_began', 'dynasty_phase_begins', 'reveal_facedown_dynasty_cards', ['auto' => true]),
+    WorkflowConfig::transition('dynasty_cards_revealed', 'reveal_facedown_dynasty_cards', 'collect_fate', ['auto' => true]),
+    WorkflowConfig::transition('fate_collected', 'collect_fate', 'play_cards_from_provinces', ['auto' => true]),
+    WorkflowConfig::transition('dynasty_actions_passed', 'play_cards_from_provinces', 'dynasty_phase_ends', ['auto' => true]),
+    WorkflowConfig::transition('dynasty_phase_ended', 'dynasty_phase_ends', 'draw_phase_begins', ['auto' => true]),
+    WorkflowConfig::transition('draw_phase_began', 'draw_phase_begins', 'honor_bid', ['auto' => true]),
+    WorkflowConfig::transition('honor_bids_confirmed', 'honor_bid', 'reveal_honor_dials', ['auto' => true]),
+    WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
+    WorkflowConfig::transition('honor_transferred', 'transfer_honor', 'draw_cards', ['auto' => true]),
+    WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_ends', ['auto' => true]),
+    WorkflowConfig::transition('t10', 'draw_phase_ends', 'conflict_phase_begins'),
+    WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
+    WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),
+    WorkflowConfig::transition('t13', 'declare_defenders', 'conflict_action_window'),
+    WorkflowConfig::transition('t14', 'conflict_action_window', 'determine_result'),
+    WorkflowConfig::transition('t15', 'determine_result', 'apply_unopposed'),
+    WorkflowConfig::transition('t16', 'apply_unopposed', 'break_province'),
+    WorkflowConfig::transition('t17', 'break_province', 'resolve_ring_effects'),
+    WorkflowConfig::transition('t18', 'resolve_ring_effects', 'claim_ring'),
+    WorkflowConfig::transition('t19', 'claim_ring', 'return_home'),
+    WorkflowConfig::transition('t20', 'return_home', 'conflict_ends'),
+    WorkflowConfig::transition('t21', 'conflict_ends', 'declare_conflict'),
+    WorkflowConfig::transition('t22', 'conflict_phase_begins', 'determine_imperial_favor'),
+    WorkflowConfig::transition('t23', 'conflict_ends', 'determine_imperial_favor'),
+    WorkflowConfig::transition('t24', 'determine_imperial_favor', 'glory_count'),
+    WorkflowConfig::transition('t25', 'glory_count', 'claim_imperial_favor'),
+    WorkflowConfig::transition('t26', 'claim_imperial_favor', 'conflict_phase_ends'),
+    WorkflowConfig::transition('t27', 'conflict_phase_ends', 'fate_phase_begins'),
+    WorkflowConfig::transition('t28', 'fate_phase_begins', 'discard_characters_with_no_fate'),
+    WorkflowConfig::transition('t29', 'discard_characters_with_no_fate', 'remove_fate_from_characters'),
+    WorkflowConfig::transition('t30', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings'),
+    WorkflowConfig::transition('t31', 'place_fate_on_unclaimed_rings', 'ready_cards'),
+    WorkflowConfig::transition('t32', 'ready_cards', 'discard_from_provinces'),
+    WorkflowConfig::transition('t33', 'discard_from_provinces', 'return_rings'),
+    WorkflowConfig::transition('t34', 'return_rings', 'pass_first_player_token'),
+    WorkflowConfig::transition('t35', 'pass_first_player_token', 'fate_phase_ends'),
+    WorkflowConfig::transition('t36', 'fate_phase_ends', 'dynasty_phase_begins'),
+];
+// the game ends as soon as a player meets a victory condition, before any other automatic transition
+$gameTransitions[] = WorkflowConfig::transition(
+    'end_game',
+    WorkflowConfig::placesOf($gameTransitions, 'join_game', 'choose_stronghold'),
+    Game::STATE_ENDED,
+    ['auto' => true, 'priority' => 100],
+);
+
 return App::config([
     'framework' => [
         'workflows' => [
@@ -39,6 +89,8 @@ return App::config([
                 // places not listed here are taken from the transitions;
                 // `action_window`: players can trigger action abilities (TriggerActionAbility)
                 // `opportunities`: players act in player order and can pass their opportunity to act (PassOpportunity)
+                // transition metadata: `auto` (applied by WorkflowTransitionMiddleware), `priority` (the highest enabled
+                // automatic transition is applied first; 0 by default)
                 'places' => [
                     [
                         'name' => 'play_cards_from_provinces',
@@ -55,48 +107,7 @@ return App::config([
                         ],
                     ],
                 ],
-                // we are in a different place if the phase of the game is different AND the available player actions are different
-                'transitions' => [
-                    WorkflowConfig::transition('start_game', 'join_game', 'choose_stronghold', ['auto' => true]), // select first player
-                    WorkflowConfig::transition('setup_game', 'choose_stronghold', 'dynasty_phase_begins', ['auto' => true]),
-                    WorkflowConfig::transition('dynasty_phase_began', 'dynasty_phase_begins', 'reveal_facedown_dynasty_cards', ['auto' => true]),
-                    WorkflowConfig::transition('dynasty_cards_revealed', 'reveal_facedown_dynasty_cards', 'collect_fate', ['auto' => true]),
-                    WorkflowConfig::transition('fate_collected', 'collect_fate', 'play_cards_from_provinces', ['auto' => true]),
-                    WorkflowConfig::transition('dynasty_actions_passed', 'play_cards_from_provinces', 'dynasty_phase_ends', ['auto' => true]),
-                    WorkflowConfig::transition('dynasty_phase_ended', 'dynasty_phase_ends', 'draw_phase_begins', ['auto' => true]),
-                    WorkflowConfig::transition('draw_phase_began', 'draw_phase_begins', 'honor_bid', ['auto' => true]),
-                    WorkflowConfig::transition('honor_bids_confirmed', 'honor_bid', 'reveal_honor_dials', ['auto' => true]),
-                    WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
-                    WorkflowConfig::transition('honor_transferred', 'transfer_honor', 'draw_cards', ['auto' => true]),
-                    WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_ends', ['auto' => true]),
-                    WorkflowConfig::transition('t10', 'draw_phase_ends', 'conflict_phase_begins'),
-                    WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
-                    WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),
-                    WorkflowConfig::transition('t13', 'declare_defenders', 'conflict_action_window'),
-                    WorkflowConfig::transition('t14', 'conflict_action_window', 'determine_result'),
-                    WorkflowConfig::transition('t15', 'determine_result', 'apply_unopposed'),
-                    WorkflowConfig::transition('t16', 'apply_unopposed', 'break_province'),
-                    WorkflowConfig::transition('t17', 'break_province', 'resolve_ring_effects'),
-                    WorkflowConfig::transition('t18', 'resolve_ring_effects', 'claim_ring'),
-                    WorkflowConfig::transition('t19', 'claim_ring', 'return_home'),
-                    WorkflowConfig::transition('t20', 'return_home', 'conflict_ends'),
-                    WorkflowConfig::transition('t21', 'conflict_ends', 'declare_conflict'),
-                    WorkflowConfig::transition('t22', 'conflict_phase_begins', 'determine_imperial_favor'),
-                    WorkflowConfig::transition('t23', 'conflict_ends', 'determine_imperial_favor'),
-                    WorkflowConfig::transition('t24', 'determine_imperial_favor', 'glory_count'),
-                    WorkflowConfig::transition('t25', 'glory_count', 'claim_imperial_favor'),
-                    WorkflowConfig::transition('t26', 'claim_imperial_favor', 'conflict_phase_ends'),
-                    WorkflowConfig::transition('t27', 'conflict_phase_ends', 'fate_phase_begins'),
-                    WorkflowConfig::transition('t28', 'fate_phase_begins', 'discard_characters_with_no_fate'),
-                    WorkflowConfig::transition('t29', 'discard_characters_with_no_fate', 'remove_fate_from_characters'),
-                    WorkflowConfig::transition('t30', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings'),
-                    WorkflowConfig::transition('t31', 'place_fate_on_unclaimed_rings', 'ready_cards'),
-                    WorkflowConfig::transition('t32', 'ready_cards', 'discard_from_provinces'),
-                    WorkflowConfig::transition('t33', 'discard_from_provinces', 'return_rings'),
-                    WorkflowConfig::transition('t34', 'return_rings', 'pass_first_player_token'),
-                    WorkflowConfig::transition('t35', 'pass_first_player_token', 'fate_phase_ends'),
-                    WorkflowConfig::transition('t36', 'fate_phase_ends', 'dynasty_phase_begins'),
-                ],
+                'transitions' => $gameTransitions,
             ],
             'conflict_card' => WorkflowConfig::cardWorkflow(
                 ConflictCard::class,

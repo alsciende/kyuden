@@ -28,6 +28,7 @@ framework:
             default.bus:
                 middleware:
                     - doctrine_transaction
+                    - 'App\Middleware\GameEndedMiddleware'
                     - 'App\Middleware\WorkflowTransitionMiddleware'
                     - 'App\Middleware\EventRecordingMiddleware'
             # bus without middlewares to use in the message handlers

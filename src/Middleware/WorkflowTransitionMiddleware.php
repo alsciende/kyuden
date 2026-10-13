@@ -44,6 +44,9 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
     }
 
     /**
+     * Applies the automatic transition with the highest `priority` (0 by default). Two enabled automatic transitions
+     * with the same highest priority are a definition error.
+     *
      * @return bool True if a transition occurred
      */
     private function checkTransition(Game $game): bool
@@ -54,20 +57,34 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
             'available_transitions' => count($availableTransitions),
         ]);
 
+        $metadataStore = $this->gameStateMachine->getMetadataStore();
+        $autoTransitions = [];
         foreach ($availableTransitions as $transition) {
-            $isAuto = $this->gameStateMachine->getMetadataStore()->getMetadata('auto', $transition);
+            $isAuto = $metadataStore->getMetadata('auto', $transition);
             $this->logger->debug('available_transition', [
                 'transition' => $transition->getName(),
                 'auto' => $isAuto,
             ]);
 
             if ($isAuto) {
-                $this->gameStateMachine->apply($game, $transition->getName());
-
-                return true;
+                $priority = $metadataStore->getMetadata('priority', $transition) ?? 0;
+                \assert(is_int($priority));
+                $autoTransitions[$priority][] = $transition->getName();
             }
         }
 
-        return false;
+        if ($autoTransitions === []) {
+            return false;
+        }
+
+        krsort($autoTransitions);
+        $highest = reset($autoTransitions);
+        if (count($highest) > 1) {
+            throw new \LogicException(sprintf('Ambiguous automatic transitions with the same priority: %s.', implode(', ', $highest)));
+        }
+
+        $this->gameStateMachine->apply($game, $highest[0]);
+
+        return true;
     }
 }

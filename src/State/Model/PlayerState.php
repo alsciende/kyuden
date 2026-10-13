@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\State\Model;
 
-use App\Exception\Rules\MaximumHonorReachedException;
-use App\Exception\Rules\MinimumHonorReachedException;
 use App\Exception\Rules\NotEnoughFateException;
 
 class PlayerState
 {
+    /**
+     * Stronghold format: a player with no honor is eliminated, a player with 25 or more honor wins the game.
+     */
     public const int MINIMUM_HONOR = 0;
     public const int MAXIMUM_HONOR = 25;
 
@@ -44,17 +45,13 @@ class PlayerState
         return $this->honor;
     }
 
+    /**
+     * A player cannot lose honor they do not have: honor stops at the minimum. Reaching the minimum or the maximum
+     * ends the game (`end_game` transition).
+     */
     public function setHonor(?int $honor): self
     {
-        $this->honor = $honor;
-
-        if (is_int($this->honor) && $this->honor <= self::MINIMUM_HONOR) {
-            throw new MinimumHonorReachedException();
-        }
-
-        if (is_int($this->honor) && $this->honor >= self::MAXIMUM_HONOR) {
-            throw new MaximumHonorReachedException();
-        }
+        $this->honor = $honor === null ? null : max($honor, self::MINIMUM_HONOR);
 
         return $this;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\State\Model;
 
 use App\Entity\Player;
+use App\Enum\VictoryCondition;
 
 class GameState
 {
@@ -24,6 +25,13 @@ class GameState
      * @var list<string>
      */
     public array $activePlayerIds = [];
+
+    /**
+     * Set when the game ends (`end_game` transition).
+     */
+    public ?string $winnerId = null;
+
+    public ?VictoryCondition $victoryCondition = null;
 
     public function setPlayerOrder(Player ...$players): self
     {

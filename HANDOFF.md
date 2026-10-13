@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`) and running out of cards (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), running out of cards and the end of the game by honor (latest).
 
 From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`, …) with no logic and no `auto` flag.
 
@@ -27,7 +27,7 @@ From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`
 
 - `honor_transferred` is automatic: the engine computes the transfer from the recorded bids (`HonorTransferredTransitionListener`), after the changes made with `SetHonorBid` during `reveal_honor_dials`. No player action: cards modifying the transfer itself are handled with the effect messages (`TransferHonor`, `GainHonor`…) in a later window.
 - The highest bidder gives the difference to the lowest bidder; nothing happens on equal bids. Every player must have bid (`NoHonorBidException`).
-- Reaching 0 or 25 honor during the transfer throws, like the effect messages (see Honor limits below), which rolls back the action that triggered it (the last `PassOpportunity`).
+- Reaching 0 or 25 honor during the transfer ends the game before the draw (see the end of the game by honor).
 
 ## Decisions taken for the card draw
 
@@ -39,7 +39,18 @@ From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`
 - `Service/DrawDeckService::getTopCard()` applies the rule ("Running Out of Cards" in the glossary) to both decks: when a player attempts to draw a conflict card (`DrawConflictCards`) or to fill a province (`FillProvince`) from an empty deck, they lose 5 honor, the discard pile goes back into the deck (`put_back` transition of the conflict and dynasty card workflows), then the deck is shuffled. The rule applies on the attempt, not when the deck becomes empty.
 - `DrawConflictCards` draws the cards one by one, so a draw that empties the deck goes on in the new deck.
 - When the discard pile is empty too, the player still loses 5 honor and draws as many cards as possible (the province stays empty); no exception.
-- Reaching 0 honor this way throws, like the other honor losses (see Honor limits), which rolls the action back.
+- Reaching 0 honor this way ends the game (see the end of the game by honor).
+
+## Decisions taken for the end of the game by honor
+
+- Honor stops at 0 (a player cannot lose honor they do not have) and can exceed 25. No exception: the action that reaches a limit is kept and ends the game.
+- The victory conditions are read from the state (`Service/VictoryService`), not detected where honor changes: `end_game` is an automatic transition from every place of a started game (not `join_game` nor `choose_stronghold`) to `game_ended`, guarded on a victory condition being met. It is checked after every message and between automatic transitions.
+- Automatic transitions have a `priority` metadata (0 by default); `end_game` has 100, so it wins over the next step (e.g. `cards_drawn` after a transfer leaving a player with no honor). Two enabled automatic transitions with the same highest priority throw a `LogicException`, so a conflict shows up instead of being settled by the declaration order.
+- The game ends at the end of the message, not in the middle of it: a draw emptying the deck goes on after the loss of 5 honor.
+- Simultaneous conditions: the first player wins if they meet one, then the next one in player order. A single message only changes the honor of two players through a transfer, which favors the receiver either way; an effect hitting each player is several messages, and the first one meeting a condition ends the game.
+- The result (`winnerId`, `victoryCondition`) is stored in `GameState`; no player is active anymore.
+- `GameEndedMiddleware` rejects every action once the game has ended (`GameEndedException`), since effect messages are accepted in any place.
+- Not done: conceding, notifying the players (Mercure), the stronghold province victory condition (to add to `VictoryService` once provinces can break).
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -173,7 +184,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 ### Model
 
-- **Honor limits**: `PlayerState::setHonor()` throws `MinimumHonorReachedException` / `MaximumHonorReachedException` when honor reaches 0 or 25, which rolls the action back. Per the rules, the player then loses / wins the game: the end of the game is not modeled yet. The honor of a player is not checked to be set (`null` before `SetHonor`).
+- **Honor not set**: the honor of a player is not checked to be set (`null` before `SetHonor`).
 
 - **Card state when leaving play**: `CardState` (fate on the card) is not reset when a card leaves play; it must be before the card can enter play again (discard, return to hand…). Personal honor status will go there too.
 - **Holdings**: a faceup holding in a province is in play; discarding it during the fate phase (`discard_from_provinces`) is not possible with the current `dynasty_card.discard` transition, which starts from `in_play`.
