@@ -88,6 +88,16 @@ class GameState
     }
 
     /**
+     * Not prefixed with `get`, so that the serializer of the state does not take it for a property.
+     *
+     * @throws \LogicException outside of a conflict
+     */
+    public function currentConflict(): ConflictState
+    {
+        return $this->conflict ?? throw new \LogicException('No conflict is being resolved.');
+    }
+
+    /**
      * Every ring is unclaimed, with no fate on it.
      */
     public function initRings(): self

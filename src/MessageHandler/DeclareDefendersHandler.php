@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\MessageHandler;
+
+use App\Exception\Rules\CannotParticipateException;
+use App\Exception\Rules\NotActivePlayerException;
+use App\Message\DeclareDefenders;
+use App\Repository\CardRepository;
+use App\Repository\GameRepository;
+use App\Repository\PlayerRepository;
+use App\Service\ConflictService;
+use App\State\Manager\GameStateManager;
+use App\State\Model\GameState;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Workflow\WorkflowInterface;
+
+/**
+ * Defenders are ready characters in play of the defending player (the only active player), not evaded by covert. The
+ * conflict action window opens next.
+ */
+#[AsMessageHandler]
+final readonly class DeclareDefendersHandler
+{
+    public function __construct(
+        private GameRepository $gameRepository,
+        private PlayerRepository $playerRepository,
+        private CardRepository $cardRepository,
+        private GameStateManager $gameStateManager,
+        private ConflictService $conflictService,
+        private WorkflowInterface $gameStateMachine,
+    ) {
+    }
+
+    public function __invoke(DeclareDefenders $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId(), 'declare_defenders');
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $state = $this->gameStateManager->getState($game);
+        if (! $state->isActivePlayer($player)) {
+            throw new NotActivePlayerException();
+        }
+
+        $conflict = $state->currentConflict();
+        $defenderIds = array_values(array_unique($message->getDefenderIds()));
+        foreach ($defenderIds as $defenderId) {
+            $card = $this->cardRepository->get($defenderId, $game);
+            $this->conflictService->assertCanParticipate($card, $player);
+            if (in_array($defenderId, $conflict->evadedIds, true)) {
+                throw new CannotParticipateException($card, 'it is evaded by covert');
+            }
+        }
+
+        $this->gameStateManager->withState($game, function (GameState $state) use ($defenderIds): GameState {
+            $state->currentConflict()->defenderIds = $defenderIds;
+
+            return $state;
+        });
+
+        $this->gameStateMachine->apply($game, 'defenders_declared');
+    }
+}
