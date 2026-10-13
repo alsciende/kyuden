@@ -245,15 +245,16 @@ final class PlayerBuilder
     }
 
     /**
-     * Creates one in-play stack: a character followed by the attachments put on it.
+     * Creates one in-play stack: a character followed by the attachments put on it. A bowed character is sideways.
      *
      * @param array<array-key, string> $codes
      */
-    public function inPlay(array $codes): self
+    public function inPlay(array $codes, bool $bowed = false): self
     {
         $stack = new PlannedStack(StackType::InPlay);
         foreach ($codes as $as => $code) {
-            $stack->cards[] = new PlannedCard($code, is_string($as) ? $as : null);
+            $orientation = $bowed && $stack->cards === [] ? Orientation::Sideways : null;
+            $stack->cards[] = new PlannedCard($code, is_string($as) ? $as : null, $orientation);
         }
         $this->stacks[] = $stack;
 

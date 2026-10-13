@@ -16,6 +16,8 @@ use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\ConflictType;
+use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\StackType;
 use App\Exception\Data\DeckNotFoundException;
@@ -24,6 +26,7 @@ use App\Repository\DeckRepository;
 use App\Repository\LogicalCardRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\ConflictState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,6 +59,13 @@ final class GameBuilder
      * @var array<string, PlayerBuilder>
      */
     private array $players = [];
+
+    /**
+     * Applied to the game state once the players and cards are built.
+     *
+     * @var list<\Closure(GameState, Scenario): void>
+     */
+    private array $stateChanges = [];
 
     /**
      * @var list<Stack>
@@ -125,6 +135,55 @@ final class GameBuilder
         return $this;
     }
 
+    /**
+     * Fate on a ring and the player who claimed it (by alias).
+     */
+    public function ring(Element $element, int $fate = 0, ?string $claimedBy = null): self
+    {
+        $this->stateChanges[] = function (GameState $state, Scenario $scenario) use ($element, $fate, $claimedBy): void {
+            $state->getRing($element)->fate = $fate;
+            $state->getRing($element)->claimedById = $claimedBy === null ? null : $scenario->player($claimedBy)->getId();
+        };
+
+        return $this;
+    }
+
+    /**
+     * A conflict declared by a player against a province (aliases); the defending player owns the province.
+     *
+     * @param list<string> $attackers aliases of the attacking characters
+     * @param list<string> $defenders aliases of the defending characters
+     */
+    public function conflict(
+        string $attacker,
+        string $province,
+        array $attackers = [],
+        array $defenders = [],
+        Element $ring = Element::Air,
+        ConflictType $type = ConflictType::Military,
+    ): self {
+        $this->stateChanges[] = function (GameState $state, Scenario $scenario) use ($attacker, $province, $attackers, $defenders, $ring, $type): void {
+            $provinceCard = $scenario->card($province);
+            $state->conflict = new ConflictState($scenario->player($attacker)->getId(), $provinceCard->getPlayer()->getId(), $ring, $type, $provinceCard->getId());
+            $state->conflict->attackerIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $attackers);
+            $state->conflict->defenderIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $defenders);
+        };
+
+        return $this;
+    }
+
+    /**
+     * Changes the game state directly, once the players and cards are built.
+     *
+     * @param \Closure(GameState, Scenario): void $change
+     */
+    public function withGameState(\Closure $change): self
+    {
+        $this->stateChanges[] = $change;
+
+        return $this;
+    }
+
     public function build(): Scenario
     {
         $this->builtStacks = [];
@@ -161,7 +220,12 @@ final class GameBuilder
             });
         }
 
-        return new Scenario($game, $players, $this->builtCards);
+        $scenario = new Scenario($game, $players, $this->builtCards);
+        foreach ($this->stateChanges as $change) {
+            $this->gameStateManager->withState($game, fn (GameState $state) => $change($state, $scenario));
+        }
+
+        return $scenario;
     }
 
     public function persist(): Scenario

@@ -41,6 +41,12 @@ class GameState
     public ?ConflictState $conflict = null;
 
     /**
+     * Player who used the last conflict opportunity (declared or passed) during the conflict phase: the next
+     * opportunity goes to the next player in player order with a conflict opportunity left. Null when the phase begins.
+     */
+    public ?string $lastConflictPlayerId = null;
+
+    /**
      * Player who has the Imperial Favor, and the side it is set to; null while nobody has claimed it.
      */
     public ?string $imperialFavorHolderId = null;

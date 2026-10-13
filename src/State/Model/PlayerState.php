@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\State\Model;
 
 use App\Enum\ConflictType;
+use App\Exception\Rules\NoConflictOpportunityException;
 use App\Exception\Rules\NotEnoughFateException;
 
 class PlayerState
@@ -166,6 +167,25 @@ class PlayerState
     public function setDeclaredConflictTypes(array $declaredConflictTypes): self
     {
         $this->declaredConflictTypes = $declaredConflictTypes;
+
+        return $this;
+    }
+
+    /**
+     * Uses a conflict opportunity: to declare a conflict of that type, or to pass (no type).
+     *
+     * @throws NoConflictOpportunityException if no opportunity is left, or a conflict of that type was declared
+     */
+    public function useConflictOpportunity(?ConflictType $type): self
+    {
+        if ($this->conflictOpportunities <= 0 || in_array($type, $this->declaredConflictTypes, true)) {
+            throw new NoConflictOpportunityException($type);
+        }
+
+        $this->conflictOpportunities--;
+        if ($type instanceof ConflictType) {
+            $this->declaredConflictTypes[] = $type;
+        }
 
         return $this;
     }

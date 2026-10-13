@@ -58,6 +58,15 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - `GameEndedMiddleware` rejects every action once the game has ended (`GameEndedException`), since effect messages are accepted in any place.
 - Not done: conceding, notifying the players (Mercure), the stronghold province victory condition (to add to `VictoryService` once provinces can break).
 
+## Decisions taken for declaring conflicts
+
+- `declare_conflict` gives the opportunity to the next player in player order with a conflict opportunity left (`DeclareConflictEnterListener`): the first player at the beginning of the phase, then the player after the one who used the last conflict opportunity (`GameState::lastConflictPlayerId`, reset by `conflict_phase_began`).
+- `DeclareConflict` carries the ring, the type, the province, the attackers and the characters evaded by covert (`evadedIds`). Checked: active player, unclaimed ring, province of an opponent (who becomes the defending player), not broken, the stronghold province only once 3 other provinces of its owner are broken (`Service/ConflictService`), at least one attacker, attackers are ready characters in play of the player, evaded characters are characters in play of the defending player, and an opportunity of that type is left (`PlayerState::useConflictOpportunity()`). Not checked: the covert keyword and the number of evaded characters, other eligibility restrictions from cards.
+- The fate on the ring goes to the attacking player's pool; a facedown province is revealed (`province_card.reveal`) before the reactions to the declaration (`react_to_conflict_declaration`).
+- `PassConflict` uses one opportunity with no type, then the conflict phase action window opens again through `conflict_ends`.
+- The conflict (`GameState::conflict`) is cleared by `conflict_ended` (3.3), so the contested ring stays contested until then.
+- The controller of a card is its owner everywhere (control is not modeled).
+
 ## Decisions taken for `PlayCharacterFromProvince`
 
 - The message carries `cardCost` (fate paid for the card), `fateCost` (fate paid for the additional fate) and `fate` (number of fate placed on the character). No default value: the player always gives them, since cards can modify costs.
@@ -183,7 +192,7 @@ Plan, in this order:
 
 1. ~~Action windows with consecutive passes~~ (done, with the draw phase action window).
 2. ~~Model and workflow skeleton~~ (done): rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
-3. `DeclareConflict` / `PassConflict`, with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
+3. ~~`DeclareConflict` / `PassConflict`~~ (done), with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
 4. `DeclareDefenders` (possibly none), then the conflict action window (defender first).
 5. Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home.
 6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
@@ -192,7 +201,7 @@ State of the skeleton:
 
 - Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
 - Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `result_determined` and `glory_counted`, until the players declare their totals.
-- Missing enter listeners: `declare_conflict` (next player in player order with a conflict opportunity left), `declare_defenders` (defending player), `conflict_action_window` (defending player first), `resolve_ring_effects` (attacking player if they won, otherwise nobody).
+- Missing enter listeners: `declare_defenders` (defending player), `conflict_action_window` (defending player first), `resolve_ring_effects` (attacking player if they won, otherwise nobody).
 - The automatic steps (`unopposed_applied`, `provinces_broken`, `ring_claimed`, `returned_home`) have no listener yet.
 - Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
 
