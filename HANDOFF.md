@@ -25,6 +25,11 @@ Points to address after `PlayCharacterFromProvince` and `TriggerActionAbility` (
 - Only a ready card can be bowed and only a bowed card can be readied (`Workflow/BowAndReadyGuardListener`, generic for every card workflow, since `bow` / `ready` stay in the same place).
 - Cards without `bow` / `ready` transitions (provinces, roles) are rejected by the workflow (`UndefinedTransitionException`).
 
+## Decisions taken for `LoseHonor` / `GainHonor` / `TransferHonor`
+
+- Accepted in any game place, like `BowCard` / `ReadyCard`. The `playerId` of the message is the player whose honor changes (the giver for `TransferHonor`, whose `recipientId` is the receiver): "take 1 honor from that opponent" is a transfer from that opponent.
+- The amount cannot be negative (`\InvalidArgumentException`); a player cannot transfer honor to themselves.
+
 ## Next steps
 
 ### Step 1.4 (play cards from provinces)
@@ -54,9 +59,9 @@ Recommendation: a single `MoveFate(source, target, amount)` with typed holders (
 
 **Player honor**
 
-- `LoseHonor` (~30): the most common cost; honor goes to the supply.
-- `GainHonor` exists.
-- `TransferHonor(from, to)` (~9): "give your opponent 1 honor", "take 1 honor from that opponent".
+- `LoseHonor` (~30): the most common cost; honor goes to the supply. Done.
+- `GainHonor`: done.
+- `TransferHonor(from, to)` (~9): "give your opponent 1 honor", "take 1 honor from that opponent". Done.
 
 **Moving cards between stacks**
 
@@ -104,7 +109,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 **Suggested priorities** for the dynasty phase action window:
 
 1. ~~`BowCard` / `ReadyCard`~~ (done)
-2. `LoseHonor`, `TransferHonor`
+2. ~~`LoseHonor`, `TransferHonor`~~ (done)
 3. `MoveFate`
 4. `HonorCharacter` / `DishonorCharacter` / `DiscardStatusToken`
 5. `SacrificeCard` / `DiscardCard`, `DiscardFromHand`
@@ -123,6 +128,8 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 
 ### Model
+
+- **Honor limits**: `PlayerState::setHonor()` throws `MinimumHonorReachedException` / `MaximumHonorReachedException` when honor reaches 0 or 25, which rolls the action back. Per the rules, the player then loses / wins the game: the end of the game is not modeled yet. The honor of a player is not checked to be set (`null` before `SetHonor`).
 
 - **Card state when leaving play**: `CardState` (fate on the card) is not reset when a card leaves play; it must be before the card can enter play again (discard, return to hand…). Personal honor status will go there too.
 - **Holdings**: a faceup holding in a province is in play; discarding it during the fate phase (`discard_from_provinces`) is not possible with the current `dynasty_card.discard` transition, which starts from `in_play`.

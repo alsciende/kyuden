@@ -64,7 +64,7 @@ The `game` workflow models the round sequence; a new place exists when the phase
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `BowCard` / `ReadyCard`; discarding duplicates is not implemented yet). Open points are listed in `HANDOFF.md`.
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, and the dynasty phase up to its end (latest: `LoseHonor` / `GainHonor` / `TransferHonor`; discarding duplicates is not implemented yet). Open points are listed in `HANDOFF.md`.
 
 Since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on. What a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`t36`).
 
@@ -74,7 +74,7 @@ In `play_cards_from_provinces`, a player who passes (`PlayerState::passed`, rese
 
 `TriggerActionAbility` only records that the active player uses a card: it is accepted in any `game` place with the `action_window` metadata (only `play_cards_from_provinces` for now), on a card the player owns, where the `trigger_action` transition of its workflow allows it (in play, unbroken province, faceup holding in a province). Like `PlayCharacterFromProvince`, it keeps the opportunity to act with the player, who pays costs and resolves effects with other actions, then sends `EndOpportunity`. Neither the presence of an action ability on the card nor the once-per-round limit is checked. Event cards are not covered (future `PlayEvent`).
 
-`BowCard` / `ReadyCard` are the first cost/effect messages: accepted in any place, from any player of the game, on any card (an opponent's included); `Workflow/BowAndReadyGuardListener` only lets a ready card be bowed and a bowed card be readied.
+`BowCard` / `ReadyCard` are the first cost/effect messages: accepted in any place, from any player of the game, on any card (an opponent's included); `Workflow/BowAndReadyGuardListener` only lets a ready card be bowed and a bowed card be readied. `LoseHonor` / `GainHonor` / `TransferHonor` are accepted the same way, in any place; their `playerId` is the player whose honor changes (the giver for a transfer).
 
 From `dynasty_phase_ends` onward, `game` transitions are placeholders (`t4`, `t5`, …) with no logic and no `auto` flag. The HTTP API is a stub (`ApiGamesController` returns the default scaffold; the event controller is still TODO).
 

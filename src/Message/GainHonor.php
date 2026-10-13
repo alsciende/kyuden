@@ -6,6 +6,9 @@ namespace App\Message;
 
 use App\Attribute\AppAction;
 
+/**
+ * The player gains honor from the general token pool, e.g. to resolve an effect.
+ */
 #[AppAction]
 final readonly class GainHonor implements PlayerActionInterface
 {

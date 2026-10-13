@@ -23,4 +23,17 @@ class GainHonorHandlerTest extends AbstractKernelTestCase
 
         self::assertSame(12, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
+
+    public function testRejectsANegativeGain(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10))
+            ->withPlayer('jane')
+            ->persist();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        self::service(GainHonorHandler::class)(new GainHonor($scenario->game()->getId(), $scenario->player('john')->getId(), -2));
+    }
 }
