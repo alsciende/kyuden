@@ -51,7 +51,7 @@ Card transitions declare their effect in metadata, applied by the generic `Workf
 The `game` workflow models the round sequence; a new place exists when the phase **and** the available player actions differ. Place metadata:
 
 - `action_window`: players can trigger action abilities (`TriggerActionAbility`); the `trigger_action` transition of a card workflow (from a place to itself) lists where the abilities of a card can be used.
-- `opportunities`: players have opportunities to act, in player order or simultaneously, and can pass them (`PassOpportunity`); the step ends once every player has passed (`AllPlayersPassedGuardListener`).
+- `opportunities`: players have opportunities to act, in player order or simultaneously, and can pass them (`PassOpportunity`); the step ends once every player has passed (`AllPlayersPassedGuardListener`). Its value is an `Enum/PassingRule`: `Final` (passing forfeits the remaining opportunities of the step) or `Consecutive` (action windows: a player who acts cancels the passes, and the window closes once every player has passed consecutively).
 
 Transition metadata: `auto` and `priority` (see `WorkflowTransitionMiddleware`). `end_game` leads from every place of a started game (`WorkflowConfig::placesOf()`) to the final place `game_ended` (`Game::STATE_ENDED`); it is automatic with the highest priority, so the game ends as soon as a player meets a victory condition, before any other automatic transition.
 
@@ -66,7 +66,7 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
   - in steps resolved in player order, only the first player: the handler gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`;
   - in steps where players act simultaneously (e.g. `reveal_honor_dials`), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).
 
-  A player who passes (`PassOpportunity`, in a place marked `opportunities`; `PlayerState::passed`, reset by the enter listener of the step) is no longer active and is skipped by `Service/OpportunityService`.
+  A player who passes (`PassOpportunity`, in a place marked `opportunities`; `PlayerState::passed`, reset by the enter listener of the step) is no longer active and is skipped by `Service/OpportunityService`. In an action window (`PassingRule::Consecutive`), a player who ends an opportunity in which they acted (`EndOpportunity`) resets every pass, so the players who had passed get opportunities to act again.
 - **End of the game**: `Service/VictoryService` checks the victory conditions from the state (a player with 25 or more honor wins; a player with no honor is eliminated and the last one standing wins; ties go to the first player, then in player order). The guard of `end_game` uses it, and its transition listener records `winnerId` and `victoryCondition` in `GameState`. Honor cannot go below 0 (`PlayerState::setHonor()`).
 - **Costs and effects**: board manipulations (`BowCard`, `LoseHonor`…) are accepted in any place, from any player of the game, on any card or player, since the engine does not know which ability is being resolved.
 

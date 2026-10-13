@@ -19,6 +19,7 @@ use App\Entity\CardTypes\RoleCard;
 use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Enum\Orientation;
+use App\Enum\PassingRule;
 use App\Enum\StackType;
 use App\Workflow\WorkflowConfig;
 
@@ -35,7 +36,8 @@ $gameTransitions = [
     WorkflowConfig::transition('honor_bids_confirmed', 'honor_bid', 'reveal_honor_dials', ['auto' => true]),
     WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
     WorkflowConfig::transition('honor_transferred', 'transfer_honor', 'draw_cards', ['auto' => true]),
-    WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_ends', ['auto' => true]),
+    WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_action_window', ['auto' => true]),
+    WorkflowConfig::transition('draw_actions_passed', 'draw_phase_action_window', 'draw_phase_ends', ['auto' => true]),
     WorkflowConfig::transition('draw_phase_ended', 'draw_phase_ends', 'conflict_phase_begins', ['auto' => true]),
     WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
     WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),
@@ -88,7 +90,8 @@ return App::config([
                 'initial_marking' => 'join_game',
                 // places not listed here are taken from the transitions;
                 // `action_window`: players can trigger action abilities (TriggerActionAbility)
-                // `opportunities`: players act in player order and can pass their opportunity to act (PassOpportunity)
+                // `opportunities`: players have opportunities to act and can pass them (PassOpportunity); the PassingRule
+                // says whether passing is final or the step ends once every player has passed consecutively
                 // transition metadata: `auto` (applied by WorkflowTransitionMiddleware), `priority` (the highest enabled
                 // automatic transition is applied first; 0 by default)
                 'places' => [
@@ -96,14 +99,21 @@ return App::config([
                         'name' => 'play_cards_from_provinces',
                         'metadata' => [
                             'action_window' => true,
-                            'opportunities' => true,
+                            'opportunities' => PassingRule::Final,
                         ],
                     ],
                     [
                         // reactions to the honor dials being revealed, e.g. changing a bid (SetHonorBid)
                         'name' => 'reveal_honor_dials',
                         'metadata' => [
-                            'opportunities' => true,
+                            'opportunities' => PassingRule::Final,
+                        ],
+                    ],
+                    [
+                        'name' => 'draw_phase_action_window',
+                        'metadata' => [
+                            'action_window' => true,
+                            'opportunities' => PassingRule::Consecutive,
                         ],
                     ],
                 ],

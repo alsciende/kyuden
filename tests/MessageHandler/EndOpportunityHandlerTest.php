@@ -81,4 +81,19 @@ class EndOpportunityHandlerTest extends AbstractKernelTestCase
         self::assertTrue($this->isActivePlayer($scenario, 'john'));
         self::assertTrue($this->isActivePlayer($scenario, 'jane'));
     }
+
+    public function testThePlayersWhoHadPassedGetOpportunitiesToActAgainInAnActionWindow(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->passed())
+            ->activePlayer('john')
+            ->persist();
+
+        $this->end($scenario, 'john');
+
+        self::assertTrue($this->isActivePlayer($scenario, 'jane'));
+        self::assertFalse($this->playerStateManager->getState($scenario->player('jane'))->isPassed());
+    }
 }

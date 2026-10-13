@@ -14,6 +14,7 @@ use Symfony\Component\Workflow\Event\GuardEvent;
  */
 #[AsGuardListener(workflow: 'game', transition: 'dynasty_actions_passed')]
 #[AsGuardListener(workflow: 'game', transition: 'honor_dials_revealed')]
+#[AsGuardListener(workflow: 'game', transition: 'draw_actions_passed')]
 readonly class AllPlayersPassedGuardListener
 {
     public function __construct(

@@ -9,6 +9,7 @@ use App\Enum\StackType;
 use App\Enum\VictoryCondition;
 use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
+use App\Message\EndOpportunity;
 use App\Message\PassOpportunity;
 use App\MessageHandler\PassOpportunityHandler;
 use App\State\Manager\GameStateManager;
@@ -133,7 +134,9 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
-        self::assertSame('conflict_phase_begins', $scenario->game()->getCurrentPlace());
+        // the action window of the draw phase opens with the first player
+        self::assertSame('draw_phase_action_window', $scenario->game()->getCurrentPlace());
+        self::assertSame([$scenario->player('john')->getId()], self::service(GameStateManager::class)->getState($scenario->game())->activePlayerIds);
         self::assertSame(13, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
         self::assertSame(7, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
         self::assertCount(1, $scenario->player('john')->getUniqueStack(StackType::Hand)->getCards());
@@ -159,5 +162,28 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         self::assertSame(VictoryCondition::HonorLoss, $state->victoryCondition);
         self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
         self::assertCount(0, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
+    }
+
+    public function testTheActionWindowStaysOpenUntilEveryPlayerHasPassedConsecutively(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+        $this->messageBus->dispatch(new EndOpportunity($scenario->game()->getId(), $scenario->player('jane')->getId()));
+
+        // jane has acted: john, who had passed, gets the opportunity to act again
+        self::assertSame('draw_phase_action_window', $scenario->game()->getCurrentPlace());
+        self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('john')));
+
+        $this->messageBus->dispatch($this->pass($scenario, 'john'));
+        $this->messageBus->dispatch($this->pass($scenario, 'jane'));
+
+        self::assertSame('conflict_phase_begins', $scenario->game()->getCurrentPlace());
     }
 }

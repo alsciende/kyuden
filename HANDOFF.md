@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
 
 From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`, `t12`, …) with no logic and no `auto` flag.
 
@@ -13,8 +13,8 @@ From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`,
 
 ## Decisions taken for `PassOpportunity`
 
-- Generic pass, allowed in any `game` place with the `opportunities` metadata (`play_cards_from_provinces`, `reveal_honor_dials`). The rules of a step go in listeners of `OpportunityPassedEvent`, which check the game place.
-- Passing is final: the player is no longer active and is skipped until the end of the step, which ends once every player has passed (`AllPlayersPassedGuardListener`, one `AsGuardListener` attribute per transition).
+- Generic pass, allowed in any `game` place with the `opportunities` metadata (`play_cards_from_provinces`, `reveal_honor_dials`, `draw_phase_action_window`). The rules of a step go in listeners of `OpportunityPassedEvent`, which check the game place.
+- Passing is final (`PassingRule::Final`, except in action windows): the player is no longer active and is skipped until the end of the step, which ends once every player has passed (`AllPlayersPassedGuardListener`, one `AsGuardListener` attribute per transition).
 - Several players can be active at once (`GameState::activePlayerIds`): players acting simultaneously keep their opportunity until they pass, and `EndOpportunity` changes nothing for them. The opportunity goes to the next player only when no player is active anymore.
 
 ## Decisions taken for the reveal of the honor dials
@@ -32,7 +32,13 @@ From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`,
 ## Decisions taken for the card draw
 
 - `cards_drawn` is automatic: each player draws as many conflict cards as their honor bid (`CardsDrawnTransitionListener`, through `DrawConflictCards` on `transition.bus`), after the changes made with `SetHonorBid`. No player action: cards drawing more are handled with `DrawConflictCards` in a later window. Every player must have bid (`NoHonorBidException`); a bid of 0 draws nothing.
-- The action window after the draw (between 2.5 and 2.6) is not modeled yet: `cards_drawn` goes straight to `draw_phase_ends`. It needs the action window mode described in Other steps.
+- `cards_drawn` leads to the action window of the draw phase (`draw_phase_action_window`, between 2.5 and 2.6).
+
+## Decisions taken for action windows
+
+- The `opportunities` place metadata is an `Enum/PassingRule`: `Final` for the steps where passing is final (`play_cards_from_provinces`, the special action window 1.4, and `reveal_honor_dials`), `Consecutive` for action windows (`draw_phase_action_window` for now).
+- In an action window, `EndOpportunity` means the player has acted: it resets the passes of every player (`OpportunityService::passToNextPlayer()`), then gives the opportunity to the next player. `PassOpportunity` is unchanged: the window closes once every player has passed since the last action (`AllPlayersPassedGuardListener`). An `EndOpportunity` with no action before it counts as an action.
+- `DrawPhaseActionWindowEnterListener` activates the first player and resets the passes. The conflict action window (3.2.2) will activate the defender instead.
 
 ## Decisions taken for running out of cards
 
@@ -171,10 +177,25 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 6. Province messages (turn, discard, `FillProvince` faceup)
 7. Information messages (look, search, reveal) with `PutCardOnDeck` and `TakeCardIntoHand`
 
-### Other steps
+### Conflict phase
 
-- **Draw phase action window**: a place between `draw_cards` and `draw_phase_ends` with `action_window` and `opportunities`, the first player active, once the action window mode below exists.
-- **Action windows** (conflict phase): passing does not forfeit the window; it closes when every player has passed in sequence. `passed` will need to be reset when a player acts, and `PassOpportunity` will need to support this mode (e.g. with a place metadata).
+Plan, in this order:
+
+1. ~~Action windows with consecutive passes~~ (done, with the draw phase action window).
+2. Model and workflow skeleton: rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
+3. `DeclareConflict` / `PassConflict`, with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
+4. `DeclareDefenders` (possibly none), then the conflict action window (defender first).
+5. Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home.
+6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
+
+Decisions already taken:
+
+- **Participation** in the conflict is stored in `GameState` (ids of the participating cards), not in `CardState`: a card leaving play will have to be removed from the conflict.
+- **Values from players**: each player declares the total skill of their side; an automatic transition waits for both, then the engine computes the winner (ties go to the attacker, a total of 1 or more is needed to win, no winner when both count 0), unopposed and the excess skill. Same for the province strength and the glory count (the engine can add 1 per claimed ring).
+- **Conflict opportunities**: two per player and per round. Declaring uses the opportunity of that type; passing (`PassConflict`) uses one opportunity with no type. A conflict can be declared while an opportunity remains and its type has not been declared this round. Turn records: remaining opportunities (a counter, for cards granting additional conflicts) and declared types.
+- **Conflicts at multiple provinces** (A War on Two Fronts): the conflict keeps the province with the contested ring and the list of attacked provinces; `DeclareConflict` targets one province, a later effect message adds the other one. The province strength is declared for each province.
+- **Discarding from a broken province**: a step with an opportunity for the attacker.
+- **Reactions**: players must be able to react often for now; it will be locked once the game has been tested. Reaction windows (every player active, passing final, like `reveal_honor_dials`) after the declaration of the conflict, the result, the broken province and the ring being claimed.
 
 ### Game rules not enforced yet
 

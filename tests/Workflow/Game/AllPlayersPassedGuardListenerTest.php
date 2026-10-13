@@ -29,6 +29,7 @@ class AllPlayersPassedGuardListenerTest extends AbstractKernelTestCase
     {
         yield 'play cards from provinces' => ['play_cards_from_provinces', 'dynasty_actions_passed'];
         yield 'reveal honor dials' => ['reveal_honor_dials', 'honor_dials_revealed'];
+        yield 'draw phase action window' => ['draw_phase_action_window', 'draw_actions_passed'];
     }
 
     #[DataProvider('steps')]
