@@ -78,6 +78,8 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - **Ring claimed** (3.2.7): the winner claims the contested ring (`RingClaimedTransitionListener`); with no winner the ring is back in the unclaimed pool once the conflict is cleared (`conflict_ended`).
 - **Return home** (3.2.8): ready participants bow, then the participant lists are emptied (`ReturnedHomeTransitionListener`).
 - **Leaving play** (`Workflow/LeavePlayListener`, on `workflow.leave` for any card transition from `in_play` to another place): the controller of an honored / dishonored character gains / loses 1 honor, the `CardState` is reset (fate back to the token pool, ordinary status), the attachments on a character are discarded (ancestral ones too: the keyword is not modeled) and the character is removed from the conflict. This closes the "card state when leaving play" point of Model.
+- **Glory count** (3.4.1): each player declares the glory of their ready characters with every modifier (`DeclareGloryCount`, turn record `PlayerState::gloryCount`, any order, can be declared again until every player has); `glory_counted` is automatic once every player has declared, and adds 1 per claimed ring. The highest total wins (`GameState::gloryCountWinnerId`), nobody on a tie.
+- **Imperial Favor** (3.4.2): the winner of the glory count is the only active player in `claim_imperial_favor` and sends `ClaimImperialFavor(side)` (`imperialFavorHolderId`, `imperialFavorSide` in `GameState`); on a tie, `imperial_favor_unclaimed` (automatic) leaves the favor as it is. The effect of the favor on the next round (+1 skill) is part of the totals declared by the players.
 - `GameState::currentConflict()` returns the conflict or throws: it is not named `getConflict()`, which the serializer would call as an accessor.
 
 ## Decisions taken for `PlayCharacterFromProvince`
@@ -208,12 +210,12 @@ Plan, in this order:
 3. ~~`DeclareConflict` / `PassConflict`~~ (done), with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
 4. ~~`DeclareDefenders` (possibly none), then the conflict action window (defender first)~~ (done).
 5. ~~Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home~~ (done).
-6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
+6. ~~Imperial Favor: glory count, `ClaimImperialFavor(side)`~~ (done).
 
 State of the skeleton:
 
 - Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
-- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `glory_counted`, until the players declare their totals.
+- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`.
 - Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
 
 Decisions already taken:

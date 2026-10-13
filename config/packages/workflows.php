@@ -61,9 +61,10 @@ $gameTransitions = [
     WorkflowConfig::transition('conflict_ended', 'conflict_ends', 'conflict_phase_action_window', ['auto' => true]),
     // 3.4 to 3.5
     WorkflowConfig::transition('imperial_favor_contest_began', 'determine_imperial_favor', 'glory_count', ['auto' => true]),
-    // TODO automatic once the players declare their glory count
-    WorkflowConfig::transition('glory_counted', 'glory_count', 'claim_imperial_favor'),
+    WorkflowConfig::transition('glory_counted', 'glory_count', 'claim_imperial_favor', ['auto' => true]),
     WorkflowConfig::transition('imperial_favor_claimed', 'claim_imperial_favor', 'conflict_phase_ends'),
+    // the glory count is a tie: the Imperial Favor remains in its current state
+    WorkflowConfig::transition('imperial_favor_unclaimed', 'claim_imperial_favor', 'conflict_phase_ends', ['auto' => true]),
     WorkflowConfig::transition('conflict_phase_ended', 'conflict_phase_ends', 'fate_phase_begins', ['auto' => true]),
     WorkflowConfig::transition('t28', 'fate_phase_begins', 'discard_characters_with_no_fate'),
     WorkflowConfig::transition('t29', 'discard_characters_with_no_fate', 'remove_fate_from_characters'),

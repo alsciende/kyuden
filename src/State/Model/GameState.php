@@ -54,6 +54,11 @@ class GameState
     public ?ConflictType $imperialFavorSide = null;
 
     /**
+     * Winner of the glory count of the current round, null on a tie (3.4.1).
+     */
+    public ?string $gloryCountWinnerId = null;
+
+    /**
      * Set when the game ends (`end_game` transition).
      */
     public ?string $winnerId = null;
@@ -113,6 +118,14 @@ class GameState
     public function getRing(Element $element): RingState
     {
         return $this->rings[$element->value] ?? throw new \LogicException("The {$element->value} ring is not set.");
+    }
+
+    /**
+     * Number of rings in the claimed ring pool of the player.
+     */
+    public function countClaimedRings(Player $player): int
+    {
+        return count(array_filter($this->rings, fn (RingState $ring): bool => $ring->claimedById === $player->getId()));
     }
 
     /**

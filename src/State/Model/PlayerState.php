@@ -38,6 +38,11 @@ class PlayerState
     private int $conflictOpportunities = self::CONFLICT_OPPORTUNITIES;
 
     /**
+     * Glory count declared by the player during the conflict phase, claimed rings excluded.
+     */
+    private ?int $gloryCount = null;
+
+    /**
      * Types of the conflicts declared this round: a player declares at most one conflict of each type.
      *
      * @var list<ConflictType>
@@ -190,6 +195,18 @@ class PlayerState
         return $this;
     }
 
+    public function getGloryCount(): ?int
+    {
+        return $this->gloryCount;
+    }
+
+    public function setGloryCount(?int $gloryCount): self
+    {
+        $this->gloryCount = $gloryCount;
+
+        return $this;
+    }
+
     /**
      * The player has passed during the current step: the opportunity to act skips them.
      */
@@ -210,6 +227,7 @@ class PlayerState
         return $this->setFateCollected(false)
             ->setHonorBid(null)
             ->setConflictOpportunities(self::CONFLICT_OPPORTUNITIES)
-            ->setDeclaredConflictTypes([]);
+            ->setDeclaredConflictTypes([])
+            ->setGloryCount(null);
     }
 }
