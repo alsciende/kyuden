@@ -2,9 +2,9 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), running out of cards and the end of the game by honor (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor (latest).
 
-From `draw_phase_ends` onward, `game` transitions are placeholders (`t10`, `t11`, …) with no logic and no `auto` flag.
+From `conflict_phase_begins` onward, `game` transitions are placeholders (`t11`, `t12`, …) with no logic and no `auto` flag.
 
 ## Decisions taken for the dynasty phase
 

@@ -133,7 +133,7 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
-        self::assertSame('draw_phase_ends', $scenario->game()->getCurrentPlace());
+        self::assertSame('conflict_phase_begins', $scenario->game()->getCurrentPlace());
         self::assertSame(13, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
         self::assertSame(7, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
         self::assertCount(1, $scenario->player('john')->getUniqueStack(StackType::Hand)->getCards());

@@ -36,7 +36,7 @@ $gameTransitions = [
     WorkflowConfig::transition('honor_dials_revealed', 'reveal_honor_dials', 'transfer_honor', ['auto' => true]),
     WorkflowConfig::transition('honor_transferred', 'transfer_honor', 'draw_cards', ['auto' => true]),
     WorkflowConfig::transition('cards_drawn', 'draw_cards', 'draw_phase_ends', ['auto' => true]),
-    WorkflowConfig::transition('t10', 'draw_phase_ends', 'conflict_phase_begins'),
+    WorkflowConfig::transition('draw_phase_ended', 'draw_phase_ends', 'conflict_phase_begins', ['auto' => true]),
     WorkflowConfig::transition('t11', 'conflict_phase_begins', 'declare_conflict'),
     WorkflowConfig::transition('t12', 'declare_conflict', 'declare_defenders'),
     WorkflowConfig::transition('t13', 'declare_defenders', 'conflict_action_window'),
