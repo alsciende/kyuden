@@ -7,6 +7,9 @@ namespace App\Service;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\PassingRule;
+use App\Exception\Rules\CannotPlayFromHandException;
+use App\Exception\Rules\NotActivePlayerException;
+use App\Exception\Rules\NotInActionWindowException;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
@@ -41,6 +44,29 @@ readonly class OpportunityService
         $rule = $this->gameStateMachine->getMetadataStore()->getPlaceMetadata($place)['opportunities'] ?? null;
 
         return $rule instanceof PassingRule ? $rule : null;
+    }
+
+    /**
+     * The player has the opportunity to act in an action window (`action_window` metadata of the game place). Playing
+     * characters and attachments from hand is allowed in every action window but those marked `play_from_hand: false`.
+     *
+     * @throws NotInActionWindowException|CannotPlayFromHandException|NotActivePlayerException
+     */
+    public function assertCanTakeAction(Game $game, Player $player, bool $playFromHand = false): void
+    {
+        $place = $game->getCurrentPlace();
+        $metadata = $place === null ? [] : $this->gameStateMachine->getMetadataStore()->getPlaceMetadata($place);
+        if (($metadata['action_window'] ?? false) !== true) {
+            throw new NotInActionWindowException($place);
+        }
+
+        if ($playFromHand && ($metadata['play_from_hand'] ?? true) !== true) {
+            throw new CannotPlayFromHandException($place);
+        }
+
+        if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
+            throw new NotActivePlayerException();
+        }
     }
 
     /**

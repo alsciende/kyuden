@@ -100,7 +100,8 @@ return App::config([
                 'supports' => [Game::class],
                 'initial_marking' => 'join_game',
                 // places not listed here are taken from the transitions;
-                // `action_window`: players can trigger action abilities (TriggerActionAbility)
+                // `action_window`: players can trigger action abilities (TriggerActionAbility) and play cards from hand,
+                // characters and attachments only without `play_from_hand: false`
                 // `opportunities`: players have opportunities to act and can pass them (PassOpportunity); the PassingRule
                 // says whether passing is final or the step ends once every player has passed consecutively
                 // transition metadata: `auto` (applied by WorkflowTransitionMiddleware), `priority` (the highest enabled
@@ -110,6 +111,8 @@ return App::config([
                         'name' => 'play_cards_from_provinces',
                         'metadata' => [
                             'action_window' => true,
+                            // 1.4 special action window: no character or attachment from hand
+                            'play_from_hand' => false,
                             'opportunities' => PassingRule::Final,
                         ],
                     ],

@@ -89,6 +89,16 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `discard_from_provinces` (4.6): the faceup cards of broken provinces are discarded on entering the step (`DiscardFromProvincesEnterListener`); then every player is active to discard faceup dynasty cards from their unbroken provinces (`DiscardCard`) and refill them (`FillProvince`), and passes. The engine does not check that a player only discards their own faceup cards.
 - Characters discarded with no fate go through `LeavePlayListener` (honor of honored / dishonored characters, attachments discarded).
 
+## Decisions taken for playing cards from hand
+
+- `OpportunityService::assertCanTakeAction()` checks that the place is an action window and that the player is active (`TriggerActionAbility` uses it too). Characters and attachments cannot be played from hand in places marked `play_from_hand: false` (`play_cards_from_provinces`, the 1.4 special action window; `CannotPlayFromHandException`).
+- `PlayCharacterFromHand` carries the costs and fate like `PlayCharacterFromProvince`, and `intoConflict`: the character then participates on its controller's side, which requires a conflict in which the player takes part (only `conflict_action_window` is an action window during a conflict).
+- `PlayAttachment` carries the target: a character in play of any player, or a province. Attachment restrictions printed on cards are not checked.
+- `PlayEvent` is allowed in any place with opportunities (action windows, but also reaction windows, for reaction and interrupt events), when the player is active: the engine does not know the trigger of the event. The event goes to the discard pile once its cost is paid; its effects are resolved with other messages.
+- In every case the player keeps the opportunity to act and ends it with `EndOpportunity` (or passes, in a reaction window).
+- `MoveToConflict` / `MoveHome` are effect messages, accepted in any place during a conflict from any player: a character in play joins the side of its controller (bowed or ready), or leaves the conflict.
+- Not done: the Limited keyword, uniqueness, "max X per conflict" restrictions.
+
 ## Decisions taken for `PlayCharacterFromProvince`
 
 - The message carries `cardCost` (fate paid for the card), `fateCost` (fate paid for the additional fate) and `fate` (number of fate placed on the character). No default value: the player always gives them, since cards can modify costs.
@@ -131,7 +141,6 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 ### Action abilities
 
 - **Costs and effects of abilities**: `BowCard` / `ReadyCard` exist; no action exists yet to spend fate, lose honor, move fate, sacrifice or dishonor a card. `TriggerActionAbility` is of little use until some of them exist. See the analysis below.
-- **Event cards** (`PlayEvent`): an event with an action trigger is played from hand and goes to the discard pile; the current `conflict_card.play_card` transition leads to `in_play`.
 
 #### Messages needed for costs and effects
 
@@ -186,7 +195,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 **Postponed until the conflict phase is modeled**
 
-- `MoveToConflict` / `MoveHome` (32 / 37).
+- ~~`MoveToConflict` / `MoveHome` (32 / 37)~~ (done).
 - Duels (34): initiate, honor bid, result.
 - Skill and glory modifiers "until the end of the conflict" (the most common effect: ~150 mil/pol mentions, 92 "until the end of the conflict"). Either a generic `AddSkillModifier(card, mil, pol, glory, duration)`, or (preferred, consistent with `CollectFate`) players declare the totals when the conflict is resolved.
 - Rings (claim, return, switch, move the contested ring), discarding the Imperial Favor, taking control of a card, switching the conflict type, province strength.
