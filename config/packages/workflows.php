@@ -49,8 +49,7 @@ $gameTransitions = [
     WorkflowConfig::transition('declaration_reactions_passed', 'react_to_conflict_declaration', 'declare_defenders', ['auto' => true]),
     WorkflowConfig::transition('defenders_declared', 'declare_defenders', 'conflict_action_window'),
     WorkflowConfig::transition('conflict_actions_passed', 'conflict_action_window', 'determine_result', ['auto' => true]),
-    // TODO automatic once the players declare their skill
-    WorkflowConfig::transition('result_determined', 'determine_result', 'react_to_conflict_result'),
+    WorkflowConfig::transition('result_determined', 'determine_result', 'react_to_conflict_result', ['auto' => true]),
     WorkflowConfig::transition('result_reactions_passed', 'react_to_conflict_result', 'apply_unopposed', ['auto' => true]),
     WorkflowConfig::transition('unopposed_applied', 'apply_unopposed', 'break_province', ['auto' => true]),
     WorkflowConfig::transition('provinces_broken', 'break_province', 'react_to_broken_province', ['auto' => true]),
@@ -202,7 +201,8 @@ return App::config([
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
-                    WorkflowConfig::transition('discard', DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, [
+                    // from a province: a card discarded from a broken province, or during the fate phase
+                    WorkflowConfig::transition('discard_card', [DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY], DynastyCard::STATE_DISCARD_PILE, [
                         'stack' => StackType::DynastyDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),

@@ -56,7 +56,8 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - Simultaneous conditions: the first player wins if they meet one, then the next one in player order. A single message only changes the honor of two players through a transfer, which favors the receiver either way; an effect hitting each player is several messages, and the first one meeting a condition ends the game.
 - The result (`winnerId`, `victoryCondition`) is stored in `GameState`; no player is active anymore.
 - `GameEndedMiddleware` rejects every action once the game has ended (`GameEndedException`), since effect messages are accepted in any place.
-- Not done: conceding, notifying the players (Mercure), the stronghold province victory condition (to add to `VictoryService` once provinces can break).
+- Not done: conceding, notifying the players (Mercure).
+- Breaking the stronghold province of a player eliminates them (`VictoryCondition::StrongholdProvinceBroken`), like having no honor: the game ends right after `provinces_broken`.
 
 ## Decisions taken for declaring conflicts
 
@@ -67,6 +68,11 @@ The conflict phase has its places and transitions (skeleton, see Conflict phase 
 - The conflict (`GameState::conflict`) is cleared by `conflict_ended` (3.3), so the contested ring stays contested until then.
 - The controller of a card is its owner everywhere (control is not modeled).
 - `DeclareDefenders` is sent by the defending player, the only active player in `declare_defenders` (`DefendingPlayerOpportunityEnterListener`, which also gives the first opportunity of `conflict_action_window` to the defending player). Defenders are ready characters in play of the defending player, not evaded by covert; the list can be empty.
+- **Result** (3.2.3): each player of the conflict declares the total skill of their side (`DeclareConflictSkill`, any order, can be declared again until both are known); `result_determined` is automatic once both are declared (`ResultDeterminedGuardListener`), and `ConflictState::determineWinner()` applies the rules (ties to the attacker, 1 skill needed to win, no winner at 0 / 0).
+- **Province strength**: when the game enters `determine_result`, each attacked province gets its printed strength, plus the strength bonus of the stronghold for the stronghold province (`DetermineResultEnterListener`). The defending player replaces it with `DeclareProvinceStrength`, which must be sent before the skill totals (the result is determined as soon as both are known).
+- **Unopposed** (3.2.4): the defending player loses 1 honor when the attacking player wins with no defender left in the conflict (`UnopposedAppliedTransitionListener`).
+- **Breaking provinces** (3.2.5): each attacked unbroken province whose strength is at most the excess skill of the winning attacker breaks (`province_card.break`); the broken ones are recorded in `ConflictState::brokenProvinceIds`.
+- **Discarding from a broken province**: `DiscardCard` (any card, any player, any place: `discard_card` transition of the conflict and dynasty card workflows; the dynasty one now also starts from the provinces, so a faceup holding can be discarded), then `FillProvince`, during `react_to_broken_province`.
 - `GameState::currentConflict()` returns the conflict or throws: it is not named `getConflict()`, which the serializer would call as an accessor.
 
 ## Decisions taken for `PlayCharacterFromProvince`
@@ -137,7 +143,7 @@ Recommendation: a single `MoveFate(source, target, amount)` with typed holders (
 
 **Moving cards between stacks**
 
-- `SacrificeCard` / `DiscardCard` (29 / ~30): same physical effect (in play → discard pile), kept apart for a readable event log (sacrifice is a cost).
+- `SacrificeCard` / `DiscardCard` (29 / ~30; `DiscardCard` done): same physical effect (in play → discard pile), kept apart for a readable event log (sacrifice is a cost).
 - `ReturnCardToHand` (7; Adept of Shadows, Court Mask, Niten).
 - `DiscardFromHand` (chosen card) and `DiscardRandomFromHand` (the engine picks; Kuni Yori, Thunder Guard Elite).
 - `DrawConflictCards` exists (19).
@@ -196,15 +202,15 @@ Plan, in this order:
 2. ~~Model and workflow skeleton~~ (done): rings (unclaimed, contested, claimed by a player; fate on them) and the Imperial Favor (holder, side) in `GameState`; the current conflict in `GameState` (attacker, defender, contested ring, type, the province with the ring and the list of attacked provinces, attackers and defenders by card id, characters evaded by covert), cleared in `return_home`; the conflict opportunities in the turn records of `PlayerState`. The `game` places replace the placeholders `t11`…`t27`, with the loop of 3.3 back to the action window following 3.1.
 3. ~~`DeclareConflict` / `PassConflict`~~ (done), with their checks (unclaimed ring, opponent's unbroken province, stronghold province only once 3 provinces are broken, ready attackers of the player, at least one attacker, remaining opportunity of that type), revealing the province and moving the fate of the ring to the attacker.
 4. ~~`DeclareDefenders` (possibly none), then the conflict action window (defender first)~~ (done).
-5. Resolution: result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`), ring effect, ring claimed, return home.
+5. Resolution: ~~result, unopposed, broken province (and the stronghold province victory condition in `VictoryService`)~~ (done), ring effect, ring claimed, return home.
 6. Imperial Favor: glory count, `ClaimImperialFavor(side)`.
 
 State of the skeleton:
 
 - Places: `conflict_phase_action_window` (first player first) leads to `declare_conflict` while a player has a conflict opportunity left, otherwise to `determine_imperial_favor` (`ConflictOpportunitiesGuardListener`). A conflict goes through `react_to_conflict_declaration`, `declare_defenders`, `conflict_action_window`, `determine_result`, `react_to_conflict_result`, `apply_unopposed`, `break_province`, `react_to_broken_province` (where the attacker will also discard from the broken province), `resolve_ring_effects`, `claim_ring`, `react_to_ring_claim`, `return_home`, `conflict_ends`, then back to `conflict_phase_action_window`.
-- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `result_determined` and `glory_counted`, until the players declare their totals.
+- Transitions applied by a handler, not automatic: `conflict_passed`, `conflict_declared`, `defenders_declared`, `imperial_favor_claimed`. Not automatic yet (TODO in the config): `glory_counted`, until the players declare their totals.
 - Missing enter listeners: `resolve_ring_effects` (attacking player if they won, otherwise nobody).
-- The automatic steps (`unopposed_applied`, `provinces_broken`, `ring_claimed`, `returned_home`) have no listener yet.
+- The automatic steps `ring_claimed` and `returned_home` have no listener yet.
 - Rings are set by `start_game`; placing fate on them and returning them belong to the fate phase.
 
 Decisions already taken:
@@ -219,7 +225,7 @@ Decisions already taken:
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
-- **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player).
+- **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player, accepted in any place).
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 
 ### Model
@@ -227,4 +233,3 @@ Decisions already taken:
 - **Honor not set**: the honor of a player is not checked to be set (`null` before `SetHonor`).
 
 - **Card state when leaving play**: `CardState` (fate on the card) is not reset when a card leaves play; it must be before the card can enter play again (discard, return to hand…). Personal honor status will go there too.
-- **Holdings**: a faceup holding in a province is in play; discarding it during the fate phase (`discard_from_provinces`) is not possible with the current `dynasty_card.discard` transition, which starts from `in_play`.

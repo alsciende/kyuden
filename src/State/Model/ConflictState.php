@@ -41,6 +41,31 @@ class ConflictState
      */
     public array $evadedIds = [];
 
+    /**
+     * Total skill of each side, declared by its player (3.2.3).
+     */
+    public ?int $attackerSkill = null;
+
+    public ?int $defenderSkill = null;
+
+    /**
+     * Strength of each attacked province, by province id: the printed strength unless the defending player declares
+     * another one.
+     *
+     * @var array<string, int>
+     */
+    public array $provinceStrengths = [];
+
+    /**
+     * Set when the result is determined; null when no player won the conflict.
+     */
+    public ?string $winnerId = null;
+
+    /**
+     * @var list<string>
+     */
+    public array $brokenProvinceIds = [];
+
     public function __construct(
         public string $attackingPlayerId,
         public string $defendingPlayerId,
@@ -52,5 +77,43 @@ class ConflictState
         public string $provinceId,
     ) {
         $this->attackedProvinceIds = [$provinceId];
+    }
+
+    /**
+     * Both skill totals are declared. Not prefixed with `is` or `has`, so that the serializer of the state does not
+     * take it for a property; same for the other methods.
+     */
+    public function skillsDeclared(): bool
+    {
+        return $this->attackerSkill !== null && $this->defenderSkill !== null;
+    }
+
+    /**
+     * 3.2.3: the side with the higher total skill wins, the attacking player on a tie; a total of at least 1 is needed
+     * to win.
+     */
+    public function determineWinner(): void
+    {
+        $attackerSkill = $this->attackerSkill ?? throw new \LogicException('The attacking player has not declared their skill.');
+        $defenderSkill = $this->defenderSkill ?? throw new \LogicException('The defending player has not declared their skill.');
+
+        $this->winnerId = match (true) {
+            $attackerSkill >= $defenderSkill && $attackerSkill > 0 => $this->attackingPlayerId,
+            $defenderSkill > $attackerSkill => $this->defendingPlayerId,
+            default => null,
+        };
+    }
+
+    public function attackerWon(): bool
+    {
+        return $this->winnerId === $this->attackingPlayerId;
+    }
+
+    /**
+     * By how much the attacking player won the conflict.
+     */
+    public function excessSkill(): int
+    {
+        return ($this->attackerSkill ?? 0) - ($this->defenderSkill ?? 0);
     }
 }

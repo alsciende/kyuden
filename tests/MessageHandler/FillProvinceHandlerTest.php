@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
-use App\Exception\Data\WorkflowException;
 use App\Message\FillProvince;
 use App\MessageHandler\FillProvinceHandler;
 use App\Tests\AbstractKernelTestCase;
@@ -65,12 +64,12 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
         self::assertSame(5, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 
-    public function testRejectsARefillInAnotherStep(): void
+    public function testAProvinceIsRefilledInAnyStep(): void
     {
-        $scenario = $this->scenarioAt('collect_fate');
-
-        $this->expectException(WorkflowException::class);
+        $scenario = $this->scenarioAt('react_to_broken_province');
 
         $this->fill($scenario);
+
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('toturi')->getCurrentPlace());
     }
 }

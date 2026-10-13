@@ -13,4 +13,7 @@ enum VictoryCondition: string
     case HonorWin = 'honor_win';
     /** The opponent of the winner has no honor left. */
     case HonorLoss = 'honor_loss';
+
+    /** The stronghold province of the opponent of the winner is broken. */
+    case StrongholdProvinceBroken = 'stronghold_province_broken';
 }

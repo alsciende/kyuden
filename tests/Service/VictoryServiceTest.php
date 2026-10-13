@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Enum\Orientation;
 use App\Enum\VictoryCondition;
 use App\Model\Victory;
 use App\Service\VictoryService;
@@ -69,5 +70,19 @@ class VictoryServiceTest extends AbstractKernelTestCase
             ->build();
 
         self::assertNull($this->findVictory($scenario));
+    }
+
+    public function testTheOpponentOfAPlayerWhoseStrongholdProvinceIsBrokenWins(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('react_to_broken_province')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->strongholdProvince('01-ancestral-lands', orientation: Orientation::UpsideDown))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->strongholdProvince('01-ancestral-lands'))
+            ->build();
+
+        $victory = $this->findVictory($scenario);
+
+        self::assertSame($scenario->player('jane'), $victory?->winner);
+        self::assertSame(VictoryCondition::StrongholdProvinceBroken, $victory->condition);
     }
 }

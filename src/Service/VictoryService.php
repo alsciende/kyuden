@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
+use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\VictoryCondition;
 use App\Model\Victory;
@@ -13,9 +15,9 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 
 /**
- * Stronghold format victory conditions: a player with 25 or more honor wins, a player with no honor is eliminated and
- * the last player not eliminated wins. When several players meet a condition at once, the first player wins if they
- * meet one, otherwise the next one in player order.
+ * Stronghold format victory conditions: a player with 25 or more honor wins; a player with no honor or whose
+ * stronghold province is broken is eliminated, and the last player not eliminated wins. When several players meet a
+ * condition at once, the first player wins if they meet one, otherwise the next one in player order.
  */
 readonly class VictoryService
 {
@@ -34,7 +36,13 @@ readonly class VictoryService
 
         $firstPlayer = $game->getPlayer($gameState->firstPlayerId);
         $players = [$firstPlayer, ...array_map($game->getPlayer(...), $gameState->getPlayerIdsAfter($firstPlayer))];
-        $eliminated = array_filter($players, $this->isEliminated(...));
+        $eliminations = [];
+        foreach ($players as $player) {
+            $condition = $this->findElimination($player);
+            if ($condition instanceof VictoryCondition) {
+                $eliminations[$player->getId()] = $condition;
+            }
+        }
 
         foreach ($players as $player) {
             $honor = $this->playerStateManager->getState($player)->getHonor();
@@ -42,18 +50,33 @@ readonly class VictoryService
                 return new Victory($player, VictoryCondition::HonorWin);
             }
 
-            if (count($eliminated) === count($players) - 1 && ! in_array($player, $eliminated, true)) {
-                return new Victory($player, VictoryCondition::HonorLoss);
+            if (count($eliminations) === count($players) - 1 && ! isset($eliminations[$player->getId()])) {
+                // the condition that eliminated the first eliminated opponent in player order
+                return new Victory($player, array_values($eliminations)[0]);
             }
         }
 
         return null;
     }
 
-    private function isEliminated(Player $player): bool
+    /**
+     * The victory condition met by the opponents of an eliminated player, or null if the player is not eliminated.
+     */
+    private function findElimination(Player $player): ?VictoryCondition
     {
-        $honor = $this->playerStateManager->getState($player)->getHonor();
+        $state = $this->playerStateManager->getState($player);
+        $honor = $state->getHonor();
+        if ($honor !== null && $honor <= PlayerState::MINIMUM_HONOR) {
+            return VictoryCondition::HonorLoss;
+        }
 
-        return $honor !== null && $honor <= PlayerState::MINIMUM_HONOR;
+        $strongholdProvince = $player->getPhysicalCards()->findFirst(
+            fn (int $key, PhysicalCard $card): bool => $card->getId() === $state->getStrongholdProvinceId(),
+        );
+        if ($strongholdProvince instanceof ProvinceCard && $strongholdProvince->getCurrentPlace() === ProvinceCard::STATE_BROKEN) {
+            return VictoryCondition::StrongholdProvinceBroken;
+        }
+
+        return null;
     }
 }

@@ -169,9 +169,9 @@ final class PlayerBuilder
      * Adds a province to the stronghold province stack. When $chosen is true, it is also recorded
      * as the stronghold province in the player state.
      */
-    public function strongholdProvince(string $code, ?string $as = null, bool $chosen = true): self
+    public function strongholdProvince(string $code, ?string $as = null, bool $chosen = true, ?Orientation $orientation = null): self
     {
-        $this->stack(StackType::StrongholdProvince)->cards[] = new PlannedCard($code, $as, chosenStrongholdProvince: $chosen);
+        $this->stack(StackType::StrongholdProvince)->cards[] = new PlannedCard($code, $as, $orientation, chosenStrongholdProvince: $chosen);
 
         return $this;
     }
