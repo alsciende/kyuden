@@ -8,7 +8,6 @@ use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\StackType;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Uid\Uuid;
 
 readonly class StackFactory
 {
@@ -19,7 +18,7 @@ readonly class StackFactory
 
     public function createStack(Player $player, StackType $type): Stack
     {
-        $stack = new Stack(Uuid::v4()->toString(), $player, $type);
+        $stack = new Stack($player->getGame()->generateId(), $player, $type);
         $this->entityManager->persist($stack);
 
         return $stack;

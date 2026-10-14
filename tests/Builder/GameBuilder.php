@@ -219,7 +219,7 @@ final class GameBuilder
         $this->builtStacks = [];
         $this->builtCards = [];
 
-        $game = new Game(Uuid::v4()->toString());
+        $game = new Game(Uuid::v4()->toString(), random_bytes(32));
         $game->setCurrentPlace($this->place);
 
         $players = [];

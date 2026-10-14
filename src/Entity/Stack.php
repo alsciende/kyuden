@@ -135,12 +135,13 @@ class Stack
         }
     }
 
-    public function shuffle(): static
+    /**
+     * Shuffles from the ordered cards, so that the result only depends on the state of the randomizer.
+     */
+    public function shuffle(Randomizer $randomizer): static
     {
-        $randomizer = new Randomizer();
-
         /** @var list<PhysicalCard> $shuffleArray */
-        $shuffleArray = $randomizer->shuffleArray($this->cards->getValues());
+        $shuffleArray = $randomizer->shuffleArray($this->getOrderedCards());
 
         foreach ($shuffleArray as $index => $card) {
             $card->setPosition($index);

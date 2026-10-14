@@ -17,6 +17,7 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 - `PhysicalCard`: one copy of a card in a game, owned by a `Player`. Mapped superclass with one subclass per type in `src/Entity/CardTypes` (Conflict, Dynasty, Province, Role, Stronghold).
 - `Stack`: ordered collection of physical cards (deck, hand, province, etc.; see `Enum/StackType`). The top card has the highest `position`. When order matters, use `getOrderedCards()` / `getTopCards()`: the order of `getCards()` is not kept in sync with positions (e.g. after a shuffle).
 - `Enum/Orientation`: physical orientation of a card (`FaceDown`, `FaceUp`, `Sideways`, `UpsideDown`), stored on `PhysicalCard`. A new card takes the initial orientation of its class (`getInitialOrientation()`: face down, except stronghold and role); afterwards only workflow transitions change it.
+- `Game`: carries its own random generator (`getRandomizer()`, seeded by `CreateGame::seed`, engine state saved with the game) for every random draw (shuffles, first player, random discards, ids of the cards and stacks it creates: `generateId()`), so that replaying the event log gives the same game. Never draw outside of it.
 - `Deck`: list of card codes; turned into physical cards by `Factory/CardFactory` when a game starts.
 - `Event`: persisted record of every handled action.
 - `Candidate`: a player waiting in the matchmaking queue.
@@ -65,7 +66,7 @@ Behaviour lives in listeners under `src/Workflow/<WorkflowName>/`, named after t
 
 - **Values from players**: since the engine does not apply card effects, a step whose outcome cards can modify (e.g. the amount of fate collected) is a player action carrying the value; an `auto` transition guarded on every player having acted then moves the game on.
 - **Turn records**: what a player did during the round goes in the turn records of `PlayerState`, reset at the end of the round (`fate_phase_ended`).
-- **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game`; the first player changes, not the order).
+- **Player order**: stored in `GameState` (`playerIds`, fixed by `start_game` from the order of arrival, `Player::joinRank`; the first player changes, not the order).
 - **Opportunities to act**: the players who have the opportunity to act are the active players of `GameState` (`activePlayerIds`); the handler of each action rejects a player who is not active (`NotActivePlayerException`). The enter listener of the step activates them (`FirstPlayerOpportunityEnterListener` and `AllPlayersOpportunityEnterListener` cover the common cases):
   - in steps resolved in player order, only the first player: the handler gives the opportunity to act to the next player (`GameState::getNextPlayerId()` / `getPlayerIdsAfter()`, resolved with `Game::getPlayer()`). An action that requires follow-up actions keeps the opportunity with the player, who ends it with `EndOpportunity`;
   - in steps where players act simultaneously (e.g. `reveal_honor_dials`, the `react_to_*` reaction windows of a conflict), every player: they keep their opportunity until they pass (`EndOpportunity` changes nothing).

@@ -25,6 +25,6 @@ final readonly class ShuffleConflictDeckHandler
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
-        $player->getUniqueStack(StackType::ConflictDrawDeck)->shuffle();
+        $player->getUniqueStack(StackType::ConflictDrawDeck)->shuffle($game->getRandomizer());
     }
 }

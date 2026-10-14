@@ -24,7 +24,8 @@ class EventRecordingTest extends KernelTestCase
         /** @var MessageBusInterface $bus */
         $bus = $container->get(MessageBusInterface::class);
 
-        $bus->dispatch(new CreateGame($gameId));
+        $seed = bin2hex(random_bytes(32));
+        $bus->dispatch(new CreateGame($gameId, $seed));
 
         /** @var EntityManagerInterface $manager */
         $manager = $container->get(EntityManagerInterface::class);
@@ -39,7 +40,7 @@ class EventRecordingTest extends KernelTestCase
         $this->assertInstanceOf(Event::class, $event);
         $this->assertSame(CreateGame::class, $event->getName());
         $this->assertSame(
-            sprintf('{"game_id":"%s"}', $gameId),
+            sprintf('{"game_id":"%s","seed":"%s"}', $gameId, $seed),
             $event->getPayload()
         );
     }

@@ -24,7 +24,7 @@ final readonly class CreateGameHandler
 
     public function __invoke(CreateGame $message): Game
     {
-        $game = new Game($message->getGameId());
+        $game = new Game($message->getGameId(), hex2bin($message->getSeed()) ?: throw new \InvalidArgumentException('The seed must be hex encoded.'));
         $this->gameStateMachine->getMarking($game);
         $this->entityManager->persist($game);
 

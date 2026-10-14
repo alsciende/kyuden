@@ -25,6 +25,6 @@ final readonly class ShuffleDynastyDeckHandler
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
-        $player->getUniqueStack(StackType::DynastyDrawDeck)->shuffle();
+        $player->getUniqueStack(StackType::DynastyDrawDeck)->shuffle($game->getRandomizer());
     }
 }

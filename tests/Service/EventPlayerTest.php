@@ -20,7 +20,7 @@ class EventPlayerTest extends KernelTestCase
         $container = static::getContainer();
 
         $gameId = Uuid::v4()->toString();
-        $event = new Event(CreateGame::class, sprintf('{"game_id":"%s"}', $gameId));
+        $event = new Event(CreateGame::class, sprintf('{"game_id":"%s","seed":"%s"}', $gameId, bin2hex(random_bytes(32))));
 
         /** @var EventPlayer $player */
         $player = $container->get(EventPlayer::class);

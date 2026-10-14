@@ -57,6 +57,6 @@ readonly class DrawDeckService
             $workflow->apply($card, 'put_back');
         }
 
-        $player->getUniqueStack($deckType)->shuffle();
+        $player->getUniqueStack($deckType)->shuffle($player->getGame()->getRandomizer());
     }
 }

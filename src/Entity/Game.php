@@ -11,12 +11,19 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Random\Engine\Xoshiro256StarStar;
+use Random\Randomizer;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * An ongoing game with players.
+ *
+ * Every random draw of the game (shuffles, first player, random discards, ids of new cards and stacks) goes through
+ * its own random generator, seeded when the game is created: replaying the event log gives the same draws.
  */
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table('games')]
+#[ORM\HasLifecycleCallbacks]
 class Game implements StatefulInterface
 {
     /**
@@ -35,9 +42,20 @@ class Game implements StatefulInterface
     private string $state = '{}';
 
     /**
+     * Serialized state of the random engine, written back before each flush.
+     */
+    #[ORM\Column(type: Types::TEXT)]
+    private string $randomEngine;
+
+    private ?Randomizer $randomizer = null;
+
+    /**
      * @var ArrayCollection<int, Player>
      */
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Player::class, cascade: ['persist', 'remove'], fetch: 'LAZY', orphanRemoval: true)]
+    #[ORM\OrderBy([
+        'joinRank' => 'ASC',
+    ])]
     private Collection $players;
 
     /**
@@ -46,9 +64,13 @@ class Game implements StatefulInterface
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: PhysicalCard::class, cascade: ['persist', 'remove'], fetch: 'LAZY', orphanRemoval: true)]
     private Collection $physicalCards;
 
-    public function __construct(string $id)
+    /**
+     * @param string $seed 32 random bytes
+     */
+    public function __construct(string $id, string $seed)
     {
         $this->id = $id;
+        $this->randomEngine = serialize(new Xoshiro256StarStar($seed));
         $this->players = new ArrayCollection();
         $this->physicalCards = new ArrayCollection();
     }
@@ -81,7 +103,45 @@ class Game implements StatefulInterface
     }
 
     /**
-     * @return Collection<int, Player>
+     * The random generator of the game: never draw outside of it.
+     */
+    public function getRandomizer(): Randomizer
+    {
+        if ($this->randomizer === null) {
+            $engine = unserialize($this->randomEngine, [
+                'allowed_classes' => [Xoshiro256StarStar::class],
+            ]);
+            if (! $engine instanceof Xoshiro256StarStar) {
+                throw new \UnexpectedValueException("Invalid random engine for game {$this->id}.");
+            }
+            $this->randomizer = new Randomizer($engine);
+        }
+
+        return $this->randomizer;
+    }
+
+    /**
+     * A new random id (UUID v4) drawn from the random generator of the game.
+     */
+    public function generateId(): string
+    {
+        $bytes = $this->getRandomizer()->getBytes(16);
+        $bytes[6] = chr(ord($bytes[6]) & 0x0F | 0x40);
+        $bytes[8] = chr(ord($bytes[8]) & 0x3F | 0x80);
+
+        return Uuid::fromBinary($bytes)->toRfc4122();
+    }
+
+    #[ORM\PreFlush]
+    public function saveRandomEngine(): void
+    {
+        if ($this->randomizer !== null) {
+            $this->randomEngine = serialize($this->randomizer->engine);
+        }
+    }
+
+    /**
+     * @return Collection<int, Player> in order of arrival
      */
     public function getPlayers(): Collection
     {
@@ -91,6 +151,7 @@ class Game implements StatefulInterface
     public function addPlayer(Player $player): static
     {
         if (! $this->players->contains($player)) {
+            $player->setJoinRank($this->players->count());
             $this->players->add($player);
             $player->setGame($this);
         }

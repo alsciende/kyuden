@@ -58,7 +58,7 @@ class AppFixtures extends Fixture
         $jane->setUserId('jane');
         $jane->setDeck($deck);
 
-        $game = new Game('1');
+        $game = new Game('1', random_bytes(32));
         $manager->persist($game);
 
         $harry = new Player('1');

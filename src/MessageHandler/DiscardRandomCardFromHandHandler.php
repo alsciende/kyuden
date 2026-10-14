@@ -8,7 +8,6 @@ use App\Enum\StackType;
 use App\Message\DiscardRandomCardFromHand;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
-use Random\Randomizer;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -33,12 +32,12 @@ final readonly class DiscardRandomCardFromHandHandler
         $this->playerRepository->get($message->getPlayerId(), $game);
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
-        $hand = $target->getUniqueStack(StackType::Hand)->getCards()->getValues();
+        $hand = $target->getUniqueStack(StackType::Hand)->getOrderedCards();
         if ($hand === []) {
             return;
         }
 
-        $card = $hand[new Randomizer()->getInt(0, count($hand) - 1)];
+        $card = $hand[$game->getRandomizer()->getInt(0, count($hand) - 1)];
         $this->conflictCardStateMachine->apply($card, 'discard_card');
     }
 }

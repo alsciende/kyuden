@@ -17,7 +17,7 @@ class GameStateManagerTest extends AbstractKernelTestCase
     public function testTheRingsTheConflictAndTheImperialFavorAreKeptInTheState(): void
     {
         $manager = self::service(GameStateManager::class);
-        $game = new Game('game');
+        $game = new Game('game', random_bytes(32));
         $manager->withState($game, function (GameState $state): void {
             $state->initRings();
             $state->getRing(Element::Water)->fate = 2;

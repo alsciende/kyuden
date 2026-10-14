@@ -28,7 +28,7 @@ readonly class GameCreateCommand
     {
         $io = new SymfonyStyle($input, $output);
         $gameId = Uuid::v4()->toString();
-        $this->bus->dispatch(new CreateGame($gameId));
+        $this->bus->dispatch(CreateGame::withRandomSeed($gameId));
         $io->success("Game {$gameId} created successfully.");
 
         return Command::SUCCESS;

@@ -158,6 +158,14 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - The response is empty (204): the client will read the new state with the reading API. No optimistic check of the version of the state seen by the client yet.
 - The user is matched to a player through `Player::userId` = user identifier (in-memory users `john` / `jane`, the access token is the identifier: authentication is still a stub).
 
+## Decisions taken for the random generator
+
+- Each game has its own `Random\Engine\Xoshiro256StarStar` (`Game::getRandomizer()`), seeded by the `seed` of `CreateGame` (32 bytes, hex encoded; `CreateGame::withRandomSeed()` draws it where the game is created: `AutomaticGameLauncher`, `app:game:create`). The seed is in the recorded event, so replaying the event log gives the same draws.
+- The state of the engine is serialized in the `random_engine` column of the game, written back before each flush (`Game::saveRandomEngine()`, `PreFlush` lifecycle callback); the seed itself is not stored.
+- Every draw goes through it: the shuffles (`Stack::shuffle(Randomizer)`, from the ordered cards so that the result does not depend on the order of the collection), the first player, `DiscardRandomCardFromHand` (from the ordered hand) and the ids of the cards and stacks created during the game (`Game::generateId()`, UUID v4 drawn from the generator).
+- Player order: `start_game` fixes it from the order of arrival, so that a replay draws the same first player. Each player has a `joinDate` (to the second: the players matched together join in the same second) and a `joinRank` (0, 1…, set by `Game::addPlayer()`), which orders the `players` collection of the game.
+- Events recorded before this change (`CreateGame` with no seed) cannot be replayed.
+
 ## Next steps
 
 ### API
@@ -197,7 +205,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 **Open points**
 - **Ids of hidden cards**: any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled can be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks are sent as counts (decks, opponent's hand).
   - Solution chosen: shuffling a stack removes its cards and creates them again in random order (same logical card, player, stack and orientation, new id), through the ORM. Updating the primary key with DBAL was rejected: no foreign key points to a card, but the unit of work keeps the old ids (the positions set by the shuffle would be silently lost at the flush, and the collections of `Stack` / `Player` would hold stale objects). A separate public id was rejected too: a second notion of id to carry in messages, state and `CardRepository`. A card in a deck has no state worth keeping (`CardState` is reset when it leaves play); code holding a card of the deck across a shuffle must read it again from the stack.
-  - Prerequisite: a random generator per game, seeded from a seed stored in the game (e.g. `Random\Engine\Xoshiro256StarStar`), used for the shuffles, the first player (`array_rand`), `DiscardRandomCardFromHand` and the new ids. Otherwise the replay of the `Event` log (`EventPlayer`) gives other ids and the messages recorded after a shuffle no longer find their cards; the replay is already not deterministic today because of these draws.
+  - Prerequisite done: a random generator per game (see "Decisions taken for the random generator").
 - Mutability of the view DTOs (no longer needed without decorators: they can be `readonly`).
 
 ### Step 1.4 (play cards from provinces)

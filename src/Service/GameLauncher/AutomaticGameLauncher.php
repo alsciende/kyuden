@@ -31,7 +31,7 @@ readonly class AutomaticGameLauncher implements GameLauncherInterface
     public function createGame(array $candidates): void
     {
         $gameId = Uuid::v4()->toString();
-        $createGame = new CreateGame($gameId);
+        $createGame = CreateGame::withRandomSeed($gameId);
         ($this->createGameHandler)($createGame);
 
         foreach ($candidates as $candidate) {

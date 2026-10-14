@@ -39,6 +39,19 @@ class Player implements StatefulInterface
     private string $userId;
 
     /**
+     * When the player joined the game, to the second: players joining at once share it, see joinRank.
+     */
+    #[ORM\Column]
+    private \DateTimeImmutable $joinDate;
+
+    /**
+     * Rank of arrival in the game, from 0: the order of the players of the game, from which start_game fixes the
+     * player order.
+     */
+    #[ORM\Column]
+    private int $joinRank = 0;
+
+    /**
      * @var ArrayCollection<int, PhysicalCard>
      */
     #[ORM\OneToMany(mappedBy: 'player', targetEntity: PhysicalCard::class, fetch: 'LAZY', orphanRemoval: true)]
@@ -54,6 +67,7 @@ class Player implements StatefulInterface
     public function __construct(string $id)
     {
         $this->id = $id;
+        $this->joinDate = new \DateTimeImmutable();
         $this->physicalCards = new ArrayCollection();
         $this->stacks = new ArrayCollection();
     }
@@ -136,6 +150,23 @@ class Player implements StatefulInterface
     public function setGame(Game $game): static
     {
         $this->game = $game;
+
+        return $this;
+    }
+
+    public function getJoinDate(): \DateTimeImmutable
+    {
+        return $this->joinDate;
+    }
+
+    public function getJoinRank(): int
+    {
+        return $this->joinRank;
+    }
+
+    public function setJoinRank(int $joinRank): static
+    {
+        $this->joinRank = $joinRank;
 
         return $this;
     }

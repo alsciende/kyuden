@@ -12,7 +12,6 @@ use App\Factory\StackFactory;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -55,9 +54,9 @@ readonly class StartGameTransitionListener
 
     private function selectRandomFirstPlayer(Game $game): Player
     {
-        $players = $game->getPlayers()->toArray();
+        $players = $game->getPlayers()->getValues();
 
-        return $players[array_rand($players)];
+        return $players[$game->getRandomizer()->getInt(0, count($players) - 1)];
     }
 
     /**
@@ -75,7 +74,7 @@ readonly class StartGameTransitionListener
         foreach ($player->getDeck()->getContent() as $id) {
             $logicalCard = $this->cardFactory->getLogicalCard($id);
             $this->cardFactory->createCard(
-                physicalCardId: Uuid::v4()->toString(),
+                physicalCardId: $player->getGame()->generateId(),
                 logicalCard: $logicalCard,
                 stack: $stacks[$logicalCard->getInitialStackType()->value]
             );

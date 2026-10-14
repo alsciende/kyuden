@@ -86,7 +86,7 @@ abstract class AbstractKernelTestCase extends KernelTestCase
     protected function createGame(): ?Game
     {
         $gameId = Uuid::v4()->toString();
-        $message = new CreateGame($gameId);
+        $message = CreateGame::withRandomSeed($gameId);
         $this->messageBus->dispatch($message);
 
         return $this->gameRepository->find($gameId);
