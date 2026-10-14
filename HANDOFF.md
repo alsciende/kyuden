@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`, latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -137,7 +137,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 ## Decisions taken for `BidHonor`
 
 - Players bid simultaneously (any order, once per round): the bid is secret (`PlayerState::pendingHonorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid.
-- Two fields, so that the secrecy only depends on the state (the reading API will show the pending bid to its owner only): `honor_bids_confirmed` reveals the dials by copying the pending bid into `honorBid` (`HonorBidsConfirmedTransitionListener`). `honorBid` is the honor bid of the rules (the current setting of the dial): `SetHonorBid`, the honor transfer and the card draw use it.
+- Two fields, so that the secrecy only depends on the state (the reading API shows the pending bid to its owner only): `honor_bids_confirmed` reveals the dials by copying the pending bid into `honorBid` (`HonorBidsConfirmedTransitionListener`). `honorBid` is the honor bid of the rules (the current setting of the dial): `SetHonorBid`, the honor transfer and the card draw use it.
 - The revealed bid stays as a reference until the next bid (D.4): it is not a turn record, and entering `honor_bid` clears both fields (`HonorBidEnterListener`). Duels will use the same fields.
 - The `Event` log stores the bid: the secrecy is enforced by the reading API, not in the database.
 
@@ -168,31 +168,23 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ## Decisions taken for the ids of shuffled cards
 
-- Any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled could be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks will be sent as counts by the reading API (decks, opponent's hand).
+- Any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled could be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks are sent as counts by the reading API (decks, opponent's hand).
 - `Service/StackShuffler::shuffle(Stack)` (used by `ShuffleConflictDeck`, `ShuffleDynastyDeck` and `DrawDeckService`) draws the new order from the ordered cards, deletes the cards (removed from the collections of the stack, player and game, then `remove` through the ORM) and creates them again from the bottom to the top with `CardFactory::createCard()` (same logical card, player, stack and orientation, new id from `Game::generateId()`, fresh state). `Stack::shuffle()` is gone.
 - Rejected: updating the primary key with DBAL (the unit of work keeps the old ids: the positions set by the shuffle would be silently lost at the flush, and the collections of `Stack` / `Player` would hold stale objects); a separate public id (a second notion of id to carry in messages, state and `CardRepository`).
 - A card in a deck has no state worth keeping (`CardState` is reset when it leaves play); code holding a card of the deck across a shuffle must read it again from the stack (see `DrawDeckServiceTest`, `FillProvinceHandlerTest`).
 - `GameBuilder::seed()` fixes the seed of the random generator in tests.
 
-## Next steps
+## Decisions taken for the reading API
 
-### API
-
-- **Reading API**: designed, not implemented yet (see below).
-- Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
-
-
-### Reading API (design agreed)
-
-`GET /api/games/{id}` (`ApiGamesController`, replacing the scaffold): the state of the game as the authenticated player sees it. Same errors as the messages API (problem details: 401, 403 not a player of the game, 404). A read goes neither through the bus nor through `GameLockMiddleware`.
+`GET /api/games/{id}` (`ApiGamesController`, replacing the scaffold; the problem details helper is shared with the messages API through `ProblemResponseTrait`): the state of the game as the authenticated player sees it. Same errors as the messages API (problem details: 401, 403 not a player of the game, 404). A read goes neither through the bus nor through `GameLockMiddleware`.
 
 **Scope**
 - Cards are sent by code only: the client knows the cards.
-- The messages available to the player: not in the first version.
+- The messages available to the player: not in the first version (next step).
 - Spectators: out of scope.
 
 **Design**
-- A view built for the viewing player: `GameViewFactory::create(Game, Player $viewer)` returning view DTOs (`GameView`, `PlayerView`, `StackView`, `CardView`…). The visibility rules are written once, in the factory, and tested with `$this->scenario()`.
+- A view built for the viewing player: `View/GameViewFactory::create(Game, Player $viewer)` returning readonly view DTOs (`View/Model`: `GameView`, `PlayerView`, `StackView`, `CardView`). The rings, the conflict and the duel are the public `RingState` / `ConflictState` / `DuelState` themselves. A stack has its type (snake case name of `StackType`), its count and its cards from the bottom to the top, or `null` when hidden; a card has its id, its code (`null` when hidden), its orientation, its fate and personal honor. The stacks of a player are sorted by type, then id. The visibility rules are written once, in the factory, and tested with `$this->scenario()`.
 - **Visibility only depends on the state**, never on the game place: what a player knows and their opponents do not is stored apart from what is public. This is why the honor bid was split into `pendingHonorBid` (secret, shown to its owner only; the opponents only see that the player has bid) and `honorBid` (revealed). New secret information must follow the same principle.
 - Cards a player is shown once (mulligan, "look at", search, reveal) are not part of the game state: a `SeeCard` message (to come) shows the card to the player, and the client remembers it. Since the messages API answers 204, the card must be delivered by a private Mercure notification; replaying the `Event` would send it again. The engine cannot check that an ability allows it (board approach): the masking of the view protects the display, not the secret, so the opponent should at least see the action in the event log.
 
@@ -206,12 +198,19 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Conflict and dynasty decks: hidden from every player, count visible.
 - Facedown province: visible to its owner only (glossary "Facedown Province").
 - Facedown dynasty card in a province: hidden from every player, owner included (glossary, l. 426 and 1094).
-- Honor bid before the reveal (draw phase and duels): `pendingHonorBid`, visible to its owner only.
+- Honor bid before the reveal (draw phase and duels): `pendingHonorBid`, visible to its owner only; every player sees `honorBidSelected`.
+- Stronghold province chosen during the setup (`strongholdProvinceId`): visible to its owner only (afterwards, the stronghold province stack shows it).
+- A hidden card in a visible stack (facedown province or dynasty card) keeps its id: it was never seen face up, or the players saw it turned face down, as at a real table.
 - Attackers: public; `DeclareConflict` is atomic, so nothing exists in the state before the declaration.
 - Everything else (discard piles, cards in play, rings, honor, fate, conflict, duel) is public.
 
-**Open points**
-- Mutability of the view DTOs (no longer needed without decorators: they can be `readonly`).
+## Next steps
+
+### API
+
+- **Reading API**: the messages available to the player; `SeeCard` (see the decisions taken for the reading API).
+- Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
+
 
 ### Step 1.4 (play cards from provinces)
 

@@ -13,7 +13,6 @@ use App\Repository\PlayerRepository;
 use App\Service\Api\ApiMessageFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -32,6 +31,8 @@ use function Symfony\Component\String\u;
  */
 class ApiGameMessagesController extends AbstractController
 {
+    use ProblemResponseTrait;
+
     public function __construct(
         private readonly GameRepository $gameRepository,
         private readonly PlayerRepository $playerRepository,
@@ -90,14 +91,5 @@ class ApiGameMessagesController extends AbstractController
             : u(new \ReflectionClass($throwable)->getShortName())->trimSuffix('Exception')->snake()->toString();
 
         return $this->problem($status, $type, $throwable->getMessage());
-    }
-
-    private function problem(int $status, string $type, string $detail): JsonResponse
-    {
-        return new JsonResponse([
-            'type' => $type,
-            'status' => $status,
-            'detail' => $detail,
-        ], $status, ['Content-Type' => 'application/problem+json']);
     }
 }
