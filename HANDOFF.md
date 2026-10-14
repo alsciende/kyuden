@@ -162,9 +162,43 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ### API
 
-- **Reading API**: the game state filtered for the viewing player (hidden information: opponent's hand, decks, facedown cards, ids revealing hidden cards, the secret honor bid of the opponents, `PlayerState::pendingHonorBid`) and the messages available to them. Design agreed: a view built for the viewing player from the state only (no serialization groups by place, no decorators), since secret information is stored apart from public information; cards a player is shown (`SeeCard`, to come) are not part of the state, the client remembers them.
+- **Reading API**: designed, not implemented yet (see below).
 - Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
 
+
+### Reading API (design agreed)
+
+`GET /api/games/{id}` (`ApiGamesController`, replacing the scaffold): the state of the game as the authenticated player sees it. Same errors as the messages API (problem details: 401, 403 not a player of the game, 404). A read goes neither through the bus nor through `GameLockMiddleware`.
+
+**Scope**
+- Cards are sent by code only: the client knows the cards.
+- The messages available to the player: not in the first version.
+- Spectators: out of scope.
+
+**Design**
+- A view built for the viewing player: `GameViewFactory::create(Game, Player $viewer)` returning view DTOs (`GameView`, `PlayerView`, `StackView`, `CardView`…). The visibility rules are written once, in the factory, and tested with `$this->scenario()`.
+- **Visibility only depends on the state**, never on the game place: what a player knows and their opponents do not is stored apart from what is public. This is why the honor bid was split into `pendingHonorBid` (secret, shown to its owner only; the opponents only see that the player has bid) and `honorBid` (revealed). New secret information must follow the same principle.
+- Cards a player is shown once (mulligan, "look at", search, reveal) are not part of the game state: a `SeeCard` message (to come) shows the card to the player, and the client remembers it. Since the messages API answers 204, the card must be delivered by a private Mercure notification; replaying the `Event` would send it again. The engine cannot check that an ability allows it (board approach): the masking of the view protects the display, not the secret, so the opponent should at least see the action in the event log.
+
+**Alternatives rejected**
+- Serialization groups named after the place of the `game` workflow: visibility depends on the viewer and differs from one instance to the next (my hand / the opponent's, one card / another), which groups cannot express; and it would couple the API to the names of dozens of places.
+- A `secret` metadata on the places of the workflow: too much coupling between the declaration of the workflow and the structure of the state.
+- Decorators registered per place, masking the view during a step: the inventory left a single case (the honor bids, also during duels, which are not a place), solved by storing the secret bid apart.
+
+**Inventory of hidden information** (Stronghold format)
+- Opponent's hand: hidden, count visible.
+- Conflict and dynasty decks: hidden from every player, count visible.
+- Facedown province: visible to its owner only (glossary "Facedown Province").
+- Facedown dynasty card in a province: hidden from every player, owner included (glossary, l. 426 and 1094).
+- Honor bid before the reveal (draw phase and duels): `pendingHonorBid`, visible to its owner only.
+- Attackers: public; `DeclareConflict` is atomic, so nothing exists in the state before the declaration.
+- Everything else (discard piles, cards in play, rings, honor, fate, conflict, duel) is public.
+
+**Open points**
+- **Ids of hidden cards**: any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled can be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks are sent as counts (decks, opponent's hand).
+  - Solution chosen: shuffling a stack removes its cards and creates them again in random order (same logical card, player, stack and orientation, new id), through the ORM. Updating the primary key with DBAL was rejected: no foreign key points to a card, but the unit of work keeps the old ids (the positions set by the shuffle would be silently lost at the flush, and the collections of `Stack` / `Player` would hold stale objects). A separate public id was rejected too: a second notion of id to carry in messages, state and `CardRepository`. A card in a deck has no state worth keeping (`CardState` is reset when it leaves play); code holding a card of the deck across a shuffle must read it again from the stack.
+  - Prerequisite: a random generator per game, seeded from a seed stored in the game (e.g. `Random\Engine\Xoshiro256StarStar`), used for the shuffles, the first player (`array_rand`), `DiscardRandomCardFromHand` and the new ids. Otherwise the replay of the `Event` log (`EventPlayer`) gives other ids and the messages recorded after a shuffle no longer find their cards; the replay is already not deterministic today because of these draws.
+- Mutability of the view DTOs (no longer needed without decorators: they can be `readonly`).
 
 ### Step 1.4 (play cards from provinces)
 
