@@ -30,12 +30,14 @@ final readonly class TransferHonorHandler
             throw new \InvalidArgumentException('Transferred honor cannot be negative.');
         }
 
-        if ($message->getPlayerId() === $message->getRecipientId()) {
+        if ($message->getGiverId() === $message->getRecipientId()) {
             throw new \InvalidArgumentException('A player cannot transfer honor to themselves.');
         }
 
         $game = $this->gameRepository->get($message->getGameId());
-        $giver = $this->playerRepository->get($message->getPlayerId(), $game);
+        // checks that the sender is a player of the game
+        $this->playerRepository->get($message->getPlayerId(), $game);
+        $giver = $this->playerRepository->get($message->getGiverId(), $game);
         $recipient = $this->playerRepository->get($message->getRecipientId(), $game);
         $this->stateManager->withState(
             $giver,

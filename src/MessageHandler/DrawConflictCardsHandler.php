@@ -30,7 +30,9 @@ final readonly class DrawConflictCardsHandler
     public function __invoke(DrawConflictCards $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        // checks that the sender is a player of the game
+        $this->playerRepository->get($message->getPlayerId(), $game);
+        $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
         for ($i = 0; $i < $message->getQuantity(); ++$i) {
             $card = $this->drawDeckService->getTopCard($player, StackType::ConflictDrawDeck);
             if ($card === null) {

@@ -27,7 +27,7 @@ class SetHonorBidHandlerTest extends AbstractKernelTestCase
 
     private function setHonorBid(Scenario $scenario, int $bid): void
     {
-        self::service(SetHonorBidHandler::class)(new SetHonorBid($scenario->game()->getId(), $scenario->player('john')->getId(), $bid));
+        self::service(SetHonorBidHandler::class)(new SetHonorBid($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId(), $bid));
     }
 
     public function testChangesTheBidOnTheHonorDial(): void

@@ -7,7 +7,7 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The bid on the honor dial of the player changes, e.g. to resolve a reaction to the honor dials being revealed.
+ * The bid on the honor dial of the target player changes, e.g. to resolve a reaction to the honor dials being revealed.
  */
 #[AppAction]
 final readonly class SetHonorBid implements PlayerActionInterface
@@ -15,6 +15,7 @@ final readonly class SetHonorBid implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private string $targetPlayerId,
         private int $bid,
     ) {
     }
@@ -29,6 +30,14 @@ final readonly class SetHonorBid implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    /**
+     * The player the effect applies to.
+     */
+    public function getTargetPlayerId(): string
+    {
+        return $this->targetPlayerId;
     }
 
     public function getBid(): int

@@ -28,6 +28,7 @@ framework:
             default.bus:
                 middleware:
                     - doctrine_transaction
+                    - 'App\Middleware\GameLockMiddleware'
                     - 'App\Middleware\GameEndedMiddleware'
                     - 'App\Middleware\WorkflowTransitionMiddleware'
                     - 'App\Middleware\EventRecordingMiddleware'

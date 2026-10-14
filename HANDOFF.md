@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards and the end of the game by honor.
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`, latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -132,7 +132,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ## Decisions taken for `LoseHonor` / `GainHonor` / `TransferHonor`
 
-- Accepted in any game place, like `BowCard` / `ReadyCard`. The `playerId` of the message is the player whose honor changes (the giver for `TransferHonor`, whose `recipientId` is the receiver): "take 1 honor from that opponent" is a transfer from that opponent.
+- Accepted in any game place, like `BowCard` / `ReadyCard`. The `targetPlayerId` of the message is the player whose honor changes (`TransferHonor` has a `giverId` and a `recipientId`): "take 1 honor from that opponent" is a transfer from that opponent.
 - The amount cannot be negative (`\InvalidArgumentException`); a player cannot transfer honor to themselves.
 
 ## Decisions taken for `BidHonor`
@@ -140,7 +140,22 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Players bid simultaneously (any order, once per round): the bid is a turn record of `PlayerState` (`honorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid.
 - The secrecy of the bid is not enforced (the `Event` log stores it).
 
+## Decisions taken for the API to send messages
+
+- A single endpoint for every message (`POST /api/games/{id}/messages`, `{"type", "payload"}`), built on `ActionMessageRegistry` and the serializer, like the replay of events: a new message is exposed with no API code.
+- `#[AppAction(public: false)]` hides the platform messages (`CreateGame`, `JoinGame`); every other action message is public by default.
+- `playerId` is always the player sending the message, which the API sets to the authenticated player: a player cannot act for another one (e.g. pass for the active player). The player an effect applies to is a separate field: `targetPlayerId` (`LoseHonor`, `GainHonor`, `SetHonor`, `SetHonorBid`, `DrawConflictCards`, `ShuffleConflictDeck`, `ShuffleDynastyDeck`, `DiscardRandomCardFromHand`), `giverId` / `recipientId` (`TransferHonor`); `FillProvince` uses the deck of the owner of the province. The engine sends the messages of the setup and of the draw with the same player as sender and target. Events stored before this change cannot be replayed.
+- `GameLockMiddleware` serializes the actions on a game with a pessimistic lock on its row, held until the end of the transaction.
+- The response is empty (204): the client will read the new state with the reading API. No optimistic check of the version of the state seen by the client yet.
+- The user is matched to a player through `Player::userId` = user identifier (in-memory users `john` / `jane`, the access token is the identifier: authentication is still a stub).
+
 ## Next steps
+
+### API
+
+- **Reading API**: the game state filtered for the viewing player (hidden information: opponent's hand, decks, facedown cards, ids revealing hidden cards, honor bids before the reveal) and the messages available to them.
+- Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
+
 
 ### Step 1.4 (play cards from provinces)
 

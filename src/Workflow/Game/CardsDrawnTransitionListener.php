@@ -33,7 +33,7 @@ readonly class CardsDrawnTransitionListener
         foreach ($game->getPlayers() as $player) {
             $bid = $this->stateManager->getState($player)->getHonorBid() ?? throw new NoHonorBidException();
             $this->transitionBus->dispatch(
-                new DrawConflictCards($game->getId(), $player->getId(), $bid)
+                new DrawConflictCards($game->getId(), $player->getId(), $player->getId(), $bid)
             );
         }
     }

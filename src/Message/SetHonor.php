@@ -12,6 +12,7 @@ final readonly class SetHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private string $targetPlayerId,
         private int $honor,
     ) {
     }
@@ -26,6 +27,14 @@ final readonly class SetHonor implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    /**
+     * The player the effect applies to.
+     */
+    public function getTargetPlayerId(): string
+    {
+        return $this->targetPlayerId;
     }
 
     public function getHonor(): int

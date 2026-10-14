@@ -15,7 +15,7 @@ class SetHonorHandlerTest extends AbstractKernelTestCase
 {
     private function setHonor(Scenario $scenario, int $honor): void
     {
-        self::service(SetHonorHandler::class)(new SetHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $honor));
+        self::service(SetHonorHandler::class)(new SetHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId(), $honor));
     }
 
     public function testSetsTheHonorOfAPlayerWithoutHonor(): void

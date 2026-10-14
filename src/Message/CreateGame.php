@@ -6,7 +6,7 @@ namespace App\Message;
 
 use App\Attribute\AppAction;
 
-#[AppAction]
+#[AppAction(public: false)]
 final readonly class CreateGame implements ActionInterface
 {
     public function __construct(

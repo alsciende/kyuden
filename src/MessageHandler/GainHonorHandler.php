@@ -31,7 +31,9 @@ final readonly class GainHonorHandler
         }
 
         $game = $this->gameRepository->get($message->getGameId());
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        // checks that the sender is a player of the game
+        $this->playerRepository->get($message->getPlayerId(), $game);
+        $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
         $this->stateManager->withState(
             $player,
             fn (PlayerState $state): PlayerState => $state->incrementHonor($message->getHonorGain()),

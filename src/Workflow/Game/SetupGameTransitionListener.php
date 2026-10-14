@@ -52,10 +52,10 @@ readonly class SetupGameTransitionListener
     {
         // shuffle decks
         $this->transitionBus->dispatch(
-            new ShuffleDynastyDeck($player->getGame()->getId(), $player->getId())
+            new ShuffleDynastyDeck($player->getGame()->getId(), $player->getId(), $player->getId())
         );
         $this->transitionBus->dispatch(
-            new ShuffleConflictDeck($player->getGame()->getId(), $player->getId())
+            new ShuffleConflictDeck($player->getGame()->getId(), $player->getId(), $player->getId())
         );
 
         // set starting honor
@@ -65,7 +65,7 @@ readonly class SetupGameTransitionListener
             throw new DataException('Stronghold has no honor');
         }
         $this->transitionBus->dispatch(
-            new SetHonor($player->getGame()->getId(), $player->getId(), $honor)
+            new SetHonor($player->getGame()->getId(), $player->getId(), $player->getId(), $honor)
         );
 
         // fill provinces
@@ -84,7 +84,7 @@ readonly class SetupGameTransitionListener
 
         // draw starting hand
         $this->transitionBus->dispatch(
-            new DrawConflictCards($player->getGame()->getId(), $player->getId(), self::STARTING_CARDS)
+            new DrawConflictCards($player->getGame()->getId(), $player->getId(), $player->getId(), self::STARTING_CARDS)
         );
     }
 }

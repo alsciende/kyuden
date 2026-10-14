@@ -31,6 +31,7 @@ class DrawConflictCardsHandlerTest extends AbstractKernelTestCase
         self::service(DrawConflictCardsHandler::class)(new DrawConflictCards(
             $scenario->game()->getId(),
             $scenario->player('john')->getId(),
+            $scenario->player('john')->getId(),
             $quantity,
         ));
 

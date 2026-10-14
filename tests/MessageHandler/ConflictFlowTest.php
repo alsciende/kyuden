@@ -87,7 +87,7 @@ class ConflictFlowTest extends AbstractKernelTestCase
 
         // the air ring: gain 2 honor
         $this->assertPlace('resolve_ring_effects');
-        $this->messageBus->dispatch(new GainHonor($this->gameId(), $this->id('john'), 2));
+        $this->messageBus->dispatch(new GainHonor($this->gameId(), $this->id('john'), $this->id('john'), 2));
         $this->messageBus->dispatch(new PassOpportunity($this->gameId(), $this->id('john')));
 
         $this->assertPlace('react_to_ring_claim');

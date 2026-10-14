@@ -22,7 +22,9 @@ final readonly class ShuffleConflictDeckHandler
     public function __invoke(ShuffleConflictDeck $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        // checks that the sender is a player of the game
+        $this->playerRepository->get($message->getPlayerId(), $game);
+        $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
         $player->getUniqueStack(StackType::ConflictDrawDeck)->shuffle();
     }
 }

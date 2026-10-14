@@ -7,8 +7,8 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The player gives honor to another player ("give your opponent 1 honor"). An effect taking honor from an opponent
- * is a transfer from that opponent.
+ * The giver gives honor to the recipient: "give your opponent 1 honor" is a transfer from the player, "take 1 honor
+ * from that opponent" a transfer from that opponent.
  */
 #[AppAction]
 final readonly class TransferHonor implements PlayerActionInterface
@@ -16,6 +16,7 @@ final readonly class TransferHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private string $giverId,
         private string $recipientId,
         private int $amount,
     ) {
@@ -34,6 +35,14 @@ final readonly class TransferHonor implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    /**
+     * The player giving the honor.
+     */
+    public function getGiverId(): string
+    {
+        return $this->giverId;
     }
 
     /**

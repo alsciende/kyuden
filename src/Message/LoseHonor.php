@@ -7,7 +7,7 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The player loses honor, which returns to the general token pool, e.g. to pay a cost or resolve an effect.
+ * The target player loses honor, which returns to the general token pool, e.g. to pay a cost or resolve an effect.
  */
 #[AppAction]
 final readonly class LoseHonor implements PlayerActionInterface
@@ -15,6 +15,7 @@ final readonly class LoseHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private string $targetPlayerId,
         private int $honorLoss,
     ) {
     }
@@ -29,6 +30,14 @@ final readonly class LoseHonor implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    /**
+     * The player the effect applies to.
+     */
+    public function getTargetPlayerId(): string
+    {
+        return $this->targetPlayerId;
     }
 
     public function getHonorLoss(): int

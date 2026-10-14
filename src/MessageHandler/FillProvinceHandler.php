@@ -38,10 +38,12 @@ final readonly class FillProvinceHandler
     public function __invoke(FillProvince $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $card = $this->cardRepository->get($message->getProvinceId(), $game);
+        // checks that the sender is a player of the game
+        $this->playerRepository->get($message->getPlayerId(), $game);
+        $province = $this->cardRepository->get($message->getProvinceId(), $game);
 
-        $this->fillProvince($player, $card);
+        // the province is filled from the deck of its owner
+        $this->fillProvince($province->getPlayer(), $province);
     }
 
     private function fillProvince(Player $player, PhysicalCard $province): void

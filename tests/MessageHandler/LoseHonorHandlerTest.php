@@ -21,9 +21,18 @@ class LoseHonorHandlerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function loseHonor(Scenario $scenario, int $honorLoss): void
+    private function loseHonor(Scenario $scenario, int $honorLoss, string $sender = 'john'): void
     {
-        self::service(LoseHonorHandler::class)(new LoseHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $honorLoss));
+        self::service(LoseHonorHandler::class)(new LoseHonor($scenario->game()->getId(), $scenario->player($sender)->getId(), $scenario->player('john')->getId(), $honorLoss));
+    }
+
+    public function testTheTargetPlayerLosesHonor(): void
+    {
+        $scenario = $this->scenarioWithHonor(10);
+
+        $this->loseHonor($scenario, 2, sender: 'jane');
+
+        self::assertSame(8, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 
     public function testSubtractsTheLossFromTheCurrentHonor(): void

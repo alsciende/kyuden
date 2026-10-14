@@ -19,7 +19,7 @@ class GainHonorHandlerTest extends AbstractKernelTestCase
             ->withPlayer('jane')
             ->persist();
 
-        self::service(GainHonorHandler::class)(new GainHonor($scenario->game()->getId(), $scenario->player('john')->getId(), 2));
+        self::service(GainHonorHandler::class)(new GainHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId(), 2));
 
         self::assertSame(12, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
@@ -34,6 +34,6 @@ class GainHonorHandlerTest extends AbstractKernelTestCase
 
         $this->expectException(\InvalidArgumentException::class);
 
-        self::service(GainHonorHandler::class)(new GainHonor($scenario->game()->getId(), $scenario->player('john')->getId(), -2));
+        self::service(GainHonorHandler::class)(new GainHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId(), -2));
     }
 }

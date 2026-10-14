@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Exception\Data\GameMismatchException;
 use App\Exception\Data\PlayerNotFoundException;
+use Doctrine\ORM\Query;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -34,6 +35,23 @@ class PlayerRepository extends ServiceEntityRepository
         }
 
         return $player;
+    }
+
+    /**
+     * Id of the player of a user in a game, without loading any entity.
+     */
+    public function findIdByGameAndUser(string $gameId, string $userId): ?string
+    {
+        $playerId = $this->createQueryBuilder('p')
+            ->select('p.id')
+            ->andWhere('IDENTITY(p.game) = :gameId')
+            ->andWhere('p.userId = :userId')
+            ->setParameter('gameId', $gameId)
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getOneOrNullResult(Query::HYDRATE_SINGLE_SCALAR);
+
+        return is_string($playerId) ? $playerId : null;
     }
 
     //    /**

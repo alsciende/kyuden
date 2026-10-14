@@ -27,10 +27,11 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 
 ### Action pipeline
 
-1. A player action is a Messenger message in `src/Message`, implementing `ActionInterface` (or `PlayerActionInterface` when it has a player) and tagged with `#[AppAction]`, which makes it discoverable by `Service/ActionMessageRegistry`. Messages hold ids (game, player, card) as strings, not entities.
+1. A player action is a Messenger message in `src/Message`, implementing `ActionInterface` (or `PlayerActionInterface` when it has a player) and tagged with `#[AppAction]`, which makes it discoverable by `Service/ActionMessageRegistry`. The attribute says whether players can send it through the API (`public`, false for the platform actions: `CreateGame`, `JoinGame`) Its `playerId` is always the player sending it; the player an effect applies to is a separate field (`targetPlayerId`, or `giverId` / `recipientId` for `TransferHonor`). Messages hold ids (game, player, card) as strings, not entities.
 2. Its handler in `src/MessageHandler` (`#[AsMessageHandler]`, `final readonly`) loads entities through repositories and changes the state, usually by applying a transition on the relevant workflow.
 3. Middlewares (order in `config/packages/messenger.yaml`; each forwards down the chain first, then acts, except `GameEndedMiddleware`):
    - Doctrine transaction: commits everything at the end.
+   - `GameLockMiddleware`: locks the game row (`SELECT … FOR UPDATE`) before the handling, so the actions on a game and the automatic transitions they lead to are handled one at a time. A game already loaded is locked but not reloaded: load nothing of the game before dispatching.
    - `GameEndedMiddleware`: rejects any action on a game that has ended (`GameEndedException`), before its handling.
    - `WorkflowTransitionMiddleware`: repeatedly applies the enabled game transition marked `metadata.auto: true` with the highest `metadata.priority` (0 by default); two enabled automatic transitions sharing the highest priority throw a `LogicException`.
    - `EventRecordingMiddleware`: saves the message as an `Event`.
@@ -38,7 +39,10 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 
 A handler does what a message does in every place. What depends on the step goes in a listener of a domain event (`src/Event`, named in the past tense: `OpportunityPassedEvent`) dispatched by the handler: the listener (`src/EventListener`, named after the place and the event, e.g. `PlayCardsFromProvincesOpportunityPassedListener`) checks the game place. The event carries the entities and the values its listeners need, computed before the state changes when necessary (`firstToPass`). These events are also the hook for cards reacting to what happens. A message that must behave differently in some step is a different message.
 
-The HTTP API is a stub: `ApiGamesController` returns the default scaffold, and the event controller (receiving player events, converting them to messages and responding) is still TODO. Console commands (`src/Command`) are currently the main way to drive the engine.
+HTTP API (access token: `Authorization: Bearer <user>`):
+
+- `POST /api/games/{id}/messages` (`ApiGameMessagesController`): a player of the game sends any public action message, `{"type": "pass_opportunity", "payload": {...}}`. The type is the snake case short name of the message class; the payload holds its constructor arguments in snake case (serializer name converter). `Service/Api/ApiMessageFactory` builds the message: the game comes from the URL, the player (sender) is the authenticated player (a different `player_id` is rejected); the target of an effect is in the payload (`target_player_id`…). The controller only reads ids before dispatching (see `GameLockMiddleware`). Responses: 204 once handled; errors are problem details (`application/problem+json`, `type` from the exception): 400 invalid body, type or payload; 401 no token; 403 not a player of the game or on behalf of another player; 404 unknown game; 409 forbidden by the rules in the current state (`Exception/Rules`, `WorkflowException`, workflow transition not enabled); 422 payload referring to nothing in the game or with invalid values.
+- Reading the game state is still TODO, as is `ApiGamesController` (default scaffold). Console commands (`src/Command`) drive the rest of the engine.
 
 ### Workflows
 

@@ -21,10 +21,11 @@ class TransferHonorHandlerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function transferHonor(Scenario $scenario, string $giver, string $recipient, int $amount): void
+    private function transferHonor(Scenario $scenario, string $giver, string $recipient, int $amount, ?string $sender = null): void
     {
         self::service(TransferHonorHandler::class)(new TransferHonor(
             $scenario->game()->getId(),
+            $scenario->player($sender ?? $giver)->getId(),
             $scenario->player($giver)->getId(),
             $scenario->player($recipient)->getId(),
             $amount,
@@ -39,6 +40,16 @@ class TransferHonorHandlerTest extends AbstractKernelTestCase
 
         self::assertSame(8, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
         self::assertSame(14, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
+    }
+
+    public function testThePlayerTakesHonorFromAnOpponent(): void
+    {
+        $scenario = $this->scenarioWithHonor();
+
+        $this->transferHonor($scenario, 'jane', 'john', 1, sender: 'john');
+
+        self::assertSame(11, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
+        self::assertSame(11, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
     }
 
     public function testRejectsANegativeAmount(): void

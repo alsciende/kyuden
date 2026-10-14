@@ -7,7 +7,7 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The player gains honor from the general token pool, e.g. to resolve an effect.
+ * The target player gains honor from the general token pool, e.g. to resolve an effect.
  */
 #[AppAction]
 final readonly class GainHonor implements PlayerActionInterface
@@ -15,6 +15,7 @@ final readonly class GainHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        private string $targetPlayerId,
         private int $honorGain,
     ) {
     }
@@ -29,6 +30,14 @@ final readonly class GainHonor implements PlayerActionInterface
     public function getPlayerId(): string
     {
         return $this->playerId;
+    }
+
+    /**
+     * The player the effect applies to.
+     */
+    public function getTargetPlayerId(): string
+    {
+        return $this->targetPlayerId;
     }
 
     public function getHonorGain(): int

@@ -24,7 +24,7 @@ class GameEndedMiddlewareTest extends AbstractKernelTestCase
 
     private function loseHonor(Scenario $scenario): LoseHonor
     {
-        return new LoseHonor($scenario->game()->getId(), $scenario->player('john')->getId(), 1);
+        return new LoseHonor($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId(), 1);
     }
 
     public function testAcceptsActionsDuringTheGame(): void

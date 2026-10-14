@@ -25,11 +25,11 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function fill(Scenario $scenario): void
+    private function fill(Scenario $scenario, string $sender = 'john'): void
     {
         self::service(FillProvinceHandler::class)(new FillProvince(
             $scenario->game()->getId(),
-            $scenario->player('john')->getId(),
+            $scenario->player($sender)->getId(),
             $scenario->card('province')->getId(),
         ));
     }
@@ -43,6 +43,15 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
         $toturi = $scenario->card('toturi');
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $toturi->getCurrentPlace());
         self::assertSame($scenario->card('province')->getStack(), $toturi->getStack());
+    }
+
+    public function testAProvinceIsFilledFromTheDeckOfItsOwner(): void
+    {
+        $scenario = $this->scenarioAt('play_cards_from_provinces');
+
+        $this->fill($scenario, sender: 'jane');
+
+        self::assertSame($scenario->card('province')->getStack(), $scenario->card('toturi')->getStack());
     }
 
     public function testRefillsFromTheDiscardPileWhenTheDynastyDeckIsEmpty(): void
