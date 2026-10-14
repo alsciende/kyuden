@@ -1,4 +1,9 @@
 {
+    "ability_granted_to_attached": false,
+    "ability_timings": [
+        "action",
+        "interrupt"
+    ],
     "allowed_clans": [
         "*"
     ],

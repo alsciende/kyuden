@@ -1,4 +1,6 @@
 {
+    "ability_granted_to_attached": false,
+    "ability_timings": [],
     "allowed_clans": [
         "unicorn"
     ],

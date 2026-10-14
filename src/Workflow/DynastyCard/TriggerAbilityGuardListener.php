@@ -13,8 +13,8 @@ use Symfony\Component\Workflow\Event\GuardEvent;
  * Of the faceup cards in a province, only holdings are in play: the abilities of a character can only be used once it
  * has been played.
  */
-#[AsGuardListener(workflow: 'dynasty_card', transition: 'trigger_action')]
-readonly class TriggerActionGuardListener
+#[AsGuardListener(workflow: 'dynasty_card', transition: 'trigger_ability')]
+readonly class TriggerAbilityGuardListener
 {
     public function __invoke(GuardEvent $event): void
     {

@@ -10,13 +10,14 @@ use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
 use App\Exception\Rules\NotInHandException;
+use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
+use App\Message\PlayActionEvent;
 use App\Message\PlayAttachment;
 use App\Message\PlayCharacterFromHand;
-use App\Message\PlayEvent;
+use App\MessageHandler\PlayActionEventHandler;
 use App\MessageHandler\PlayAttachmentHandler;
 use App\MessageHandler\PlayCharacterFromHandHandler;
-use App\MessageHandler\PlayEventHandler;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
@@ -34,7 +35,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
             ->atPlace($place)
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->fate(5)
-                ->hand(['ambusher' => '01-hiruma-ambusher', 'katana' => '01-fine-katana', 'banzai' => '01-banzai'])
+                ->hand(['ambusher' => '01-hiruma-ambusher', 'katana' => '01-fine-katana', 'banzai' => '01-banzai', 'stay-your-hand' => '16-stay-your-hand'])
                 ->conflictDiscardPile(['discarded-ambusher' => '01-hiruma-ambusher'])
                 ->inPlay(['toturi' => '01-akodo-toturi']))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
@@ -144,16 +145,21 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_IN_PLAY, $scenario->card('katana')->getCurrentPlace());
     }
 
-    public function testAnEventGoesToTheDiscardPileOnceItsCostIsPaid(): void
+    private function playEvent(Scenario $scenario, string $player = 'john', string $card = 'banzai'): void
     {
-        $scenario = $this->scenarioAt('react_to_conflict_result', conflict: true);
-
-        self::service(PlayEventHandler::class)(new PlayEvent(
+        self::service(PlayActionEventHandler::class)(new PlayActionEvent(
             $scenario->game()->getId(),
-            $scenario->player('john')->getId(),
-            $scenario->card('banzai')->getId(),
+            $scenario->player($player)->getId(),
+            $scenario->card($card)->getId(),
             1,
         ));
+    }
+
+    public function testAnEventGoesToTheDiscardPileOnceItsCostIsPaid(): void
+    {
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->playEvent($scenario);
 
         self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('banzai')->getCurrentPlace());
         self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
@@ -165,11 +171,24 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
 
         $this->expectException(NotActivePlayerException::class);
 
-        self::service(PlayEventHandler::class)(new PlayEvent(
-            $scenario->game()->getId(),
-            $scenario->player('jane')->getId(),
-            $scenario->card('banzai')->getId(),
-            0,
-        ));
+        $this->playEvent($scenario, player: 'jane');
+    }
+
+    public function testAnEventIsPlayedInAnActionWindowOnly(): void
+    {
+        $scenario = $this->scenarioAt('react_to_conflict_result', conflict: true);
+
+        $this->expectException(NotInActionWindowException::class);
+
+        $this->playEvent($scenario);
+    }
+
+    public function testAnEventIsPlayedWithTheMessageOfItsTiming(): void
+    {
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->expectException(WrongAbilityTimingException::class);
+
+        $this->playEvent($scenario, card: 'stay-your-hand');
     }
 }

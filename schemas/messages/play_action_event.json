@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "play_action_event",
+    "description": "The active player plays an action event from hand during an action window and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions, then ends their opportunity to act (`end_opportunity`). Interrupt and reaction events are played with `play_interrupt_event` and `play_reaction_event`.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Action event in the hand of the player.",
+            "type": "string"
+        },
+        "card_cost": {
+            "description": "Fate paid for the card.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "card_cost"
+    ],
+    "additionalProperties": false
+}

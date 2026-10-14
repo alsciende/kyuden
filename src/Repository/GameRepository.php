@@ -38,17 +38,19 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
-     * The game with its players, their stacks and the cards of the stacks, in a single query (no lazy loading while
-     * building a view of the whole game).
+     * The game with its players, their stacks and the cards of the stacks with their logical cards, in a single query
+     * (no lazy loading while building a view of the whole game).
      */
     public function findWithCards(string $gameId): ?Game
     {
         /** @var Game|null */
         return $this->createQueryBuilder('g')
-            ->addSelect('p', 's', 'c')
+            ->addSelect('p', 's', 'c', 'l')
             ->leftJoin('g.players', 'p')
             ->leftJoin('p.stacks', 's')
             ->leftJoin('s.cards', 'c')
+            // the available actions read the abilities of the cards in hand
+            ->leftJoin('c.logicalCard', 'l')
             ->where('g.id = :id')
             ->setParameter('id', $gameId)
             ->getQuery()

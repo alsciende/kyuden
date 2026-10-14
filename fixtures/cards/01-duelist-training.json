@@ -1,4 +1,8 @@
 {
+    "ability_granted_to_attached": true,
+    "ability_timings": [
+        "action"
+    ],
     "allowed_clans": [
         "*"
     ],

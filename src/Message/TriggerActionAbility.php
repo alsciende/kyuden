@@ -8,7 +8,8 @@ use App\Attribute\AppAction;
 use App\Attribute\Description;
 
 /**
- * The active player triggers an action ability of one of their cards during an action window.
+ * The active player triggers an action ability of one of their cards during an action window. Interrupt and reaction
+ * abilities are triggered with `TriggerInterruptAbility` and `TriggerReactionAbility`.
  *
  * The engine does not apply card effects: the message only records which card is used. The player pays the costs
  * and resolves the effects with other actions, then ends their opportunity to act (`EndOpportunity`).

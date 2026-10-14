@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\{Clan, Element, Role, Side, StackType, Type};
+use App\Enum\{AbilityTiming, Clan, Element, Role, Side, StackType, Type};
 use App\Repository\CardRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -99,6 +99,22 @@ class LogicalCard implements \Stringable
 
     #[ORM\Column]
     private bool $uniqueness;
+
+    /**
+     * Timings of the triggered abilities printed on the card, including the abilities it grants to the card it is
+     * attached to.
+     *
+     * @var list<string>
+     */
+    #[ORM\Column(type: 'text[]')]
+    private array $abilityTimings = [];
+
+    /**
+     * The triggered abilities of the card are granted to the card it is attached to ("Attached character gains…"):
+     * the controller of that card triggers them.
+     */
+    #[ORM\Column]
+    private bool $abilityGrantedToAttached = false;
 
     /**
      * @var Collection<int, Printing>
@@ -433,6 +449,43 @@ class LogicalCard implements \Stringable
     public function setUniqueness(bool $uniqueness): void
     {
         $this->uniqueness = $uniqueness;
+    }
+
+    /**
+     * @return list<AbilityTiming>
+     */
+    public function getAbilityTimings(): array
+    {
+        return array_map(
+            fn (string $timing): AbilityTiming => AbilityTiming::from($timing),
+            $this->abilityTimings,
+        );
+    }
+
+    /**
+     * @param list<string>|list<AbilityTiming> $abilityTimings
+     */
+    public function setAbilityTimings(array $abilityTimings): void
+    {
+        $this->abilityTimings = array_map(
+            fn (string|AbilityTiming $timing): string => $timing instanceof AbilityTiming ? $timing->value : $timing,
+            $abilityTimings,
+        );
+    }
+
+    public function hasAbilityTiming(AbilityTiming $timing): bool
+    {
+        return in_array($timing->value, $this->abilityTimings, true);
+    }
+
+    public function isAbilityGrantedToAttached(): bool
+    {
+        return $this->abilityGrantedToAttached;
+    }
+
+    public function setAbilityGrantedToAttached(bool $abilityGrantedToAttached): void
+    {
+        $this->abilityGrantedToAttached = $abilityGrantedToAttached;
     }
 
     /**

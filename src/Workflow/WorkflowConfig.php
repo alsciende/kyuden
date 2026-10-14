@@ -110,15 +110,16 @@ final class WorkflowConfig
     }
 
     /**
-     * Places from which the abilities of a card can be used (TriggerActionAbility): the card stays where it is.
+     * Places from which the abilities of a card can be used (TriggerActionAbility, TriggerReactionAbility): the card
+     * stays where it is.
      *
      * @return list<TransitionConfig>
      */
-    public static function triggerAction(string ...$places): array
+    public static function triggerAbility(string ...$places): array
     {
         $transitions = [];
         foreach ($places as $place) {
-            $transitions[] = self::transition('trigger_action', $place, $place);
+            $transitions[] = self::transition('trigger_ability', $place, $place);
         }
 
         return $transitions;

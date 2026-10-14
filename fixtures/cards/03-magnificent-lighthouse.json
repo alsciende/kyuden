@@ -1,4 +1,8 @@
 {
+    "ability_granted_to_attached": false,
+    "ability_timings": [
+        "action"
+    ],
     "allowed_clans": [
         "phoenix"
     ],

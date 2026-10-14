@@ -37,14 +37,14 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
-            ->withPlayer('john')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->hand(['01-banzai']))
             ->withPlayer('jane')
             ->activePlayer('john')
             ->build();
 
         $actions = $this->resolve($scenario, 'john');
 
-        foreach (['pass_opportunity', 'end_opportunity', 'trigger_action_ability', 'play_character_from_hand', 'play_attachment', 'play_event', 'initiate_duel', 'bow_card', 'lose_honor'] as $type) {
+        foreach (['pass_opportunity', 'end_opportunity', 'trigger_action_ability', 'play_character_from_hand', 'play_attachment', 'play_action_event', 'initiate_duel', 'bow_card', 'lose_honor'] as $type) {
             self::assertContains($type, $actions);
         }
 
@@ -53,20 +53,24 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
         }
     }
 
-    public function testAPlayerWithoutTheOpportunityToActCanOnlyManipulateTheBoard(): void
+    public function testAPlayerWithoutTheOpportunityToActCanOnlyManipulateTheBoardAndReact(): void
     {
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john')
-            ->withPlayer('jane')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->hand(['01-banzai', '16-stay-your-hand', '01-for-greater-glory']))
             ->activePlayer('john')
             ->build();
 
         $actions = $this->resolve($scenario, 'jane');
 
-        self::assertContains('bow_card', $actions);
-        self::assertNotContains('pass_opportunity', $actions);
-        self::assertNotContains('trigger_action_ability', $actions);
+        foreach (['bow_card', 'play_interrupt_event', 'play_reaction_event', 'trigger_interrupt_ability', 'trigger_reaction_ability'] as $type) {
+            self::assertContains($type, $actions);
+        }
+
+        foreach (['pass_opportunity', 'trigger_action_ability', 'play_action_event'] as $type) {
+            self::assertNotContains($type, $actions);
+        }
     }
 
     public function testNoCharacterFromHandInTheActionWindowOfTheDynastyPhase(): void
@@ -90,8 +94,12 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('conflict_action_window')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['spear' => '01-master-of-the-spear']))
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->hand(['01-banzai', '16-stay-your-hand'])
+                ->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->hand(['01-banzai', '16-stay-your-hand'])
+                ->inPlay(['spear' => '01-master-of-the-spear']))
             ->activePlayer('john')
             ->duel('john', ['toturi'], ['spear'])
             ->build();
@@ -103,7 +111,25 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
             self::assertNotContains('declare_duel_statistic', $actions);
             self::assertNotContains('pass_opportunity', $actions);
             self::assertNotContains('trigger_action_ability', $actions);
+            self::assertNotContains('play_action_event', $actions);
+            self::assertContains('play_interrupt_event', $actions);
         }
+    }
+
+    public function testAnEventIsListedWithAnEventOfThatTimingInHand(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->hand(['16-stay-your-hand', '01-fine-katana']))
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->build();
+
+        $actions = $this->resolve($scenario, 'john');
+
+        self::assertContains('play_interrupt_event', $actions);
+        self::assertNotContains('play_action_event', $actions);
+        self::assertNotContains('play_reaction_event', $actions);
     }
 
     public function testAPlayerWhoHasBidCannotBidAgain(): void

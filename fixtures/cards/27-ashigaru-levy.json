@@ -1,4 +1,8 @@
 {
+    "ability_granted_to_attached": false,
+    "ability_timings": [
+        "reaction"
+    ],
     "allowed_clans": [
         "lion"
     ],

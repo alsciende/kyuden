@@ -200,7 +200,7 @@ return App::config([
                         'orientation' => Orientation::FaceUp,
                     ]),
                     ...WorkflowConfig::bowAndReady(ConflictCard::STATE_IN_PLAY),
-                    ...WorkflowConfig::triggerAction(ConflictCard::STATE_IN_PLAY),
+                    ...WorkflowConfig::triggerAbility(ConflictCard::STATE_IN_PLAY),
                 ],
             ),
             'dynasty_card' => WorkflowConfig::cardWorkflow(
@@ -232,8 +232,8 @@ return App::config([
                         'orientation' => Orientation::FaceDown,
                     ]),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_IN_PLAY),
-                    // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerActionGuardListener)
-                    ...WorkflowConfig::triggerAction(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_PROVINCE_FACEUP),
+                    // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerAbilityGuardListener)
+                    ...WorkflowConfig::triggerAbility(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_PROVINCE_FACEUP),
                 ],
             ),
             'province_card' => WorkflowConfig::cardWorkflow(
@@ -252,7 +252,7 @@ return App::config([
                     WorkflowConfig::transition('restore', ProvinceCard::STATE_BROKEN, ProvinceCard::STATE_UNBROKEN, [
                         'orientation' => Orientation::FaceUp,
                     ]),
-                    ...WorkflowConfig::triggerAction(ProvinceCard::STATE_UNBROKEN),
+                    ...WorkflowConfig::triggerAbility(ProvinceCard::STATE_UNBROKEN),
                 ],
             ),
             'role_card' => WorkflowConfig::cardWorkflow(
@@ -265,7 +265,7 @@ return App::config([
                 [StrongholdCard::STATE_IN_PLAY],
                 [
                     ...WorkflowConfig::bowAndReady(StrongholdCard::STATE_IN_PLAY),
-                    ...WorkflowConfig::triggerAction(StrongholdCard::STATE_IN_PLAY),
+                    ...WorkflowConfig::triggerAbility(StrongholdCard::STATE_IN_PLAY),
                 ],
             ),
         ],

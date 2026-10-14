@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`, latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -101,10 +101,26 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `OpportunityService::assertCanTakeAction()` checks that the place is an action window and that the player is active (`TriggerActionAbility` uses it too). Characters and attachments cannot be played from hand in places marked `play_from_hand: false` (`play_cards_from_provinces`, the 1.4 special action window; `CannotPlayFromHandException`).
 - `PlayCharacterFromHand` carries the costs and fate like `PlayCharacterFromProvince`, and `intoConflict`: the character then participates on its controller's side, which requires a conflict in which the player takes part (only `conflict_action_window` is an action window during a conflict).
 - `PlayAttachment` carries the target: a character in play of any player, or a province. Attachment restrictions printed on cards are not checked.
-- `PlayEvent` is allowed in any place with opportunities (action windows, but also reaction windows, for reaction and interrupt events), when the player is active: the engine does not know the trigger of the event. The event goes to the discard pile once its cost is paid; its effects are resolved with other messages.
-- In every case the player keeps the opportunity to act and ends it with `EndOpportunity` (or passes, in a reaction window).
+- `PlayActionEvent` plays an action event: like `TriggerActionAbility`, it requires an action window, the active player and no duel (`assertCanTakeAction()`). Interrupt and reaction events are played with `PlayInterruptEvent` and `PlayReactionEvent` (see the decisions taken for interrupts and reactions). The event goes to the discard pile once its cost is paid; its effects are resolved with other messages.
+- In every case the player keeps the opportunity to act and ends it with `EndOpportunity`.
 - `MoveToConflict` / `MoveHome` are effect messages, accepted in any place during a conflict from any player: a character in play joins the side of its controller (bowed or ready), or leaves the conflict.
 - Not done: the Limited keyword, uniqueness, "max X per conflict" restrictions.
+
+## Decisions taken for interrupts and reactions
+
+- **Problem**: `PlayEvent` (now `PlayActionEvent`) required the active player, but interrupts and reactions are initiated by any player when their triggering condition occurs (glossary, Interrupts and Reactions), not during an opportunity to act. During a duel only the player who initiated it is active: the opponent could not play Stay Your Hand against a duel targeting their character.
+- **One message per timing** (action, interrupt, reaction), for events and for the abilities of cards: `PlayActionEvent` / `TriggerActionAbility` (action window, active player, no duel: `assertCanTakeAction()`), `PlayInterruptEvent` / `TriggerInterruptAbility`, `PlayReactionEvent` / `TriggerReactionAbility`. The timing is in the type of the message so that the event log and `available_actions` show it. The order of the opportunities to act stays enforced for actions: an opponent cannot play an action event during another player's opportunity.
+- The interrupt and reaction messages behave the same way for now: accepted in any game place, during a duel too, from any player of the game, like the board manipulations: the engine does not know the triggering conditions. They change no opportunity to act (no pass is reset, no player is activated).
+- Checked: the event is in the hand of the player and is an event (`HandService::playEvent()`, shared by the three event messages); the card of the ability belongs to the player and is where its abilities can be used (`Service/AbilityService::trigger()`, shared by the three ability messages: `trigger_ability` transition, renamed from `trigger_action`). The timing of an event is checked (see the decisions taken for the ability timings), not the one of the abilities of cards. Not checked: the triggering condition, the limit per round.
+- `PlayEvent` is renamed `PlayActionEvent` (API type `play_action_event`): events recorded before this change cannot be replayed.
+- Not modeled: the interrupt and reaction windows of the rules (first player first, consecutive passes). The `react_to_*` places of the conflict stay as windows where the game waits for the players to react.
+
+## Decisions taken for the ability timings
+
+- **Data**: `LogicalCard::abilityTimings` (`text[]` of `Enum/AbilityTiming`: action, interrupt, reaction, forced or not) and `abilityGrantedToAttached` (bool), stored in every card fixture (`ability_timings`, `ability_granted_to_attached`; the fixtures are no longer imported from an external source). Derived once from the bold timing commands of the text (`<b>Action:</b>`, `<b>Forced Reaction:</b>`…); a card can have several timings. Persistent abilities are not tagged.
+- **Granted abilities**: an ability quoted in the text is a timing of the card even when the card grants it to the character it is attached to. The 16 attachments whose text says "Attached character gains" (Duelist Training, Ofushikai, Sturdy Tetsubo…) are flagged `abilityGrantedToAttached`: the player of the card they are attached to triggers these abilities (`AbilityService::trigger()`, through the stack the attachment has joined), not the owner of the attachment. The other quoted abilities belong to the card itself and are not flagged: holdings ("it gains"), Dire characters, and characters that can be played as an attachment (Togashi Kazue, Promising Youth…), treated as if they always had the ability.
+- **Events**: every event has exactly one timing. `PlayActionEvent`, `PlayInterruptEvent` and `PlayReactionEvent` reject an event without an ability of their timing (`WrongAbilityTimingException`, 409), and are available only when the player has such an event in hand (`HandService::assertEventInHand()`, `NoEventInHandException`).
+- **Abilities of cards**: `Trigger*Ability` does not check the timings: cards gain abilities (attachments, "gains" effects) and lose them (blanking), which the engine does not apply. The tags are information for the clients.
 
 ## Decisions taken for `PlayCharacterFromProvince`
 
@@ -119,7 +135,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 - The message only carries the card: no cost. The player pays costs and resolves effects with other actions, then ends their opportunity with `EndOpportunity`.
 - Allowed in any `game` place with the `action_window` place metadata (only `play_cards_from_provinces` for now).
-- The card must be where its abilities can be used, as listed by the `trigger_action` transition of its workflow: in play (dynasty, conflict, stronghold), unbroken province, or faceup holding in a province (`Workflow/DynastyCard/TriggerActionGuardListener`). Role cards are not covered.
+- The card must be where its abilities can be used, as listed by the `trigger_ability` transition of its workflow (shared with `TriggerInterruptAbility` and `TriggerReactionAbility`, through `Service/AbilityService`): in play (dynasty, conflict, stronghold), unbroken province, or faceup holding in a province (`Workflow/DynastyCard/TriggerAbilityGuardListener`). Role cards are not covered.
 - Not checked: the presence of an action ability on the card, the once-per-round limit ("Limit X per", "Max X per").
 - The owner of the card is checked instead of its controller (control is not modeled).
 
@@ -147,7 +163,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `InitiateDuel` (type, `challengerIds`, `challengedIds`): allowed in any place with opportunities, from the active player, when no duel is being resolved. Checked: characters in play, the challengers controlled by the player, the challenged characters by a single opponent; during a conflict, every character participates. Not checked: the dash skill, the "this character initiates" ability.
 - **Honor bid** (D.3, D.4): `BidHonor` is the same message as in the draw phase, accepted from the players involved while the duel is at its bid step. A new bid begins for them (`startHonorBid()`); the dials are revealed once both have bid (`DuelHonorBidPlacedListener`, on `HonorBidPlacedEvent`), so the duel bid is the honor bid of reference afterwards.
 - **Statistic and result** (D.5 to D.7): each player involved declares the dueling statistic of their side with every modifier (`DeclareDuelStatistic`, any order, can be declared again until both are known). Once both are known, the honor is transferred (`Service/HonorBidService`, shared with the draw phase) and the engine adds the bids: the higher total wins, nobody on a tie (`winnerId` / `loserId`, players). The transfer happens after the declarations rather than right after the reveal, so the bids changed by cards since the reveal (`SetHonorBid`) count.
-- **End** (D.8, D.9): the players apply the consequences with effect messages, then a player involved ends the duel (`EndDuel`). Until then, no action window is open (`assertCanTakeAction()`), and `PassOpportunity` / `EndOpportunity` are rejected (`DuelInProgressException`); `PlayEvent` stays allowed for interrupts and reactions.
+- **End** (D.8, D.9): the players apply the consequences with effect messages, then a player involved ends the duel (`EndDuel`). Until then, no action window is open (`assertCanTakeAction()`), and `PassOpportunity` / `EndOpportunity` are rejected (`DuelInProgressException`); interrupts and reactions stay allowed, from any player (`PlayInterruptEvent`, `PlayReactionEvent`, `TriggerInterruptAbility`, `TriggerReactionAbility`).
 
 ## Decisions taken for the API to send messages
 
@@ -190,7 +206,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 **Scope**
 - Cards are sent by code only: the client knows the cards.
 - The messages available to the player: `available_actions` (see the decisions taken for the available actions).
-- The game is loaded in a single query (`GameRepository::findWithCards()`, fetch joins of the players, stacks and cards), checked by a test counting the queries of a game well under way.
+- The game is loaded in a single query (`GameRepository::findWithCards()`, fetch joins of the players, stacks, cards and logical cards, read by the available actions), checked by a test counting the queries of a game well under way.
 - Spectators: out of scope.
 
 **Design**
@@ -223,7 +239,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - The board manipulations accepted in any place (`BowCard`, `LoseHonor`…) have an empty `assertAvailable()`, still called by the handler: they are always listed, so the client has no special case.
 - An action is listed when its requirements on the state are met: its payload can still be rejected (a card that cannot be played, a ring already claimed, a character played into a conflict the player is not part of).
 - Once the game has ended, nothing is listed (`GameEndedMiddleware` rejects every action).
-- `play_event` stays listed during a duel for the active player: no action window is open (D.9), but interrupt and reaction events can be played (Stay Your Hand, Insult to Injury), and the engine cannot tell them from action events.
+- `trigger_interrupt_ability` and `trigger_reaction_ability` are always listed, like the board manipulations, for every player: interrupts and reactions do not depend on the opportunity to act. `play_interrupt_event` and `play_reaction_event` are listed for every player with an event of that timing in hand; `play_action_event` also requires the opportunity to act in an action window, and is not listed during a duel.
 - `App\Kernel` maps the handlers implementing the interface to their message, read from the type of the parameter of `__invoke()` as Messenger does, in a service locator (`.app.player_action_handlers`); the container fails to compile when such a handler does not handle a single `PlayerActionInterface`. A test checks that every public message has such a handler. `MakeAction` generates the method.
 
 **Alternatives rejected**
@@ -328,7 +344,6 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 - **A War on Two Fronts**: an effect message adding an attacked province to the conflict (`ConflictState::attackedProvinceIds` is ready for it).
 - **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card.
-- **Reactions from a player without the opportunity to act**: `PlayEvent` requires the active player, but interrupts and reactions can be triggered by any player whose triggering condition is met, including during a duel (only the player who initiated it is active): the opponent cannot play Stay Your Hand against a duel targeting their character. The active player condition of `PlayEvent` (and, for triggered abilities of cards, of a future message) must be revisited.
 - **Reactions**: reaction windows only exist where listed above; reactions to other framework steps (e.g. characters discarded during the fate phase) go through the next window. To be locked down once the game has been tested.
 - **Skill announcements**: after each action of the conflict action window, a player should announce the current skill of both sides (3.2.2); not recorded.
 

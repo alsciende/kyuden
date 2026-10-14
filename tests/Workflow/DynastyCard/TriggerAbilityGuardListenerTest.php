@@ -8,7 +8,7 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use Symfony\Component\Workflow\Registry;
 
-class TriggerActionGuardListenerTest extends AbstractKernelTestCase
+class TriggerAbilityGuardListenerTest extends AbstractKernelTestCase
 {
     private function canTriggerFromProvince(string $code): bool
     {
@@ -20,7 +20,7 @@ class TriggerActionGuardListenerTest extends AbstractKernelTestCase
             ->build();
         $card = $scenario->card('card');
 
-        return self::service(Registry::class)->get($card)->can($card, 'trigger_action');
+        return self::service(Registry::class)->get($card)->can($card, 'trigger_ability');
     }
 
     public function testAllowedForAFaceupHoldingInAProvince(): void

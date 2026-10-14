@@ -1,4 +1,9 @@
 {
+    "ability_granted_to_attached": false,
+    "ability_timings": [
+        "action",
+        "reaction"
+    ],
     "allowed_clans": [
         "crab"
     ],
