@@ -15,7 +15,7 @@ use Symfony\Component\Workflow\Event\EnterEvent;
 /**
  * Steps where the players act simultaneously, e.g. to react to a framework step: every player has the opportunity to
  * act until they pass. No player has passed yet.
- * When the honor dials are revealed (their secrecy is not enforced), players can change a bid (SetHonorBid).
+ * When the honor dials are revealed, players can change a bid (SetHonorBid).
  */
 #[AsEnterListener(workflow: 'game', place: 'reveal_honor_dials')]
 #[AsEnterListener(workflow: 'game', place: 'react_to_conflict_declaration')]

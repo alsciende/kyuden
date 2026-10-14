@@ -7,7 +7,7 @@ namespace App\Message;
 use App\Attribute\AppAction;
 
 /**
- * The player selects a number on their honor dial (honor bid of the draw phase).
+ * The player secretly selects a number on their honor dial (honor bid of the draw phase or of a duel).
  */
 #[AppAction]
 final readonly class BidHonor implements PlayerActionInterface

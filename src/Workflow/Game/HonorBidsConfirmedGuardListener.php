@@ -23,7 +23,7 @@ readonly class HonorBidsConfirmedGuardListener
         $game = $event->getSubject();
 
         foreach ($game->getPlayers() as $player) {
-            if ($this->stateManager->getState($player)->getHonorBid() === null) {
+            if ($this->stateManager->getState($player)->getPendingHonorBid() === null) {
                 $event->setBlocked(true, 'Every player must bid honor before proceeding.');
 
                 return;

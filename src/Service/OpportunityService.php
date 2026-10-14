@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\PassingRule;
 use App\Exception\Rules\CannotPlayFromHandException;
+use App\Exception\Rules\DuelInProgressException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
 use App\State\Manager\GameStateManager;
@@ -50,10 +51,12 @@ readonly class OpportunityService
      * The player has the opportunity to act in an action window (`action_window` metadata of the game place). Playing
      * characters and attachments from hand is allowed in every action window but those marked `play_from_hand: false`.
      *
-     * @throws NotInActionWindowException|CannotPlayFromHandException|NotActivePlayerException
+     * @throws NotInActionWindowException|CannotPlayFromHandException|NotActivePlayerException|DuelInProgressException
      */
     public function assertCanTakeAction(Game $game, Player $player, bool $playFromHand = false): void
     {
+        $this->assertNoDuel($game);
+
         $place = $game->getCurrentPlace();
         $metadata = $place === null ? [] : $this->gameStateMachine->getMetadataStore()->getPlaceMetadata($place);
         if (($metadata['action_window'] ?? false) !== true) {
@@ -66,6 +69,19 @@ readonly class OpportunityService
 
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
+        }
+    }
+
+    /**
+     * No action window opens during a duel, and the step cannot end before the duel: the players can only pass or end
+     * their opportunity once it has ended (EndDuel).
+     *
+     * @throws DuelInProgressException
+     */
+    public function assertNoDuel(Game $game): void
+    {
+        if ($this->gameStateManager->getState($game)->duel !== null) {
+            throw new DuelInProgressException();
         }
     }
 

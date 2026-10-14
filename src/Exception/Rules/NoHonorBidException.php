@@ -8,6 +8,6 @@ class NoHonorBidException extends RulesException
 {
     public function __construct()
     {
-        parent::__construct('Player has not bid honor this round.');
+        parent::__construct('Player has no revealed honor bid.');
     }
 }

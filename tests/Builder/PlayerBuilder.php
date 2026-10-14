@@ -39,6 +39,7 @@ final class PlayerBuilder
     private bool $fateCollected = false;
 
     private ?int $honorBid = null;
+    private ?int $pendingHonorBid = null;
 
     private bool $passed = false;
 
@@ -109,11 +110,21 @@ final class PlayerBuilder
     }
 
     /**
-     * Records the honor bid of the player for this round.
+     * Records the revealed honor bid of the player.
      */
     public function honorBid(int $bid): self
     {
         $this->honorBid = $bid;
+
+        return $this;
+    }
+
+    /**
+     * Records the secret honor bid of the player, before the honor dials are revealed.
+     */
+    public function pendingHonorBid(int $bid): self
+    {
+        $this->pendingHonorBid = $bid;
 
         return $this;
     }
@@ -305,6 +316,11 @@ final class PlayerBuilder
     public function getHonorBid(): ?int
     {
         return $this->honorBid;
+    }
+
+    public function getPendingHonorBid(): ?int
+    {
+        return $this->pendingHonorBid;
     }
 
     public function getConflictOpportunities(): int

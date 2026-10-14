@@ -17,6 +17,7 @@ use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\ConflictType;
+use App\Enum\DuelType;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\StackType;
@@ -29,6 +30,7 @@ use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\CardState;
 use App\State\Model\ConflictState;
+use App\State\Model\DuelState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
 use Doctrine\ORM\EntityManagerInterface;
@@ -170,6 +172,31 @@ final class GameBuilder
             $state->conflict = new ConflictState($scenario->player($attacker)->getId(), $provinceCard->getPlayer()->getId(), $ring, $type, $provinceCard->getId());
             $state->conflict->attackerIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $attackers);
             $state->conflict->defenderIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $defenders);
+        };
+
+        return $this;
+    }
+
+    /**
+     * A duel initiated by a player between characters (aliases); the challenged player controls the challenged
+     * characters. `revealed`: the honor dials of the duel have been revealed.
+     *
+     * @param list<string> $challengers aliases of the characters of the challenger
+     * @param list<string> $challenged  aliases of the characters of the challenged player
+     */
+    public function duel(
+        string $challenger,
+        array $challengers,
+        array $challenged,
+        DuelType $type = DuelType::Military,
+        bool $revealed = false,
+    ): self {
+        $this->stateChanges[] = function (GameState $state, Scenario $scenario) use ($challenger, $challengers, $challenged, $type, $revealed): void {
+            $challengedPlayer = $scenario->card($challenged[0] ?? throw new \LogicException('A duel needs a challenged character.'))->getPlayer();
+            $state->duel = new DuelState($scenario->player($challenger)->getId(), $challengedPlayer->getId(), $type);
+            $state->duel->challengerCardIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $challengers);
+            $state->duel->challengedCardIds = array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $challenged);
+            $state->duel->revealed = $revealed;
         };
 
         return $this;
@@ -322,6 +349,7 @@ final class GameBuilder
             $state->setFate($builder->getFate())
                 ->setFateCollected($builder->isFateCollected())
                 ->setHonorBid($builder->getHonorBid())
+                ->setPendingHonorBid($builder->getPendingHonorBid())
                 ->setPassed($builder->isPassed())
                 ->setConflictOpportunities($builder->getConflictOpportunities())
                 ->setDeclaredConflictTypes($builder->getDeclaredConflictTypes());

@@ -14,7 +14,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Accepted in any game place, from any player of the game, on the dial of any player: the engine does not apply card
- * effects, which decide whose bid changes and when. The player must have bid this round. Card effects can set a bid
+ * effects, which decide whose bid changes and when. The honor dial of the player must have been revealed. Card effects can set a bid
  * outside the range of the honor dial (e.g. 0).
  */
 #[AsMessageHandler]

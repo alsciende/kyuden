@@ -41,6 +41,11 @@ class GameState
     public ?ConflictState $conflict = null;
 
     /**
+     * The duel being resolved; null outside of a duel. No action window opens during a duel.
+     */
+    public ?DuelState $duel = null;
+
+    /**
      * Player who used the last conflict opportunity (declared or passed) during the conflict phase: the next
      * opportunity goes to the next player in player order with a conflict opportunity left. Null when the phase begins.
      */
@@ -100,6 +105,16 @@ class GameState
     public function currentConflict(): ConflictState
     {
         return $this->conflict ?? throw new \LogicException('No conflict is being resolved.');
+    }
+
+    /**
+     * Not prefixed with `get`, so that the serializer of the state does not take it for a property.
+     *
+     * @throws \LogicException outside of a duel
+     */
+    public function currentDuel(): DuelState
+    {
+        return $this->duel ?? throw new \LogicException('No duel is being resolved.');
     }
 
     /**

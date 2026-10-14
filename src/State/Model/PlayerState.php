@@ -26,11 +26,19 @@ class PlayerState
     private int $fate = 0;
 
     /**
+     * Honor bid: the number shown on the honor dial once revealed. It stays as a reference until the next bid.
+     */
+    private ?int $honorBid = null;
+
+    /**
+     * Number secretly selected on the honor dial, until the dials are revealed.
+     */
+    private ?int $pendingHonorBid = null;
+
+    /**
      * Turn records: what the player has done during the current round. Reset at the end of the round.
      */
     private bool $fateCollected = false;
-
-    private ?int $honorBid = null;
 
     /**
      * Conflict opportunities left this round: declaring a conflict or passing a conflict opportunity uses one.
@@ -132,7 +140,7 @@ class PlayerState
     }
 
     /**
-     * Number selected on the honor dial during the draw phase; null until the player has bid this round.
+     * Revealed honor bid, which card effects can change; null from the start of a bid until the dials are revealed.
      */
     public function getHonorBid(): ?int
     {
@@ -144,6 +152,37 @@ class PlayerState
         $this->honorBid = $honorBid;
 
         return $this;
+    }
+
+    /**
+     * Secret honor bid, known only to the player; null until the player has bid, and once the dials are revealed.
+     */
+    public function getPendingHonorBid(): ?int
+    {
+        return $this->pendingHonorBid;
+    }
+
+    public function setPendingHonorBid(?int $pendingHonorBid): self
+    {
+        $this->pendingHonorBid = $pendingHonorBid;
+
+        return $this;
+    }
+
+    /**
+     * A new honor bid begins: the previous one is no longer a reference while the dial is being turned.
+     */
+    public function startHonorBid(): self
+    {
+        return $this->setHonorBid(null)->setPendingHonorBid(null);
+    }
+
+    /**
+     * The honor dials are revealed: the secret bid becomes the honor bid.
+     */
+    public function revealHonorBid(): self
+    {
+        return $this->setHonorBid($this->pendingHonorBid)->setPendingHonorBid(null);
     }
 
     public function getConflictOpportunities(): int
@@ -225,7 +264,6 @@ class PlayerState
     public function resetTurnRecords(): self
     {
         return $this->setFateCollected(false)
-            ->setHonorBid(null)
             ->setConflictOpportunities(self::CONFLICT_OPPORTUNITIES)
             ->setDeclaredConflictTypes([])
             ->setGloryCount(null);

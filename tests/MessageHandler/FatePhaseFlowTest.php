@@ -42,7 +42,6 @@ class FatePhaseFlowTest extends AbstractKernelTestCase
         $gameState = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertSame($scenario->player('jane')->getId(), $gameState->firstPlayerId);
         $johnState = $this->playerStateManager->getState($scenario->player('john'));
-        self::assertNull($johnState->getHonorBid());
         self::assertSame(PlayerState::CONFLICT_OPPORTUNITIES, $johnState->getConflictOpportunities());
     }
 }

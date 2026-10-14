@@ -25,10 +25,11 @@ class FatePhaseEndedTransitionListenerTest extends AbstractKernelTestCase
         foreach (['john', 'jane'] as $alias) {
             $state = $this->playerStateManager->getState($scenario->player($alias));
             self::assertFalse($state->isFateCollected());
-            self::assertNull($state->getHonorBid());
             self::assertSame(PlayerState::CONFLICT_OPPORTUNITIES, $state->getConflictOpportunities());
             self::assertSame([], $state->getDeclaredConflictTypes());
         }
         self::assertSame(3, $this->playerStateManager->getState($scenario->player('john'))->getFate());
+        // the honor dial stays as a reference until the next bid
+        self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getHonorBid());
     }
 }

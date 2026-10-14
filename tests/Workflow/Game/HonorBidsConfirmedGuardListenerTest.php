@@ -14,8 +14,8 @@ class HonorBidsConfirmedGuardListenerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('honor_bid')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $johnBid !== null ? $p->honorBid($johnBid) : $p)
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $janeBid !== null ? $p->honorBid($janeBid) : $p)
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $johnBid !== null ? $p->pendingHonorBid($johnBid) : $p)
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $janeBid !== null ? $p->pendingHonorBid($janeBid) : $p)
             ->build();
 
         return self::service(Registry::class)->get($scenario->game())->can($scenario->game(), 'honor_bids_confirmed');

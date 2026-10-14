@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`, latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -20,8 +20,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 ## Decisions taken for the reveal of the honor dials
 
 - `reveal_honor_dials` is a step where every player is active (`RevealHonorDialsEnterListener`), to react to the honor dials being revealed (e.g. Kitsuki Jusai, cards changing a bid by 1), then pass. `honor_dials_revealed` moves on to `transfer_honor` once every player has passed. Passing is final, although a player could react to an opponent's reaction: acceptable since each of these cards reacts once.
-- `SetHonorBid` changes the bid on the dial of a player. Like the other effect messages, it is accepted in any place, from any player of the game, on any player. The player must have bid this round (`NoHonorBidException`); the bid can be 0 (cards decrease it "to a minimum of 0"), not negative.
-- The bids are not revealed by the engine: their secrecy is not enforced.
+- `SetHonorBid` changes the revealed bid on the dial of a player. Like the other effect messages, it is accepted in any place, from any player of the game, on any player. The dial of the player must have been revealed (`NoHonorBidException`); the bid can be 0 (cards decrease it "to a minimum of 0"), not negative.
 
 ## Decisions taken for the honor transfer
 
@@ -137,8 +136,18 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ## Decisions taken for `BidHonor`
 
-- Players bid simultaneously (any order, once per round): the bid is a turn record of `PlayerState` (`honorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid.
-- The secrecy of the bid is not enforced (the `Event` log stores it).
+- Players bid simultaneously (any order, once per round): the bid is secret (`PlayerState::pendingHonorBid`), and `honor_bids_confirmed` moves on to `reveal_honor_dials` once every player has bid.
+- Two fields, so that the secrecy only depends on the state (the reading API will show the pending bid to its owner only): `honor_bids_confirmed` reveals the dials by copying the pending bid into `honorBid` (`HonorBidsConfirmedTransitionListener`). `honorBid` is the honor bid of the rules (the current setting of the dial): `SetHonorBid`, the honor transfer and the card draw use it.
+- The revealed bid stays as a reference until the next bid (D.4): it is not a turn record, and entering `honor_bid` clears both fields (`HonorBidEnterListener`). Duels will use the same fields.
+- The `Event` log stores the bid: the secrecy is enforced by the reading API, not in the database.
+
+## Decisions taken for the duels
+
+- **Not a place of the `game` workflow**: a duel is initiated from an action window (or a reaction window) and returns to it (D.9), which a state machine cannot express without duplicating the duel places for every window. It is `GameState::duel` (`DuelState`), from `InitiateDuel` to `EndDuel`; its steps are read from the state (`atBidStep()`, `atStatisticStep()`, `resolved`).
+- `InitiateDuel` (type, `challengerIds`, `challengedIds`): allowed in any place with opportunities, from the active player, when no duel is being resolved. Checked: characters in play, the challengers controlled by the player, the challenged characters by a single opponent; during a conflict, every character participates. Not checked: the dash skill, the "this character initiates" ability.
+- **Honor bid** (D.3, D.4): `BidHonor` is the same message as in the draw phase, accepted from the players involved while the duel is at its bid step. A new bid begins for them (`startHonorBid()`); the dials are revealed once both have bid (`DuelHonorBidPlacedListener`, on `HonorBidPlacedEvent`), so the duel bid is the honor bid of reference afterwards.
+- **Statistic and result** (D.5 to D.7): each player involved declares the dueling statistic of their side with every modifier (`DeclareDuelStatistic`, any order, can be declared again until both are known). Once both are known, the honor is transferred (`Service/HonorBidService`, shared with the draw phase) and the engine adds the bids: the higher total wins, nobody on a tie (`winnerId` / `loserId`, players). The transfer happens after the declarations rather than right after the reveal, so the bids changed by cards since the reveal (`SetHonorBid`) count.
+- **End** (D.8, D.9): the players apply the consequences with effect messages, then a player involved ends the duel (`EndDuel`). Until then, no action window is open (`assertCanTakeAction()`), and `PassOpportunity` / `EndOpportunity` are rejected (`DuelInProgressException`); `PlayEvent` stays allowed for interrupts and reactions.
 
 ## Decisions taken for the API to send messages
 
@@ -153,7 +162,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ### API
 
-- **Reading API**: the game state filtered for the viewing player (hidden information: opponent's hand, decks, facedown cards, ids revealing hidden cards, honor bids before the reveal) and the messages available to them.
+- **Reading API**: the game state filtered for the viewing player (hidden information: opponent's hand, decks, facedown cards, ids revealing hidden cards, the secret honor bid of the opponents, `PlayerState::pendingHonorBid`) and the messages available to them. Design agreed: a view built for the viewing player from the state only (no serialization groups by place, no decorators), since secret information is stored apart from public information; cards a player is shown (`SeeCard`, to come) are not part of the state, the client remembers them.
 - Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
 
 
@@ -219,7 +228,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 **Postponed until the conflict phase is modeled**
 
 - ~~`MoveToConflict` / `MoveHome` (32 / 37)~~ (done).
-- Duels (34): initiate, honor bid, result.
+- ~~Duels (34): initiate, honor bid, result.~~ (done)
 - Skill and glory modifiers "until the end of the conflict" (the most common effect: ~150 mil/pol mentions, 92 "until the end of the conflict"). Either a generic `AddSkillModifier(card, mil, pol, glory, duration)`, or (preferred, consistent with `CollectFate`) players declare the totals when the conflict is resolved.
 - Rings (claim, return, switch, move the contested ring), discarding the Imperial Favor, taking control of a card, switching the conflict type, province strength.
 
@@ -243,7 +252,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 ### Conflict phase
 
 - **A War on Two Fronts**: an effect message adding an attacked province to the conflict (`ConflictState::attackedProvinceIds` is ready for it).
-- **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card, duels (initiate, bid, result).
+- **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card.
 - **Reactions**: reaction windows only exist where listed above; reactions to other framework steps (e.g. characters discarded during the fate phase) go through the next window. To be locked down once the game has been tested.
 - **Skill announcements**: after each action of the conflict action window, a player should announce the current skill of both sides (3.2.2); not recorded.
 

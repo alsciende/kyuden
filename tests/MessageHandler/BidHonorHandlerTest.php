@@ -6,6 +6,8 @@ namespace App\Tests\MessageHandler;
 
 use App\Exception\Data\WorkflowException;
 use App\Exception\Rules\HonorAlreadyBidException;
+use App\Exception\Rules\DuelStepException;
+use App\Exception\Rules\NotInDuelException;
 use App\Message\BidHonor;
 use App\MessageHandler\BidHonorHandler;
 use App\Tests\AbstractKernelTestCase;
@@ -37,8 +39,8 @@ class BidHonorHandlerTest extends AbstractKernelTestCase
 
         self::service(BidHonorHandler::class)($this->bid($scenario, 'john', 3));
 
-        self::assertSame(3, $this->playerStateManager->getState($scenario->player('john'))->getHonorBid());
-        self::assertNull($this->playerStateManager->getState($scenario->player('jane'))->getHonorBid());
+        self::assertSame(3, $this->playerStateManager->getState($scenario->player('john'))->getPendingHonorBid());
+        self::assertNull($this->playerStateManager->getState($scenario->player('jane'))->getPendingHonorBid());
     }
 
     public function testAnyPlayerCanBidFirst(): void
@@ -47,12 +49,12 @@ class BidHonorHandlerTest extends AbstractKernelTestCase
 
         self::service(BidHonorHandler::class)($this->bid($scenario, 'jane', 1));
 
-        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->getHonorBid());
+        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->getPendingHonorBid());
     }
 
     public function testRejectsASecondBidInTheSameRound(): void
     {
-        $scenario = $this->scenarioAtHonorBid(fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(2));
+        $scenario = $this->scenarioAtHonorBid(fn (PlayerBuilder $p): PlayerBuilder => $p->pendingHonorBid(2));
 
         $this->expectException(HonorAlreadyBidException::class);
 
@@ -88,11 +90,51 @@ class BidHonorHandlerTest extends AbstractKernelTestCase
 
     public function testHonorDialsAreRevealedOnceTheLastPlayerHasBid(): void
     {
-        $scenario = $this->scenarioAtHonorBid(fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(2));
+        $scenario = $this->scenarioAtHonorBid(fn (PlayerBuilder $p): PlayerBuilder => $p->pendingHonorBid(2));
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->bid($scenario, 'jane', 4));
 
         self::assertSame('reveal_honor_dials', $scenario->game()->getCurrentPlace());
+        self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getHonorBid());
+        self::assertSame(4, $this->playerStateManager->getState($scenario->player('jane'))->getHonorBid());
+    }
+
+    private function scenarioInDuel(bool $revealed = false): Scenario
+    {
+        return $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['spear' => '01-master-of-the-spear']))
+            ->withPlayer('jack')
+            ->duel('john', ['toturi'], ['spear'], revealed: $revealed)
+            ->persist();
+    }
+
+    public function testRecordsTheBidOfAPlayerInvolvedInADuel(): void
+    {
+        $scenario = $this->scenarioInDuel();
+
+        self::service(BidHonorHandler::class)($this->bid($scenario, 'jane', 5));
+
+        self::assertSame(5, $this->playerStateManager->getState($scenario->player('jane'))->getPendingHonorBid());
+    }
+
+    public function testRejectsTheBidOfAPlayerNotInvolvedInTheDuel(): void
+    {
+        $scenario = $this->scenarioInDuel();
+
+        $this->expectException(NotInDuelException::class);
+
+        self::service(BidHonorHandler::class)($this->bid($scenario, 'jack', 3));
+    }
+
+    public function testRejectsABidOnceTheHonorDialsOfTheDuelAreRevealed(): void
+    {
+        $scenario = $this->scenarioInDuel(revealed: true);
+
+        $this->expectException(DuelStepException::class);
+
+        self::service(BidHonorHandler::class)($this->bid($scenario, 'john', 3));
     }
 }

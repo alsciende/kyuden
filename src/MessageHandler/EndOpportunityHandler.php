@@ -29,6 +29,7 @@ final readonly class EndOpportunityHandler
     public function __invoke(EndOpportunity $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
+        $this->opportunityService->assertNoDuel($game);
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();

@@ -46,6 +46,7 @@ final readonly class PassOpportunityHandler
             throw new NotInOpportunitiesStepException($game->getCurrentPlace());
         }
 
+        $this->opportunityService->assertNoDuel($game);
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
