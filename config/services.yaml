@@ -21,6 +21,7 @@ services:
         exclude:
             - '../src/Event/'
             - '../src/Exception/'
+            - '../src/Middleware/Stamp/'
             - '../src/Model/'
             - '../src/Notification/'
             - '../src/State/Model/'

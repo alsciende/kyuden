@@ -12,6 +12,8 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\Api\ApiMessageFactory;
 use App\Exception\Api\InvalidPayloadException;
+use App\Exception\Api\StaleVersionException;
+use App\Middleware\Stamp\ExpectedVersionStamp;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +33,9 @@ use function Symfony\Component\String\u;
 /**
  * A player of the game sends any action message: `{"type": "pass_opportunity", "payload": {...}}`.
  * See ApiMessageFactory for the payload. Errors are problem details (RFC 9457).
+ *
+ * The ETag of the response is the version of the game once the message is handled. With `If-Match` (the ETag of the
+ * version the player saw), the message is rejected if the game has changed since.
  */
 class ApiGameMessagesController extends AbstractController
 {
@@ -69,19 +74,34 @@ class ApiGameMessagesController extends AbstractController
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_body', 'The body must have a string "type" and an object "payload".');
         }
 
+        $ifMatch = $request->headers->get('If-Match');
+        $stamps = [];
+        if ($ifMatch !== null && trim($ifMatch) !== '*') {
+            if (preg_match('/^\s*"(\d+)"\s*$/', $ifMatch, $matches) !== 1) {
+                return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_if_match', 'If-Match must be a single ETag of the game, like "12".');
+            }
+            $stamps[] = new ExpectedVersionStamp((int) $matches[1]);
+        }
+
         try {
-            $this->bus->dispatch($this->messageFactory->create($type, $payload, $id, $playerId));
+            $this->bus->dispatch($this->messageFactory->create($type, $payload, $id, $playerId), $stamps);
         } catch (\Throwable $throwable) {
             return $this->toProblem($throwable instanceof HandlerFailedException ? $throwable->getPrevious() ?? $throwable : $throwable);
         }
 
-        return new Response(status: Response::HTTP_NO_CONTENT);
+        $response = new Response(status: Response::HTTP_NO_CONTENT);
+        // the game is now loaded: locked by the handling of the message
+        $response->setEtag((string) $this->gameRepository->get($id)->getVersion());
+
+        return $response;
     }
 
     private function toProblem(\Throwable $throwable): Response
     {
         $status = match (true) {
             $throwable instanceof HttpExceptionInterface => $throwable->getStatusCode(),
+            // the game has changed since the version the player saw
+            $throwable instanceof StaleVersionException => Response::HTTP_PRECONDITION_FAILED,
             // the action is not allowed in the current state of the game
             $throwable instanceof RulesException, $throwable instanceof WorkflowException, $throwable instanceof TransitionException => Response::HTTP_CONFLICT,
             // the payload refers to something that does not exist in this game, or has invalid values

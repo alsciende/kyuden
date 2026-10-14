@@ -23,9 +23,10 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
     }
 
     /**
-     * @param array<mixed>|string $body
+     * @param array<mixed>|string   $body
+     * @param array<string, string> $headers HTTP headers of the request, by their server name (HTTP_IF_MATCH)
      */
-    private function post(string $gameId, array|string $body, ?string $user = 'john'): Response
+    private function post(string $gameId, array|string $body, ?string $user = 'john', array $headers = []): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
@@ -37,6 +38,7 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
             server: array_filter([
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_AUTHORIZATION' => $user === null ? null : "Bearer {$user}",
+                ...$headers,
             ]),
             content: is_string($body) ? $body : json_encode($body, \JSON_THROW_ON_ERROR),
         );
@@ -74,6 +76,48 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
 
         self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->isPassed());
+    }
+
+    public function testTheETagIsTheVersionOfTheGameOnceTheMessageIsHandled(): void
+    {
+        $scenario = $this->scenarioAtPlayCardsFromProvinces();
+
+        $response = $this->post($scenario->game()->getId(), ['type' => 'pass_opportunity']);
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('"1"', $response->getEtag());
+    }
+
+    public function testAMessageSentForTheCurrentVersionIsHandled(): void
+    {
+        $scenario = $this->scenarioAtPlayCardsFromProvinces();
+
+        $response = $this->post($scenario->game()->getId(), ['type' => 'pass_opportunity'], headers: ['HTTP_IF_MATCH' => '"0"']);
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('"1"', $response->getEtag());
+    }
+
+    public function testAMessageSentForAPreviousVersionIsRejected(): void
+    {
+        $scenario = $this->scenarioAtPlayCardsFromProvinces();
+        $loseHonor = ['type' => 'lose_honor', 'payload' => ['target_player_id' => $scenario->player('john')->getId(), 'honor_loss' => 1]];
+        $this->post($scenario->game()->getId(), $loseHonor, 'jane');
+
+        $response = $this->post($scenario->game()->getId(), $loseHonor, headers: ['HTTP_IF_MATCH' => '"0"']);
+
+        $this->assertProblem($response, Response::HTTP_PRECONDITION_FAILED, 'stale_version');
+        self::assertSame(9, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
+    }
+
+    public function testIfMatchMustBeAnETagOfTheGame(): void
+    {
+        $scenario = $this->scenarioAtPlayCardsFromProvinces();
+
+        $response = $this->post($scenario->game()->getId(), ['type' => 'pass_opportunity'], headers: ['HTTP_IF_MATCH' => 'W/"0"']);
+
+        $this->assertProblem($response, Response::HTTP_BAD_REQUEST, 'invalid_if_match');
+        self::assertFalse($this->playerStateManager->getState($scenario->player('john'))->isPassed());
     }
 
     public function testAnEffectMessageAppliesToItsTargetPlayer(): void

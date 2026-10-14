@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change; latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -248,13 +248,32 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `isAvailable(): bool` on the handler: the handler could only throw a generic exception, losing why the action is refused.
 - Finding the handler at runtime through the Messenger handlers locator: it needs an envelope (a message instance) and only returns closures.
 
+## Decisions taken for the version of the state
+
+Prerequisite of `wait_for_update` (MCP server): an agent must know whether the game has changed, and must not act on a state its opponent changed in the meantime.
+
+**Design**
+- `Game::version`: the number of messages handled on the game, incremented by `EventRecordingMiddleware` with each `Event` (automatic transitions included in the message that led to them). `CreateGame` gives version 1. `Event` now references its game and carries its version (unique per game): the events of a game are numbered from 1, so "the events since version N" can be read.
+- HTTP uses the standard headers, the ETag being the version (`"12"`): the view only depends on the state and the viewer (fixed by the token), so a version gives a single representation per viewer.
+  - `GET /api/games/{id}`: `ETag`, `If-None-Match` → 304, `Cache-Control: private, no-cache`. The game is still loaded in a single query before checking the version: the 304 saves the view and the bandwidth, not the query. The view also has `version`, for clients without the headers (MCP tools).
+  - `POST /api/games/{id}/messages`: still 204, with the `ETag` of the version once the message is handled. Optional `If-Match` (a single strong ETag, or `*`): an `ExpectedVersionStamp` checked by `GameVersionMiddleware` right after the lock; 412 `stale_version` if the game has changed. Anything else in `If-Match` is a 400 `invalid_if_match`.
+- The expected version is a stamp, not a field of the message: replaying an event must never fail on it.
+- `GameUpdatedNotificationMiddleware`, before the Doctrine transaction in the chain, publishes `game_updated` (id, version) on the Mercure topic `/games/{id}` once the transaction is committed: a client reading the game on notification sees the new version. No data of the game: the clients read their own masked view, so no private topic is needed.
+
+**Alternatives rejected**
+- `#[ORM\Version]`: only incremented when the `games` row changes (not when an action only moves cards), and redundant with the pessimistic lock.
+- The id of the last event as ETag: not ordered (no "since"), an extra query or a duplicated column, and a UUID would have to be drawn from the random generator of the game to be replayed.
+- `X-Game-Version` headers (the `X-` prefix is deprecated, RFC 6648) or the version in the body of the POST: the standard headers are understood by HTTP clients.
+- 200 with `{version}` in the POST response: the ETag already carries it.
+
 ## Next steps
 
 ### API
 
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
 - **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
-- Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
+- **`wait_for_update`**: a bounded long-poll on the version (`version > since`, then the events since that version), as an HTTP endpoint wrapped by the MCP tool.
+- Real authentication; private Mercure topics (the topic `/games/{id}` is public, it carries no data of the game).
 
 
 ### Step 1.4 (play cards from provinces)

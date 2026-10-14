@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\DataFixtures\AppFixtures;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
+use App\Message\LoseHonor;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -28,7 +29,10 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function get(string $gameId, ?string $user = 'john'): Response
+    /**
+     * @param array<string, string> $headers HTTP headers of the request, by their server name (HTTP_IF_NONE_MATCH)
+     */
+    private function get(string $gameId, ?string $user = 'john', array $headers = []): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
@@ -36,6 +40,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
 
         $client->request('GET', "/api/games/{$gameId}", server: array_filter([
             'HTTP_AUTHORIZATION' => $user === null ? null : "Bearer {$user}",
+            ...$headers,
         ]));
 
         return $client->getResponse();
@@ -72,6 +77,36 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($jane));
         self::assertIsArray($game['available_actions']);
         self::assertContains('bow_card', $game['available_actions']);
+    }
+
+    public function testTheETagIsTheVersionOfTheGame(): void
+    {
+        $scenario = $this->scenarioWithHands();
+
+        $response = $this->get($scenario->game()->getId());
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('"0"', $response->getEtag());
+        self::assertSame(0, $this->decode($response)['version']);
+        self::assertTrue($response->headers->hasCacheControlDirective('private'));
+        self::assertTrue($response->headers->hasCacheControlDirective('no-cache'));
+    }
+
+    public function testThePlayerGetsNotModifiedUntilTheGameChanges(): void
+    {
+        $scenario = $this->scenarioWithHands();
+        $gameId = $scenario->game()->getId();
+        $johnId = $scenario->player('john')->getId();
+
+        $notModified = $this->get($gameId, headers: ['HTTP_IF_NONE_MATCH' => '"0"']);
+        $this->messageBus->dispatch(new LoseHonor($gameId, $johnId, $johnId, 1));
+        $modified = $this->get($gameId, headers: ['HTTP_IF_NONE_MATCH' => '"0"']);
+
+        self::assertSame(Response::HTTP_NOT_MODIFIED, $notModified->getStatusCode());
+        self::assertSame('', $notModified->getContent());
+        self::assertSame('"0"', $notModified->getEtag());
+        self::assertSame(Response::HTTP_OK, $modified->getStatusCode());
+        self::assertSame('"1"', $modified->getEtag());
     }
 
     /**

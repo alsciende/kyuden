@@ -11,15 +11,24 @@ use Doctrine\ORM\Mapping as ORM;
  * An event changed the state of the game
  * Its name is the class of the message that triggered this change
  * Its payload is the content of the message.
+ * Its version is the version of the game after this change: the events of a game are numbered from 1.
  */
 #[ORM\Entity(repositoryClass: EventRepository::class)]
 #[ORM\Table('events')]
+#[ORM\UniqueConstraint(columns: ['game_id', 'version'])]
 class Event
 {
     #[ORM\Id]
     #[ORM\GeneratedValue('SEQUENCE')]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: Game::class)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private Game $game;
+
+    #[ORM\Column]
+    private int $version;
 
     #[ORM\Column(length: 255)]
     private string $name;
@@ -30,8 +39,10 @@ class Event
     #[ORM\Column(type: 'jsonb')]
     private string $payload;
 
-    public function __construct(string $name, string $payload)
+    public function __construct(Game $game, int $version, string $name, string $payload)
     {
+        $this->game = $game;
+        $this->version = $version;
         $this->name = $name;
         $this->payload = $payload;
         $this->createdAt = new \DateTimeImmutable();
@@ -47,6 +58,16 @@ class Event
         $this->id = $id;
 
         return $this;
+    }
+
+    public function getGame(): Game
+    {
+        return $this->game;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
     }
 
     public function getName(): string

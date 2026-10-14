@@ -29,8 +29,11 @@ framework:
                 middleware:
                     # values of the message (constraints of the Validator), before any lock or transaction
                     - validation
+                    # after the commit
+                    - 'App\Middleware\GameUpdatedNotificationMiddleware'
                     - doctrine_transaction
                     - 'App\Middleware\GameLockMiddleware'
+                    - 'App\Middleware\GameVersionMiddleware'
                     - 'App\Middleware\GameEndedMiddleware'
                     - 'App\Middleware\WorkflowTransitionMiddleware'
                     - 'App\Middleware\EventRecordingMiddleware'

@@ -47,6 +47,7 @@ final readonly class GameViewFactory
 
         return new GameView(
             id: $game->getId(),
+            version: $game->getVersion(),
             place: $game->getCurrentPlace(),
             viewerId: $viewer->getId(),
             playerIds: $state->playerIds,

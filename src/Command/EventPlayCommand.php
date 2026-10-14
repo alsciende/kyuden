@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Entity\Event;
 use App\Service\EventPlayer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -70,7 +69,7 @@ readonly class EventPlayCommand
         /** @var string $payload */
         $payload = $io->askQuestion($payloadQuestion);
         $io->title("Playing event {$name} with payload {$payload}");
-        $this->player->playEvent(new Event($name, $payload));
+        $this->player->play($name, $payload);
         $io->success('Event played successfully.');
 
         return Command::SUCCESS;

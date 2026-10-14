@@ -43,6 +43,12 @@ class Game implements StatefulInterface
     private string $state = '{}';
 
     /**
+     * Number of messages handled on the game: the version of its state, and the sequence number of its events.
+     */
+    #[ORM\Column]
+    private int $version = 0;
+
+    /**
      * Serialized state of the random engine, written back before each flush.
      */
     #[ORM\Column(type: Types::TEXT)]
@@ -111,6 +117,21 @@ class Game implements StatefulInterface
     public function setState(string $state): void
     {
         $this->state = $state;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    /**
+     * A message has been handled on the game.
+     *
+     * @return int the new version
+     */
+    public function incrementVersion(): int
+    {
+        return ++$this->version;
     }
 
     /**

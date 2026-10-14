@@ -19,14 +19,23 @@ readonly class EventPlayer
 
     public function playEvent(Event $event): void
     {
+        $this->play($event->getName(), $event->getPayload());
+    }
+
+    /**
+     * @param string $name    class of the message
+     * @param string $payload JSON content of the message
+     */
+    public function play(string $name, string $payload): void
+    {
         $message = $this->serializer->deserialize(
-            data: $event->getPayload(),
-            type: $event->getName(),
+            data: $payload,
+            type: $name,
             format: 'json',
         );
 
         if (! $message instanceof ActionInterface) {
-            throw new \LogicException("Event payload class {$event->getName()} does not implement " . ActionInterface::class);
+            throw new \LogicException("Event payload class {$name} does not implement " . ActionInterface::class);
         }
 
         $this->bus->dispatch($message);

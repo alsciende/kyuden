@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
-use App\Entity\Event;
 use App\Entity\Game;
 use App\Message\CreateGame;
 use App\Repository\GameRepository;
@@ -20,12 +19,10 @@ class EventPlayerTest extends KernelTestCase
         $container = static::getContainer();
 
         $gameId = Uuid::v4()->toString();
-        $event = new Event(CreateGame::class, sprintf('{"game_id":"%s","seed":"%s"}', $gameId, bin2hex(random_bytes(32))));
-
         /** @var EventPlayer $player */
         $player = $container->get(EventPlayer::class);
 
-        $player->playEvent($event);
+        $player->play(CreateGame::class, sprintf('{"game_id":"%s","seed":"%s"}', $gameId, bin2hex(random_bytes(32))));
 
         /** @var GameRepository $repository */
         $repository = $container->get(GameRepository::class);

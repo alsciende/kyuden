@@ -16,6 +16,7 @@ use App\State\Model\RingState;
 final readonly class GameView
 {
     /**
+     * @param int                      $version         the version of the game, also the ETag of the view
      * @param list<string>             $playerIds       player order
      * @param list<string>             $activePlayerIds
      * @param list<PlayerView>         $players         in player order of arrival
@@ -24,6 +25,7 @@ final readonly class GameView
      */
     public function __construct(
         public string $id,
+        public int $version,
         public ?string $place,
         public string $viewerId,
         public array $playerIds,
