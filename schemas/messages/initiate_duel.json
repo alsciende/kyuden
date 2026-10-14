@@ -1,0 +1,39 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "initiate_duel",
+    "description": "The player resolving a card ability initiates a duel (D.1) between characters they control (`challenger_ids`) and characters controlled by an opponent (`challenged_ids`). The players involved then bid (`bid_honor`).",
+    "type": "object",
+    "properties": {
+        "type": {
+            "description": "Type of the duel.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political",
+                "glory"
+            ]
+        },
+        "challenger_ids": {
+            "description": "Characters controlled by the player who initiates the duel.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        },
+        "challenged_ids": {
+            "description": "Characters controlled by the challenged opponent.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "type",
+        "challenger_ids",
+        "challenged_ids"
+    ],
+    "additionalProperties": false
+}

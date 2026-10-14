@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "bow_card",
+    "description": "Bows a card in play (character, attachment or stronghold), e.g. to pay a cost or resolve an effect.\n\nThe card can belong to any player: effects often target an opponent's card.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card to bow.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

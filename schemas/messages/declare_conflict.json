@@ -1,0 +1,53 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_conflict",
+    "description": "The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the conflict, the attacked province of an opponent and the ready characters declared as attackers. `evaded_ids` are the characters of the defending player chosen with covert: the engine does not check the covert keyword.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Contested ring, from the unclaimed ring pool.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        },
+        "type": {
+            "description": "Type of the conflict.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political"
+            ]
+        },
+        "province_id": {
+            "description": "Attacked province of an opponent.",
+            "type": "string"
+        },
+        "attacker_ids": {
+            "description": "Ready characters of the player declared as attackers.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "evaded_ids": {
+            "description": "Characters of the defending player chosen with covert.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": []
+        }
+    },
+    "required": [
+        "ring",
+        "type",
+        "province_id",
+        "attacker_ids"
+    ],
+    "additionalProperties": false
+}

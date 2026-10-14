@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`, latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`, latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -153,10 +153,19 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 - A single endpoint for every message (`POST /api/games/{id}/messages`, `{"type", "payload"}`), built on `ActionMessageRegistry` and the serializer, like the replay of events: a new message is exposed with no API code.
 - `#[AppAction(public: false)]` hides the platform messages (`CreateGame`, `JoinGame`); every other action message is public by default.
-- `playerId` is always the player sending the message, which the API sets to the authenticated player: a player cannot act for another one (e.g. pass for the active player). The player an effect applies to is a separate field: `targetPlayerId` (`LoseHonor`, `GainHonor`, `SetHonor`, `SetHonorBid`, `DrawConflictCards`, `ShuffleConflictDeck`, `ShuffleDynastyDeck`, `DiscardRandomCardFromHand`), `giverId` / `recipientId` (`TransferHonor`); `FillProvince` uses the deck of the owner of the province. The engine sends the messages of the setup and of the draw with the same player as sender and target. Events stored before this change cannot be replayed.
+- `playerId` is always the player sending the message, which the API sets to the authenticated player: a player cannot act for another one (e.g. pass for the active player). The payload cannot hold `game_id` nor `player_id` (400), even with the right values. The player an effect applies to is a separate field: `targetPlayerId` (`LoseHonor`, `GainHonor`, `SetHonor`, `SetHonorBid`, `DrawConflictCards`, `ShuffleConflictDeck`, `ShuffleDynastyDeck`, `DiscardRandomCardFromHand`), `giverId` / `recipientId` (`TransferHonor`); `FillProvince` uses the deck of the owner of the province. The engine sends the messages of the setup and of the draw with the same player as sender and target. Events stored before this change cannot be replayed.
 - `GameLockMiddleware` serializes the actions on a game with a pessimistic lock on its row, held until the end of the transaction.
 - The response is empty (204): the client will read the new state with the reading API. No optimistic check of the version of the state seen by the client yet.
+- Errors of the payload carry `violations` (`property_path` in snake case, `message`): 400 `invalid_payload` for its structure (missing, unknown or reserved field, wrong type: the serializer collects every error), 422 `validation_failed` for its values (constraints of the Validator).
 - The user is matched to a player through `Player::userId` = user identifier (in-memory users `john` / `jane`, the access token is the identifier: authentication is still a stub).
+
+## Decisions taken for the validation and the schemas of the messages
+
+- **The message is the single source of truth.** The values of a message are checked by constraints of the Validator on the arguments of its constructor (`#[Assert\PositiveOrZero]`, `#[Assert\Range]`, `#[Assert\Count]`), checked by the `validation` middleware of the bus, first in the chain (before the lock and the transaction), whatever the origin of the message (API, console, replay). The handlers no longer check them; they keep the checks that need the state, or several fields (`TransferHonor` to themselves).
+- **The JSON schema of the payload is built from the message** (`Service/Api/MessageSchemaFactory`, draft 2020-12): the types of the constructor (TypeInfo, with the PHPDoc), the constraints, the `#[Description]` attribute of each field and the class doc comment of the message (the fields quoted with backticks are converted to snake case). `game_id` and `player_id` are left out, `additionalProperties` is false. A type or a constraint the factory cannot translate throws a `LogicException`, so that the schema never accepts more than the engine.
+- **Snapshot of the contract**: `bin/console app:message-schemas:dump` writes one file per public message in `schemas/messages`, committed; a test fails when they differ from the built schemas, so that every change of the contract shows in the diff. Every public message and every field must be described (test), for the clients of the API, AI agents included.
+- **Catalogue**: `GET /api/actions` (`ApiActionsController`) returns the schemas of the public messages by type. It depends on no game: public (no token) and cacheable.
+- The schema does not validate the payloads (no JSON schema validator): the serializer and the Validator do, and the schema is derived from the same rules.
 
 ## Decisions taken for the random generator
 
@@ -181,6 +190,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 **Scope**
 - Cards are sent by code only: the client knows the cards.
 - The messages available to the player: not in the first version (next step).
+- The game is loaded in a single query (`GameRepository::findWithCards()`, fetch joins of the players, stacks and cards), checked by a test counting the queries of a game well under way.
 - Spectators: out of scope.
 
 **Design**
@@ -208,7 +218,8 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 ### API
 
-- **Reading API**: the messages available to the player; `SeeCard` (see the decisions taken for the reading API).
+- **Reading API**: the messages available to the player (`available_actions`: a flat list of the types the viewer can send now, only those depending on the state; the checks of the handlers — active player, action window, duel — must be shared with it so that both cannot diverge); `SeeCard` (see the decisions taken for the reading API).
+- **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
 - Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
 
 

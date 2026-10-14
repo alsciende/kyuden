@@ -61,23 +61,6 @@ class BidHonorHandlerTest extends AbstractKernelTestCase
         self::service(BidHonorHandler::class)($this->bid($scenario, 'john', 4));
     }
 
-    public function testRejectsABidBelowOne(): void
-    {
-        $scenario = $this->scenarioAtHonorBid();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        self::service(BidHonorHandler::class)($this->bid($scenario, 'john', 0));
-    }
-
-    public function testRejectsABidAboveFive(): void
-    {
-        $scenario = $this->scenarioAtHonorBid();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        self::service(BidHonorHandler::class)($this->bid($scenario, 'john', 6));
-    }
 
     public function testRejectsABidOutsideTheHonorBidStep(): void
     {

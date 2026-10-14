@@ -11,12 +11,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
  */
 trait ProblemResponseTrait
 {
-    private function problem(int $status, string $type, string $detail): JsonResponse
+    /**
+     * @param array<string, mixed> $extensions additional members of the problem
+     */
+    private function problem(int $status, string $type, string $detail, array $extensions = []): JsonResponse
     {
         return new JsonResponse([
             'type' => $type,
             'status' => $status,
             'detail' => $detail,
+            ...$extensions,
         ], $status, ['Content-Type' => 'application/problem+json']);
     }
 }

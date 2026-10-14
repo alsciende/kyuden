@@ -26,10 +26,6 @@ final readonly class TransferHonorHandler
 
     public function __invoke(TransferHonor $message): void
     {
-        if ($message->getAmount() < 0) {
-            throw new \InvalidArgumentException('Transferred honor cannot be negative.');
-        }
-
         if ($message->getGiverId() === $message->getRecipientId()) {
             throw new \InvalidArgumentException('A player cannot transfer honor to themselves.');
         }

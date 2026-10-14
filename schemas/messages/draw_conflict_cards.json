@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "draw_conflict_cards",
+    "description": "The target player draws conflict cards, e.g. during the draw phase or to resolve an effect. An empty deck is replaced by the shuffled discard pile.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who draws.",
+            "type": "string"
+        },
+        "quantity": {
+            "description": "Number of conflict cards to draw.",
+            "type": "integer"
+        }
+    },
+    "required": [
+        "target_player_id",
+        "quantity"
+    ],
+    "additionalProperties": false
+}

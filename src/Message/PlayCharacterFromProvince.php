@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The active player plays a character from one of their provinces during the play cards from provinces step.
@@ -19,9 +21,16 @@ final readonly class PlayCharacterFromProvince implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Face-up character in a province of the player.')]
         private string $cardId,
+        #[Description('Fate paid for the card.')]
+        #[Assert\PositiveOrZero]
         private int $cardCost,
+        #[Description('Fate paid for the additional fate placed on the character.')]
+        #[Assert\PositiveOrZero]
         private int $fateCost,
+        #[Description('Fate placed on the character.')]
+        #[Assert\PositiveOrZero]
         private int $fate,
     ) {
     }

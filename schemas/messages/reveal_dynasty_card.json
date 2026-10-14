@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "reveal_dynasty_card",
+    "description": "Turns a face-down dynasty card in a province face up, e.g. during the dynasty phase.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Face-down dynasty card in a province.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

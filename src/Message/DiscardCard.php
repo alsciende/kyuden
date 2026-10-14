@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
 
 /**
  * Discards a card from hand, from play or from a province to its owner's discard pile, e.g. a dynasty card from
@@ -18,6 +19,7 @@ final readonly class DiscardCard implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Card to discard, from hand, from play or from a province.')]
         private string $cardId,
     ) {
     }

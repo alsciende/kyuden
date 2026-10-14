@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The giver gives honor to the recipient: "give your opponent 1 honor" is a transfer from the player, "take 1 honor
@@ -16,8 +18,12 @@ final readonly class TransferHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Player who gives honor.')]
         private string $giverId,
+        #[Description('Player who receives honor.')]
         private string $recipientId,
+        #[Description('Honor transferred.')]
+        #[Assert\PositiveOrZero]
         private int $amount,
     ) {
     }

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "honor_character",
+    "description": "Honors a character in play (e.g. the fire ring effect): a dishonored character becomes ordinary, an ordinary one honored.\n\nThe character can belong to any player: effects often target an opponent's character.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character in play to honor.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

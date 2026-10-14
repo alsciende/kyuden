@@ -29,10 +29,6 @@ final readonly class DeclareProvinceStrengthHandler
 
     public function __invoke(DeclareProvinceStrength $message): void
     {
-        if ($message->getStrength() < 0) {
-            throw new \InvalidArgumentException('Province strength cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId(), 'determine_result');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
 

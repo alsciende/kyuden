@@ -53,6 +53,17 @@ class ActionMessageRegistry
     }
 
     /**
+     * @return array<string, class-string> the messages players can send through the API, by type, sorted by type
+     */
+    public function getPublicMessageClasses(): array
+    {
+        $classes = array_filter($this->actionMessages, fn (string $className): bool => $this->getAttribute($className)->public);
+        ksort($classes);
+
+        return $classes;
+    }
+
+    /**
      * @param class-string $className
      */
     public function getAttribute(string $className): AppAction

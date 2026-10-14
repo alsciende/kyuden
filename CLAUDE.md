@@ -17,7 +17,7 @@ Everything runs in Docker (service `symfony`) through the Makefile:
 - `make lint`: `lint:container` + Rector + PHPStan; run it before considering a change done
 - `make sql`: `psql` shell on the `database` service
 
-Console commands (`src/Command`): create decks/candidates, matchmaking, create a game, list/play events, apply a game transition, dump a game.
+Console commands (`src/Command`): create decks/candidates, matchmaking, create a game, list/play events, apply a game transition, dump a game, dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message).
 
 Use the custom makers to scaffold new code: `MakeAction` (message + handler) and `MakeWorkflowListener` (`src/Maker`).
 

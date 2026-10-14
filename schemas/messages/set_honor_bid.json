@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "set_honor_bid",
+    "description": "The bid on the honor dial of the target player changes, e.g. to resolve a reaction to the honor dials being revealed.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose honor dial changes.",
+            "type": "string"
+        },
+        "bid": {
+            "description": "New number on the honor dial.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "target_player_id",
+        "bid"
+    ],
+    "additionalProperties": false
+}

@@ -127,15 +127,6 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
         $this->play($scenario, 'toturi');
     }
 
-    public function testRejectsNegativeCosts(): void
-    {
-        $scenario = $this->scenarioAtPlayCardsFromProvinces();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->play($scenario, 'toturi', fateCost: -1);
-    }
-
     public function testRejectsAPlayOutsideThePlayCardsFromProvincesStep(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces(place: 'collect_fate');

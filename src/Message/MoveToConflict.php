@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
 
 /**
  * Moves a character of a player of the conflict into the conflict, on its controller's side, e.g. to resolve an
@@ -16,6 +17,7 @@ final readonly class MoveToConflict implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Character to move into the conflict.')]
         private string $cardId,
     ) {
     }

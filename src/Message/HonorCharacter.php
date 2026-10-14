@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
 
 /**
  * Honors a character in play (e.g. the fire ring effect): a dishonored character becomes ordinary, an ordinary one
@@ -18,6 +19,7 @@ final readonly class HonorCharacter implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Character in play to honor.')]
         private string $cardId,
     ) {
     }

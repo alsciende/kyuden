@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_defenders",
+    "description": "The defending player declares the ready characters defending the attacked province (3.2.1), possibly none.",
+    "type": "object",
+    "properties": {
+        "defender_ids": {
+            "description": "Ready characters of the player declared as defenders, possibly none.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": [
+        "defender_ids"
+    ],
+    "additionalProperties": false
+}

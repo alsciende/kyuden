@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The active player plays an event from hand, during an action window (action events) or a reaction window
@@ -17,7 +19,10 @@ final readonly class PlayEvent implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Event in the hand of the player.')]
         private string $cardId,
+        #[Description('Fate paid for the card.')]
+        #[Assert\PositiveOrZero]
         private int $cardCost,
     ) {
     }

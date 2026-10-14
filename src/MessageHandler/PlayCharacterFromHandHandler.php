@@ -45,10 +45,6 @@ final readonly class PlayCharacterFromHandHandler
 
     public function __invoke(PlayCharacterFromHand $message): void
     {
-        if ($message->getCardCost() < 0 || $message->getFateCost() < 0 || $message->getFate() < 0) {
-            throw new \InvalidArgumentException('Costs and fate cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);

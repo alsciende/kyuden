@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Each player declares the total glory of the ready characters they control, with every modifier applied
@@ -16,6 +18,8 @@ final readonly class DeclareGloryCount implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Total glory of the ready characters the player controls, with every modifier applied, without the claimed rings.')]
+        #[Assert\PositiveOrZero]
         private int $glory,
     ) {
     }

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "choose_stronghold_province",
+    "description": "The player chooses, during setup, the province put under their stronghold.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Province of the player put under their stronghold.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

@@ -35,10 +35,6 @@ final readonly class DeclareDuelStatisticHandler
 
     public function __invoke(DeclareDuelStatistic $message): void
     {
-        if ($message->getStatistic() < 0) {
-            throw new \InvalidArgumentException('Dueling statistic cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
 

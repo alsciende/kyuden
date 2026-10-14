@@ -49,15 +49,6 @@ class SetHonorBidHandlerTest extends AbstractKernelTestCase
         self::assertSame(0, $this->playerStateManager->getState($scenario->player('john'))->getHonorBid());
     }
 
-    public function testRejectsANegativeBid(): void
-    {
-        $scenario = $this->scenarioAtRevealHonorDials();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->setHonorBid($scenario, -1);
-    }
-
     public function testRejectsAPlayerWhoHasNotBid(): void
     {
         $scenario = $this->scenarioAtRevealHonorDials(fn (PlayerBuilder $p): PlayerBuilder => $p);

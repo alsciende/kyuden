@@ -6,6 +6,10 @@ namespace App\Message;
 
 use App\Attribute\AppAction;
 
+/**
+ * TODO describe the message for the clients of the API (JSON schema); describe each field with #[Description] and
+ * constrain its values with #[Assert\…], then run bin/console app:message-schemas:dump.
+ */
 #[AppAction]
 final readonly class <?= $class_name ?> implements PlayerActionInterface
 {

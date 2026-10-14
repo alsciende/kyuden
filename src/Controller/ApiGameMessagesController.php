@@ -11,16 +11,19 @@ use App\Exception\Rules\RulesException;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\Api\ApiMessageFactory;
+use App\Exception\Api\InvalidPayloadException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
+use Symfony\Component\Messenger\Exception\ValidationFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Workflow\Exception\TransitionException;
 
 use function Symfony\Component\String\u;
@@ -82,14 +85,34 @@ class ApiGameMessagesController extends AbstractController
             // the action is not allowed in the current state of the game
             $throwable instanceof RulesException, $throwable instanceof WorkflowException, $throwable instanceof TransitionException => Response::HTTP_CONFLICT,
             // the payload refers to something that does not exist in this game, or has invalid values
-            $throwable instanceof NotFoundException, $throwable instanceof GameMismatchException, $throwable instanceof \InvalidArgumentException => Response::HTTP_UNPROCESSABLE_ENTITY,
+            $throwable instanceof ValidationFailedException, $throwable instanceof NotFoundException, $throwable instanceof GameMismatchException, $throwable instanceof \InvalidArgumentException => Response::HTTP_UNPROCESSABLE_ENTITY,
             default => throw $throwable,
         };
 
-        $type = $throwable instanceof HttpExceptionInterface
+        $type = $throwable instanceof HttpExceptionInterface && ! $throwable instanceof InvalidPayloadException
             ? u(Response::$statusTexts[$status] ?? 'error')->snake()->toString()
             : u(new \ReflectionClass($throwable)->getShortName())->trimSuffix('Exception')->snake()->toString();
 
-        return $this->problem($status, $type, $throwable->getMessage());
+        return $this->problem($status, $type, $throwable->getMessage(), match (true) {
+            $throwable instanceof InvalidPayloadException => ['violations' => $throwable->getViolations()],
+            $throwable instanceof ValidationFailedException => ['violations' => $this->toViolations($throwable->getViolations())],
+            default => [],
+        });
+    }
+
+    /**
+     * @return list<array{property_path: string, message: string}>
+     */
+    private function toViolations(ConstraintViolationListInterface $violations): array
+    {
+        $list = [];
+        foreach ($violations as $violation) {
+            $list[] = [
+                'property_path' => u($violation->getPropertyPath())->snake()->toString(),
+                'message' => (string) $violation->getMessage(),
+            ];
+        }
+
+        return $list;
     }
 }

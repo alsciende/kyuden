@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "pass_conflict",
+    "description": "The active player passes a conflict opportunity (3.2): they forfeit it, whatever its type.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

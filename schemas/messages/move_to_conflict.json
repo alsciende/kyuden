@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_to_conflict",
+    "description": "Moves a character of a player of the conflict into the conflict, on its controller's side, e.g. to resolve an effect.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character to move into the conflict.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

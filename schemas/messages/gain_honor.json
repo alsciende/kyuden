@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "gain_honor",
+    "description": "The target player gains honor from the general token pool, e.g. to resolve an effect.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who gains honor.",
+            "type": "string"
+        },
+        "honor_gain": {
+            "description": "Honor gained.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "target_player_id",
+        "honor_gain"
+    ],
+    "additionalProperties": false
+}

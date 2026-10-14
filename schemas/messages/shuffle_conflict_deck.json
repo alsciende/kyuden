@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "shuffle_conflict_deck",
+    "description": "Shuffles the conflict deck of the target player, e.g. to resolve an effect.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose conflict deck is shuffled.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

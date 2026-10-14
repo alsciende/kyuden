@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "lose_honor",
+    "description": "The target player loses honor, which returns to the general token pool, e.g. to pay a cost or resolve an effect.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who loses honor.",
+            "type": "string"
+        },
+        "honor_loss": {
+            "description": "Honor lost.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "target_player_id",
+        "honor_loss"
+    ],
+    "additionalProperties": false
+}

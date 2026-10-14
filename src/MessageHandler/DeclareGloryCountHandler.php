@@ -27,10 +27,6 @@ final readonly class DeclareGloryCountHandler
 
     public function __invoke(DeclareGloryCount $message): void
     {
-        if ($message->getGlory() < 0) {
-            throw new \InvalidArgumentException('Glory cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId(), 'glory_count');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
 

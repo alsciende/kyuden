@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The active player plays a character from hand during an action window, at home or, during a conflict in which
@@ -19,10 +21,18 @@ final readonly class PlayCharacterFromHand implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Character in the hand of the player.')]
         private string $cardId,
+        #[Description('Fate paid for the card.')]
+        #[Assert\PositiveOrZero]
         private int $cardCost,
+        #[Description('Fate paid for the additional fate placed on the character.')]
+        #[Assert\PositiveOrZero]
         private int $fateCost,
+        #[Description('Fate placed on the character.')]
+        #[Assert\PositiveOrZero]
         private int $fate,
+        #[Description('Whether the character enters play into the conflict, on the side of the player.')]
         private bool $intoConflict,
     ) {
     }

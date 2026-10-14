@@ -43,10 +43,6 @@ final readonly class PlayEventHandler
 
     public function __invoke(PlayEvent $message): void
     {
-        if ($message->getCardCost() < 0) {
-            throw new \InvalidArgumentException('Costs cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         if (! $this->opportunityService->getPassingRule($game) instanceof PassingRule) {
             throw new NotInOpportunitiesStepException($game->getCurrentPlace());

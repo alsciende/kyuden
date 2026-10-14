@@ -27,6 +27,8 @@ framework:
         buses:
             default.bus:
                 middleware:
+                    # values of the message (constraints of the Validator), before any lock or transaction
+                    - validation
                     - doctrine_transaction
                     - 'App\Middleware\GameLockMiddleware'
                     - 'App\Middleware\GameEndedMiddleware'

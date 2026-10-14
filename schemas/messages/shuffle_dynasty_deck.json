@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "shuffle_dynasty_deck",
+    "description": "Shuffles the dynasty deck of the target player, e.g. to resolve an effect.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose dynasty deck is shuffled.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

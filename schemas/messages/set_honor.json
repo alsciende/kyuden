@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "set_honor",
+    "description": "Sets the starting honor of the target player, once, during setup.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose starting honor is set.",
+            "type": "string"
+        },
+        "honor": {
+            "description": "Starting honor.",
+            "type": "integer"
+        }
+    },
+    "required": [
+        "target_player_id",
+        "honor"
+    ],
+    "additionalProperties": false
+}

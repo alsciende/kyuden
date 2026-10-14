@@ -1,0 +1,17 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_glory_count",
+    "description": "Each player declares the total glory of the ready characters they control, with every modifier applied (3.4.1): the engine adds 1 for each ring in their claimed ring pool.",
+    "type": "object",
+    "properties": {
+        "glory": {
+            "description": "Total glory of the ready characters the player controls, with every modifier applied, without the claimed rings.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "glory"
+    ],
+    "additionalProperties": false
+}

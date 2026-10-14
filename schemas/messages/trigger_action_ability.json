@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "trigger_action_ability",
+    "description": "The active player triggers an action ability of one of their cards during an action window.\n\nThe engine does not apply card effects: the message only records which card is used. The player pays the costs and resolves the effects with other actions, then ends their opportunity to act (`end_opportunity`).",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card whose action ability is triggered.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

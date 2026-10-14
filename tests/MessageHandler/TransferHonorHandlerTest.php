@@ -52,15 +52,6 @@ class TransferHonorHandlerTest extends AbstractKernelTestCase
         self::assertSame(11, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
     }
 
-    public function testRejectsANegativeAmount(): void
-    {
-        $scenario = $this->scenarioWithHonor();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->transferHonor($scenario, 'john', 'jane', -2);
-    }
-
     public function testRejectsATransferToThemselves(): void
     {
         $scenario = $this->scenarioWithHonor();

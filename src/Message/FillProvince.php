@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
 
+/**
+ * Puts the top card of the dynasty deck of its owner face down on a province: during setup, and whenever a card has
+ * left the province.
+ */
 #[AppAction]
 final readonly class FillProvince implements PlayerActionInterface
 {
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Province to fill.')]
         private string $provinceId,
     ) {
     }

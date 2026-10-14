@@ -1,0 +1,17 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_duel_statistic",
+    "description": "A player involved in the duel declares the dueling statistic of their side (D.6), matching the duel type, with every modifier applied: the engine does not apply card effects. The honor bid is added by the engine (D.7).",
+    "type": "object",
+    "properties": {
+        "statistic": {
+            "description": "Dueling statistic of the side of the player, with every modifier applied, without the honor bid.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "statistic"
+    ],
+    "additionalProperties": false
+}

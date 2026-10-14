@@ -1,0 +1,34 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "play_character_from_province",
+    "description": "The active player plays a character from one of their provinces during the play cards from provinces step.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. Refilling the province and ending the opportunity to act are separate actions of the player.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Face-up character in a province of the player.",
+            "type": "string"
+        },
+        "card_cost": {
+            "description": "Fate paid for the card.",
+            "type": "integer",
+            "minimum": 0
+        },
+        "fate_cost": {
+            "description": "Fate paid for the additional fate placed on the character.",
+            "type": "integer",
+            "minimum": 0
+        },
+        "fate": {
+            "description": "Fate placed on the character.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "card_cost",
+        "fate_cost",
+        "fate"
+    ],
+    "additionalProperties": false
+}

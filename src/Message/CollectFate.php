@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The player says how much fate they collect: card effects may modify the fate value of their stronghold.
@@ -15,6 +17,8 @@ final readonly class CollectFate implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Fate collected.')]
+        #[Assert\PositiveOrZero]
         private int $amount,
     ) {
     }

@@ -26,10 +26,6 @@ final readonly class LoseHonorHandler
 
     public function __invoke(LoseHonor $message): void
     {
-        if ($message->getHonorLoss() < 0) {
-            throw new \InvalidArgumentException('Lost honor cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);

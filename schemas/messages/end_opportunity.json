@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "end_opportunity",
+    "description": "The active player is done with their opportunity to act (e.g. after playing a character and resolving what follows): the next player who has not passed gets the opportunity to act.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

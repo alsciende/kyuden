@@ -1,0 +1,39 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "play_character_from_hand",
+    "description": "The active player plays a character from hand during an action window, at home or, during a conflict in which they take part, into the conflict on their side.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character in the hand of the player.",
+            "type": "string"
+        },
+        "card_cost": {
+            "description": "Fate paid for the card.",
+            "type": "integer",
+            "minimum": 0
+        },
+        "fate_cost": {
+            "description": "Fate paid for the additional fate placed on the character.",
+            "type": "integer",
+            "minimum": 0
+        },
+        "fate": {
+            "description": "Fate placed on the character.",
+            "type": "integer",
+            "minimum": 0
+        },
+        "into_conflict": {
+            "description": "Whether the character enters play into the conflict, on the side of the player.",
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "card_id",
+        "card_cost",
+        "fate_cost",
+        "fate",
+        "into_conflict"
+    ],
+    "additionalProperties": false
+}

@@ -41,10 +41,6 @@ final readonly class PlayCharacterFromProvinceHandler
 
     public function __invoke(PlayCharacterFromProvince $message): void
     {
-        if ($message->getCardCost() < 0 || $message->getFateCost() < 0 || $message->getFate() < 0) {
-            throw new \InvalidArgumentException('Costs and fate cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId(), 'play_cards_from_provinces');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {

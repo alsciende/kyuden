@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "discard_random_card_from_hand",
+    "description": "Discards a card chosen at random by the engine from the hand of a player (e.g. the earth ring effect).",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who discards a card from their hand.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

@@ -40,10 +40,6 @@ final readonly class PlayAttachmentHandler
 
     public function __invoke(PlayAttachment $message): void
     {
-        if ($message->getCardCost() < 0) {
-            throw new \InvalidArgumentException('Costs cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);

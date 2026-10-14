@@ -26,9 +26,6 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 final readonly class BidHonorHandler
 {
-    public const int MINIMUM_BID = 1;
-    public const int MAXIMUM_BID = 5;
-
     public function __construct(
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
@@ -40,10 +37,6 @@ final readonly class BidHonorHandler
 
     public function __invoke(BidHonor $message): void
     {
-        if ($message->getBid() < self::MINIMUM_BID || $message->getBid() > self::MAXIMUM_BID) {
-            throw new \InvalidArgumentException(sprintf('Honor bid must be between %d and %d.', self::MINIMUM_BID, self::MAXIMUM_BID));
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $duel = $this->gameStateManager->getState($game)->duel;

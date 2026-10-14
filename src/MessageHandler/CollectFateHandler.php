@@ -31,10 +31,6 @@ final readonly class CollectFateHandler
 
     public function __invoke(CollectFate $message): void
     {
-        if ($message->getAmount() < 0) {
-            throw new \InvalidArgumentException('Collected fate cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId(), 'collect_fate');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {

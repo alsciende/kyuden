@@ -53,6 +53,19 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
         self::assertSame($type, $problem['type']);
     }
 
+    /**
+     * @return list<mixed> the property paths of the violations of the problem
+     */
+    private function violations(Response $response, int $status, string $type): array
+    {
+        $this->assertProblem($response, $status, $type);
+        $problem = json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($problem);
+        self::assertIsArray($problem['violations']);
+
+        return array_column($problem['violations'], 'property_path');
+    }
+
     public function testThePlayerSendsAMessageOnTheirOwnBehalf(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces();
@@ -76,16 +89,18 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
         self::assertSame(8, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
     }
 
-    public function testThePlayerCannotSendAMessageOnBehalfOfAnotherPlayer(): void
+    public function testThePayloadCannotHoldTheGameOrThePlayer(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces();
+        $gameId = $scenario->game()->getId();
 
-        $response = $this->post($scenario->game()->getId(), [
-            'type' => 'pass_opportunity',
-            'payload' => ['player_id' => $scenario->player('john')->getId()],
-        ], 'jane');
+        $otherPlayer = $this->post($gameId, ['type' => 'pass_opportunity', 'payload' => ['player_id' => $scenario->player('john')->getId()]], 'jane');
+        $sender = $this->post($gameId, ['type' => 'pass_opportunity', 'payload' => ['player_id' => $scenario->player('john')->getId()]]);
+        $game = $this->post($gameId, ['type' => 'pass_opportunity', 'payload' => ['game_id' => $gameId]]);
 
-        $this->assertProblem($response, Response::HTTP_FORBIDDEN, 'forbidden');
+        self::assertSame(['player_id'], $this->violations($otherPlayer, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['player_id'], $this->violations($sender, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['game_id'], $this->violations($game, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
         self::assertFalse($this->playerStateManager->getState($scenario->player('john'))->isPassed());
     }
 
@@ -143,11 +158,10 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
         $missing = $this->post($gameId, ['type' => 'lose_honor', 'payload' => ['target_player_id' => $janeId]]);
         $wrongType = $this->post($gameId, ['type' => 'lose_honor', 'payload' => ['target_player_id' => $janeId, 'honor_loss' => 'two']]);
         $extra = $this->post($gameId, ['type' => 'lose_honor', 'payload' => ['target_player_id' => $janeId, 'honor_loss' => 2, 'unknown' => 1]]);
-        $otherGame = $this->post($gameId, ['type' => 'pass_opportunity', 'payload' => ['game_id' => 'other']]);
 
-        foreach ([$missing, $wrongType, $extra, $otherGame] as $response) {
-            $this->assertProblem($response, Response::HTTP_BAD_REQUEST, 'bad_request');
-        }
+        self::assertSame(['honor_loss'], $this->violations($missing, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['honor_loss'], $this->violations($wrongType, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['unknown'], $this->violations($extra, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
         self::assertSame(10, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
     }
 
@@ -171,6 +185,6 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
         ]);
 
         $this->assertProblem($unknownCard, Response::HTTP_UNPROCESSABLE_ENTITY, 'card_not_found');
-        $this->assertProblem($negative, Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_argument');
+        self::assertSame(['honor_loss'], $this->violations($negative, Response::HTTP_UNPROCESSABLE_ENTITY, 'validation_failed'));
     }
 }

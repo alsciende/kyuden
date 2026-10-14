@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * The target player loses honor, which returns to the general token pool, e.g. to pay a cost or resolve an effect.
@@ -15,7 +17,10 @@ final readonly class LoseHonor implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Player who loses honor.')]
         private string $targetPlayerId,
+        #[Description('Honor lost.')]
+        #[Assert\PositiveOrZero]
         private int $honorLoss,
     ) {
     }

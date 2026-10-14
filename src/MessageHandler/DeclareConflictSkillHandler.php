@@ -28,10 +28,6 @@ final readonly class DeclareConflictSkillHandler
 
     public function __invoke(DeclareConflictSkill $message): void
     {
-        if ($message->getSkill() < 0) {
-            throw new \InvalidArgumentException('Skill cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId(), 'determine_result');
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
 

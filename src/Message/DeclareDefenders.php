@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Message;
 
 use App\Attribute\AppAction;
+use App\Attribute\Description;
 
 /**
  * The defending player declares the ready characters defending the attacked province (3.2.1), possibly none.
@@ -18,6 +19,7 @@ final readonly class DeclareDefenders implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
+        #[Description('Ready characters of the player declared as defenders, possibly none.')]
         private array $defenderIds,
     ) {
     }

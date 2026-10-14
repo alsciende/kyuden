@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "fill_province",
+    "description": "Puts the top card of the dynasty deck of its owner face down on a province: during setup, and whenever a card has left the province.",
+    "type": "object",
+    "properties": {
+        "province_id": {
+            "description": "Province to fill.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "province_id"
+    ],
+    "additionalProperties": false
+}

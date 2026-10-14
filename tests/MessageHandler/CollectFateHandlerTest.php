@@ -72,15 +72,6 @@ class CollectFateHandlerTest extends AbstractKernelTestCase
         self::service(CollectFateHandler::class)($this->collect($scenario, 'john', 7));
     }
 
-    public function testRejectsANegativeAmount(): void
-    {
-        $scenario = $this->scenarioAtCollectFate();
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        self::service(CollectFateHandler::class)($this->collect($scenario, 'john', -1));
-    }
-
     public function testCardsCanBePlayedOnceTheLastPlayerHasCollected(): void
     {
         $scenario = $this->scenarioAtCollectFate(fn (PlayerBuilder $p): PlayerBuilder => $p->fateCollected(), activePlayer: 'jane');

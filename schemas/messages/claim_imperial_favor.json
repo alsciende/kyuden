@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "claim_imperial_favor",
+    "description": "The player who won the glory count claims the Imperial Favor and sets it to its military or political side (3.4.2).",
+    "type": "object",
+    "properties": {
+        "side": {
+            "description": "Side the Imperial Favor is set to.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political"
+            ]
+        }
+    },
+    "required": [
+        "side"
+    ],
+    "additionalProperties": false
+}

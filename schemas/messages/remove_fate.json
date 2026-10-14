@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "remove_fate",
+    "description": "Removes fate from a card in play and returns it to the general token pool (e.g. the void ring effect).\n\nThe card can belong to any player: effects often target an opponent's card.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card in play the fate is removed from.",
+            "type": "string"
+        },
+        "amount": {
+            "description": "Fate removed.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "amount"
+    ],
+    "additionalProperties": false
+}

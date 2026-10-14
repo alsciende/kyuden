@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_home",
+    "description": "Moves a participating character home: it no longer participates in the conflict, e.g. to resolve an effect.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Participating character to move home.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

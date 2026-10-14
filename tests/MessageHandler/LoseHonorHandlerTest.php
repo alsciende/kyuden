@@ -44,15 +44,6 @@ class LoseHonorHandlerTest extends AbstractKernelTestCase
         self::assertSame(8, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 
-    public function testRejectsANegativeLoss(): void
-    {
-        $scenario = $this->scenarioWithHonor(10);
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->loseHonor($scenario, -2);
-    }
-
     public function testCannotLoseMoreHonorThanThePlayerHas(): void
     {
         $scenario = $this->scenarioWithHonor(2);

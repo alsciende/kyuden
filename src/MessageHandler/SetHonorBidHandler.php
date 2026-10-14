@@ -29,10 +29,6 @@ final readonly class SetHonorBidHandler
 
     public function __invoke(SetHonorBid $message): void
     {
-        if ($message->getBid() < 0) {
-            throw new \InvalidArgumentException('Honor bid cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);

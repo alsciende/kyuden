@@ -29,10 +29,6 @@ final readonly class RemoveFateHandler
 
     public function __invoke(RemoveFate $message): void
     {
-        if ($message->getAmount() < 0) {
-            throw new \InvalidArgumentException('Removed fate cannot be negative.');
-        }
-
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);

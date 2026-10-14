@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "pass_opportunity",
+    "description": "The active player passes their opportunity to act: they cannot act anymore until the end of the step.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

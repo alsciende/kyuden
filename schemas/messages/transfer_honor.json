@@ -1,0 +1,27 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "transfer_honor",
+    "description": "The giver gives honor to the recipient: \"give your opponent 1 honor\" is a transfer from the player, \"take 1 honor from that opponent\" a transfer from that opponent.",
+    "type": "object",
+    "properties": {
+        "giver_id": {
+            "description": "Player who gives honor.",
+            "type": "string"
+        },
+        "recipient_id": {
+            "description": "Player who receives honor.",
+            "type": "string"
+        },
+        "amount": {
+            "description": "Honor transferred.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "giver_id",
+        "recipient_id",
+        "amount"
+    ],
+    "additionalProperties": false
+}
