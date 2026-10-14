@@ -20,6 +20,7 @@ final readonly class GameView
      * @param list<string>             $activePlayerIds
      * @param list<PlayerView>         $players         in player order of arrival
      * @param array<string, RingState> $rings           by element
+     * @param list<string>             $availableActions the types of the messages the viewer can send now
      */
     public function __construct(
         public string $id,
@@ -37,6 +38,7 @@ final readonly class GameView
         public ?string $gloryCountWinnerId,
         public ?string $winnerId,
         public ?VictoryCondition $victoryCondition,
+        public array $availableActions,
     ) {
     }
 }

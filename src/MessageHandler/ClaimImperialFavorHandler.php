@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\ClaimImperialFavor;
 use App\Repository\GameRepository;
@@ -18,7 +20,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * even if they already have it, and chooses its side. The conflict phase then ends.
  */
 #[AsMessageHandler]
-final readonly class ClaimImperialFavorHandler
+final readonly class ClaimImperialFavorHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -28,13 +30,20 @@ final readonly class ClaimImperialFavorHandler
     ) {
     }
 
-    public function __invoke(ClaimImperialFavor $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'claim_imperial_favor');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $game->assertPlace('claim_imperial_favor');
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(ClaimImperialFavor $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $this->gameStateManager->withState($game, function (GameState $state) use ($player, $message): GameState {
             $state->imperialFavorHolderId = $player->getId();

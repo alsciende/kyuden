@@ -6,7 +6,6 @@ namespace App\Repository;
 
 use App\Entity\Game;
 use App\Exception\Data\GameNotFoundException;
-use App\Exception\Data\WorkflowException;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,8 +30,8 @@ class GameRepository extends ServiceEntityRepository
             throw new GameNotFoundException($gameId);
         }
 
-        if ($expectedPlace !== null && ! in_array($game->getCurrentPlace(), (array) $expectedPlace, true)) {
-            throw new WorkflowException(implode(' or ', (array) $expectedPlace), $game->getCurrentPlace() ?? '<undefined>');
+        if ($expectedPlace !== null) {
+            $game->assertPlace(...(array) $expectedPlace);
         }
 
         return $game;

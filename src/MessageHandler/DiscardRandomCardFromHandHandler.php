@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\StackType;
 use App\Message\DiscardRandomCardFromHand;
 use App\Repository\GameRepository;
@@ -16,7 +18,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * is empty.
  */
 #[AsMessageHandler]
-final readonly class DiscardRandomCardFromHandHandler
+final readonly class DiscardRandomCardFromHandHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -25,11 +27,17 @@ final readonly class DiscardRandomCardFromHandHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // accepted in any game place, from any player of the game
+    }
+
     public function __invoke(DiscardRandomCardFromHand $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
         $hand = $target->getUniqueStack(StackType::Hand)->getOrderedCards();

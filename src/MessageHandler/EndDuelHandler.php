@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NotInDuelException;
 use App\Message\EndDuel;
@@ -18,7 +20,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * (D.9), and the players can act again in the action window.
  */
 #[AsMessageHandler]
-final readonly class EndDuelHandler
+final readonly class EndDuelHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,21 +29,26 @@ final readonly class EndDuelHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $duel = $this->gameStateManager->getState($game)->duel;
+        if ($duel === null || ! $duel->resolved) {
+            throw new DuelStepException('result');
+        }
+
+        if (! $duel->involves($player->getId())) {
+            throw new NotInDuelException();
+        }
+    }
+
     public function __invoke(EndDuel $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
-        $this->gameStateManager->withState($game, function (GameState $state) use ($player): GameState {
-            $duel = $state->duel;
-            if ($duel === null || ! $duel->resolved) {
-                throw new DuelStepException('result');
-            }
-
-            if (! $duel->involves($player->getId())) {
-                throw new NotInDuelException();
-            }
-
+        $this->gameStateManager->withState($game, function (GameState $state): GameState {
             $state->duel = null;
 
             return $state;

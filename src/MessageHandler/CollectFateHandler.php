@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\FateAlreadyCollectedException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\CollectFate;
@@ -19,7 +21,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * Players collect fate in player order: once the active player has collected, the next player becomes active.
  */
 #[AsMessageHandler]
-final readonly class CollectFateHandler
+final readonly class CollectFateHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -29,23 +31,28 @@ final readonly class CollectFateHandler
     ) {
     }
 
-    public function __invoke(CollectFate $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'collect_fate');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $game->assertPlace('collect_fate');
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
 
+        if ($this->stateManager->getState($player)->isFateCollected()) {
+            throw new FateAlreadyCollectedException();
+        }
+    }
+
+    public function __invoke(CollectFate $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
+
         $this->stateManager->withState(
             $player,
-            function (PlayerState $state) use ($message): PlayerState {
-                if ($state->isFateCollected()) {
-                    throw new FateAlreadyCollectedException();
-                }
-
-                return $state->incrementFate($message->getAmount())->setFateCollected(true);
-            },
+            fn (PlayerState $state): PlayerState => $state->incrementFate($message->getAmount())->setFateCollected(true),
         );
         $this->gameStateManager->withState(
             $game,

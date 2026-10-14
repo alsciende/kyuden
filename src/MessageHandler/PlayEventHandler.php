@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\PassingRule;
 use App\Enum\Type;
 use App\Exception\Rules\NotActivePlayerException;
@@ -25,9 +27,11 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * opportunity to act: the engine does not know the trigger of the event. The player pays its cost and the event goes
  * to the discard pile; the player resolves its effects with other actions, then ends their opportunity (EndOpportunity)
  * or passes.
+ * Also allowed during a duel: no action window is open (D.9), but interrupts and reactions can be triggered (e.g. Stay
+ * Your Hand, Insult to Injury), and the engine cannot tell them from action events.
  */
 #[AsMessageHandler]
-final readonly class PlayEventHandler
+final readonly class PlayEventHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -41,17 +45,23 @@ final readonly class PlayEventHandler
     ) {
     }
 
-    public function __invoke(PlayEvent $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId());
         if (! $this->opportunityService->getPassingRule($game) instanceof PassingRule) {
             throw new NotInOpportunitiesStepException($game->getCurrentPlace());
         }
 
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(PlayEvent $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $this->handService->assertPlayable($card, $player, Type::Event);

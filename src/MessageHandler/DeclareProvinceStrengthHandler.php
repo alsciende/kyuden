@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
+use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotAttackedProvinceException;
 use App\Exception\Rules\NotDefendingPlayerException;
 use App\Message\DeclareProvinceStrength;
@@ -18,7 +21,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * defending player.
  */
 #[AsMessageHandler]
-final readonly class DeclareProvinceStrengthHandler
+final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,16 +30,24 @@ final readonly class DeclareProvinceStrengthHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $game->assertPlace('determine_result');
+        $conflict = $this->gameStateManager->getState($game)->conflict ?? throw new NoConflictException();
+        if ($player->getId() !== $conflict->defendingPlayerId) {
+            throw new NotDefendingPlayerException();
+        }
+    }
+
     public function __invoke(DeclareProvinceStrength $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'determine_result');
+        $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
-        $this->gameStateManager->withState($game, function (GameState $state) use ($player, $message): GameState {
+        $this->gameStateManager->withState($game, function (GameState $state) use ($message): GameState {
             $conflict = $state->currentConflict();
-            if ($player->getId() !== $conflict->defendingPlayerId) {
-                throw new NotDefendingPlayerException();
-            }
             if (! in_array($message->getProvinceId(), $conflict->attackedProvinceIds, true)) {
                 throw new NotAttackedProvinceException();
             }

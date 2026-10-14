@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NoHonorBidException;
 use App\Exception\Rules\NotInDuelException;
@@ -22,7 +24,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * transferred (D.5, with the bids changed by cards since the reveal) and the result is determined (D.7).
  */
 #[AsMessageHandler]
-final readonly class DeclareDuelStatisticHandler
+final readonly class DeclareDuelStatisticHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -33,17 +35,27 @@ final readonly class DeclareDuelStatisticHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $duel = $this->gameStateManager->getState($game)->duel;
+        if ($duel === null || ! $duel->atStatisticStep()) {
+            throw new DuelStepException('statistic');
+        }
+
+        if (! $duel->involves($player->getId())) {
+            throw new NotInDuelException();
+        }
+    }
+
     public function __invoke(DeclareDuelStatistic $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $this->gameStateManager->withState($game, function (GameState $state) use ($player, $message): GameState {
-            $duel = $state->duel;
-            if ($duel === null || ! $duel->atStatisticStep()) {
-                throw new DuelStepException('statistic');
-            }
-
+            $duel = $state->currentDuel();
             match ($player->getId()) {
                 $duel->challengerId => $duel->challengerStatistic = $message->getStatistic(),
                 $duel->challengedId => $duel->challengedStatistic = $message->getStatistic(),

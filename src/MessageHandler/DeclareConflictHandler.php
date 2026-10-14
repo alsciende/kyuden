@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NoAttackerException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\RingNotUnclaimedException;
@@ -26,7 +28,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * pool, records the conflict and turns the attacked province faceup. The players can then react to the declaration.
  */
 #[AsMessageHandler]
-final readonly class DeclareConflictHandler
+final readonly class DeclareConflictHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -40,14 +42,21 @@ final readonly class DeclareConflictHandler
     ) {
     }
 
-    public function __invoke(DeclareConflict $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'declare_conflict');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $gameState = $this->gameStateManager->getState($game);
-        if (! $gameState->isActivePlayer($player)) {
+        $game->assertPlace('declare_conflict');
+        if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(DeclareConflict $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
+        $gameState = $this->gameStateManager->getState($game);
 
         if (! $gameState->isRingUnclaimed($message->getRing())) {
             throw new RingNotUnclaimedException($message->getRing()->value);

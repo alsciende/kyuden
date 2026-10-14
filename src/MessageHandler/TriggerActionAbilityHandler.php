@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NotOwnedCardException;
 use App\Message\TriggerActionAbility;
 use App\Repository\CardRepository;
@@ -21,7 +23,7 @@ use Symfony\Component\Workflow\Registry;
  * their opportunity (EndOpportunity).
  */
 #[AsMessageHandler]
-final readonly class TriggerActionAbilityHandler
+final readonly class TriggerActionAbilityHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -32,11 +34,17 @@ final readonly class TriggerActionAbilityHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $this->opportunityService->assertCanTakeAction($game, $player);
+    }
+
     public function __invoke(TriggerActionAbility $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $this->opportunityService->assertCanTakeAction($game, $player);
+        $this->assertAvailable($game, $player);
 
         // the controller of the card should be checked, but control is not modeled yet
         $card = $this->cardRepository->get($message->getCardId(), $game);

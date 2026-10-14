@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
@@ -24,7 +25,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * province stays empty.
  */
 #[AsMessageHandler]
-final readonly class FillProvinceHandler
+final readonly class FillProvinceHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -35,11 +36,17 @@ final readonly class FillProvinceHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // accepted in any game place, from any player of the game
+    }
+
     public function __invoke(FillProvince $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $province = $this->cardRepository->get($message->getProvinceId(), $game);
 
         // the province is filled from the deck of its owner

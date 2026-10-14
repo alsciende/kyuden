@@ -6,6 +6,7 @@ namespace App\Tests\Entity;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Exception\Data\WorkflowException;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 use Random\Engine\Xoshiro256StarStar;
@@ -24,6 +25,17 @@ class GameTest extends AbstractKernelTestCase
 
         self::assertSame($game1->getRandomizer()->getInt(0, 1000), $game2->getRandomizer()->getInt(0, 1000));
         self::assertSame($game1->generateId(), $game2->generateId());
+    }
+
+    public function testAssertsTheGameIsInOneOfThePlaces(): void
+    {
+        $game = new Game('game', self::SEED);
+        $game->setCurrentPlace('honor_bid');
+
+        $game->assertPlace('collect_fate', 'honor_bid');
+
+        $this->expectException(WorkflowException::class);
+        $game->assertPlace('collect_fate');
     }
 
     public function testGeneratedIdsAreUuidsV4(): void

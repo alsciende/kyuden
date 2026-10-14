@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NoHonorBidException;
 use App\Message\SetHonorBid;
 use App\Repository\GameRepository;
@@ -18,7 +20,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * outside the range of the honor dial (e.g. 0).
  */
 #[AsMessageHandler]
-final readonly class SetHonorBidHandler
+final readonly class SetHonorBidHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,11 +29,17 @@ final readonly class SetHonorBidHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // accepted in any game place, from any player of the game
+    }
+
     public function __invoke(SetHonorBid $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
         $this->stateManager->withState(

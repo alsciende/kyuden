@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\StackType;
 use App\Message\DrawConflictCards;
 use App\Repository\GameRepository;
@@ -17,7 +19,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * discard pile is empty too, the player draws as many cards as possible.
  */
 #[AsMessageHandler]
-final readonly class DrawConflictCardsHandler
+final readonly class DrawConflictCardsHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,11 +29,17 @@ final readonly class DrawConflictCardsHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // accepted in any game place, from any player of the game
+    }
+
     public function __invoke(DrawConflictCards $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
         for ($i = 0; $i < $message->getQuantity(); ++$i) {
             $card = $this->drawDeckService->getTopCard($player, StackType::ConflictDrawDeck);

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Event\HonorBidPlacedEvent;
-use App\Exception\Data\WorkflowException;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\HonorAlreadyBidException;
 use App\Exception\Rules\NotInDuelException;
@@ -24,7 +25,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * the players involved in it.
  */
 #[AsMessageHandler]
-final readonly class BidHonorHandler
+final readonly class BidHonorHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -35,10 +36,9 @@ final readonly class BidHonorHandler
     ) {
     }
 
-    public function __invoke(BidHonor $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId());
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $duel = $this->gameStateManager->getState($game)->duel;
         if ($duel !== null) {
             if (! $duel->atBidStep()) {
@@ -48,19 +48,24 @@ final readonly class BidHonorHandler
             if (! $duel->involves($player->getId())) {
                 throw new NotInDuelException();
             }
-        } elseif ($game->getCurrentPlace() !== 'honor_bid') {
-            throw new WorkflowException('honor_bid', $game->getCurrentPlace() ?? '<undefined>');
+        } else {
+            $game->assertPlace('honor_bid');
         }
+
+        if ($this->stateManager->getState($player)->getPendingHonorBid() !== null) {
+            throw new HonorAlreadyBidException();
+        }
+    }
+
+    public function __invoke(BidHonor $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $this->stateManager->withState(
             $player,
-            function (PlayerState $state) use ($message): PlayerState {
-                if ($state->getPendingHonorBid() !== null) {
-                    throw new HonorAlreadyBidException();
-                }
-
-                return $state->setPendingHonorBid($message->getBid());
-            },
+            fn (PlayerState $state): PlayerState => $state->setPendingHonorBid($message->getBid()),
         );
         $this->eventDispatcher->dispatch(new HonorBidPlacedEvent($game, $player));
     }

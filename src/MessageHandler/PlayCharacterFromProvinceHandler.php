@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\Type;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotOwnedCardException;
@@ -26,7 +28,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * (EndOpportunity) themselves, possibly after other actions triggered by the character entering play.
  */
 #[AsMessageHandler]
-final readonly class PlayCharacterFromProvinceHandler
+final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -39,13 +41,20 @@ final readonly class PlayCharacterFromProvinceHandler
     ) {
     }
 
-    public function __invoke(PlayCharacterFromProvince $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'play_cards_from_provinces');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $game->assertPlace('play_cards_from_provinces');
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(PlayCharacterFromProvince $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $card = $this->cardRepository->get($message->getCardId(), $game);
         if ($card->getPlayer() !== $player) {

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\Type;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\ChooseStrongholdProvince;
@@ -15,7 +17,7 @@ use App\State\Model\PlayerState;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
-final readonly class ChooseStrongholdProvinceHandler
+final readonly class ChooseStrongholdProvinceHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -25,10 +27,17 @@ final readonly class ChooseStrongholdProvinceHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $game->assertPlace('choose_stronghold');
+    }
+
     public function __invoke(ChooseStrongholdProvince $message): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'choose_stronghold');
+        $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $logicalCard = $card->getLogicalCard();
 

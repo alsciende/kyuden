@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\PhysicalCard;
 use App\Entity\Game;
+use App\Entity\PhysicalCard;
+use App\Entity\Player;
 use App\Enum\PassingRule;
 use App\Exception\Rules\CannotDuelException;
 use App\Exception\Rules\NotActivePlayerException;
@@ -31,7 +32,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * character participates. A new honor bid begins for the players involved.
  */
 #[AsMessageHandler]
-final readonly class InitiateDuelHandler
+final readonly class InitiateDuelHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -44,20 +45,26 @@ final readonly class InitiateDuelHandler
     ) {
     }
 
-    public function __invoke(InitiateDuel $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId());
         if (! $this->opportunityService->getPassingRule($game) instanceof PassingRule) {
             throw new NotInOpportunitiesStepException($game->getCurrentPlace());
         }
 
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $gameState = $this->gameStateManager->getState($game);
-        if (! $gameState->isActivePlayer($player)) {
+        if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
 
         $this->opportunityService->assertNoDuel($game);
+    }
+
+    public function __invoke(InitiateDuel $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
+        $gameState = $this->gameStateManager->getState($game);
 
         $challengers = $this->getCharacters($message->getChallengerIds(), $game);
         $challenged = $this->getCharacters($message->getChallengedIds(), $game);

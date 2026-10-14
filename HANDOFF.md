@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`, latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`, latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -189,7 +189,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 **Scope**
 - Cards are sent by code only: the client knows the cards.
-- The messages available to the player: not in the first version (next step).
+- The messages available to the player: `available_actions` (see the decisions taken for the available actions).
 - The game is loaded in a single query (`GameRepository::findWithCards()`, fetch joins of the players, stacks and cards), checked by a test counting the queries of a game well under way.
 - Spectators: out of scope.
 
@@ -214,11 +214,29 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Attackers: public; `DeclareConflict` is atomic, so nothing exists in the state before the declaration.
 - Everything else (discard piles, cards in play, rings, honor, fate, conflict, duel) is public.
 
+## Decisions taken for the available actions
+
+`available_actions` in `GameView`: the flat, sorted list of the types of the public messages the viewer can send now.
+
+**Design**
+- Each handler of a public player action implements `MessageHandler/PlayerActionHandlerInterface::assertAvailable(Game, Player): void`: the checks that depend on the state and not on the payload (game place with `Game::assertPlace()`, `opportunities` / `action_window` metadata, active player, duel step, a bid or the fate already collected, a conflict being resolved). The handler calls it first; `Service/AvailableActionsResolver` calls it for every public message and lists the action unless it throws a `RulesException` or a `WorkflowException`. A single piece of code, so the list and the handling cannot diverge, and the 409 keeps its precise exception.
+- The board manipulations accepted in any place (`BowCard`, `LoseHonor`…) have an empty `assertAvailable()`, still called by the handler: they are always listed, so the client has no special case.
+- An action is listed when its requirements on the state are met: its payload can still be rejected (a card that cannot be played, a ring already claimed, a character played into a conflict the player is not part of).
+- Once the game has ended, nothing is listed (`GameEndedMiddleware` rejects every action).
+- `play_event` stays listed during a duel for the active player: no action window is open (D.9), but interrupt and reaction events can be played (Stay Your Hand, Insult to Injury), and the engine cannot tell them from action events.
+- `App\Kernel` maps the handlers implementing the interface to their message, read from the type of the parameter of `__invoke()` as Messenger does, in a service locator (`.app.player_action_handlers`); the container fails to compile when such a handler does not handle a single `PlayerActionInterface`. A test checks that every public message has such a handler. `MakeAction` generates the method.
+
+**Alternatives rejected**
+- A `restrict_to` list of phases (or places) on the message: phases are too coarse (several places of the conflict phase, with different actions), places would have to be updated with every new place, and neither can express the active player or the duel step.
+- `isAvailable(): bool` on the message: messages are serializable data without services, while the checks need the workflow metadata and the state managers; it would have needed a static method and a context object.
+- `isAvailable(): bool` on the handler: the handler could only throw a generic exception, losing why the action is refused.
+- Finding the handler at runtime through the Messenger handlers locator: it needs an envelope (a message instance) and only returns closures.
+
 ## Next steps
 
 ### API
 
-- **Reading API**: the messages available to the player (`available_actions`: a flat list of the types the viewer can send now, only those depending on the state; the checks of the handlers — active player, action window, duel — must be shared with it so that both cannot diverge); `SeeCard` (see the decisions taken for the reading API).
+- **Reading API**: `SeeCard` (see the decisions taken for the reading API).
 - **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
 - Version of the state (optimistic check of the messages sent, Mercure notification after each change), real authentication.
 
@@ -310,6 +328,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 
 - **A War on Two Fronts**: an effect message adding an attacked province to the conflict (`ConflictState::attackedProvinceIds` is ready for it).
 - **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card.
+- **Reactions from a player without the opportunity to act**: `PlayEvent` requires the active player, but interrupts and reactions can be triggered by any player whose triggering condition is met, including during a duel (only the player who initiated it is active): the opponent cannot play Stay Your Hand against a duel targeting their character. The active player condition of `PlayEvent` (and, for triggered abilities of cards, of a future message) must be revisited.
 - **Reactions**: reaction windows only exist where listed above; reactions to other framework steps (e.g. characters discarded during the fate phase) go through the next window. To be locked down once the game has been tested.
 - **Skill announcements**: after each action of the conflict action window, a player should announce the current skill of both sides (3.2.2); not recorded.
 

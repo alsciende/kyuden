@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\PassConflict;
 use App\Repository\GameRepository;
@@ -20,7 +22,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * they have an opportunity left. The action window of the conflict phase opens again (3.3).
  */
 #[AsMessageHandler]
-final readonly class PassConflictHandler
+final readonly class PassConflictHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -31,13 +33,20 @@ final readonly class PassConflictHandler
     ) {
     }
 
-    public function __invoke(PassConflict $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'declare_conflict');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $game->assertPlace('declare_conflict');
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(PassConflict $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $this->playerStateManager->withState(
             $player,

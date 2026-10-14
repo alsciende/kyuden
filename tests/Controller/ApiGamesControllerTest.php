@@ -70,6 +70,8 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertSame(10, $john['honor']);
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => ['01-fine-katana']]], $this->hands($john));
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($jane));
+        self::assertIsArray($game['available_actions']);
+        self::assertContains('bow_card', $game['available_actions']);
     }
 
     /**

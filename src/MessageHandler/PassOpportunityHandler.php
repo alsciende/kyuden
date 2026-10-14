@@ -27,7 +27,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * step listen to OpportunityPassedEvent.
  */
 #[AsMessageHandler]
-final readonly class PassOpportunityHandler
+final readonly class PassOpportunityHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -39,18 +39,24 @@ final readonly class PassOpportunityHandler
     ) {
     }
 
-    public function __invoke(PassOpportunity $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId());
         if (! $this->opportunityService->getPassingRule($game) instanceof PassingRule) {
             throw new NotInOpportunitiesStepException($game->getCurrentPlace());
         }
 
         $this->opportunityService->assertNoDuel($game);
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(PassOpportunity $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
 
         $firstToPass = ! $this->hasAnyPlayerPassed($game);
         $this->stateManager->withState(

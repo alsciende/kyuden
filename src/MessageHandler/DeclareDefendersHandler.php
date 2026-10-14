@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\CannotParticipateException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\DeclareDefenders;
@@ -21,7 +23,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * conflict action window opens next.
  */
 #[AsMessageHandler]
-final readonly class DeclareDefendersHandler
+final readonly class DeclareDefendersHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -33,14 +35,21 @@ final readonly class DeclareDefendersHandler
     ) {
     }
 
-    public function __invoke(DeclareDefenders $message): void
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
     {
-        $game = $this->gameRepository->get($message->getGameId(), 'declare_defenders');
-        $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $state = $this->gameStateManager->getState($game);
-        if (! $state->isActivePlayer($player)) {
+        $game->assertPlace('declare_defenders');
+        if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+    }
+
+    public function __invoke(DeclareDefenders $message): void
+    {
+        $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $player);
+        $state = $this->gameStateManager->getState($game);
 
         $conflict = $state->currentConflict();
         $defenderIds = array_values(array_unique($message->getDefenderIds()));

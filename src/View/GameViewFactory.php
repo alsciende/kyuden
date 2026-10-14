@@ -11,6 +11,7 @@ use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\Orientation;
 use App\Enum\StackType;
+use App\Service\AvailableActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -28,6 +29,7 @@ use function Symfony\Component\String\u;
  * - a face-down card is hidden from every player, except a face-down province from its owner;
  * - the pending honor bid and the chosen stronghold province are shown to their owner only;
  * - everything else is public.
+ * The actions available to the viewer come from AvailableActionsResolver.
  */
 final readonly class GameViewFactory
 {
@@ -35,6 +37,7 @@ final readonly class GameViewFactory
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         private CardStateManager $cardStateManager,
+        private AvailableActionsResolver $availableActionsResolver,
     ) {
     }
 
@@ -58,6 +61,7 @@ final readonly class GameViewFactory
             gloryCountWinnerId: $state->gloryCountWinnerId,
             winnerId: $state->winnerId,
             victoryCondition: $state->victoryCondition,
+            availableActions: $this->availableActionsResolver->resolve($game, $viewer),
         );
     }
 

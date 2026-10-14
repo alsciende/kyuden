@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Exception\Data\PlayerNotFoundException;
+use App\Exception\Data\WorkflowException;
 use App\Repository\GameRepository;
 use App\State\Model\StatefulInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -83,6 +84,16 @@ class Game implements StatefulInterface
     public function getCurrentPlace(): ?string
     {
         return $this->currentPlace;
+    }
+
+    /**
+     * @throws WorkflowException unless the game is in the place, or one of the places
+     */
+    public function assertPlace(string ...$places): void
+    {
+        if (! in_array($this->currentPlace, $places, true)) {
+            throw new WorkflowException(implode(' or ', $places), $this->currentPlace ?? '<undefined>');
+        }
     }
 
     public function setCurrentPlace(?string $currentPlace): static

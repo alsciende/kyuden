@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\Type;
 use App\Message\PlayAttachment;
 use App\Repository\CardRepository;
@@ -24,7 +26,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * restrictions printed on cards are not checked. The player keeps the opportunity to act and ends it (EndOpportunity).
  */
 #[AsMessageHandler]
-final readonly class PlayAttachmentHandler
+final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -38,11 +40,17 @@ final readonly class PlayAttachmentHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);
+    }
+
     public function __invoke(PlayAttachment $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);
+        $this->assertAvailable($game, $player);
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $this->handService->assertPlayable($card, $player, Type::Attachment);
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotParticipatingException;
 use App\Message\MoveHome;
@@ -19,7 +21,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * which decide who moves what.
  */
 #[AsMessageHandler]
-final readonly class MoveHomeHandler
+final readonly class MoveHomeHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -29,11 +31,20 @@ final readonly class MoveHomeHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // during a conflict, from any player of the game
+        if ($this->gameStateManager->getState($game)->conflict === null) {
+            throw new NoConflictException();
+        }
+    }
+
     public function __invoke(MoveHome $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $card = $this->cardRepository->get($message->getCardId(), $game);
 
         $this->gameStateManager->withState($game, function (GameState $state) use ($card): GameState {

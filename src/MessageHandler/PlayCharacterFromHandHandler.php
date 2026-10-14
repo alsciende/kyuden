@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Enum\Type;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotInConflictException;
@@ -28,7 +30,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * The player keeps the opportunity to act and ends it (EndOpportunity).
  */
 #[AsMessageHandler]
-final readonly class PlayCharacterFromHandHandler
+final readonly class PlayCharacterFromHandHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -43,11 +45,17 @@ final readonly class PlayCharacterFromHandHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);
+    }
+
     public function __invoke(PlayCharacterFromHand $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
-        $this->opportunityService->assertCanTakeAction($game, $player, playFromHand: true);
+        $this->assertAvailable($game, $player);
         $card = $this->cardRepository->get($message->getCardId(), $game);
         $this->handService->assertPlayable($card, $player, Type::Character);
 

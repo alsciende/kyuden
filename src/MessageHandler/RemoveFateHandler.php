@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\Game;
+use App\Entity\Player;
 use App\Message\RemoveFate;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -17,7 +19,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * which decide whose fate is removed and when.
  */
 #[AsMessageHandler]
-final readonly class RemoveFateHandler
+final readonly class RemoveFateHandler implements PlayerActionHandlerInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,11 +29,17 @@ final readonly class RemoveFateHandler
     ) {
     }
 
+    #[\Override]
+    public function assertAvailable(Game $game, Player $player): void
+    {
+        // accepted in any game place, from any player of the game
+    }
+
     public function __invoke(RemoveFate $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
         // checks that the sender is a player of the game
-        $this->playerRepository->get($message->getPlayerId(), $game);
+        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $card = $this->cardRepository->get($message->getCardId(), $game);
 
         $this->cardStateManager->withState(

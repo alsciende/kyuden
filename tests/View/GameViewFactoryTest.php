@@ -188,4 +188,17 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame($scenario->player('jane')->getId(), $view->viewerId);
         self::assertSame('draw_phase_action_window', $view->place);
     }
+
+    public function testTheActionsAvailableToTheViewer(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->build();
+
+        self::assertContains('pass_opportunity', $this->view($scenario, 'john')->availableActions);
+        self::assertNotContains('pass_opportunity', $this->view($scenario, 'jane')->availableActions);
+    }
 }
