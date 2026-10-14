@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase (latest), the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -162,9 +162,17 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 
 - Each game has its own `Random\Engine\Xoshiro256StarStar` (`Game::getRandomizer()`), seeded by the `seed` of `CreateGame` (32 bytes, hex encoded; `CreateGame::withRandomSeed()` draws it where the game is created: `AutomaticGameLauncher`, `app:game:create`). The seed is in the recorded event, so replaying the event log gives the same draws.
 - The state of the engine is serialized in the `random_engine` column of the game, written back before each flush (`Game::saveRandomEngine()`, `PreFlush` lifecycle callback); the seed itself is not stored.
-- Every draw goes through it: the shuffles (`Stack::shuffle(Randomizer)`, from the ordered cards so that the result does not depend on the order of the collection), the first player, `DiscardRandomCardFromHand` (from the ordered hand) and the ids of the cards and stacks created during the game (`Game::generateId()`, UUID v4 drawn from the generator).
+- Every draw goes through it: the shuffles (`StackShuffler`, from the ordered cards so that the result does not depend on the order of the collection), the first player, `DiscardRandomCardFromHand` (from the ordered hand) and the ids of the cards and stacks created during the game (`Game::generateId()`, UUID v4 drawn from the generator).
 - Player order: `start_game` fixes it from the order of arrival, so that a replay draws the same first player. Each player has a `joinDate` (to the second: the players matched together join in the same second) and a `joinRank` (0, 1…, set by `Game::addPlayer()`), which orders the `players` collection of the game.
 - Events recorded before this change (`CreateGame` with no seed) cannot be replayed.
+
+## Decisions taken for the ids of shuffled cards
+
+- Any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled could be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks will be sent as counts by the reading API (decks, opponent's hand).
+- `Service/StackShuffler::shuffle(Stack)` (used by `ShuffleConflictDeck`, `ShuffleDynastyDeck` and `DrawDeckService`) draws the new order from the ordered cards, deletes the cards (removed from the collections of the stack, player and game, then `remove` through the ORM) and creates them again from the bottom to the top with `CardFactory::createCard()` (same logical card, player, stack and orientation, new id from `Game::generateId()`, fresh state). `Stack::shuffle()` is gone.
+- Rejected: updating the primary key with DBAL (the unit of work keeps the old ids: the positions set by the shuffle would be silently lost at the flush, and the collections of `Stack` / `Player` would hold stale objects); a separate public id (a second notion of id to carry in messages, state and `CardRepository`).
+- A card in a deck has no state worth keeping (`CardState` is reset when it leaves play); code holding a card of the deck across a shuffle must read it again from the stack (see `DrawDeckServiceTest`, `FillProvinceHandlerTest`).
+- `GameBuilder::seed()` fixes the seed of the random generator in tests.
 
 ## Next steps
 
@@ -203,9 +211,6 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Everything else (discard piles, cards in play, rings, honor, fate, conflict, duel) is public.
 
 **Open points**
-- **Ids of hidden cards**: any card whose id has been seen (in play, in a discard pile, revealed) and that goes back into a deck which is then shuffled can be tracked through its id. Rule: a card gets a new id when the players physically lose track of it, that is when its stack is shuffled (later also secret rearrangements, e.g. Governor's Spy). Other moves keep the id: a character returned to hand or put on top of the deck without a shuffle is still known at a real table. Hidden stacks are sent as counts (decks, opponent's hand).
-  - Solution chosen: shuffling a stack removes its cards and creates them again in random order (same logical card, player, stack and orientation, new id), through the ORM. Updating the primary key with DBAL was rejected: no foreign key points to a card, but the unit of work keeps the old ids (the positions set by the shuffle would be silently lost at the flush, and the collections of `Stack` / `Player` would hold stale objects). A separate public id was rejected too: a second notion of id to carry in messages, state and `CardRepository`. A card in a deck has no state worth keeping (`CardState` is reset when it leaves play); code holding a card of the deck across a shuffle must read it again from the stack.
-  - Prerequisite done: a random generator per game (see "Decisions taken for the random generator").
 - Mutability of the view DTOs (no longer needed without decorators: they can be `readonly`).
 
 ### Step 1.4 (play cards from provinces)

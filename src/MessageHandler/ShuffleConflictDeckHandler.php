@@ -8,6 +8,7 @@ use App\Enum\StackType;
 use App\Message\ShuffleConflictDeck;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\StackShuffler;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -16,6 +17,7 @@ final readonly class ShuffleConflictDeckHandler
     public function __construct(
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
+        private StackShuffler $stackShuffler,
     ) {
     }
 
@@ -25,6 +27,6 @@ final readonly class ShuffleConflictDeckHandler
         // checks that the sender is a player of the game
         $this->playerRepository->get($message->getPlayerId(), $game);
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
-        $player->getUniqueStack(StackType::ConflictDrawDeck)->shuffle($game->getRandomizer());
+        $this->stackShuffler->shuffle($player->getUniqueStack(StackType::ConflictDrawDeck));
     }
 }

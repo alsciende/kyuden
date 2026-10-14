@@ -40,9 +40,11 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
 
         $this->fill($scenario);
 
-        $toturi = $scenario->card('toturi');
+        // the discard pile is shuffled into a new deck, which creates the card again
+        $toturi = $scenario->card('province')->getStack()->getTopCard();
+        self::assertInstanceOf(DynastyCard::class, $toturi);
+        self::assertSame('01-akodo-toturi', $toturi->getLogicalCard()->getId());
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $toturi->getCurrentPlace());
-        self::assertSame($scenario->card('province')->getStack(), $toturi->getStack());
     }
 
     public function testAProvinceIsFilledFromTheDeckOfItsOwner(): void
@@ -67,9 +69,11 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
 
         $this->fill($scenario);
 
-        $toturi = $scenario->card('toturi');
+        // the discard pile is shuffled into a new deck, which creates the card again
+        $toturi = $scenario->card('province')->getStack()->getTopCard();
+        self::assertInstanceOf(DynastyCard::class, $toturi);
+        self::assertSame('01-akodo-toturi', $toturi->getLogicalCard()->getId());
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $toturi->getCurrentPlace());
-        self::assertSame($scenario->card('province')->getStack(), $toturi->getStack());
         self::assertSame(5, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
     }
 

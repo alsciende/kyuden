@@ -7,6 +7,7 @@ namespace App\Factory;
 use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Stack;
+use App\Enum\Orientation;
 use App\Exception\Data\LogicalCardNotFoundException;
 use App\Repository\LogicalCardRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,14 +23,15 @@ readonly class CardFactory
     }
 
     /**
-     * Creates a card on top of the stack, owned by the player of the stack, with the initial orientation of its type.
+     * Creates a card on top of the stack, owned by the player of the stack, with the given orientation
+     * (by default the initial orientation of its type).
      */
-    public function createCard(string $physicalCardId, LogicalCard $logicalCard, Stack $stack): PhysicalCard
+    public function createCard(string $physicalCardId, LogicalCard $logicalCard, Stack $stack, ?Orientation $orientation = null): PhysicalCard
     {
         $classname = $this->getClassname($logicalCard->getSide()->value);
 
         /** @var PhysicalCard $card */
-        $card = new $classname($physicalCardId, $logicalCard, $stack);
+        $card = new $classname($physicalCardId, $logicalCard, $stack, $orientation);
         $card->setTitle($logicalCard->getName());
         $stack->addCard($card);
         $stack->getPlayer()->addCard($card);

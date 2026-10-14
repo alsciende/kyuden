@@ -10,7 +10,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\OrderBy;
-use Random\Randomizer;
 
 #[ORM\Entity(repositoryClass: StackRepository::class)]
 class Stack
@@ -51,7 +50,7 @@ class Stack
 
     /**
      * Cards in no particular order. Use getOrderedCards() or getTopCards() when the order matters:
-     * the order of this collection is not kept in sync with the positions (e.g. after a shuffle).
+     * the order of this collection is not kept in sync with the positions (e.g. after moveCard()).
      *
      * @return Collection<int, PhysicalCard>
      */
@@ -133,21 +132,6 @@ class Stack
         foreach ($this->getOrderedCards() as $i => $card) {
             $card->setPosition($i);
         }
-    }
-
-    /**
-     * Shuffles from the ordered cards, so that the result only depends on the state of the randomizer.
-     */
-    public function shuffle(Randomizer $randomizer): static
-    {
-        /** @var list<PhysicalCard> $shuffleArray */
-        $shuffleArray = $randomizer->shuffleArray($this->getOrderedCards());
-
-        foreach ($shuffleArray as $index => $card) {
-            $card->setPosition($index);
-        }
-
-        return $this;
     }
 
     public function getPlayer(): Player

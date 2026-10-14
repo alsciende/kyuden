@@ -165,7 +165,7 @@ class CardWorkflowTest extends AbstractKernelTestCase
             ->persist();
         $john = $scenario->player('john');
 
-        // changes the positions without reordering the collection, like a shuffle does
+        // changes the positions without reordering the collection
         $john->getUniqueStack(StackType::ConflictDrawDeck)->moveCard($scenario->card('bottom'));
 
         self::service(DrawConflictCardsHandler::class)(new DrawConflictCards($scenario->game()->getId(), $john->getId(), $john->getId(), 2));

@@ -55,6 +55,11 @@ final class GameBuilder
     private ?string $firstPlayer = null;
 
     /**
+     * Seed of the random generator of the game, random by default.
+     */
+    private ?string $seed = null;
+
+    /**
      * @var list<string>
      */
     private array $activePlayers = [];
@@ -108,6 +113,13 @@ final class GameBuilder
             $configure($player);
         }
         $this->players[$alias] = $player;
+
+        return $this;
+    }
+
+    public function seed(string $seed): self
+    {
+        $this->seed = $seed;
 
         return $this;
     }
@@ -219,7 +231,7 @@ final class GameBuilder
         $this->builtStacks = [];
         $this->builtCards = [];
 
-        $game = new Game(Uuid::v4()->toString(), random_bytes(32));
+        $game = new Game(Uuid::v4()->toString(), $this->seed ?? random_bytes(32));
         $game->setCurrentPlace($this->place);
 
         $players = [];

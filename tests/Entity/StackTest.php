@@ -6,13 +6,10 @@ namespace App\Tests\Entity;
 
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\LogicalCard;
-use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\StackType;
 use PHPUnit\Framework\TestCase;
-use Random\Engine\Xoshiro256StarStar;
-use Random\Randomizer;
 
 class StackTest extends TestCase
 {
@@ -61,7 +58,7 @@ class StackTest extends TestCase
 
         self::assertSame([$card3, $card2], $deck->getTopCards(2));
 
-        // changes the positions but not the order of the collection, like a shuffle
+        // changes the positions but not the order of the collection
         $deck->moveCard($card1);
 
         self::assertSame([$card1, $card2, $card3], $deck->getCards()->getValues());
@@ -69,32 +66,5 @@ class StackTest extends TestCase
         self::assertSame($card1, $deck->getTopCard());
         self::assertSame([$card2, $card3, $card1], $deck->getOrderedCards());
         self::assertCount(3, $deck->getTopCards(10));
-    }
-
-    public function testTheShuffleOnlyDependsOnTheRandomizerAndThePositions(): void
-    {
-        $orders = [];
-        foreach ([false, true] as $reversedCollection) {
-            $deck = new Stack('deck', self::createMock(Player::class), StackType::DynastyDrawDeck);
-            $cards = [];
-            foreach (range(1, 10) as $id) {
-                $cards[] = new DynastyCard((string) $id, self::createMock(LogicalCard::class), $deck);
-            }
-            foreach ($reversedCollection ? array_reverse($cards) : $cards as $card) {
-                $deck->addCard($card);
-            }
-            if ($reversedCollection) {
-                // same positions as the first deck, collection in the reverse order
-                foreach ($cards as $position => $card) {
-                    $card->setPosition($position);
-                }
-            }
-
-            $deck->shuffle(new Randomizer(new Xoshiro256StarStar(str_repeat('seed', 8))));
-
-            $orders[] = array_map(fn (PhysicalCard $card): string => $card->getId(), $deck->getOrderedCards());
-        }
-
-        self::assertSame($orders[0], $orders[1]);
     }
 }

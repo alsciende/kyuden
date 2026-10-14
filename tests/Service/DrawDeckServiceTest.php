@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\PhysicalCard;
 use App\Enum\StackType;
 use App\Service\DrawDeckService;
 use App\Tests\AbstractKernelTestCase;
@@ -54,9 +55,16 @@ class DrawDeckServiceTest extends AbstractKernelTestCase
         $card = self::service(DrawDeckService::class)->getTopCard($john, StackType::ConflictDrawDeck);
 
         self::assertSame(5, $this->playerStateManager->getState($john)->getHonor());
-        self::assertSame(ConflictCard::STATE_DRAW_DECK, $scenario->card('banzai')->getCurrentPlace());
-        self::assertSame(ConflictCard::STATE_DRAW_DECK, $scenario->card('katana')->getCurrentPlace());
-        self::assertContains($card, [$scenario->card('banzai'), $scenario->card('katana')]);
+        // the shuffle creates the cards again
+        $deck = $john->getUniqueStack(StackType::ConflictDrawDeck);
+        self::assertEqualsCanonicalizing(
+            ['01-banzai', '01-fine-katana'],
+            array_map(fn (PhysicalCard $card): string => $card->getLogicalCard()->getId(), $deck->getOrderedCards()),
+        );
+        self::assertNotContains($scenario->card('banzai'), $deck->getCards());
+        self::assertInstanceOf(ConflictCard::class, $card);
+        self::assertSame($deck->getTopCard(), $card);
+        self::assertSame(ConflictCard::STATE_DRAW_DECK, $card->getCurrentPlace());
         self::assertCount(0, $john->getUniqueStack(StackType::ConflictDiscardPile)->getCards());
     }
 
@@ -75,7 +83,9 @@ class DrawDeckServiceTest extends AbstractKernelTestCase
 
         $card = self::service(DrawDeckService::class)->getTopCard($john, StackType::DynastyDrawDeck);
 
-        self::assertSame($scenario->card('toturi'), $card);
+        self::assertInstanceOf(DynastyCard::class, $card);
+        self::assertSame('01-akodo-toturi', $card->getLogicalCard()->getId());
+        self::assertNotSame($scenario->card('toturi')->getId(), $card->getId());
         self::assertSame(DynastyCard::STATE_DRAW_DECK, $card->getCurrentPlace());
         self::assertSame(5, $this->playerStateManager->getState($john)->getHonor());
     }

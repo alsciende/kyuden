@@ -23,6 +23,7 @@ readonly class DrawDeckService
         private PlayerStateManager $playerStateManager,
         private WorkflowInterface $conflictCardStateMachine,
         private WorkflowInterface $dynastyCardStateMachine,
+        private StackShuffler $stackShuffler,
     ) {
     }
 
@@ -57,6 +58,6 @@ readonly class DrawDeckService
             $workflow->apply($card, 'put_back');
         }
 
-        $player->getUniqueStack($deckType)->shuffle($player->getGame()->getRandomizer());
+        $this->stackShuffler->shuffle($player->getUniqueStack($deckType));
     }
 }
