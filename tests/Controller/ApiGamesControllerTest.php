@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\DataFixtures\AppFixtures;
+use App\Enum\Orientation;
+use App\Enum\PersonalHonor;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Profiler\Profile;
+use Symfony\Component\HttpKernel\Profiler\Profiler;
 
 class ApiGamesControllerTest extends AbstractKernelTestCase
 {
@@ -86,6 +93,55 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         }
 
         return $hands;
+    }
+
+    /**
+     * Performance: the view of a game well under way (full decks, cards in every stack, characters in play) is read
+     * with a single query, whatever the number of stacks.
+     */
+    public function testAGameWellUnderWayIsReadWithASingleQuery(): void
+    {
+        $midGame = fn (string $deckId): \Closure => fn (PlayerBuilder $p): PlayerBuilder => $p
+            ->fromStarterDeck($deckId)
+            ->honor(12)
+            ->fate(4)
+            ->hand(['01-banzai', '01-fine-katana', '01-banzai', '01-fine-katana', '01-banzai'])
+            ->conflictDiscardPile(['01-banzai', '01-fine-katana', '01-hiruma-ambusher'])
+            ->dynastyDiscardPile(['01-akodo-toturi', '01-imperial-storehouse'])
+            ->province('01-entrenched-position', dynasty: '01-akodo-toturi', dynastyFaceup: true)
+            ->province('01-entrenched-position', dynasty: '01-imperial-storehouse')
+            ->province('01-ancestral-lands', dynasty: '01-master-of-the-spear', dynastyFaceup: true)
+            ->province('01-entrenched-position', dynasty: '01-doji-hotaru', orientation: Orientation::UpsideDown)
+            ->inPlay(['01-akodo-toturi', '01-fine-katana'], fate: 2, personalHonor: PersonalHonor::Honored)
+            ->inPlay(['01-master-of-the-spear', '01-fine-katana'], bowed: true, fate: 1)
+            ->inPlay(['01-doji-hotaru'], fate: 3)
+            ->inPlay(['01-hiruma-ambusher'], bowed: true)
+            ->inPlay(['01-vengeful-oathkeeper'], personalHonor: PersonalHonor::Dishonored);
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john', $midGame(AppFixtures::LION_STARTER_DECK))
+            ->withPlayer('jane', $midGame(AppFixtures::CRANE_STARTER_DECK))
+            ->persist();
+        // the controller must load the game from the database, not from the identity map
+        self::service(EntityManagerInterface::class)->clear();
+        // only count the queries of the request, not those of the setup
+        self::service(Profiler::class)->reset();
+
+        $client = self::getContainer()->get('test.client');
+        self::assertInstanceOf(KernelBrowser::class, $client);
+        $client->disableReboot();
+        $client->enableProfiler();
+        $client->request('GET', "/api/games/{$scenario->game()->getId()}", server: [
+            'HTTP_AUTHORIZATION' => 'Bearer john',
+        ]);
+
+        $response = $client->getResponse();
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $profile = $client->getProfile();
+        self::assertInstanceOf(Profile::class, $profile);
+        $collector = $profile->getCollector('db');
+        self::assertInstanceOf(DoctrineDataCollector::class, $collector);
+        self::assertSame(1, $collector->getQueryCount());
     }
 
     public function testAUserWhoIsNotAPlayerOfTheGameCannotReadIt(): void

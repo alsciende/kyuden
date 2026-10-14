@@ -29,7 +29,7 @@ class ApiGamesController extends AbstractController
     #[Route('/api/games/{id}', name: 'app_api_game', methods: ['GET'])]
     public function show(string $id, #[CurrentUser] UserInterface $user): Response
     {
-        $game = $this->gameRepository->find($id);
+        $game = $this->gameRepository->findWithCards($id);
         if ($game === null) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
