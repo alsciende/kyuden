@@ -11,7 +11,6 @@ use App\Exception\Data\DeckNotFoundException;
 use App\GameLog\GameLogRenderer;
 use App\Message\CreateGame;
 use App\Message\JoinGame;
-use App\Model\User;
 use App\Repository\CardRepository;
 use App\Repository\DeckRepository;
 use App\Repository\GameLogEntryRepository;
@@ -129,11 +128,10 @@ abstract class AbstractKernelTestCase extends KernelTestCase
     {
         $playerId = Uuid::v4()->toString();
         $deck = $this->deckRepository->find($deckId) ?? throw new DeckNotFoundException($deckId);
-        $user = new User($userId);
         $message = new JoinGame(
             $game->getId(),
             $playerId,
-            $user->id,
+            $userId,
             $deck->getId(),
         );
         $this->messageBus->dispatch($message);

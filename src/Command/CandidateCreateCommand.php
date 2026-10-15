@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Entity\Candidate;
 use App\Entity\Deck;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -34,6 +35,9 @@ readonly class CandidateCreateCommand
         OutputInterface $output,
     ): int {
         $io = new SymfonyStyle($input, $output);
+        if (! $this->entityManager->find(User::class, $userId) instanceof User) {
+            throw new \RuntimeException("User {$userId} not found.");
+        }
         $deck = $this->entityManager->find(Deck::class, $deckId);
         if (! $deck instanceof Deck) {
             throw new \RuntimeException("Deck {$deckId} not found.");

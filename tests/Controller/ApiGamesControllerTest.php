@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\DataFixtures\UserFixtures;
 use App\DataFixtures\AppFixtures;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
@@ -40,7 +41,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         $client->disableReboot();
 
         $client->request('GET', "/api/games/{$gameId}{$path}", server: array_filter([
-            'HTTP_AUTHORIZATION' => $user === null ? null : "Bearer {$user}",
+            'HTTP_AUTHORIZATION' => $user === null ? null : 'Bearer ' . UserFixtures::TOKENS[$user],
             ...$headers,
         ]));
 
@@ -135,7 +136,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
 
     /**
      * Performance: the view of a game well under way (full decks, cards in every stack, characters in play) is read
-     * with a single query, whatever the number of stacks.
+     * with a single query, whatever the number of stacks, besides the one authenticating the user.
      */
     public function testAGameWellUnderWayIsReadWithASingleQuery(): void
     {
@@ -170,7 +171,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         $client->disableReboot();
         $client->enableProfiler();
         $client->request('GET', "/api/games/{$scenario->game()->getId()}", server: [
-            'HTTP_AUTHORIZATION' => 'Bearer john',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . UserFixtures::TOKENS['john'],
         ]);
 
         $response = $client->getResponse();
@@ -179,7 +180,8 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertInstanceOf(Profile::class, $profile);
         $collector = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $collector);
-        self::assertSame(1, $collector->getQueryCount());
+        // the access token with its user, then the game
+        self::assertSame(2, $collector->getQueryCount());
     }
 
     public function testAUserWhoIsNotAPlayerOfTheGameCannotReadIt(): void
@@ -202,6 +204,17 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         $scenario = $this->scenarioWithHands();
 
         self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get($scenario->game()->getId(), null)->getStatusCode());
+    }
+
+    public function testAnUnknownTokenIsRejected(): void
+    {
+        $scenario = $this->scenarioWithHands();
+
+        $client = self::getContainer()->get('test.client');
+        self::assertInstanceOf(KernelBrowser::class, $client);
+        $client->request('GET', "/api/games/{$scenario->game()->getId()}", server: ['HTTP_AUTHORIZATION' => 'Bearer john']);
+
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
     }
 
     public function testTheGameMustExist(): void

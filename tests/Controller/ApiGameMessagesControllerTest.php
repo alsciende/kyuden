@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\DataFixtures\UserFixtures;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -37,7 +38,7 @@ class ApiGameMessagesControllerTest extends AbstractKernelTestCase
             "/api/games/{$gameId}/messages",
             server: array_filter([
                 'CONTENT_TYPE' => 'application/json',
-                'HTTP_AUTHORIZATION' => $user === null ? null : "Bearer {$user}",
+                'HTTP_AUTHORIZATION' => $user === null ? null : 'Bearer ' . UserFixtures::TOKENS[$user],
                 ...$headers,
             ]),
             content: is_string($body) ? $body : json_encode($body, \JSON_THROW_ON_ERROR),
