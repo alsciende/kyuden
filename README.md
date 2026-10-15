@@ -23,7 +23,7 @@ The state of the implementation and the open points are listed in `HANDOFF.md`.
 - `Event`: persisted record of every handled action, numbered by the version of its game. It holds the payload of the message, secret information included (the seed of `CreateGame`, secret bids…): it is never shown to the players, who read the log of the game (see below).
 - `GameLogEntry`: a line of the log of a game, what changed in it (see "Game log").
 - `Candidate`: a player waiting in the matchmaking queue.
-- `User`: an account, human or bot (`Enum/UserType`); a bot is owned by a human. Its id is the user identifier a `Player` or a `Candidate` refers to (`userId`). `AccessToken`: a token of a user, stored as its SHA-256 hash, either a session or an API key (`Enum/AccessTokenType`); only a bot gets API keys, so that a program playing through one is known as a bot (`ROLE_BOT`).
+- `User`: an account, human or bot (`Enum/UserType`); a bot is owned by a human. Its id is its user identifier. A `Player` and a `Candidate` belong to a user (`Player::getUserId()` reads the id without loading the user); a user is a candidate at most once. `AccessToken`: a token of a user, stored as its SHA-256 hash, either a session or an API key (`Enum/AccessTokenType`); only a bot gets API keys, so that a program playing through one is known as a bot (`ROLE_BOT`).
 
 ### State
 
@@ -105,6 +105,6 @@ The log tells *what* changed, not why (the engine does not know the card effects
 
 - Matchmaking: `Service/MatchMaking/FifoMatchMakingService`, then `Service/GameLauncher/AutomaticGameLauncher` creates the game.
 - Notifications: `NotificationInterface` objects sent through `NotifierInterface`; `MercureNotifier` publishes server-sent events, `LoggerNotifier` logs them.
-- Security: stateless access-token authentication, no password: `Security/AccessTokenHandler` finds the `AccessToken` by the hash of the token, with its `User` (a single query; an unknown token gets a 401). A user is matched to the player of a game through `Player::userId`. No token is issued yet: the users and their tokens come from the fixtures (`DataFixtures/UserFixtures`, tokens in clear, development and tests only).
+- Security: stateless access-token authentication, no password: `Security/AccessTokenHandler` finds the `AccessToken` by the hash of the token, with its `User` (a single query; an unknown token gets a 401). A user is matched to the player of a game through `Player::user`. No token is issued yet: the users and their tokens come from the fixtures (`DataFixtures/UserFixtures`, tokens in clear, development and tests only).
 - Mercure: the topic `/games/{id}` is public; it carries no data of the game, only its id and version.
 - Exceptions: `Exception/Data` (missing/mismatched data) vs `Exception/Rules` (game-rule violations).

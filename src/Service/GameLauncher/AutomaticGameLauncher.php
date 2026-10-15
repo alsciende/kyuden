@@ -39,7 +39,7 @@ readonly class AutomaticGameLauncher implements GameLauncherInterface
             $joinGame = new JoinGame(
                 $gameId,
                 $playerId,
-                $candidate->getUserId(),
+                $candidate->getUser()->getId(),
                 $candidate->getDeck()->getId(),
             );
             ($this->joinGameHandler)($joinGame);

@@ -14,7 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * (an AI agent), owned by the person responsible for it: only a bot gets API keys, so that a program playing through
  * one is known as a bot.
  *
- * Its id is its user identifier, the one a Player or a Candidate refers to (`userId`).
+ * Its id is its user identifier. A Player and a Candidate belong to a user.
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table('users')]

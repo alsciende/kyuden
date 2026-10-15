@@ -173,16 +173,18 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `GameLockMiddleware` serializes the actions on a game with a pessimistic lock on its row, held until the end of the transaction.
 - The response is empty (204): the client will read the new state with the reading API. No optimistic check of the version of the state seen by the client yet.
 - Errors of the payload carry `violations` (`property_path` in snake case, `message`): 400 `invalid_payload` for its structure (missing, unknown or reserved field, wrong type: the serializer collects every error), 422 `validation_failed` for its values (constraints of the Validator).
-- The user is matched to a player through `Player::userId` = user identifier (see the decisions taken for the user accounts).
+- The user is matched to a player through `Player::user` (see the decisions taken for the user accounts).
 
 ## Decisions taken for the user accounts
 
 - Humans (web client, OAuth2 later) and AI agents both play. The engine cannot prove who plays behind a token: the honest way is made the easiest, and the label "bot" depends on the type of the token, not on goodwill. A human never gets an API key; to let an agent play, they create a bot account they own, which alone gets API keys (`AccessToken` refuses an API key to a human, `User` requires a human owner for a bot). A human helped by an AI while playing is a matter of the terms of use, not of authentication.
 - The `playerId` is not a credential: it is public (view, log), so an opponent could act for the player.
-- `User` (`users`): id (the user identifier, the one of `Player::userId`), name, type (human or bot), owner (the human responsible for a bot). Roles: `ROLE_USER`, plus `ROLE_BOT` for a bot.
+- `User` (`users`): id (the user identifier), name, type (human or bot), owner (the human responsible for a bot). Roles: `ROLE_USER`, plus `ROLE_BOT` for a bot.
 - `AccessToken` (`access_tokens`): user, SHA-256 hash of the token (unique; a random token of high entropy needs no slow hash, and the token is found by its hash), type (session or API key). No expiry nor revocation date yet: revoking is deleting.
 - `AccessTokenHandler` loads the token with its user in a single query and gives the user to the badge, so the user provider (Doctrine entity, `property: id`) does not query again; the firewall is stateless. The view of a game is read with two queries (token and user, then the game).
 - Fixtures (`UserFixtures`): humans `john` / `jane` with a session token, bots `akodo-bot` / `hida-bot` owned by john with an API key; the tokens are in clear in `UserFixtures::TOKENS` (used by the tests of the controllers). `app:candidate:create` checks that the user exists.
+- `Player::user` (many to one) and `Candidate::user` (one to one: a user waits in the queue once) are associations to `User`. `JoinGame` keeps the id of the user (messages hold ids), its handler loads the user (`UserNotFoundException`). `Player::getUserId()` reads the id through the proxy, so the view of a game does not load the users; the view and the log still name a player by the id of its user (`user_id`).
+- The test scenario (`GameBuilder`) gives each player the user of the fixtures named after its alias (john, jane…), else a new human it persists with the game.
 
 **Rejected**
 - The `playerId` received when a game is created as the bearer token: public, and no account to link a later login to.
@@ -316,7 +318,6 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 - **Cards**: no endpoint serves the logical cards (the view and the log send codes); a client or an agent needs their data (name, text, cost, skills, ability timings).
 - **Joining a game**: decks, the matchmaking queue and the creation of a game are only driven by console commands (`app:deck:create`, `app:candidate:create`, `app:matchmaking`, `app:game:create`); an agent cannot join a game through the API.
 - **Authentication**: issuing tokens. Guests (a human chooses a name and gets a session token; the account can later be linked to a real identity), then login without password: Discord (OAuth2) first, passkeys (WebAuthn) next; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable). The MCP server only accepts the tokens of bots (`ROLE_BOT`).
-- **Users as entities**: `Player::userId` and `Candidate::userId` are still strings, not associations to `User`.
 - Private Mercure topics (the topic `/games/{id}` is public, it carries no data of the game).
 
 

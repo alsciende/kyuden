@@ -6,6 +6,8 @@ namespace App\Tests\Service;
 
 use App\Entity\Candidate;
 use App\Entity\Deck;
+use App\Entity\User;
+use App\Enum\UserType;
 use App\Repository\CandidateRepository;
 use App\Service\GameLauncher\GameLauncherInterface;
 use App\Service\MatchMaking\FifoMatchMakingService;
@@ -17,9 +19,9 @@ class MatchMakingServiceTest extends TestCase
     {
         $repo = $this->createStub(CandidateRepository::class);
         $repo->method('findAll')->willReturn([
-            new Candidate()->setDeck(new Deck('1'))->setUserId('jack'),
-            new Candidate()->setDeck(new Deck('2'))->setUserId('jane'),
-            new Candidate()->setDeck(new Deck('3'))->setUserId('jill'),
+            new Candidate()->setDeck(new Deck('1'))->setUser(new User('jack', 'Jack', UserType::Human)),
+            new Candidate()->setDeck(new Deck('2'))->setUser(new User('jane', 'Jane', UserType::Human)),
+            new Candidate()->setDeck(new Deck('3'))->setUser(new User('jill', 'Jill', UserType::Human)),
         ]);
 
         $launcher = $this->createMock(GameLauncherInterface::class);

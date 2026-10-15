@@ -19,8 +19,9 @@ class Candidate
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, unique: true)]
-    private string $userId;
+    #[ORM\OneToOne]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private User $user;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
@@ -31,14 +32,14 @@ class Candidate
         return $this->id;
     }
 
-    public function getUserId(): string
+    public function getUser(): User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function setUserId(string $userId): static
+    public function setUser(User $user): static
     {
-        $this->userId = $userId;
+        $this->user = $user;
 
         return $this;
     }

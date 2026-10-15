@@ -45,7 +45,7 @@ class PlayerRepository extends ServiceEntityRepository
         $playerId = $this->createQueryBuilder('p')
             ->select('p.id')
             ->andWhere('IDENTITY(p.game) = :gameId')
-            ->andWhere('p.userId = :userId')
+            ->andWhere('IDENTITY(p.user) = :userId')
             ->setParameter('gameId', $gameId)
             ->setParameter('userId', $userId)
             ->getQuery()

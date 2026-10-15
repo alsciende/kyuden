@@ -31,7 +31,7 @@ readonly class CandidateListCommand
         $io->table(
             ['Id', 'User', 'Deck'],
             array_map(
-                fn (Candidate $candidate): array => [$candidate->getId(), $candidate->getUserId(), $candidate->getDeck()->getId()],
+                fn (Candidate $candidate): array => [$candidate->getId(), $candidate->getUser()->getId(), $candidate->getDeck()->getId()],
                 $rows
             )
         );

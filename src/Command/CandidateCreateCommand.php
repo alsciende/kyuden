@@ -35,7 +35,8 @@ readonly class CandidateCreateCommand
         OutputInterface $output,
     ): int {
         $io = new SymfonyStyle($input, $output);
-        if (! $this->entityManager->find(User::class, $userId) instanceof User) {
+        $user = $this->entityManager->find(User::class, $userId);
+        if (! $user instanceof User) {
             throw new \RuntimeException("User {$userId} not found.");
         }
         $deck = $this->entityManager->find(Deck::class, $deckId);
@@ -43,7 +44,7 @@ readonly class CandidateCreateCommand
             throw new \RuntimeException("Deck {$deckId} not found.");
         }
         $candidate = new Candidate();
-        $candidate->setUserId($userId);
+        $candidate->setUser($user);
         $candidate->setDeck($deck);
         $this->entityManager->persist($candidate);
         $this->entityManager->flush();

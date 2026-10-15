@@ -16,11 +16,13 @@ use App\Entity\LogicalCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
+use App\Entity\User;
 use App\Enum\ConflictType;
 use App\Enum\DuelType;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\StackType;
+use App\Enum\UserType;
 use App\Exception\Data\DeckNotFoundException;
 use App\Exception\Data\LogicalCardNotFoundException;
 use App\Repository\DeckRepository;
@@ -80,6 +82,13 @@ final class GameBuilder
      * @var list<Stack>
      */
     private array $builtStacks = [];
+
+    /**
+     * The users created for the players whose alias is not a user of the fixtures, by alias.
+     *
+     * @var array<string, User>
+     */
+    private array $builtUsers = [];
 
     /**
      * @var array<string, PhysicalCard>
@@ -229,6 +238,7 @@ final class GameBuilder
     public function build(): Scenario
     {
         $this->builtStacks = [];
+        $this->builtUsers = [];
         $this->builtCards = [];
 
         $game = new Game(Uuid::v4()->toString(), $this->seed ?? random_bytes(32));
@@ -274,6 +284,9 @@ final class GameBuilder
     {
         $scenario = $this->build();
 
+        foreach ($this->builtUsers as $user) {
+            $this->entityManager->persist($user);
+        }
         $this->entityManager->persist($scenario->game());
         foreach ($scenario->game()->getPlayers() as $player) {
             $this->entityManager->persist($player);
@@ -292,7 +305,7 @@ final class GameBuilder
     private function buildPlayer(Game $game, PlayerBuilder $builder): Player
     {
         $player = new Player(Uuid::v4()->toString());
-        $player->setUserId($builder->alias);
+        $player->setUser($this->getUser($builder->alias));
         $player->setDeck($this->getDeck($builder->getDeckId() ?? AppFixtures::LION_STARTER_DECK));
         $game->addPlayer($player);
 
@@ -431,6 +444,17 @@ final class GameBuilder
     private function getLogicalCard(string $code): LogicalCard
     {
         return $this->logicalCardRepository->find($code) ?? throw new LogicalCardNotFoundException($code);
+    }
+
+    /**
+     * The user named after the alias of a player: a user of the fixtures (john, jane…), else a new human.
+     */
+    private function getUser(string $alias): User
+    {
+        \assert($alias !== '');
+
+        return $this->entityManager->find(User::class, $alias)
+            ?? $this->builtUsers[$alias] ??= new User($alias, ucfirst($alias), UserType::Human);
     }
 
     private function getDeck(string $deckId): Deck

@@ -6,8 +6,10 @@ namespace App\MessageHandler;
 
 use App\Entity\Deck;
 use App\Entity\Player;
+use App\Entity\User;
 use App\Event\PlayerJoinedEvent;
 use App\Exception\Data\DeckNotFoundException;
+use App\Exception\Data\UserNotFoundException;
 use App\Message\JoinGame;
 use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,7 +33,11 @@ final readonly class JoinGameHandler
         $game = $this->gameRepository->get($message->getGameId(), 'join_game');
 
         $player = new Player($message->getPlayerId());
-        $player->setUserId($message->getUserId());
+        $user = $this->entityManager->find(User::class, $message->getUserId());
+        if (! $user instanceof User) {
+            throw new UserNotFoundException($message->getUserId());
+        }
+        $player->setUser($user);
         $deck = $this->entityManager->find(Deck::class, $message->getDeckId());
         if (! $deck instanceof Deck) {
             throw new DeckNotFoundException($message->getDeckId());

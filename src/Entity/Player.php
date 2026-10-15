@@ -35,8 +35,9 @@ class Player implements StatefulInterface
     #[ORM\JoinColumn(nullable: false)]
     private Game $game;
 
-    #[ORM\Column(length: 255)]
-    private string $userId;
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private User $user;
 
     /**
      * When the player joined the game, to the second: players joining at once share it, see joinRank.
@@ -171,16 +172,24 @@ class Player implements StatefulInterface
         return $this;
     }
 
-    public function getUserId(): string
+    public function getUser(): User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function setUserId(string $userId): static
+    public function setUser(User $user): static
     {
-        $this->userId = $userId;
+        $this->user = $user;
 
         return $this;
+    }
+
+    /**
+     * The id of the user, without loading the user.
+     */
+    public function getUserId(): string
+    {
+        return $this->user->getId();
     }
 
     /**

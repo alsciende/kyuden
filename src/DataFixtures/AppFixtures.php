@@ -8,10 +8,12 @@ use App\Entity\Candidate;
 use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 
-class AppFixtures extends Fixture
+class AppFixtures extends Fixture implements DependentFixtureInterface
 {
     use StarterDeckLionTrait;
     use StarterDeckCrabTrait;
@@ -28,6 +30,12 @@ class AppFixtures extends Fixture
     public const PHOENIX_STARTER_DECK = 'phoenix-starter-deck';
     public const SCORPION_STARTER_DECK = 'scorpion-starter-deck';
     public const UNICORN_STARTER_DECK = 'unicorn-starter-deck';
+
+    #[\Override]
+    public function getDependencies(): array
+    {
+        return [UserFixtures::class];
+    }
 
     #[\Override]
     public function load(ObjectManager $manager): void
@@ -50,12 +58,12 @@ class AppFixtures extends Fixture
 
         $john = new Candidate();
         $manager->persist($john);
-        $john->setUserId('john');
+        $john->setUser($this->getReference('john', User::class));
         $john->setDeck($deck);
 
         $jane = new Candidate();
         $manager->persist($jane);
-        $jane->setUserId('jane');
+        $jane->setUser($this->getReference('jane', User::class));
         $jane->setDeck($deck);
 
         $game = new Game('1', random_bytes(32));
@@ -63,13 +71,13 @@ class AppFixtures extends Fixture
 
         $harry = new Player('1');
         $manager->persist($harry);
-        $harry->setUserId('harry');
+        $harry->setUser($this->getReference('harry', User::class));
         $harry->setDeck($deck);
         $game->addPlayer($harry);
 
         $sally = new Player('2');
         $manager->persist($sally);
-        $sally->setUserId('sally');
+        $sally->setUser($this->getReference('sally', User::class));
         $sally->setDeck($deck);
         $game->addPlayer($sally);
 
