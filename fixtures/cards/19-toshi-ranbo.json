@@ -8,7 +8,11 @@
     "cost": null,
     "deck_limit": 1,
     "elements": [
-        "all"
+        "air",
+        "earth",
+        "fire",
+        "void",
+        "water"
     ],
     "fate": null,
     "glory": null,

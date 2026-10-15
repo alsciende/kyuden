@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`) (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -246,6 +246,14 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Attackers: public; `DeclareConflict` is atomic, so nothing exists in the state before the declaration.
 - Everything else (discard piles, cards in play, rings, honor, fate, conflict, duel) is public.
 
+## Decisions taken for the API of the cards
+
+- `GET /api/cards/{code}` (one card) and `GET /api/cards` (every card, sorted by code, for a client loading the whole catalogue at once), `ApiCardsController`: the view and the log send codes, the client reads the cards there.
+- Public (`PUBLIC_ACCESS` in `security.yaml`) and cacheable (`public`, `max-age` one hour), like `GET /api/actions`: a printed card depends on no game nor reader. 404 `card_not_found` (problem details) for an unknown code.
+- A dedicated DTO (`View/Model/LogicalCardView`, `View/LogicalCardViewFactory`) instead of serializing the entity: the card is named by its `code` as in the view of a game, and the contract of the API does not follow the mapping.
+- Fields: the printed attributes, `ability_timings` and `ability_granted_to_attached`. The printings and the packs are left out.
+- Toshi Ranbo, printed with every element, lists the five elements in its fixture (it had `all`, which is not an `Enum/Element`, so `getElements()` failed on it). A card with no element has `elements: null`.
+
 ## Decisions taken for the available actions
 
 `available_actions` in `GameView`: the flat, sorted list of the types of the public messages the viewer can send now.
@@ -316,7 +324,6 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 - **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
 - **`wait_for_update`**: a bounded long-poll on the version (`version > since`, then the log since that version: `GameLogViewFactory::create($game, $player, $since)`), as an HTTP endpoint wrapped by the MCP tool.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
-- **Cards**: no endpoint serves the logical cards (the view and the log send codes); a client or an agent needs their data (name, text, cost, skills, ability timings).
 - **Joining a game**: decks, the matchmaking queue and the creation of a game are only driven by console commands (`app:deck:create`, `app:candidate:create`, `app:matchmaking`, `app:game:create`); an agent cannot join a game through the API.
 - **Authentication**: issuing tokens through the API (`AccessTokenIssuer`). Guests (a human chooses a name and gets a session token; the account can later be linked to a real identity), then login without password: Discord (OAuth2) first, passkeys (WebAuthn) next; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable). The MCP server only accepts the tokens of bots (`ROLE_BOT`).
 - Private Mercure topics (the topic `/games/{id}` is public, it carries no data of the game).

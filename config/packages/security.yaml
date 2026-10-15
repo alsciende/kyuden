@@ -23,4 +23,6 @@ security:
     access_control:
         # the catalogue of the action messages depends on no game
         - { path: ^/api/actions$, roles: PUBLIC_ACCESS }
+        # the cards as printed depend on no game
+        - { path: ^/api/cards(/|$), roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }

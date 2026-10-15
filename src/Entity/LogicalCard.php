@@ -276,13 +276,13 @@ class LogicalCard implements \Stringable
     }
 
     /**
-     * @return Element[]|null
+     * @return list<Element>|null
      */
     public function getElements(): ?array
     {
-        return array_map(
+        return $this->elements === null ? null : array_map(
             fn (string $element): Element => Element::from($element),
-            $this->elements ?? []
+            $this->elements,
         );
     }
 
