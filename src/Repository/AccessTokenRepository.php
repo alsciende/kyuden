@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\AccessToken;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -33,5 +34,23 @@ class AccessTokenRepository extends ServiceEntityRepository
         \assert($accessToken === null || $accessToken instanceof AccessToken);
 
         return $accessToken;
+    }
+
+    /**
+     * Revokes every access token of a user.
+     *
+     * @return int the number of tokens revoked
+     */
+    public function deleteByUser(User $user): int
+    {
+        $count = $this->createQueryBuilder('t')
+            ->delete()
+            ->where('t.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->execute();
+        \assert(\is_int($count));
+
+        return $count;
     }
 }
