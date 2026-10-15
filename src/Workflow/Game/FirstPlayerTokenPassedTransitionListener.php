@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\FirstPlayerChangedEvent;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -18,6 +20,7 @@ readonly class FirstPlayerTokenPassedTransitionListener
 {
     public function __construct(
         private GameStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -26,10 +29,10 @@ readonly class FirstPlayerTokenPassedTransitionListener
         /** @var Game $game */
         $game = $event->getSubject();
 
-        $this->stateManager->withState($game, function (GameState $state) use ($game): GameState {
-            $firstPlayerId = $state->firstPlayerId ?? throw new \LogicException('The game has no first player.');
-
-            return $state->setFirstPlayer($game->getPlayer($state->getNextPlayerId($game->getPlayer($firstPlayerId))));
-        });
+        $state = $this->stateManager->getState($game);
+        $firstPlayerId = $state->firstPlayerId ?? throw new \LogicException('The game has no first player.');
+        $nextPlayer = $game->getPlayer($state->getNextPlayerId($game->getPlayer($firstPlayerId)));
+        $this->stateManager->withState($game, fn (GameState $state): GameState => $state->setFirstPlayer($nextPlayer));
+        $this->eventDispatcher->dispatch(new FirstPlayerChangedEvent($game, $nextPlayer));
     }
 }

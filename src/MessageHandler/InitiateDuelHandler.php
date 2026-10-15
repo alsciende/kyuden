@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\PassingRule;
+use App\Event\DuelInitiatedEvent;
 use App\Exception\Rules\CannotDuelException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInOpportunitiesStepException;
@@ -23,6 +24,7 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\DuelState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -42,6 +44,7 @@ final readonly class InitiateDuelHandler implements PlayerActionHandlerInterface
         private PlayerStateManager $playerStateManager,
         private OpportunityService $opportunityService,
         private ConflictService $conflictService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -102,6 +105,7 @@ final readonly class InitiateDuelHandler implements PlayerActionHandlerInterface
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new DuelInitiatedEvent($game, $player, $opponent, $message->getType(), $challengers, $challenged));
     }
 
     /**

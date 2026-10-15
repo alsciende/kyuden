@@ -6,8 +6,9 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Enum\Element;
+use App\Event\FatePlacedOnRingEvent;
 use App\State\Manager\GameStateManager;
-use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -21,6 +22,7 @@ readonly class FatePlacedOnRingsTransitionListener
 
     public function __construct(
         private GameStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -29,14 +31,14 @@ readonly class FatePlacedOnRingsTransitionListener
         /** @var Game $game */
         $game = $event->getSubject();
 
-        $this->stateManager->withState($game, function (GameState $state): GameState {
-            foreach (Element::cases() as $element) {
-                if ($state->isRingUnclaimed($element)) {
-                    $state->getRing($element)->fate += self::FATE_PLACED;
-                }
+        $state = $this->stateManager->getState($game);
+        foreach (Element::cases() as $element) {
+            if ($state->isRingUnclaimed($element)) {
+                $state->getRing($element)->fate += self::FATE_PLACED;
+                $this->eventDispatcher->dispatch(new FatePlacedOnRingEvent($game, $element, self::FATE_PLACED));
             }
+        }
 
-            return $state;
-        });
+        $this->stateManager->setState($game, $state);
     }
 }

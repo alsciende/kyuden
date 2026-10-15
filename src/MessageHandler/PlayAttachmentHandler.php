@@ -8,6 +8,7 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\FateSpentEvent;
 use App\Message\PlayAttachment;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -17,6 +18,7 @@ use App\Service\HandService;
 use App\Service\OpportunityService;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -37,6 +39,7 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
         private HandService $handService,
         private ConflictService $conflictService,
         private WorkflowInterface $conflictCardStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -63,6 +66,9 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
             $player,
             fn (PlayerState $state): PlayerState => $state->spendFate($message->getCardCost()),
         );
+        if ($message->getCardCost() > 0) {
+            $this->eventDispatcher->dispatch(new FateSpentEvent($game, $player, $message->getCardCost()));
+        }
         $this->conflictCardStateMachine->apply($card, 'play_card', [
             'stack' => $target->getStack(),
         ]);

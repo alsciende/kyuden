@@ -29,5 +29,6 @@ class EndGameTransitionListenerTest extends AbstractKernelTestCase
         self::assertSame($scenario->player('john')->getId(), $state->winnerId);
         self::assertSame(VictoryCondition::HonorWin, $state->victoryCondition);
         self::assertSame([], $state->activePlayerIds);
+        self::assertSame(['The game ends', 'john wins the game: honor_win'], $this->logLines($scenario->game()));
     }
 }

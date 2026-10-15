@@ -6,7 +6,11 @@ namespace App\MessageHandler;
 
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
+use App\Entity\PhysicalCard;
 use App\Entity\Player;
+use App\Event\CharactersEvadedEvent;
+use App\Event\ConflictDeclaredEvent;
+use App\Event\RingFateTakenEvent;
 use App\Exception\Rules\NoAttackerException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\RingNotUnclaimedException;
@@ -20,6 +24,7 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\ConflictState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -39,6 +44,7 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
         private ConflictService $conflictService,
         private WorkflowInterface $gameStateMachine,
         private WorkflowInterface $provinceCardStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -83,6 +89,21 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
             $player,
             fn (PlayerState $state): PlayerState => $state->useConflictOpportunity($message->getType())->incrementFate($ringFate),
         );
+        $this->eventDispatcher->dispatch(new ConflictDeclaredEvent(
+            $game,
+            $player,
+            $defender,
+            $message->getRing(),
+            $message->getType(),
+            $province,
+            array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $attackerIds),
+        ));
+        if ($evadedIds !== []) {
+            $this->eventDispatcher->dispatch(new CharactersEvadedEvent($game, array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $evadedIds)));
+        }
+        if ($ringFate > 0) {
+            $this->eventDispatcher->dispatch(new RingFateTakenEvent($game, $player, $message->getRing(), $ringFate));
+        }
         $this->gameStateManager->withState($game, function (GameState $state) use ($message, $player, $defender, $attackerIds, $evadedIds): GameState {
             $state->getRing($message->getRing())->fate = 0;
             $state->conflict = new ConflictState($player->getId(), $defender->getId(), $message->getRing(), $message->getType(), $message->getProvinceId());

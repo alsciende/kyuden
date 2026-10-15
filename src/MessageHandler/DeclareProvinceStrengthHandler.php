@@ -6,14 +6,17 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\ProvinceStrengthDeclaredEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotAttackedProvinceException;
 use App\Exception\Rules\NotDefendingPlayerException;
 use App\Message\DeclareProvinceStrength;
+use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -26,7 +29,9 @@ final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandl
     public function __construct(
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
+        private CardRepository $cardRepository,
         private GameStateManager $gameStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -56,5 +61,6 @@ final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandl
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new ProvinceStrengthDeclaredEvent($game, $player, $this->cardRepository->get($message->getProvinceId(), $game), $message->getStrength()));
     }
 }

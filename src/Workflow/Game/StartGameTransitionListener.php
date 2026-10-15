@@ -7,10 +7,12 @@ namespace App\Workflow\Game;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\StackType;
+use App\Event\FirstPlayerChangedEvent;
 use App\Factory\CardFactory;
 use App\Factory\StackFactory;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
@@ -23,6 +25,7 @@ readonly class StartGameTransitionListener
         private CardFactory $cardFactory,
         private StackFactory $stackFactory,
         private LoggerInterface $logger,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -34,11 +37,12 @@ readonly class StartGameTransitionListener
         /** @var Game $game */
         $game = $event->getSubject();
 
+        $firstPlayer = $this->selectRandomFirstPlayer($game);
         $this->stateManager->withState(
             $game,
             fn (GameState $state): GameState => $state
                 ->setPlayerOrder(...$game->getPlayers()->toArray())
-                ->setFirstPlayer($this->selectRandomFirstPlayer($game))
+                ->setFirstPlayer($firstPlayer)
                 ->initRings()
         );
 
@@ -47,6 +51,7 @@ readonly class StartGameTransitionListener
             'first_player_id' => $this->stateManager->getState($game)->firstPlayerId,
         ]);
 
+        $this->eventDispatcher->dispatch(new FirstPlayerChangedEvent($game, $firstPlayer));
         foreach ($game->getPlayers() as $player) {
             $this->initPlayer($player);
         }

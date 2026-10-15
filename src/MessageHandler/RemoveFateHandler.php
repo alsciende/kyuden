@@ -6,12 +6,14 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\FateRemovedFromCardEvent;
 use App\Message\RemoveFate;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -26,6 +28,7 @@ final readonly class RemoveFateHandler implements PlayerActionHandlerInterface
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private CardStateManager $cardStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -46,5 +49,6 @@ final readonly class RemoveFateHandler implements PlayerActionHandlerInterface
             $card,
             fn (CardState $state): CardState => $state->removeFate($message->getAmount()),
         );
+        $this->eventDispatcher->dispatch(new FateRemovedFromCardEvent($game, $card, $message->getAmount()));
     }
 }

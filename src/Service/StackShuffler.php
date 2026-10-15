@@ -6,8 +6,10 @@ namespace App\Service;
 
 use App\Entity\PhysicalCard;
 use App\Entity\Stack;
+use App\Event\DeckShuffledEvent;
 use App\Factory\CardFactory;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Shuffling a stack makes the players lose track of its cards: each card is deleted and created again (same logical
@@ -22,6 +24,7 @@ readonly class StackShuffler
     public function __construct(
         private CardFactory $cardFactory,
         private EntityManagerInterface $entityManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -42,5 +45,7 @@ readonly class StackShuffler
         foreach ($shuffledCards as $card) {
             $this->cardFactory->createCard($game->generateId(), $card->getLogicalCard(), $stack, $card->getOrientation());
         }
+
+        $this->eventDispatcher->dispatch(new DeckShuffledEvent($game, $stack));
     }
 }

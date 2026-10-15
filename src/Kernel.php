@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App;
 
 use App\Attribute\AppAction;
+use App\GameLog\GameLog;
+use App\GameLog\GameLogEventListener;
 use App\Message\PlayerActionInterface;
 use App\MessageHandler\PlayerActionHandlerInterface;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Component\Config\Resource\DirectoryResource;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
@@ -38,6 +41,36 @@ class Kernel extends BaseKernel implements CompilerPassInterface
         $container->setParameter('.app.action_messages', $classes);
 
         $container->setAlias('.app.player_action_handlers', (string) ServiceLocatorTagPass::register($container, $this->findPlayerActionHandlers($container)));
+
+        $gameLogListener = $container->getDefinition(GameLogEventListener::class);
+        foreach ($this->findLoggedEvents($container) as $eventClass) {
+            // before the listeners applying its consequences, which write their own entries
+            $gameLogListener->addTag('kernel.event_listener', [
+                'event' => $eventClass,
+                'priority' => 100,
+            ]);
+        }
+    }
+
+    /**
+     * The domain events of src/Event carrying the GameLog attribute (they are not services: their directory is read).
+     *
+     * @return list<class-string>
+     */
+    private function findLoggedEvents(ContainerBuilder $container): array
+    {
+        $directory = $this->getProjectDir() . '/src/Event';
+        $container->addResource(new DirectoryResource($directory, '/\\.php$/'));
+
+        $classes = [];
+        foreach (glob($directory . '/*.php') ?: [] as $file) {
+            $class = 'App\\Event\\' . basename($file, '.php');
+            if (class_exists($class) && new \ReflectionClass($class)->getAttributes(GameLog::class) !== []) {
+                $classes[] = $class;
+            }
+        }
+
+        return $classes;
     }
 
     /**

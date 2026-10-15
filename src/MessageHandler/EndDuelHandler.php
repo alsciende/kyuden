@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\DuelEndedEvent;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NotInDuelException;
 use App\Message\EndDuel;
@@ -13,6 +14,7 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -26,6 +28,7 @@ final readonly class EndDuelHandler implements PlayerActionHandlerInterface
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -53,5 +56,6 @@ final readonly class EndDuelHandler implements PlayerActionHandlerInterface
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new DuelEndedEvent($game));
     }
 }

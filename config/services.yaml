@@ -21,6 +21,10 @@ services:
         exclude:
             - '../src/Event/'
             - '../src/Exception/'
+            - '../src/GameLog/GameLog.php'
+            - '../src/GameLog/LogParam.php'
+            - '../src/GameLog/Revealed.php'
+            - '../src/GameLog/VisibleTo.php'
             - '../src/Middleware/Stamp/'
             - '../src/Model/'
             - '../src/Notification/'

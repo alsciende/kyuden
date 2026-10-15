@@ -6,10 +6,12 @@ namespace App\MessageHandler;
 
 use App\Entity\Deck;
 use App\Entity\Player;
+use App\Event\PlayerJoinedEvent;
 use App\Exception\Data\DeckNotFoundException;
 use App\Message\JoinGame;
 use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -20,6 +22,7 @@ final readonly class JoinGameHandler
         private EntityManagerInterface $entityManager,
         private GameRepository $gameRepository,
         private LoggerInterface $logger,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -35,6 +38,7 @@ final readonly class JoinGameHandler
         }
         $player->setDeck($deck);
         $game->addPlayer($player);
+        $this->eventDispatcher->dispatch(new PlayerJoinedEvent($game, $player));
 
         $this->logger->info("Player {$player->getId()} has joined game {$game->getId()}.");
 

@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\DataFixtures\AppFixtures;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
+use App\Message\DrawConflictCards;
 use App\Message\LoseHonor;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -32,13 +33,13 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
     /**
      * @param array<string, string> $headers HTTP headers of the request, by their server name (HTTP_IF_NONE_MATCH)
      */
-    private function get(string $gameId, ?string $user = 'john', array $headers = []): Response
+    private function get(string $gameId, ?string $user = 'john', array $headers = [], string $path = ''): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
         $client->disableReboot();
 
-        $client->request('GET', "/api/games/{$gameId}", server: array_filter([
+        $client->request('GET', "/api/games/{$gameId}{$path}", server: array_filter([
             'HTTP_AUTHORIZATION' => $user === null ? null : "Bearer {$user}",
             ...$headers,
         ]));
@@ -209,5 +210,119 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         self::assertSame('game_not_found', $this->decode($response)['type']);
+    }
+
+    /**
+     * John draws a card from his deck, then Jane makes him lose 1 honor.
+     */
+    private function scenarioWithLog(): Scenario
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->conflictDeck(['01-banzai']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10))
+            ->persist();
+        $gameId = $scenario->game()->getId();
+        $johnId = $scenario->player('john')->getId();
+        $this->messageBus->dispatch(new DrawConflictCards($gameId, $johnId, $johnId, 1));
+        $this->messageBus->dispatch(new LoseHonor($gameId, $scenario->player('jane')->getId(), $johnId, 1));
+
+        return $scenario;
+    }
+
+    public function testThePlayerReadsTheLogAsTheySeeIt(): void
+    {
+        $scenario = $this->scenarioWithLog();
+        $johnId = $scenario->player('john')->getId();
+
+        $response = $this->get($scenario->game()->getId(), 'jane', path: '/log');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('"2"', $response->getEtag());
+        $log = $this->decode($response);
+        self::assertSame(2, $log['version']);
+        self::assertSame([
+            [
+                'version' => 1,
+                'type' => 'draw_conflict_cards',
+                'player_id' => $johnId,
+                'entries' => [[
+                    'template' => '{owner} draws {card}',
+                    'params' => [
+                        'owner' => ['type' => 'player', 'id' => $johnId],
+                        'card' => ['type' => 'card', 'id' => null, 'code' => null],
+                    ],
+                ]],
+            ],
+            [
+                'version' => 2,
+                'type' => 'lose_honor',
+                'player_id' => $scenario->player('jane')->getId(),
+                'entries' => [[
+                    'template' => '{player} loses {amount} honor',
+                    'params' => [
+                        'player' => ['type' => 'player', 'id' => $johnId],
+                        'amount' => ['type' => 'value', 'value' => 1, 'hidden' => false],
+                    ],
+                ]],
+            ],
+        ], $log['messages']);
+    }
+
+    public function testThePlayerSeesTheCardsTheyKnowInTheLog(): void
+    {
+        $scenario = $this->scenarioWithLog();
+
+        $log = $this->decode($this->get($scenario->game()->getId(), 'john', path: '/log'));
+
+        self::assertIsArray($log['messages']);
+        self::assertIsArray($log['messages'][0]);
+        self::assertIsArray($log['messages'][0]['entries']);
+        self::assertIsArray($log['messages'][0]['entries'][0]);
+        self::assertIsArray($log['messages'][0]['entries'][0]['params']);
+        $card = $log['messages'][0]['entries'][0]['params']['card'];
+        self::assertIsArray($card);
+        self::assertSame('01-banzai', $card['code']);
+    }
+
+    public function testThePlayerReadsTheLogSinceAVersion(): void
+    {
+        $scenario = $this->scenarioWithLog();
+
+        $log = $this->decode($this->get($scenario->game()->getId(), 'john', path: '/log?since=1'));
+
+        self::assertIsArray($log['messages']);
+        self::assertSame([2], array_map(fn (mixed $message): mixed => is_array($message) ? $message['version'] : null, $log['messages']));
+    }
+
+    public function testTheVersionOfTheLogMustBeANaturalNumber(): void
+    {
+        $scenario = $this->scenarioWithLog();
+
+        $response = $this->get($scenario->game()->getId(), 'john', path: '/log?since=-1');
+
+        self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        self::assertSame('invalid_since', $this->decode($response)['type']);
+    }
+
+    public function testAUserWhoIsNotAPlayerOfTheGameCannotReadItsLog(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jack')
+            ->persist();
+
+        $response = $this->get($scenario->game()->getId(), 'jane', path: '/log');
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        self::assertSame('not_a_player', $this->decode($response)['type']);
+    }
+
+    public function testTheGameOfTheLogMustExist(): void
+    {
+        $response = $this->get('unknown', path: '/log');
+
+        self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 }

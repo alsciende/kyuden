@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Player;
+use App\Event\HonorTransferredEvent;
 use App\Exception\Rules\NoHonorBidException;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Honor transfer after the honor dials are revealed, in the draw phase (2.5) and in a duel (D.5).
@@ -16,6 +18,7 @@ readonly class HonorBidService
 {
     public function __construct(
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -50,5 +53,6 @@ readonly class HonorBidService
             $lowest[0],
             fn (PlayerState $state): PlayerState => $state->incrementHonor($amount),
         );
+        $this->eventDispatcher->dispatch(new HonorTransferredEvent($highest[0]->getGame(), $highest[0], $lowest[0], $amount));
     }
 }

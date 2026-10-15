@@ -8,6 +8,7 @@ use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\StackType;
+use App\Event\ProvincePlacedEvent;
 use App\Exception\Data\DataException;
 use App\Factory\StackFactory;
 use App\Message\DrawConflictCards;
@@ -16,6 +17,7 @@ use App\Message\SetHonor;
 use App\Message\ShuffleConflictDeck;
 use App\Message\ShuffleDynastyDeck;
 use App\State\Manager\PlayerStateManager;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
@@ -29,6 +31,7 @@ readonly class SetupGameTransitionListener
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
         private StackFactory $stackFactory,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -77,6 +80,7 @@ readonly class SetupGameTransitionListener
             }
             $provinceStack = $this->stackFactory->createStack($player, StackType::RegularProvince);
             $provinceStack->addCard($card);
+            $this->eventDispatcher->dispatch(new ProvincePlacedEvent($player->getGame(), $card, $provinceStack));
             $this->transitionBus->dispatch(
                 new FillProvince($player->getGame()->getId(), $player->getId(), $card->getId())
             );

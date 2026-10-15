@@ -61,6 +61,18 @@ class DuelFlowTest extends AbstractKernelTestCase
         self::assertNull(self::service(GameStateManager::class)->getState($scenario->game())->duel);
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('jane')));
         self::assertSame('draw_phase_action_window', $scenario->game()->getCurrentPlace());
+        self::assertSame([
+            'john initiates a military duel: Akodo Toturi against Master of the Spear',
+            'john bids ? honor',
+            'jane bids 2 honor',
+            'john reveals an honor bid of 4',
+            'jane reveals an honor bid of 2',
+            'john declares a statistic of 3',
+            'jane declares a statistic of 6',
+            'john gives 2 honor to jane',
+            'jane wins the duel',
+            'The duel ends',
+        ], $this->logLines($scenario->game(), $scenario->player('jane')));
     }
 
     public function testThePlayersCannotPassDuringADuel(): void

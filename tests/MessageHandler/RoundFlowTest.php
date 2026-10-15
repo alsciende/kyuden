@@ -168,5 +168,28 @@ class RoundFlowTest extends AbstractKernelTestCase
         self::assertSame(DynastyCard::STATE_IN_PLAY, $this->scenario->card('toturi')->getCurrentPlace());
         self::assertSame(Orientation::FaceUp, $this->scenario->card('toturi')->getOrientation());
         self::assertSame(ProvinceCard::STATE_UNBROKEN, $this->scenario->card('janes-province')->getCurrentPlace());
+
+        // the log of the round, as jane reads it
+        $log = $this->logLines($this->scenario->game(), $this->scenario->player('jane'));
+        self::assertSame('john spends 6 fate', $log[0]);
+        self::assertContains('john bids ? honor', $log);
+        self::assertContains('jane bids 1 honor', $log);
+        self::assertContains('john draws a hidden card', $log);
+        self::assertContains('jane draws Banzai!', $log);
+        $declaration = array_search('john declares a military conflict against jane for the water ring, attacking Entrenched Position with Akodo Toturi', $log, true);
+        self::assertIsInt($declaration);
+        self::assertSame([
+            'Entrenched Position is revealed',
+            'The players may react to the conflict declaration',
+            'john passes',
+            'jane passes',
+            'The reactions to the conflict declaration are over',
+            'jane declares Doji Hotaru as defenders',
+            'The action window of the conflict opens',
+        ], array_slice($log, $declaration + 1, 7));
+        self::assertContains('jane wins the conflict (2 against 3)', $log);
+        self::assertContains('jane claims the water ring', $log);
+        self::assertContains('jane claims the Imperial Favor, military side up', $log);
+        self::assertSame(['jane is the first player', 'The fate phase ends', 'The dynasty phase begins'], array_slice($log, -3));
     }
 }

@@ -6,12 +6,14 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\ImperialFavorClaimedEvent;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\ClaimImperialFavor;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -27,6 +29,7 @@ final readonly class ClaimImperialFavorHandler implements PlayerActionHandlerInt
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
         private WorkflowInterface $gameStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -52,6 +55,7 @@ final readonly class ClaimImperialFavorHandler implements PlayerActionHandlerInt
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new ImperialFavorClaimedEvent($game, $player, $message->getSide()));
 
         $this->gameStateMachine->apply($game, 'imperial_favor_claimed');
     }

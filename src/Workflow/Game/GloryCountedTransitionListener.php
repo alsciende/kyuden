@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\GloryCountWonEvent;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -21,6 +23,7 @@ readonly class GloryCountedTransitionListener
     public function __construct(
         private GameStateManager $stateManager,
         private PlayerStateManager $playerStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -43,5 +46,8 @@ readonly class GloryCountedTransitionListener
 
             return $state;
         });
+        if ($winnerId !== null) {
+            $this->eventDispatcher->dispatch(new GloryCountWonEvent($game, $game->getPlayer($winnerId)));
+        }
     }
 }

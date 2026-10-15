@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\FateCollectedEvent;
 use App\Exception\Rules\FateAlreadyCollectedException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\CollectFate;
@@ -15,6 +16,7 @@ use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -28,6 +30,7 @@ final readonly class CollectFateHandler implements PlayerActionHandlerInterface
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -54,6 +57,7 @@ final readonly class CollectFateHandler implements PlayerActionHandlerInterface
             $player,
             fn (PlayerState $state): PlayerState => $state->incrementFate($message->getAmount())->setFateCollected(true),
         );
+        $this->eventDispatcher->dispatch(new FateCollectedEvent($game, $player, $message->getAmount()));
         $this->gameStateManager->withState(
             $game,
             fn (GameState $state): GameState => $state->setActivePlayer($game->getPlayer($state->getNextPlayerId($player))),

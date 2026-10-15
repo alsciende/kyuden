@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\View;
 
-use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
-use App\Enum\Orientation;
-use App\Enum\StackType;
 use App\Service\AvailableActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
@@ -23,10 +20,9 @@ use App\View\Model\StackView;
 use function Symfony\Component\String\u;
 
 /**
- * Builds the view of a game for one of its players. The visibility rules live here, and only depend on the state,
- * never on the game place:
- * - decks are hidden from every player, the hand from the opponents: only their number of cards is shown;
- * - a face-down card is hidden from every player, except a face-down province from its owner;
+ * Builds the view of a game for one of its players. The visibility rules only depend on the state, never on the game
+ * place:
+ * - the cards follow the rules of Visibility: a hidden stack only shows its number of cards, a hidden card has no code;
  * - the pending honor bid and the chosen stronghold province are shown to their owner only;
  * - everything else is public.
  * The actions available to the viewer come from AvailableActionsResolver.
@@ -38,6 +34,7 @@ final readonly class GameViewFactory
         private PlayerStateManager $playerStateManager,
         private CardStateManager $cardStateManager,
         private AvailableActionsResolver $availableActionsResolver,
+        private Visibility $visibility,
     ) {
     }
 
@@ -95,11 +92,7 @@ final readonly class GameViewFactory
 
     private function createStackView(Stack $stack, Player $viewer): StackView
     {
-        $hidden = match ($stack->getType()) {
-            StackType::ConflictDrawDeck, StackType::DynastyDrawDeck => true,
-            StackType::Hand => $stack->getPlayer() !== $viewer,
-            default => false,
-        };
+        $hidden = ! $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer);
 
         return new StackView(
             id: $stack->getId(),
@@ -112,8 +105,7 @@ final readonly class GameViewFactory
     private function createCardView(PhysicalCard $card, Player $viewer): CardView
     {
         $state = $this->cardStateManager->getState($card);
-        $visible = $card->getOrientation() !== Orientation::FaceDown
-            || ($card instanceof ProvinceCard && $card->getPlayer() === $viewer);
+        $visible = $this->visibility->isCardInStackVisibleTo($card, $card->getStack(), $viewer);
 
         return new CardView(
             id: $card->getId(),

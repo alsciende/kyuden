@@ -6,12 +6,14 @@ namespace App\Event;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\GameLog\GameLog;
 
 /**
  * A player has passed their opportunity to act (PassOpportunity), before the opportunity goes to the next player.
  * Listeners check the game place to apply the rules of the step.
  */
-final readonly class OpportunityPassedEvent
+#[GameLog('{player} passes')]
+final readonly class OpportunityPassedEvent implements GameEventInterface
 {
     public function __construct(
         private Game $game,
@@ -20,6 +22,7 @@ final readonly class OpportunityPassedEvent
     ) {
     }
 
+    #[\Override]
     public function getGame(): Game
     {
         return $this->game;

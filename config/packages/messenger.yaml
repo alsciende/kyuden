@@ -35,7 +35,9 @@ framework:
                     - 'App\Middleware\GameLockMiddleware'
                     - 'App\Middleware\GameVersionMiddleware'
                     - 'App\Middleware\GameEndedMiddleware'
-                    - 'App\Middleware\WorkflowTransitionMiddleware'
+                    # increments the version once the automatic transitions are applied: the log entries they write
+                    # belong to the version of the message that led to them
                     - 'App\Middleware\EventRecordingMiddleware'
+                    - 'App\Middleware\WorkflowTransitionMiddleware'
             # bus without middlewares to use in the message handlers
             transition.bus:

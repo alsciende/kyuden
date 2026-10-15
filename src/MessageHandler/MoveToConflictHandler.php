@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\CharacterMovedToConflictEvent;
 use App\Exception\Rules\AlreadyParticipatingException;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotInConflictException;
@@ -16,6 +17,7 @@ use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -31,6 +33,7 @@ final readonly class MoveToConflictHandler implements PlayerActionHandlerInterfa
         private CardRepository $cardRepository,
         private GameStateManager $gameStateManager,
         private ConflictService $conflictService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -65,5 +68,6 @@ final readonly class MoveToConflictHandler implements PlayerActionHandlerInterfa
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new CharacterMovedToConflictEvent($game, $card));
     }
 }

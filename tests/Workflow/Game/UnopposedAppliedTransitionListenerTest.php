@@ -20,6 +20,14 @@ class UnopposedAppliedTransitionListenerTest extends AbstractKernelTestCase
      */
     private function janeHonorAfter(string $winner, array $defenders): ?int
     {
+        return $this->playerStateManager->getState($this->applyUnopposed($winner, $defenders)->player('jane'))->getHonor();
+    }
+
+    /**
+     * @param list<string> $defenders
+     */
+    private function applyUnopposed(string $winner, array $defenders): Scenario
+    {
         $scenario = $this->scenario()
             ->atPlace('apply_unopposed')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->inPlay(['toturi' => '01-akodo-toturi']))
@@ -35,12 +43,19 @@ class UnopposedAppliedTransitionListenerTest extends AbstractKernelTestCase
 
         self::service(UnopposedAppliedTransitionListener::class)(new TransitionEvent($scenario->game(), new Marking()));
 
-        return $this->playerStateManager->getState($scenario->player('jane'))->getHonor();
+        return $scenario;
     }
 
     public function testTheDefendingPlayerLosesOneHonorWhenTheAttackingPlayerWinsUnopposed(): void
     {
         self::assertSame(9, $this->janeHonorAfter('john', []));
+    }
+
+    public function testTheHonorLossIsLogged(): void
+    {
+        $scenario = $this->applyUnopposed('john', []);
+
+        self::assertSame(['jane loses 1 honor'], $this->logLines($scenario->game()));
     }
 
     public function testNothingHappensWithDefendingCharacters(): void

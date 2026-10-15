@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\GameWonEvent;
 use App\Service\VictoryService;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -20,6 +22,7 @@ readonly class EndGameTransitionListener
     public function __construct(
         private VictoryService $victoryService,
         private GameStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -36,5 +39,6 @@ readonly class EndGameTransitionListener
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new GameWonEvent($game, $victory->winner, $victory->condition));
     }
 }

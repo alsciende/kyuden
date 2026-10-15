@@ -101,9 +101,11 @@ final class WorkflowConfig
     {
         return [
             self::transition('bow', $place, $place, [
+                'log' => '{card} is bowed',
                 'orientation' => Orientation::Sideways,
             ]),
             self::transition('ready', $place, $place, [
+                'log' => '{card} is readied',
                 'orientation' => Orientation::FaceUp,
             ]),
         ];
@@ -119,7 +121,9 @@ final class WorkflowConfig
     {
         $transitions = [];
         foreach ($places as $place) {
-            $transitions[] = self::transition('trigger_ability', $place, $place);
+            $transitions[] = self::transition('trigger_ability', $place, $place, [
+                'log' => 'An ability of {card} is triggered',
+            ]);
         }
 
         return $transitions;

@@ -10,6 +10,8 @@ use App\Entity\Player;
 use App\Enum\AbilityTiming;
 use App\Enum\StackType;
 use App\Enum\Type;
+use App\Event\EventCardPlayedEvent;
+use App\Event\FateSpentEvent;
 use App\Exception\Rules\NoEventInHandException;
 use App\Exception\Rules\NotInHandException;
 use App\Exception\Rules\NotOwnedCardException;
@@ -17,6 +19,7 @@ use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -27,6 +30,7 @@ readonly class HandService
     public function __construct(
         private PlayerStateManager $playerStateManager,
         private WorkflowInterface $conflictCardStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -83,6 +87,10 @@ readonly class HandService
             $player,
             fn (PlayerState $state): PlayerState => $state->spendFate($cardCost),
         );
+        if ($cardCost > 0) {
+            $this->eventDispatcher->dispatch(new FateSpentEvent($player->getGame(), $player, $cardCost));
+        }
+        $this->eventDispatcher->dispatch(new EventCardPlayedEvent($player->getGame(), $player, $card));
         $this->conflictCardStateMachine->apply($card, 'discard_card');
     }
 }

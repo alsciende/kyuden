@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\FateRemovedFromCardEvent;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -20,6 +22,7 @@ readonly class FateRemovedTransitionListener
 
     public function __construct(
         private CardStateManager $cardStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -30,10 +33,16 @@ readonly class FateRemovedTransitionListener
 
         foreach ($game->getPlayers() as $player) {
             foreach ($player->getCharactersInPlay() as $character) {
+                $removed = min(self::FATE_REMOVED, $this->cardStateManager->getState($character)->getFate());
+                if ($removed === 0) {
+                    continue;
+                }
+
                 $this->cardStateManager->withState(
                     $character,
-                    fn (CardState $state): CardState => $state->removeFate(min(self::FATE_REMOVED, $state->getFate())),
+                    fn (CardState $state): CardState => $state->removeFate($removed),
                 );
+                $this->eventDispatcher->dispatch(new FateRemovedFromCardEvent($game, $character, $removed));
             }
         }
     }

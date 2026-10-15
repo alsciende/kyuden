@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\EventListener;
 
+use App\Event\FateGainedEvent;
 use App\Event\OpportunityPassedEvent;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -19,6 +21,7 @@ readonly class PlayCardsFromProvincesOpportunityPassedListener
 
     public function __construct(
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -32,5 +35,6 @@ readonly class PlayCardsFromProvincesOpportunityPassedListener
             $event->getPlayer(),
             fn (PlayerState $state): PlayerState => $state->incrementFate(self::FIRST_TO_PASS_FATE),
         );
+        $this->eventDispatcher->dispatch(new FateGainedEvent($event->getGame(), $event->getPlayer(), self::FIRST_TO_PASS_FATE));
     }
 }

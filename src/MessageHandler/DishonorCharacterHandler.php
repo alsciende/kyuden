@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\PersonalHonorChangedEvent;
 use App\Message\DishonorCharacter;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -13,6 +14,7 @@ use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -28,6 +30,7 @@ final readonly class DishonorCharacterHandler implements PlayerActionHandlerInte
         private CardRepository $cardRepository,
         private ConflictService $conflictService,
         private CardStateManager $cardStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -49,5 +52,6 @@ final readonly class DishonorCharacterHandler implements PlayerActionHandlerInte
             $card,
             fn (CardState $state): CardState => $state->dishonor(),
         );
+        $this->eventDispatcher->dispatch(new PersonalHonorChangedEvent($game, $card, $this->cardStateManager->getState($card)->getPersonalHonor()));
     }
 }

@@ -7,8 +7,10 @@ namespace App\Service;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\StackType;
+use App\Event\HonorLostEvent;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -24,6 +26,7 @@ readonly class DrawDeckService
         private WorkflowInterface $conflictCardStateMachine,
         private WorkflowInterface $dynastyCardStateMachine,
         private StackShuffler $stackShuffler,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -53,6 +56,7 @@ readonly class DrawDeckService
             $player,
             fn (PlayerState $state): PlayerState => $state->decrementHonor(self::RUNNING_OUT_OF_CARDS_HONOR_LOSS),
         );
+        $this->eventDispatcher->dispatch(new HonorLostEvent($player->getGame(), $player, self::RUNNING_OUT_OF_CARDS_HONOR_LOSS));
 
         foreach ($player->getUniqueStack($discardPileType)->getOrderedCards() as $card) {
             $workflow->apply($card, 'put_back');

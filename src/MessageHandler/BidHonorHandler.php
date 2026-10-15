@@ -67,6 +67,6 @@ final readonly class BidHonorHandler implements PlayerActionHandlerInterface
             $player,
             fn (PlayerState $state): PlayerState => $state->setPendingHonorBid($message->getBid()),
         );
-        $this->eventDispatcher->dispatch(new HonorBidPlacedEvent($game, $player));
+        $this->eventDispatcher->dispatch(new HonorBidPlacedEvent($game, $player, $message->getBid()));
     }
 }

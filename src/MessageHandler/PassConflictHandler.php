@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\ConflictPassedEvent;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Message\PassConflict;
 use App\Repository\GameRepository;
@@ -14,6 +15,7 @@ use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -30,6 +32,7 @@ final readonly class PassConflictHandler implements PlayerActionHandlerInterface
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         private WorkflowInterface $gameStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -52,6 +55,7 @@ final readonly class PassConflictHandler implements PlayerActionHandlerInterface
             $player,
             fn (PlayerState $state): PlayerState => $state->useConflictOpportunity(null),
         );
+        $this->eventDispatcher->dispatch(new ConflictPassedEvent($game, $player));
         $this->gameStateManager->withState(
             $game,
             function (GameState $state) use ($player): GameState {

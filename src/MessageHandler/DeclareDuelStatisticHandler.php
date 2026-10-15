@@ -6,6 +6,9 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\DuelStatisticDeclaredEvent;
+use App\Event\DuelTiedEvent;
+use App\Event\DuelWonEvent;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NoHonorBidException;
 use App\Exception\Rules\NotInDuelException;
@@ -16,6 +19,7 @@ use App\Service\HonorBidService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -32,6 +36,7 @@ final readonly class DeclareDuelStatisticHandler implements PlayerActionHandlerI
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         private HonorBidService $honorBidService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -64,6 +69,7 @@ final readonly class DeclareDuelStatisticHandler implements PlayerActionHandlerI
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new DuelStatisticDeclaredEvent($game, $player, $message->getStatistic()));
 
         $duel = $this->gameStateManager->getState($game)->currentDuel();
         if (! $duel->statisticsDeclared()) {
@@ -80,5 +86,7 @@ final readonly class DeclareDuelStatisticHandler implements PlayerActionHandlerI
 
             return $state;
         });
+        $winnerId = $this->gameStateManager->getState($game)->currentDuel()->winnerId;
+        $this->eventDispatcher->dispatch($winnerId === null ? new DuelTiedEvent($game) : new DuelWonEvent($game, $game->getPlayer($winnerId)));
     }
 }

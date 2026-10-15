@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change; latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`; latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -266,13 +266,40 @@ Prerequisite of `wait_for_update` (MCP server): an agent must know whether the g
 - `X-Game-Version` headers (the `X-` prefix is deprecated, RFC 6648) or the version in the body of the POST: the standard headers are understood by HTTP clients.
 - 200 with `{version}` in the POST response: the ETag already carries it.
 
+## Decisions taken for the game log
+
+The stored `Event`s cannot be shown to the players: their payloads hold secret information (above all the seed of `CreateGame`, from which the whole game can be replayed, but also the secret bids, the chosen stronghold province). The players read a log of the game instead, built for them.
+
+**Design**
+- One entry per change of the state: a template in English with placeholders and params (`{player} loses {amount} honor`), readable as is, translatable by the client (the template is the key). The params are typed (`player`, `card`, `stack`, `ring`, `value`, `list`) so that the client can show cards by code and players by name.
+- A single entry for every reader, each param with its visibility (null: public, else the ids of the players who know it, empty: nobody), masked when the log is read, as the view is: the visibility rules are written once (`View/Visibility`, shared with `GameViewFactory`), and spectators are covered (only what is public). A hidden card loses its id too: otherwise a card drawn could be followed until it is played.
+- The visibility is computed when the entry is written, from the state before and after the change: a card drawn is known to its owner, a dynasty card put facedown into a province to nobody (its id is public, as in the view), a card played from hand to everyone.
+- Three sources, all declarative: the `log` metadata of every card transition (required, checked by a test; params `card`, `owner`, `from`, `to`) and of every game transition (no params), and the `#[GameLog]` attribute of the domain events dispatched for every other change (`#[VisibleTo]` for a secret value or card, `#[Revealed]` for a card shown wherever it is). The domain events are also the future hook of the cards reacting to what happens.
+- The log tells what changed, not why: the engine does not know the card effects. Each message of the log has its type and its sender (never its payload), so the reader knows who did what (e.g. who made a player lose honor).
+- Card transitions are logged when the card leaves its place, game transitions before their listeners, domain events before their other listeners: the entries are in the order of the changes (the move of a character before the consequences of leaving play).
+- `EventRecordingMiddleware` now comes before `WorkflowTransitionMiddleware`: the version is incremented once the automatic transitions are applied, so their entries belong to the message that led to them.
+- Bookkeeping that follows from a logged transition is not logged: the active players and the passes reset when a step begins (`It is X's turn`), the turn records, the reset of the honor dials, the cleanup of the conflict and the duel, `lastConflictPlayerId`.
+- Reading: `GET /api/games/{id}/log?since={version}`, same errors and `ETag` as the view; `app:game:log <id> [--as=<user>]` renders it as text (`GameLog/GameLogRenderer`).
+
+**Alternatives rejected**
+- Two texts per message (one for the sender, one for the others): the secret is not always the sender's (`SetHonorBid` or `DiscardRandomCardFromHand` sent by the opponent), the automatic transitions are not messages, and the text depends on the result of the handling (random discard, cards drawn).
+- A workflow for the player, whose transitions would carry the changes that are not card moves: many of them are not the player's (rings, Imperial Favor, conflict, duel, card tokens), a transition carries no value (a specific listener per transition would apply it), and the workflow would have a single place.
+- Logging in the handlers directly: no single place to make sure every change is logged, and the same sentences repeated.
+- Grouping the entries of a cause (filling four provinces): one line per change for now.
+- Existing games have no log: no game is live.
+
+**Not done**
+- An empty `params` is serialized as `[]`, not `{}`.
+- The console renderer names a province stack "john's province", without telling which one; the client resolves the stack id.
+
 ## Next steps
 
 ### API
 
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
 - **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
-- **`wait_for_update`**: a bounded long-poll on the version (`version > since`, then the events since that version), as an HTTP endpoint wrapped by the MCP tool.
+- **`wait_for_update`**: a bounded long-poll on the version (`version > since`, then the log since that version: `GameLogViewFactory::create($game, $player, $since)`), as an HTTP endpoint wrapped by the MCP tool.
+- **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
 - Real authentication; private Mercure topics (the topic `/games/{id}` is public, it carries no data of the game).
 
 

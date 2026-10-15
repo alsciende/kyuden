@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\StrongholdProvinceChosenEvent;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\ChooseStrongholdProvince;
 use App\Repository\CardRepository;
@@ -14,6 +15,7 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -24,6 +26,7 @@ final readonly class ChooseStrongholdProvinceHandler implements PlayerActionHand
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -49,5 +52,6 @@ final readonly class ChooseStrongholdProvinceHandler implements PlayerActionHand
             $player,
             fn (PlayerState $state) => $state->setStrongholdProvinceId($card->getId()),
         );
+        $this->eventDispatcher->dispatch(new StrongholdProvinceChosenEvent($game, $player, $card));
     }
 }

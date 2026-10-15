@@ -22,7 +22,7 @@ class DuelHonorBidPlacedListenerTest extends AbstractKernelTestCase
             ->duel('john', ['toturi'], ['spear'])
             ->build();
 
-        self::service(DuelHonorBidPlacedListener::class)(new HonorBidPlacedEvent($scenario->game(), $scenario->player('john')));
+        self::service(DuelHonorBidPlacedListener::class)(new HonorBidPlacedEvent($scenario->game(), $scenario->player('john'), 4));
 
         return $scenario;
     }

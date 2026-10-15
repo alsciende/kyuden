@@ -6,10 +6,13 @@ namespace App\EventListener;
 
 use App\Entity\Player;
 use App\Event\HonorBidPlacedEvent;
+use App\Event\HonorBidRevealedEvent;
+use App\Exception\Rules\NoHonorBidException;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
@@ -22,6 +25,7 @@ readonly class DuelHonorBidPlacedListener
     public function __construct(
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -45,6 +49,7 @@ readonly class DuelHonorBidPlacedListener
                 $duelist,
                 fn (PlayerState $state): PlayerState => $state->revealHonorBid(),
             );
+            $this->eventDispatcher->dispatch(new HonorBidRevealedEvent($game, $duelist, $this->playerStateManager->getState($duelist)->getHonorBid() ?? throw new NoHonorBidException()));
         }
         $this->gameStateManager->withState($game, function (GameState $state): GameState {
             $state->currentDuel()->revealed = true;

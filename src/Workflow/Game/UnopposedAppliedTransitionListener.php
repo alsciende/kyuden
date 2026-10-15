@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\HonorLostEvent;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
@@ -22,6 +24,7 @@ readonly class UnopposedAppliedTransitionListener
     public function __construct(
         private GameStateManager $stateManager,
         private PlayerStateManager $playerStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -36,6 +39,7 @@ readonly class UnopposedAppliedTransitionListener
                 $game->getPlayer($conflict->defendingPlayerId),
                 fn (PlayerState $state): PlayerState => $state->decrementHonor(self::UNOPPOSED_HONOR_LOSS),
             );
+            $this->eventDispatcher->dispatch(new HonorLostEvent($game, $game->getPlayer($conflict->defendingPlayerId), self::UNOPPOSED_HONOR_LOSS));
         }
     }
 }

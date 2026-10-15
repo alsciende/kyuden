@@ -6,11 +6,13 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\HonorTransferredEvent;
 use App\Message\TransferHonor;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -23,6 +25,7 @@ final readonly class TransferHonorHandler implements PlayerActionHandlerInterfac
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -51,5 +54,6 @@ final readonly class TransferHonorHandler implements PlayerActionHandlerInterfac
             $recipient,
             fn (PlayerState $state): PlayerState => $state->incrementHonor($message->getAmount()),
         );
+        $this->eventDispatcher->dispatch(new HonorTransferredEvent($game, $giver, $recipient, $message->getAmount()));
     }
 }

@@ -6,10 +6,11 @@ namespace App\Workflow\Game;
 
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
+use App\Event\ProvinceStrengthComputedEvent;
 use App\Repository\CardRepository;
 use App\Service\ConflictService;
 use App\State\Manager\GameStateManager;
-use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsEnterListener;
 use Symfony\Component\Workflow\Event\EnterEvent;
 
@@ -24,6 +25,7 @@ readonly class DetermineResultEnterListener
         private GameStateManager $stateManager,
         private CardRepository $cardRepository,
         private ConflictService $conflictService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -32,18 +34,19 @@ readonly class DetermineResultEnterListener
         /** @var Game $game */
         $game = $event->getSubject();
 
-        $this->stateManager->withState($game, function (GameState $state) use ($game): GameState {
-            $conflict = $state->currentConflict();
-            foreach ($conflict->attackedProvinceIds as $provinceId) {
-                $province = $this->cardRepository->get($provinceId, $game);
-                $strength = (int) $province->getLogicalCard()->getStrength();
-                if ($province instanceof ProvinceCard && $this->conflictService->isStrongholdProvince($province)) {
-                    $strength += (int) $province->getPlayer()->getStronghold()->getLogicalCard()->getStrengthBonus();
-                }
-                $conflict->provinceStrengths[$provinceId] = $strength;
+        $state = $this->stateManager->getState($game);
+        $conflict = $state->currentConflict();
+        foreach ($conflict->attackedProvinceIds as $provinceId) {
+            $province = $this->cardRepository->get($provinceId, $game);
+            $strength = (int) $province->getLogicalCard()->getStrength();
+            if ($province instanceof ProvinceCard && $this->conflictService->isStrongholdProvince($province)) {
+                $strength += (int) $province->getPlayer()->getStronghold()->getLogicalCard()->getStrengthBonus();
             }
 
-            return $state;
-        });
+            $conflict->provinceStrengths[$provinceId] = $strength;
+            $this->eventDispatcher->dispatch(new ProvinceStrengthComputedEvent($game, $province, $strength));
+        }
+
+        $this->stateManager->setState($game, $state);
     }
 }

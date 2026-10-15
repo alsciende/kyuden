@@ -6,11 +6,13 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\GloryCountDeclaredEvent;
 use App\Message\DeclareGloryCount;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -24,6 +26,7 @@ final readonly class DeclareGloryCountHandler implements PlayerActionHandlerInte
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -43,5 +46,6 @@ final readonly class DeclareGloryCountHandler implements PlayerActionHandlerInte
             $player,
             fn (PlayerState $state): PlayerState => $state->setGloryCount($message->getGlory()),
         );
+        $this->eventDispatcher->dispatch(new GloryCountDeclaredEvent($game, $player, $message->getGlory()));
     }
 }

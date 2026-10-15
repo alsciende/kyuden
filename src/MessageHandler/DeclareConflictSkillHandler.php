@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\ConflictSkillDeclaredEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotInConflictException;
 use App\Message\DeclareConflictSkill;
@@ -13,6 +14,7 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -26,6 +28,7 @@ final readonly class DeclareConflictSkillHandler implements PlayerActionHandlerI
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -55,5 +58,6 @@ final readonly class DeclareConflictSkillHandler implements PlayerActionHandlerI
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new ConflictSkillDeclaredEvent($game, $player, $message->getSkill()));
     }
 }

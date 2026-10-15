@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\CharacterMovedHomeEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotParticipatingException;
 use App\Message\MoveHome;
@@ -14,6 +15,7 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -28,6 +30,7 @@ final readonly class MoveHomeHandler implements PlayerActionHandlerInterface
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private GameStateManager $gameStateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -58,5 +61,6 @@ final readonly class MoveHomeHandler implements PlayerActionHandlerInterface
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new CharacterMovedHomeEvent($game, $card));
     }
 }

@@ -6,12 +6,14 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\HonorBidChangedEvent;
 use App\Exception\Rules\NoHonorBidException;
 use App\Message\SetHonorBid;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -26,6 +28,7 @@ final readonly class SetHonorBidHandler implements PlayerActionHandlerInterface
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private PlayerStateManager $stateManager,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -52,5 +55,6 @@ final readonly class SetHonorBidHandler implements PlayerActionHandlerInterface
                 return $state->setHonorBid($message->getBid());
             },
         );
+        $this->eventDispatcher->dispatch(new HonorBidChangedEvent($game, $player, $message->getBid()));
     }
 }
