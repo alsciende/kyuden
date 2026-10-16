@@ -12,6 +12,20 @@ services:
       timeout: 3s
       retries: 3
 
+  # the database of the tests (APP_ENV=test, .env.test), in memory: "make db-test" creates its schema and loads the fixtures
+  database_test:
+    image: postgres:alpine
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   adminer:
     image: adminer
     ports:
@@ -28,8 +42,13 @@ services:
     tmpfs:
       - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
     user: www-data
+    environment:
+      # the hub as the symfony container reaches it in the Docker network (the browser uses MERCURE_PUBLIC_URL)
+      MERCURE_URL: http://mercure/.well-known/mercure
     depends_on:
       database:
+        condition: service_healthy
+      database_test:
         condition: service_healthy
     entrypoint: '/var/www/html/docker/dev/symfony/entrypoint.sh'
 
@@ -59,9 +78,10 @@ services:
       SERVER_NAME: ':80'
       MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
       MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
+      # the URLs of the Symfony project (without trailing slash!); the topics are public: anonymous subscribers
       MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://127.0.0.1:8000
+        cors_origins http://localhost:8080 http://127.0.0.1:8080
+        anonymous
     volumes:
       - mercure_data:/data
       - mercure_config:/config

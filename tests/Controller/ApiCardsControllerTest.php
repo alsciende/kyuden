@@ -64,6 +64,7 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
             'strength_bonus' => null,
             'ability_timings' => ['action'],
             'ability_granted_to_attached' => false,
+            'image_url' => 'https://d2qmv0gg5fizll.cloudfront.net/l5r/L5C01_84.jpg',
         ], $this->decode($response));
     }
 
@@ -90,7 +91,9 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
         self::assertTrue($response->headers->getCacheControlDirective('public'));
-        $codes = array_column($this->decode($response), 'code');
+        $cards = $this->decode($response);
+        $codes = array_column($cards, 'code');
+        self::assertNotContains(null, array_column($cards, 'image_url'));
         self::assertContains('01-fine-katana', $codes);
         $sorted = $codes;
         sort($sorted);

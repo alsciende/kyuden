@@ -27,7 +27,7 @@ class ApiCardsController extends AbstractController
     #[Route('/api/cards', name: 'app_api_cards', methods: ['GET'])]
     public function list(): Response
     {
-        $cards = $this->logicalCardRepository->findBy([], ['id' => 'ASC']);
+        $cards = $this->logicalCardRepository->findAllWithPrintings();
 
         return $this->cacheable($this->json(array_map($this->logicalCardViewFactory->create(...), $cards)));
     }

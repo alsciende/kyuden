@@ -20,6 +20,22 @@ class LogicalCardRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every card sorted by code, with its printings (their images), in a single query.
+     *
+     * @return list<LogicalCard>
+     */
+    public function findAllWithPrintings(): array
+    {
+        /** @var list<LogicalCard> */
+        return $this->createQueryBuilder('card')
+            ->leftJoin('card.printings', 'printing')
+            ->addSelect('printing')
+            ->orderBy('card.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return bool Given an id, return true if the corresponding LogicalCard object exists, false otherwise
      */
     public function exists(LogicalCard $card): bool

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View;
 
 use App\Entity\LogicalCard;
+use App\Entity\Printing;
 use App\View\Model\LogicalCardView;
 
 /**
@@ -41,6 +42,23 @@ final readonly class LogicalCardViewFactory
             strengthBonus: $card->getStrengthBonus(),
             abilityTimings: $card->getAbilityTimings(),
             abilityGrantedToAttached: $card->isAbilityGrantedToAttached(),
+            imageUrl: $this->getImageUrl($card),
         );
+    }
+
+    /**
+     * The engine does not use the images: it hands the clients the one of the first printing (by id) that has one.
+     */
+    private function getImageUrl(LogicalCard $card): ?string
+    {
+        $printings = $card->getPrintings()->toArray();
+        usort($printings, static fn (Printing $a, Printing $b): int => $a->getId() <=> $b->getId());
+        foreach ($printings as $printing) {
+            if ($printing->getImageUrl() !== null) {
+                return $printing->getImageUrl();
+            }
+        }
+
+        return null;
     }
 }

@@ -13,7 +13,8 @@ Everything runs in Docker (service `symfony`: PHP-FPM, served by the `nginx` ser
 
 - `make up` / `make down` / `make build` / `make sh`
 - `make db`: drop and recreate the schema, then load fixtures (packs, cards, starter decks)
-- `make test`: PHPUnit
+- `make db-test`: the same on the test database (service `database_test`, in memory: run it again after restarting the service)
+- `make test`: PHPUnit, on the test database
 - `make lint`: `lint:container` + Rector + PHPStan; run it before considering a change done
 - `make sql`: `psql` shell on the `database` service
 
@@ -36,7 +37,7 @@ After changing a workflow, compare `bin/console workflow:dump <name>` before and
 
 ## Tests
 
-- `dama/doctrine-test-bundle` wraps each test in a rolled-back transaction: tests cannot share data, so never chain them with `#[Depends]`. Logical cards and starter decks come from the fixtures loaded by `make db`.
+- `dama/doctrine-test-bundle` wraps each test in a rolled-back transaction: tests cannot share data, so never chain them with `#[Depends]`. The tests have their own database (`database_test`, `.env.test`); logical cards, starter decks and users come from the fixtures loaded by `make db-test`.
 - Build the game state a test needs with `$this->scenario()` (`tests/Builder/GameBuilder.php`) instead of dispatching the actions leading to it. Once the game has started, the player order is the declaration order of the players. It writes the game place directly, puts cards directly in their stacks (unless stated: face down in decks and provinces except the stronghold, face up elsewhere), and exposes players and cards by alias through `Scenario`. `build()` keeps everything in memory; `persist()` flushes, for handlers that load entities by id.
 - Test at the narrowest level: guards with `Registry::get($game)->can()`, listeners and handlers by invoking them directly (no auto transitions), the message bus only to check automatic transitions.
 - `tests/MessageHandler/MessageHandlerTest.php` is the single end-to-end setup scenario, kept as a safety net.

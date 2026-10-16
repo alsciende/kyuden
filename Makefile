@@ -39,6 +39,12 @@ lint: check-symfony rector phpstan
 test:
 	$(PHP) vendor/bin/phpunit
 
+# the database of the tests lives in memory: run it after starting the database_test service
+db-test:
+	$(PHP) bin/console --env=test doctrine:schema:drop -f
+	$(PHP) bin/console --env=test doctrine:schema:create
+	$(PHP) bin/console --env=test doctrine:fixtures:load -n
+
 db:
 	$(PHP) bin/console doctrine:schema:drop -f
 	$(PHP) bin/console doctrine:schema:create

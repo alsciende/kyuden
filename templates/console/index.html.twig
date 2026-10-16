@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}L5R console{% endblock %}
+
+{% block body %}
+    <div id="console" data-mercure-url="{{ mercure_url }}">
+        <header id="status"></header>
+        <main id="terminal">
+            <form id="prompt" autocomplete="off">
+                <span class="caret">&gt;</span>
+                <input id="command" type="text" spellcheck="false" autofocus placeholder="/help">
+            </form>
+            <div id="output"></div>
+        </main>
+        <aside id="side">
+            <section id="actions-panel"></section>
+            <section id="card-panel"></section>
+        </aside>
+        <input id="deck-file" type="file" accept=".json,application/json" hidden>
+    </div>
+{% endblock %}

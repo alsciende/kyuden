@@ -14,6 +14,8 @@
         "martin-georgiev/postgresql-for-doctrine": "^2.7",
         "nyholm/psr7": "^1.8",
         "phpdocumentor/reflection-docblock": "^5.4",
+        "symfony/asset": "7.4.*",
+        "symfony/asset-mapper": "7.4.*",
         "symfony/console": "*",
         "symfony/doctrine-messenger": "*",
         "symfony/dotenv": "*",
@@ -37,11 +39,14 @@
         "symfony/serializer": "*",
         "symfony/string": "*",
         "symfony/translation": "*",
+        "symfony/twig-bundle": "7.4.*",
         "symfony/uid": "*",
         "symfony/validator": "*",
         "symfony/web-link": "*",
         "symfony/workflow": "*",
-        "symfony/yaml": "*"
+        "symfony/yaml": "*",
+        "twig/extra-bundle": "^2.12|^3.0",
+        "twig/twig": "^2.12|^3.0"
     },
     "config": {
         "allow-plugins": {
@@ -75,7 +80,8 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+            "assets:install %PUBLIC_DIR%": "symfony-cmd",
+            "importmap:install": "symfony-cmd"
         },
         "post-install-cmd": [
             "@auto-scripts"
