@@ -60,15 +60,6 @@ class DeclareDefendersHandlerTest extends AbstractKernelTestCase
         self::assertSame([$scenario->player('jane')->getId()], $state->activePlayerIds);
     }
 
-    public function testThereCanBeNoDefenders(): void
-    {
-        $scenario = $this->scenarioAtDeclareDefenders();
-
-        $this->declare($scenario, []);
-
-        self::assertSame([], self::service(GameStateManager::class)->getState($scenario->game())->currentConflict()->defenderIds);
-    }
-
     public function testRejectsABowedDefender(): void
     {
         $scenario = $this->scenarioAtDeclareDefenders();
@@ -102,6 +93,6 @@ class DeclareDefendersHandlerTest extends AbstractKernelTestCase
 
         $this->expectException(NotActivePlayerException::class);
 
-        $this->declare($scenario, [], 'john');
+        $this->declare($scenario, ['toturi'], 'john');
     }
 }

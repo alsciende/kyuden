@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_no_defenders",
+    "description": "The defending player declares no defender for the attacked province (3.2.1).",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

@@ -128,6 +128,43 @@ export function writeStacks(block, game, players, types, { emptyText = '(empty)'
     }
 }
 
+/**
+ * The characters of one side of the conflict being resolved (`attacker` or `defender`), each with its attachments,
+ * and the skill the side declared.
+ */
+export function writeParticipants(block, game, side) {
+    const conflict = game.view.conflict;
+    if (!conflict) {
+        block.dim('No conflict.');
+        return;
+    }
+    const playerId = side === 'attacker' ? conflict.attacking_player_id : conflict.defending_player_id;
+    const ids = (side === 'attacker' ? conflict.attacker_ids : conflict.defender_ids) ?? [];
+    const skill = side === 'attacker' ? conflict.attacker_skill : conflict.defender_skill;
+    block.line([
+        seg(game.playerName(playerId), 'player'),
+        seg(` ${side === 'attacker' ? 'attacks' : 'defends'}`, 'dim'),
+        seg(`  ${conflict.type} conflict · ${conflict.ring} ring`, 'place'),
+        seg(skill === null || skill === undefined ? '  skill not declared' : `  skill ${skill}`, skill === null || skill === undefined ? 'dim' : 'value'),
+    ]);
+    if (ids.length === 0) {
+        block.dim(`  no ${side}`);
+    }
+    for (const id of ids) {
+        const card = game.cards.get(id);
+        if (!card) {
+            block.line([seg('  '), seg(`[${game.ref(id)}]`, 'ref'), seg(' unknown card', 'hidden')]);
+            continue;
+        }
+        block.line([seg('  '), ...game.cardSegments(card)]);
+        for (const attachment of game.stackOfCard.get(id)?.stack.cards ?? []) {
+            if (attachment.id !== id) {
+                block.line([seg('    ↳ '), ...game.cardSegments(attachment)]);
+            }
+        }
+    }
+}
+
 /** A single list of cards: the hand, a discard pile. */
 export function writeCards(block, game, cards, emptyText = '(no card)') {
     if (cards.length === 0) {

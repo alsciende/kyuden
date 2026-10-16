@@ -73,7 +73,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - `PassConflict` uses one opportunity with no type, then the conflict phase action window opens again through `conflict_ends`.
 - The conflict (`GameState::conflict`) is cleared by `conflict_ended` (3.3), so the contested ring stays contested until then.
 - The controller of a card is its owner everywhere (control is not modeled).
-- `DeclareDefenders` is sent by the defending player, the only active player in `declare_defenders` (`DefendingPlayerOpportunityEnterListener`, which also gives the first opportunity of `conflict_action_window` to the defending player). Defenders are ready characters in play of the defending player, not evaded by covert; the list can be empty.
+- `DeclareDefenders` is sent by the defending player, the only active player in `declare_defenders` (`DefendingPlayerOpportunityEnterListener`, which also gives the first opportunity of `conflict_action_window` to the defending player). Defenders are ready characters in play of the defending player, not evaded by covert; the list holds at least one (`Count(min: 1)`): declaring no defender is a message of its own, `DeclareNoDefenders` (log: `{player} declares no defenders`). Both go through `Service/DefendersService` (the defending player is active, the defenders are recorded, the conflict action window opens).
 - **Result** (3.2.3): each player of the conflict declares the total skill of their side (`DeclareConflictSkill`, any order, can be declared again until both are known); `result_determined` is automatic once both are declared (`ResultDeterminedGuardListener`), and `ConflictState::determineWinner()` applies the rules (ties to the attacker, 1 skill needed to win, no winner at 0 / 0).
 - **Province strength**: when the game enters `determine_result`, each attacked province gets its printed strength, plus the strength bonus of the stronghold for the stronghold province (`DetermineResultEnterListener`). The defending player replaces it with `DeclareProvinceStrength`, which must be sent before the skill totals (the result is determined as soon as both are known).
 - **Unopposed** (3.2.4): the defending player loses 1 honor when the attacking player wins with no defender left in the conflict (`UnopposedAppliedTransitionListener`).
@@ -416,6 +416,7 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 
 ### Step 1.4 (play cards from provinces)
 
+- **Automatic refill**: when a dynasty card leaves a province (played with `PlayCharacterFromProvince`, discarded, duplicate discarded…), the province is refilled at once, face down, with the top card of its owner's dynasty deck (glossary: a province emptied of its dynasty card refills automatically; not while a holding remains on it). For now the player sends `FillProvince` themselves (see the decisions taken for `PlayCharacterFromProvince`); `FillProvince` stays for the effects that refill a province otherwise (e.g. face up).
 - **Discard a duplicate** (`DiscardDuplicate`): discard a copy of a unique character from hand or province to place 1 fate on the copy in play; the province is then refilled.
 
 ### Action abilities
@@ -507,7 +508,6 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
-- **Automatic refill**: per the glossary, a province emptied of its dynasty card refills automatically. Kept manual for now (`FillProvince` by the player, accepted in any place).
 - **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 - **Mulligan**: players cannot replace cards of their starting hand or provinces during setup.
 - **Limited** keyword and "max X per conflict / round" restrictions on playing cards.

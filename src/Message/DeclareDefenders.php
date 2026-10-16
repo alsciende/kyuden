@@ -6,9 +6,11 @@ namespace App\Message;
 
 use App\Attribute\AppAction;
 use App\Attribute\Description;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * The defending player declares the ready characters defending the attacked province (3.2.1), possibly none.
+ * The defending player declares the ready characters defending the attacked province (3.2.1), at least one: declaring
+ * no defender is declare_no_defenders.
  */
 #[AppAction]
 final readonly class DeclareDefenders implements PlayerActionInterface
@@ -19,7 +21,8 @@ final readonly class DeclareDefenders implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
-        #[Description('Ready characters of the player declared as defenders, possibly none.')]
+        #[Description('Ready characters of the player declared as defenders, at least one.')]
+        #[Assert\Count(min: 1)]
         private array $defenderIds,
     ) {
     }

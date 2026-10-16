@@ -7,6 +7,7 @@ import {
     writeCards,
     writeLoggedMessage,
     writeLogicalCard,
+    writeParticipants,
     writePlayerSummary,
     writeRings,
     writeStacks,
@@ -50,6 +51,7 @@ export const MESSAGE_ALIASES = {
     conflict: 'declare_conflict',
     'pass-conflict': 'pass_conflict',
     defend: 'declare_defenders',
+    'no-defenders': 'declare_no_defenders',
     move: 'move_to_conflict',
     home: 'move_home',
     skill: 'declare_conflict_skill',
@@ -285,6 +287,18 @@ function staticCommands() {
             run(ctx, args, block) {
                 const game = ctx.requireGame();
                 game.view.conflict ? block.json(game.describe(game.view.conflict)) : block.dim('No conflict.');
+            },
+        },
+        {
+            group: 'view', name: 'attackers', usage: '', help: 'The attacking characters of the conflict being resolved, with their attachments.',
+            run(ctx, args, block) {
+                writeParticipants(block, ctx.requireGame(), 'attacker');
+            },
+        },
+        {
+            group: 'view', name: 'defenders', usage: '', help: 'The defending characters of the conflict being resolved, with their attachments.',
+            run(ctx, args, block) {
+                writeParticipants(block, ctx.requireGame(), 'defender');
             },
         },
         {

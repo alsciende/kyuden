@@ -10,6 +10,7 @@ use App\Message\BidHonor;
 use App\Message\CollectFate;
 use App\Message\ConcedeGame;
 use App\Message\DeclareConflictSkill;
+use App\Message\DeclareDefenders;
 use App\Message\DeclareDuelStatistic;
 use App\Message\DeclareGloryCount;
 use App\Message\DeclareProvinceStrength;
@@ -62,6 +63,8 @@ class MessageConstraintsTest extends AbstractKernelTestCase
         yield 'negative attachment cost' => [new PlayAttachment('g', 'p', 'c', 't', -1), ['cardCost']];
         yield 'negative costs from hand' => [new PlayCharacterFromHand('g', 'p', 'c', -1, -1, -1, false), ['cardCost', 'fateCost', 'fate']];
         yield 'negative costs from province' => [new PlayCharacterFromProvince('g', 'p', 'c', -1, -1, -1), ['cardCost', 'fateCost', 'fate']];
+        yield 'no defender declared' => [new DeclareDefenders('g', 'p', []), ['defenderIds']];
+        yield 'a defender declared' => [new DeclareDefenders('g', 'p', ['c']), []];
         yield 'duel without characters' => [new InitiateDuel('g', 'p', DuelType::Military, [], []), ['challengerIds', 'challengedIds']];
     }
 
