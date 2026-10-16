@@ -1,4 +1,4 @@
-FROM php:8.4-alpine
+FROM php:8.4-fpm-alpine
 
 RUN apk update && apk add --no-cache \
     libzip-dev \
@@ -17,7 +17,7 @@ RUN docker-php-ext-install pdo_pgsql gd zip
 COPY --from=composer:2.2 /usr/bin/composer /usr/bin/composer
 
 RUN apk add --no-cache bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.alpine.sh' | bash
-RUN apk add symfony-cli
+
+COPY docker/dev/symfony/php-fpm.conf /usr/local/etc/php-fpm.d/zz-app.conf
 
 WORKDIR /var/www/html

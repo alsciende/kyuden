@@ -27,13 +27,21 @@ services:
     # rather than on the slow bind mount; it is emptied when the container restarts
     tmpfs:
       - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
-    ports:
-      - 8080:8000
     user: www-data
     depends_on:
       database:
         condition: service_healthy
     entrypoint: '/var/www/html/docker/dev/symfony/entrypoint.sh'
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./public:/var/www/html/public:ro
+      - ./docker/dev/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - 8080:80
+    depends_on:
+      - symfony
 
   mailer:
     image: axllent/mailpit

@@ -58,6 +58,18 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * The version of a game read from the database, not from the identity map: a message handled by another request
+     * since the game was loaded is seen.
+     */
+    public function findVersion(string $gameId): ?int
+    {
+        $version = $this->getEntityManager()->getConnection()
+            ->fetchOne('SELECT version FROM games WHERE id = :id', ['id' => $gameId]);
+
+        return is_numeric($version) ? (int) $version : null;
+    }
+
+    /**
      * The games a user plays or has played, with their players, the last joined first (a single query).
      *
      * @return list<Game>

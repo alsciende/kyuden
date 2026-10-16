@@ -4,9 +4,9 @@ if [ ! -f vendor/autoload.php ]; then
     composer install
 fi
 
-symfony server:start --listen-ip=0.0.0.0
+# PHP-FPM listens on port 9000, behind the nginx service
+php-fpm --nodaemonize
 
-# the server could not start (e.g. the kernel does not boot): keep the container up, so that
-# "docker compose exec symfony ..." can be used to fix it
-echo "server:run failed: the container stays up for debugging"
+# PHP-FPM could not start: keep the container up, so that "docker compose exec symfony ..." can be used to fix it
+echo "php-fpm failed: the container stays up for debugging"
 exec tail -f /dev/null

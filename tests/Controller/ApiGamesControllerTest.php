@@ -6,22 +6,32 @@ namespace App\Tests\Controller;
 
 use App\DataFixtures\UserFixtures;
 use App\DataFixtures\AppFixtures;
+use App\Controller\ApiGamesController;
+use App\Entity\Game;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Message\DrawConflictCards;
 use App\Message\LoseHonor;
+use App\Service\GameUpdateWaiter;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 use Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Component\Clock\Clock;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\MockClock;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Profiler\Profile;
 use Symfony\Component\HttpKernel\Profiler\Profiler;
 
 class ApiGamesControllerTest extends AbstractKernelTestCase
 {
+    use ClockSensitiveTrait;
+
     private function scenarioWithHands(): Scenario
     {
         return $this->scenario()
@@ -337,5 +347,154 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         $response = $this->get('unknown', path: '/log');
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+    }
+
+    /**
+     * Freezes the time; the callback runs the first time the waiting request sleeps, as if another request were
+     * handled meanwhile.
+     *
+     * @param (\Closure(): void)|null $whileSleeping
+     */
+    private function mockClock(?\Closure $whileSleeping = null): MockClock
+    {
+        $mockClock = new MockClock();
+        Clock::set(new class($mockClock, $whileSleeping) implements ClockInterface {
+            /**
+             * @param (\Closure(): void)|null $whileSleeping
+             */
+            public function __construct(
+                private readonly MockClock $clock,
+                private ?\Closure $whileSleeping,
+            ) {
+            }
+
+            #[\Override]
+            public function now(): \DateTimeImmutable
+            {
+                return $this->clock->now();
+            }
+
+            #[\Override]
+            public function sleep(float|int $seconds): void
+            {
+                if ($this->whileSleeping !== null) {
+                    ($this->whileSleeping)();
+                    $this->whileSleeping = null;
+                }
+
+                $this->clock->sleep($seconds);
+            }
+
+            #[\Override]
+            public function withTimeZone(\DateTimeZone|string $timezone): static
+            {
+                return $this;
+            }
+        });
+
+        return $mockClock;
+    }
+
+    /**
+     * Seconds the waiting request has slept since the clock was mocked.
+     */
+    private function elapsed(MockClock $clock, \DateTimeImmutable $start): float
+    {
+        return round((float) $clock->now()->format('U.u') - (float) $start->format('U.u'), 3);
+    }
+
+    public function testTheLogWaitsUntilTheGameChanges(): void
+    {
+        $scenario = $this->scenarioWithLog();
+        $gameId = $scenario->game()->getId();
+        $johnId = $scenario->player('john')->getId();
+        $clock = $this->mockClock(function () use ($gameId, $johnId): void {
+            $this->messageBus->dispatch(new LoseHonor($gameId, $johnId, $johnId, 1));
+        });
+        $start = $clock->now();
+
+        $response = $this->get($gameId, 'john', path: '/log?since=2&wait=30');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('"3"', $response->getEtag());
+        $log = $this->decode($response);
+        self::assertSame(3, $log['version']);
+        self::assertIsArray($log['messages']);
+        self::assertSame([3], array_map(fn (mixed $message): mixed => is_array($message) ? $message['version'] : null, $log['messages']));
+        self::assertSame(GameUpdateWaiter::POLL_INTERVAL, $this->elapsed($clock, $start));
+    }
+
+    public function testTheLogIsSentAtOnceWhenTheGameHasChangedSinceTheVersion(): void
+    {
+        $scenario = $this->scenarioWithLog();
+        $clock = $this->mockClock();
+        $start = $clock->now();
+
+        $response = $this->get($scenario->game()->getId(), 'john', path: '/log?since=1&wait=30');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame('"2"', $response->getEtag());
+        self::assertSame(0.0, $this->elapsed($clock, $start));
+    }
+
+    public function testTheLogIsSentWithoutMessageWhenTheGameHasNotChangedInTime(): void
+    {
+        $scenario = $this->scenarioWithLog();
+        $clock = $this->mockClock();
+        $start = $clock->now();
+
+        $response = $this->get($scenario->game()->getId(), 'john', path: '/log?since=2&wait=5');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame('"2"', $response->getEtag());
+        self::assertSame([], $this->decode($response)['messages']);
+        self::assertSame(5.0, $this->elapsed($clock, $start));
+    }
+
+    public function testThePlayerGetsNotModifiedWhenTheGameHasNotChangedInTime(): void
+    {
+        $scenario = $this->scenarioWithLog();
+        $this->mockClock();
+
+        $response = $this->get($scenario->game()->getId(), 'john', ['HTTP_IF_NONE_MATCH' => '"2"'], '/log?since=2&wait=5');
+
+        self::assertSame(Response::HTTP_NOT_MODIFIED, $response->getStatusCode());
+    }
+
+    public function testTheLogOfAGameThatHasEndedDoesNotWait(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace(Game::STATE_ENDED)
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->persist();
+        $clock = $this->mockClock();
+        $start = $clock->now();
+
+        $response = $this->get($scenario->game()->getId(), 'john', path: '/log?wait=30');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame(0.0, $this->elapsed($clock, $start));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidWaits(): iterable
+    {
+        yield 'negative' => ['-1'];
+        yield 'not a number' => ['soon'];
+        yield 'too long' => [(string) (ApiGamesController::MAX_WAIT + 1)];
+    }
+
+    #[DataProvider('invalidWaits')]
+    public function testTheWaitMustBeABoundedNumberOfSeconds(string $wait): void
+    {
+        $scenario = $this->scenarioWithLog();
+
+        $response = $this->get($scenario->game()->getId(), 'john', path: "/log?wait={$wait}");
+
+        self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        self::assertSame('invalid_wait', $this->decode($response)['type']);
     }
 }

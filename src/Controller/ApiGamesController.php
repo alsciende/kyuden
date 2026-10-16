@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Game;
 use App\Repository\GameRepository;
+use App\Service\GameUpdateWaiter;
 use App\View\GameLogViewFactory;
 use App\View\GameViewFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,15 +23,24 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * The ETag is the version of the game: the view only depends on the state and the viewer, so a player who sends the
  * ETag of the version they have (`If-None-Match`) gets a 304 until the game changes. So does the log of the game, from
  * a given version (`since`), masked for the player (see GameLogViewFactory).
+ *
+ * The log is also a long-poll (`wait`, in seconds): the response waits until the game changes after `since`, then
+ * sends what changed; if nothing has changed when the time is up, it is sent as is (no message, or a 304).
  */
 class ApiGamesController extends AbstractController
 {
     use ProblemResponseTrait;
 
+    /**
+     * Longest wait of a long-poll on the log, in seconds: below the usual timeouts of HTTP clients and proxies.
+     */
+    public const int MAX_WAIT = 30;
+
     public function __construct(
         private readonly GameRepository $gameRepository,
         private readonly GameViewFactory $gameViewFactory,
         private readonly GameLogViewFactory $gameLogViewFactory,
+        private readonly GameUpdateWaiter $gameUpdateWaiter,
     ) {
     }
 
@@ -64,6 +74,11 @@ class ApiGamesController extends AbstractController
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_since', 'The since parameter must be a version: a natural number.');
         }
 
+        $wait = $request->query->getString('wait', '0');
+        if (preg_match('/^\d+$/', $wait) !== 1 || (int) $wait > self::MAX_WAIT) {
+            return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_wait', \sprintf('The wait parameter must be a number of seconds from 0 to %d.', self::MAX_WAIT));
+        }
+
         $game = $this->gameRepository->find($id);
         if ($game === null) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
@@ -71,6 +86,8 @@ class ApiGamesController extends AbstractController
 
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $user->getUserIdentifier()) {
+                $this->gameUpdateWaiter->wait($game, (int) $since, (int) $wait);
+
                 $notModified = $this->withVersion(new Response(), $game);
                 if ($notModified->isNotModified($request)) {
                     return $notModified;

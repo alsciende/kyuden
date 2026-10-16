@@ -9,7 +9,7 @@
 
 ## Commands
 
-Everything runs in Docker (service `symfony`) through the Makefile:
+Everything runs in Docker (service `symfony`: PHP-FPM, served by the `nginx` service on port 8080) through the Makefile:
 
 - `make up` / `make down` / `make build` / `make sh`
 - `make db`: drop and recreate the schema, then load fixtures (packs, cards, starter decks)
