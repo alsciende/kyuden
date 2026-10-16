@@ -7,20 +7,20 @@ namespace App\Service\GameLauncher;
 use App\Entity\Candidate;
 use App\Message\CreateGame;
 use App\Message\JoinGame;
-use App\MessageHandler\CreateGameHandler;
-use App\MessageHandler\JoinGameHandler;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Launches Games and automatically adds Players to it.
+ * Launches Games and automatically adds Players to it, through the bus: the messages are recorded as the events of the
+ * game, and the game starts once every player has joined (automatic transition `start_game`). The candidates leave the
+ * queue once the game is created.
  */
 readonly class AutomaticGameLauncher implements GameLauncherInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private CreateGameHandler $createGameHandler,
-        private JoinGameHandler $joinGameHandler,
+        private MessageBusInterface $bus,
     ) {
     }
 
@@ -31,21 +31,21 @@ readonly class AutomaticGameLauncher implements GameLauncherInterface
     public function createGame(array $candidates): void
     {
         $gameId = Uuid::v4()->toString();
-        $createGame = CreateGame::withRandomSeed($gameId);
-        ($this->createGameHandler)($createGame);
+        $this->bus->dispatch(CreateGame::withRandomSeed($gameId));
 
         foreach ($candidates as $candidate) {
-            $playerId = Uuid::v4()->toString();
-            $joinGame = new JoinGame(
+            $this->bus->dispatch(new JoinGame(
                 $gameId,
-                $playerId,
+                Uuid::v4()->toString(),
                 $candidate->getUser()->getId(),
                 $candidate->getDeck()->getId(),
-            );
-            ($this->joinGameHandler)($joinGame);
+            ));
+        }
 
-            // candidate has joined, we must remove it
+        // the candidates have joined, they leave the queue
+        foreach ($candidates as $candidate) {
             $this->entityManager->remove($candidate);
         }
+        $this->entityManager->flush();
     }
 }

@@ -13,33 +13,30 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class CandidateRepository extends ServiceEntityRepository
 {
+    /**
+     * Key of the advisory lock of the queue.
+     */
+    private const int QUEUE_LOCK_KEY = 5_000_001;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Candidate::class);
     }
 
-    //    /**
-    //     * @return Candidate[] Returns an array of Candidate objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Candidate
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Runs a callback while holding the lock of the queue (a PostgreSQL advisory lock of the session, held across the
+     * transactions of the callback).
+     *
+     * @param callable(): void $callback
+     */
+    public function withQueueLock(callable $callback): void
+    {
+        $connection = $this->getEntityManager()->getConnection();
+        $connection->executeStatement('SELECT pg_advisory_lock(:key)', ['key' => self::QUEUE_LOCK_KEY]);
+        try {
+            $callback();
+        } finally {
+            $connection->executeStatement('SELECT pg_advisory_unlock(:key)', ['key' => self::QUEUE_LOCK_KEY]);
+        }
+    }
 }

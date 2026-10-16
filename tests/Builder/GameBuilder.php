@@ -353,7 +353,7 @@ final class GameBuilder
     private function layOutStarterDeck(Player $player, array $uniqueStacks, string $deckId, array $aliases): void
     {
         $aliasesByCode = array_flip($aliases);
-        foreach ($this->getDeck($deckId)->getContent() as $code) {
+        foreach ($this->getDeck($deckId)->getCardCodes() as $code) {
             $stackType = match ($this->getClassname($this->getLogicalCard($code))) {
                 ConflictCard::class => StackType::ConflictDrawDeck,
                 DynastyCard::class => StackType::DynastyDrawDeck,

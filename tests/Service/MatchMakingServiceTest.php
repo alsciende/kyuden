@@ -18,7 +18,8 @@ class MatchMakingServiceTest extends TestCase
     public function testFindMatches(): void
     {
         $repo = $this->createStub(CandidateRepository::class);
-        $repo->method('findAll')->willReturn([
+        $repo->method('withQueueLock')->willReturnCallback(fn (callable $callback) => $callback());
+        $repo->method('findBy')->willReturn([
             new Candidate()->setDeck(new Deck('1'))->setUser(new User('jack', 'Jack', UserType::Human)),
             new Candidate()->setDeck(new Deck('2'))->setUser(new User('jane', 'Jane', UserType::Human)),
             new Candidate()->setDeck(new Deck('3'))->setUser(new User('jill', 'Jill', UserType::Human)),

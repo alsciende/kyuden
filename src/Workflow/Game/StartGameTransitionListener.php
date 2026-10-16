@@ -76,7 +76,7 @@ readonly class StartGameTransitionListener
             }
         }
 
-        foreach ($player->getDeck()->getContent() as $id) {
+        foreach ($player->getDeck()->getCardCodes() as $id) {
             $logicalCard = $this->cardFactory->getLogicalCard($id);
             $this->cardFactory->createCard(
                 physicalCardId: $player->getGame()->generateId(),

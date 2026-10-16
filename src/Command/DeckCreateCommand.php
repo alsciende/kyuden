@@ -32,7 +32,7 @@ readonly class DeckCreateCommand
         $io = new SymfonyStyle($input, $output);
         $deck = new Deck(Uuid::v4()->toString());
         $deck->setName('Lion Clan Starter Deck');
-        $deck->setContent($this->getLionStarterCards());
+        $deck->setCards($this->getLionStarterCards());
         $this->entityManager->persist($deck);
         $this->entityManager->flush();
         $io->success("Deck {$deck->getId()} created");

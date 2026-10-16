@@ -53,7 +53,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $deck = new Deck($deckId);
             $manager->persist($deck);
             $deck->setName($deckId);
-            $deck->setContent($cards);
+            $deck->setCards($cards);
         }
 
         $john = new Candidate();
