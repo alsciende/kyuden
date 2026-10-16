@@ -1,35 +1,35 @@
 {
     "ability_granted_to_attached": false,
     "ability_timings": [
-        "action"
+        "interrupt"
     ],
     "allowed_clans": [
         "*"
     ],
-    "clan": "crab",
-    "cost": 0,
+    "clan": "neutral",
+    "cost": 2,
     "deck_limit": 3,
     "elements": [],
     "fate": null,
-    "glory": null,
+    "glory": 0,
     "honor": null,
     "id": "30-disciple-of-shinsei",
-    "influence_cost": 1,
+    "influence_cost": null,
     "influence_pool": null,
     "uniqueness": false,
-    "military": null,
-    "military_bonus": "+1",
+    "military": "2",
+    "military_bonus": null,
     "name": "Disciple of Shinsei",
-    "political": null,
-    "political_bonus": "+0",
-    "role_restriction": "void",
-    "side": "conflict",
+    "political": "2",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
     "strength": null,
     "strength_bonus": null,
-    "text": "<em>Void</em> role only.<br><b>Action:</b> Lose 1 honor - discard a status token from attached character. (Unlimited.)",
+    "text": "<b>Interrupt:</b> When this character leaves play, choose an attachment – discard it.",
     "traits": [
-        "item",
-        "shadowlands"
+        "monk",
+        "brotherhood"
     ],
-    "type": "attachment"
+    "type": "character"
 }

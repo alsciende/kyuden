@@ -1,0 +1,35 @@
+{
+    "ability_granted_to_attached": false,
+    "ability_timings": [
+        "action"
+    ],
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": [],
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "30-obsidian-talisman",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "uniqueness": false,
+    "military": null,
+    "military_bonus": "+1",
+    "name": "Obsidian Talisman",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": "void",
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<em>Void</em> role only.<br><b>Action:</b> Lose 1 honor - discard a status token from attached character. (Unlimited.)",
+    "traits": [
+        "item",
+        "shadowlands"
+    ],
+    "type": "attachment"
+}
