@@ -25,6 +25,8 @@ services:
             - '../src/GameLog/LogParam.php'
             - '../src/GameLog/Revealed.php'
             - '../src/GameLog/VisibleTo.php'
+            # built by MessageToolLoader, one per message type
+            - '../src/Mcp/MessageTool.php'
             - '../src/Middleware/Stamp/'
             - '../src/Model/'
             - '../src/Notification/'

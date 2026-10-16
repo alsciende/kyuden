@@ -4,35 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Exception\Data\GameMismatchException;
-use App\Exception\Data\NotFoundException;
-use App\Exception\Data\WorkflowException;
-use App\Exception\Rules\RulesException;
-use App\Repository\GameRepository;
-use App\Repository\PlayerRepository;
-use App\Service\Api\ApiMessageFactory;
-use App\Exception\Api\InvalidPayloadException;
-use App\Exception\Api\StaleVersionException;
-use App\Middleware\Stamp\ExpectedVersionStamp;
+use App\Exception\Api\ApiProblemException;
+use App\Service\Api\PlayerMessageSender;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Symfony\Component\Messenger\Exception\HandlerFailedException;
-use Symfony\Component\Messenger\Exception\ValidationFailedException;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Component\Validator\ConstraintViolationListInterface;
-use Symfony\Component\Workflow\Exception\TransitionException;
-
-use function Symfony\Component\String\u;
 
 /**
  * A player of the game sends any action message: `{"type": "pass_opportunity", "payload": {...}}`.
- * See ApiMessageFactory for the payload. Errors are problem details (RFC 9457).
+ * See ApiMessageFactory for the payload, PlayerMessageSender for the errors. Errors are problem details (RFC 9457).
  *
  * The ETag of the response is the version of the game once the message is handled. With `If-Match` (the ETag of the
  * version the player saw), the message is rejected if the game has changed since.
@@ -42,26 +26,13 @@ class ApiGameMessagesController extends AbstractController
     use ProblemResponseTrait;
 
     public function __construct(
-        private readonly GameRepository $gameRepository,
-        private readonly PlayerRepository $playerRepository,
-        private readonly ApiMessageFactory $messageFactory,
-        private readonly MessageBusInterface $bus,
+        private readonly PlayerMessageSender $messageSender,
     ) {
     }
 
     #[Route('/api/games/{id}/messages', name: 'app_api_game_messages', methods: ['POST'])]
     public function post(string $id, Request $request, #[CurrentUser] UserInterface $user): Response
     {
-        // no entity is loaded before the message locks the game (GameLockMiddleware)
-        if ($this->gameRepository->count(['id' => $id]) === 0) {
-            return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
-        }
-
-        $playerId = $this->playerRepository->findIdByGameAndUser($id, $user->getUserIdentifier());
-        if ($playerId === null) {
-            return $this->problem(Response::HTTP_FORBIDDEN, 'not_a_player', 'The user is not a player of this game.');
-        }
-
         try {
             $body = $request->toArray();
         } catch (JsonException $exception) {
@@ -75,64 +46,23 @@ class ApiGameMessagesController extends AbstractController
         }
 
         $ifMatch = $request->headers->get('If-Match');
-        $stamps = [];
+        $expectedVersion = null;
         if ($ifMatch !== null && trim($ifMatch) !== '*') {
             if (preg_match('/^\s*"(\d+)"\s*$/', $ifMatch, $matches) !== 1) {
                 return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_if_match', 'If-Match must be a single ETag of the game, like "12".');
             }
-            $stamps[] = new ExpectedVersionStamp((int) $matches[1]);
+            $expectedVersion = (int) $matches[1];
         }
 
         try {
-            $this->bus->dispatch($this->messageFactory->create($type, $payload, $id, $playerId), $stamps);
-        } catch (\Throwable $throwable) {
-            return $this->toProblem($throwable instanceof HandlerFailedException ? $throwable->getPrevious() ?? $throwable : $throwable);
+            $version = $this->messageSender->send($id, $user->getUserIdentifier(), $type, $payload, $expectedVersion);
+        } catch (ApiProblemException $problem) {
+            return $this->problem($problem->getStatus(), $problem->getType(), $problem->getMessage(), $problem->getExtensions());
         }
 
         $response = new Response(status: Response::HTTP_NO_CONTENT);
-        // the game is now loaded: locked by the handling of the message
-        $response->setEtag((string) $this->gameRepository->get($id)->getVersion());
+        $response->setEtag((string) $version);
 
         return $response;
-    }
-
-    private function toProblem(\Throwable $throwable): Response
-    {
-        $status = match (true) {
-            $throwable instanceof HttpExceptionInterface => $throwable->getStatusCode(),
-            // the game has changed since the version the player saw
-            $throwable instanceof StaleVersionException => Response::HTTP_PRECONDITION_FAILED,
-            // the action is not allowed in the current state of the game
-            $throwable instanceof RulesException, $throwable instanceof WorkflowException, $throwable instanceof TransitionException => Response::HTTP_CONFLICT,
-            // the payload refers to something that does not exist in this game, or has invalid values
-            $throwable instanceof ValidationFailedException, $throwable instanceof NotFoundException, $throwable instanceof GameMismatchException, $throwable instanceof \InvalidArgumentException => Response::HTTP_UNPROCESSABLE_ENTITY,
-            default => throw $throwable,
-        };
-
-        $type = $throwable instanceof HttpExceptionInterface && ! $throwable instanceof InvalidPayloadException
-            ? u(Response::$statusTexts[$status] ?? 'error')->snake()->toString()
-            : u(new \ReflectionClass($throwable)->getShortName())->trimSuffix('Exception')->snake()->toString();
-
-        return $this->problem($status, $type, $throwable->getMessage(), match (true) {
-            $throwable instanceof InvalidPayloadException => ['violations' => $throwable->getViolations()],
-            $throwable instanceof ValidationFailedException => ['violations' => $this->toViolations($throwable->getViolations())],
-            default => [],
-        });
-    }
-
-    /**
-     * @return list<array{property_path: string, message: string}>
-     */
-    private function toViolations(ConstraintViolationListInterface $violations): array
-    {
-        $list = [];
-        foreach ($violations as $violation) {
-            $list[] = [
-                'property_path' => u($violation->getPropertyPath())->snake()->toString(),
-                'message' => (string) $violation->getMessage(),
-            ];
-        }
-
-        return $list;
     }
 }

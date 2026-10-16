@@ -4,23 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Mcp;
 
-use App\DataFixtures\UserFixtures;
 use App\Message\LoseHonor;
-use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * The tool through the MCP server, as an agent calls it: HTTP transport, authenticated with the API key of a bot.
- */
-class WaitForUpdateToolTest extends AbstractKernelTestCase
+class WaitForUpdateToolTest extends AbstractMcpTestCase
 {
     use ClockSensitiveTrait;
-
-    private ?string $sessionId = null;
 
     /**
      * Akodo bot makes Hida bot lose 1 honor.
@@ -43,55 +35,13 @@ class WaitForUpdateToolTest extends AbstractKernelTestCase
     }
 
     /**
-     * @param array<string, mixed> $message
-     */
-    private function post(array $message, string $user = 'akodo-bot'): Response
-    {
-        $client = self::getContainer()->get('test.client');
-        self::assertInstanceOf(KernelBrowser::class, $client);
-        $client->disableReboot();
-
-        $client->request('POST', '/api/mcp', server: array_filter([
-            'HTTP_AUTHORIZATION' => 'Bearer ' . UserFixtures::TOKENS[$user],
-            'CONTENT_TYPE' => 'application/json',
-            'HTTP_ACCEPT' => 'application/json, text/event-stream',
-            'HTTP_MCP_SESSION_ID' => $this->sessionId,
-        ]), content: json_encode(['jsonrpc' => '2.0', ...$message], \JSON_THROW_ON_ERROR));
-
-        return $client->getResponse();
-    }
-
-    /**
-     * Opens a session of the MCP server.
-     */
-    private function initialize(): void
-    {
-        $response = $this->post(['id' => 1, 'method' => 'initialize', 'params' => [
-            'protocolVersion' => '2025-06-18',
-            'capabilities' => [],
-            'clientInfo' => ['name' => 'test', 'version' => '1'],
-        ]]);
-        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        $this->sessionId = $response->headers->get('Mcp-Session-Id');
-        $this->post(['method' => 'notifications/initialized']);
-    }
-
-    /**
      * @param array<string, mixed> $arguments
      *
      * @return array<mixed> the result of the call
      */
     private function call(array $arguments): array
     {
-        $this->initialize();
-        $response = $this->post(['id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'wait_for_update', 'arguments' => $arguments]]);
-
-        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        $content = json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
-        self::assertIsArray($content);
-        self::assertIsArray($content['result'] ?? null, (string) $response->getContent());
-
-        return $content['result'];
+        return $this->callTool('wait_for_update', $arguments);
     }
 
     public function testTheBotReadsTheLogSinceTheVersionItKnows(): void
@@ -156,14 +106,13 @@ class WaitForUpdateToolTest extends AbstractKernelTestCase
     public function testTheTimeoutIsBounded(): void
     {
         $scenario = $this->scenarioWithLog();
-        $this->initialize();
 
-        $response = $this->post(['id' => 2, 'method' => 'tools/call', 'params' => [
+        $response = $this->request('tools/call', [
             'name' => 'wait_for_update',
             'arguments' => ['game_id' => $scenario->game()->getId(), 'timeout' => 31],
-        ]]);
+        ]);
 
-        self::assertStringContainsString('"error"', (string) $response->getContent());
+        self::assertArrayHasKey('error', $response);
     }
 
     public function testAHumanCannotUseTheMcpServer(): void

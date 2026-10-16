@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool and one tool per public message (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -363,14 +363,28 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 
 **Not done**
 - `http.allowed_hosts`: the default of the SDK (localhost only) is kept for development; a public server must list its hosts.
-- The other tools: one per public message built from the same schemas, the view of the game, the rules and the cards as resources.
+- The other tools: the view of the game, the rules and the cards as resources.
+
+## Decisions taken for the tools of the messages
+
+**Design**
+- One tool per public message, named after its type (`pass_opportunity`): an agent sees the actions as tools, with the description of the message and the schema of its payload, rather than a single `send_message(type, payload)` whose payload it would have to look up.
+- `Mcp/MessageToolLoader` (a `LoaderInterface` of the SDK, autoconfigured `mcp.loader`) registers them from `MessageSchemaFactory::createAll()` when the server is built, through the `ExplicitElementLoader` of the SDK with one `Mcp/MessageTool` (`ToolHandlerInterface`) per type: the attributes of the bundle need a method per tool. Nothing to write for a new message.
+- Arguments: the payload, plus `game_id` (required) and `expected_version` (optional, the `If-Match` of the HTTP API: a 412 `stale_version` when the game has changed since). Neither is a field of a payload (`game_id` is reserved). The server checks them against the schema (`additionalProperties: false`, so `player_id` cannot be sent) before the call.
+- Result: `{version}`, the version once the message is handled (output schema declared). A rejected message is a tool error (`isError`) whose text is the problem as the HTTP API sends it (`type`, `status`, `detail`, `violations`): the agent reads the same errors.
+- `Service/Api/PlayerMessageSender` holds what the controller did (game and player checks, dispatch with the `ExpectedVersionStamp`, exceptions to problems, `ApiProblemException`), shared by the HTTP API and the tools. The controller now checks the body before the game: an invalid body on an unknown game is a 400, not a 404.
+- Annotations: not read-only, not destructive (the engine does not apply card effects, every change can be undone by another message), not idempotent.
+
+**Alternatives rejected**
+- A single `send_message` tool: the agent would need the catalogue (`GET /api/actions`) and could not rely on the schema check of the client.
+- The tools calling the HTTP API: a second request, and the bot's key to forward.
 
 ## Next steps
 
 ### API
 
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
-- **AI agents**: the MCP server has `wait_for_update`; add one tool per public message built from the same schemas, the view of the game, and the rules and the cards as resources.
+- **AI agents**: the MCP server has `wait_for_update` and a tool per public message; add the view of the game (with its available actions), and the rules and the cards as resources.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
 - **Feedback of the players**: read the reasons of the concessions (payload of the `ConcedeGame` events), e.g. a console command or a listener of `GameConcededEvent`.
 - **Decks**: deleting a deck; the text export of EmeraldDB; the banned and restricted lists of a card pool.
