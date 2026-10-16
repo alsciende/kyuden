@@ -62,6 +62,11 @@ class PlayerState
      */
     private bool $passed = false;
 
+    /**
+     * The player has conceded the game: they are eliminated.
+     */
+    private bool $conceded = false;
+
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
         $this->strongholdProvinceId = $strongholdProvinceId;
@@ -257,6 +262,18 @@ class PlayerState
     public function setPassed(bool $passed): self
     {
         $this->passed = $passed;
+
+        return $this;
+    }
+
+    public function isConceded(): bool
+    {
+        return $this->conceded;
+    }
+
+    public function setConceded(bool $conceded): self
+    {
+        $this->conceded = $conceded;
 
         return $this;
     }

@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`) (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`) (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -49,13 +49,12 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 ## Decisions taken for the end of the game by honor
 
 - Honor stops at 0 (a player cannot lose honor they do not have) and can exceed 25. No exception: the action that reaches a limit is kept and ends the game.
-- The victory conditions are read from the state (`Service/VictoryService`), not detected where honor changes: `end_game` is an automatic transition from every place of a started game (not `join_game` nor `choose_stronghold`) to `game_ended`, guarded on a victory condition being met. It is checked after every message and between automatic transitions.
+- The victory conditions are read from the state (`Service/VictoryService`), not detected where honor changes: `end_game` is an automatic transition from every place of a started game (not `join_game`) to `game_ended`, guarded on a victory condition being met. It is checked after every message and between automatic transitions.
 - Automatic transitions have a `priority` metadata (0 by default); `end_game` has 100, so it wins over the next step (e.g. `cards_drawn` after a transfer leaving a player with no honor). Two enabled automatic transitions with the same highest priority throw a `LogicException`, so a conflict shows up instead of being settled by the declaration order.
 - The game ends at the end of the message, not in the middle of it: a draw emptying the deck goes on after the loss of 5 honor.
 - Simultaneous conditions: the first player wins if they meet one, then the next one in player order. A single message only changes the honor of two players through a transfer, which favors the receiver either way; an effect hitting each player is several messages, and the first one meeting a condition ends the game.
 - The result (`winnerId`, `victoryCondition`) is stored in `GameState`; no player is active anymore.
 - `GameEndedMiddleware` rejects every action once the game has ended (`GameEndedException`), since effect messages are accepted in any place.
-- Not done: conceding, notifying the players (Mercure).
 - Breaking the stronghold province of a player eliminates them (`VictoryCondition::StrongholdProvinceBroken`), like having no honor: the game ends right after `provinces_broken`.
 
 ## Decisions taken for the conflict phase
@@ -269,6 +268,12 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - Importing a deck from its EmeraldDB URL: the engine would depend on EmeraldDB, and fetching a URL sent by a user exposes the server (SSRF).
 - Mapping the ids by a naming rule (removing the pack prefix): 23 cards do not follow it.
 
+## Decisions taken for conceding
+
+- `ConcedeGame` (public): the sender concedes, with an optional `reason` (at most 2000 characters) meant to collect the feedback of the players when a bug blocks them. The reason is never shown to the players: it is not part of the log (`GameConcededEvent` logs `{player} concedes the game` and carries the reason for future listeners), it stays in the payload of the recorded `Event`, which the players never read.
+- Accepted from any player of a started game, in any place and during a duel, whoever has the opportunity to act (rejected in `join_game`: `GameNotStartedException`, 409). `PlayerState::conceded` eliminates the player (`VictoryCondition::Concession`, checked before the other eliminations); a player who has conceded cannot win, even with 25 honor. The automatic transition `end_game` then ends the game, now also from `choose_stronghold`, where only a concession can meet a victory condition (honor is not set yet).
+- The schema of the messages now supports nullable scalars (`["string", "null"]`) and the `Length` constraint (`minLength` / `maxLength`).
+
 ## Decisions taken for the available actions
 
 `available_actions` in `GameView`: the flat, sorted list of the types of the public messages the viewer can send now.
@@ -339,7 +344,7 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 - **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
 - **`wait_for_update`**: a bounded long-poll on the version (`version > since`, then the log since that version: `GameLogViewFactory::create($game, $player, $since)`), as an HTTP endpoint wrapped by the MCP tool.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
-- **Conceding**: a `Concede` message (the sender loses, new victory condition), so that a bot can leave a game it cannot play.
+- **Feedback of the players**: read the reasons of the concessions (payload of the `ConcedeGame` events), e.g. a console command or a listener of `GameConcededEvent`.
 - **Decks**: deleting a deck; the text export of EmeraldDB; the banned and restricted lists of a card pool.
 - **Mercure in development**: `MERCURE_URL` (`http://127.0.0.1:10001/...`) cannot be reached from the `symfony` container, so publishing fails (`app:mercure:test:publish`): creating a game from the queue answers a 500 (`GameCreatedNotification`), and other notifications should fail the same way. It should be the address of the `mercure` service inside the Docker network.
 - **Authentication**: issuing tokens through the API (`AccessTokenIssuer`). Guests (a human chooses a name and gets a session token; the account can later be linked to a real identity), then login without password: Discord (OAuth2) first, passkeys (WebAuthn) next; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable). The MCP server only accepts the tokens of bots (`ROLE_BOT`).

@@ -10,12 +10,14 @@ use Symfony\Component\TypeInfo\Type;
 use Symfony\Component\TypeInfo\Type\BackedEnumType;
 use Symfony\Component\TypeInfo\Type\BuiltinType;
 use Symfony\Component\TypeInfo\Type\CollectionType;
+use Symfony\Component\TypeInfo\Type\NullableType;
 use Symfony\Component\TypeInfo\TypeIdentifier;
 use Symfony\Component\TypeInfo\TypeResolver\TypeResolverInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Constraints\Count;
 use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
+use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\LessThan;
 use Symfony\Component\Validator\Constraints\LessThanOrEqual;
 use Symfony\Component\Validator\Constraints\Range;
@@ -143,6 +145,10 @@ readonly class MessageSchemaFactory
     private function createType(Type $type, string $where): array
     {
         return match (true) {
+            // a nullable scalar, e.g. ?string: ['string', 'null']
+            $type instanceof NullableType && $type->getWrappedType() instanceof BuiltinType => [
+                'type' => [$this->createType($type->getWrappedType(), $where)['type'], 'null'],
+            ],
             $type instanceof BackedEnumType => [
                 'type' => $type->getBackingType()->getTypeIdentifier() === TypeIdentifier::INT ? 'integer' : 'string',
                 'enum' => $this->getEnumValues($type->getClassName()),
@@ -188,6 +194,7 @@ readonly class MessageSchemaFactory
                 is_int(...),
             ),
             $constraint instanceof Count => array_filter(['minItems' => $constraint->min, 'maxItems' => $constraint->max], is_int(...)),
+            $constraint instanceof Length => array_filter(['minLength' => $constraint->min, 'maxLength' => $constraint->max], is_int(...)),
             default => throw new \LogicException(sprintf('Constraint %s of %s has no JSON schema.', $constraint::class, $where)),
         };
     }

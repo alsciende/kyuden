@@ -16,4 +16,7 @@ enum VictoryCondition: string
 
     /** The stronghold province of the opponent of the winner is broken. */
     case StrongholdProvinceBroken = 'stronghold_province_broken';
+
+    /** The opponent of the winner has conceded the game. */
+    case Concession = 'concession';
 }

@@ -8,6 +8,7 @@ use App\Enum\Orientation;
 use App\Enum\VictoryCondition;
 use App\Model\Victory;
 use App\Service\VictoryService;
+use App\State\Model\PlayerState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -42,6 +43,17 @@ class VictoryServiceTest extends AbstractKernelTestCase
 
         self::assertSame($scenario->player('jane'), $victory?->winner);
         self::assertSame(VictoryCondition::HonorWin, $victory->condition);
+    }
+
+    public function testTheOpponentOfAPlayerWhoConcedesWins(): void
+    {
+        $scenario = $this->scenarioWithHonor(25, 10);
+        $this->playerStateManager->withState($scenario->player('john'), fn (PlayerState $state): PlayerState => $state->setConceded(true));
+
+        $victory = $this->findVictory($scenario);
+
+        self::assertSame($scenario->player('jane'), $victory?->winner);
+        self::assertSame(VictoryCondition::Concession, $victory->condition);
     }
 
     public function testTheOpponentOfAPlayerWithNoHonorWins(): void

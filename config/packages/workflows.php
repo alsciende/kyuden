@@ -83,7 +83,7 @@ $gameTransitions = [
 // the game ends as soon as a player meets a victory condition, before any other automatic transition
 $gameTransitions[] = WorkflowConfig::transition(
     'end_game',
-    WorkflowConfig::placesOf($gameTransitions, 'join_game', 'choose_stronghold'),
+    WorkflowConfig::placesOf($gameTransitions, 'join_game'),
     Game::STATE_ENDED,
     ['auto' => true, 'priority' => 100, 'log' => 'The game ends'],
 );

@@ -8,6 +8,7 @@ use App\Enum\DuelType;
 use App\Message\ActionInterface;
 use App\Message\BidHonor;
 use App\Message\CollectFate;
+use App\Message\ConcedeGame;
 use App\Message\DeclareConflictSkill;
 use App\Message\DeclareDuelStatistic;
 use App\Message\DeclareGloryCount;
@@ -42,6 +43,8 @@ class MessageConstraintsTest extends AbstractKernelTestCase
         yield 'bid below one' => [new BidHonor('g', 'p', 0), ['bid']];
         yield 'bid above five' => [new BidHonor('g', 'p', 6), ['bid']];
         yield 'bid within range' => [new BidHonor('g', 'p', 5), []];
+        yield 'concession reason too long' => [new ConcedeGame('g', 'p', str_repeat('a', ConcedeGame::MAX_REASON_LENGTH + 1)), ['reason']];
+        yield 'concession without reason' => [new ConcedeGame('g', 'p'), []];
         yield 'negative fate collected' => [new CollectFate('g', 'p', -1), ['amount']];
         yield 'negative skill' => [new DeclareConflictSkill('g', 'p', -1), ['skill']];
         yield 'negative dueling statistic' => [new DeclareDuelStatistic('g', 'p', -1), ['statistic']];

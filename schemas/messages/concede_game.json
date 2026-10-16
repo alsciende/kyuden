@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "concede_game",
+    "description": "The player concedes the game, which ends at once: their opponent wins. Accepted at any time once the game has started, whoever has the opportunity to act. The reason is read by the developers only, never shown to the other players: report there a bug that prevents the player from going on.",
+    "type": "object",
+    "properties": {
+        "reason": {
+            "description": "Why the player concedes, e.g. a bug of the engine; read by the developers only.",
+            "type": [
+                "string",
+                "null"
+            ],
+            "maxLength": 2000,
+            "default": null
+        }
+    },
+    "additionalProperties": false
+}
