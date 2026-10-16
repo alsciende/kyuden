@@ -79,6 +79,8 @@ export class GameModel {
         if (card.orientation === 'upside_down') marks.push('broken');
         if (card.fate > 0) marks.push(`${card.fate} fate`);
         if (card.personal_honor !== 'ordinary') marks.push(card.personal_honor);
+        if (card.military_skill !== null && card.military_skill !== undefined) marks.push(`mil ${card.military_skill} (set)`);
+        if (card.political_skill !== null && card.political_skill !== undefined) marks.push(`pol ${card.political_skill} (set)`);
         if (this.view.conflict?.attacker_ids?.includes?.(card.id)) marks.push('attacking');
         if (this.view.conflict?.defender_ids?.includes?.(card.id)) marks.push('defending');
         if (marks.length > 0) {

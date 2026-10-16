@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "set_character_skill",
+    "description": "Records the military or political skill of a character in play, every modifier applied (an event, an attachment, another effect), so that the players see its current skill: the engine does not apply card effects. It replaces the skill set before, until `reset_character_skill` or the character leaves play.\n\nThe engine does not compute the totals of a conflict from it: they are declared by the players (`declare_conflict_skill`). The character can belong to any player.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character in play.",
+            "type": "string"
+        },
+        "type": {
+            "description": "Skill to set.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political"
+            ]
+        },
+        "skill": {
+            "description": "Skill of the character, every modifier applied.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "type",
+        "skill"
+    ],
+    "additionalProperties": false
+}

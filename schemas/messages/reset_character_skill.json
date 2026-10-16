@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "reset_character_skill",
+    "description": "Clears the skills set on a character in play (`set_character_skill`): the character is back to its printed military and political skills, e.g. once the effects modifying them have expired.\n\nThe character can belong to any player.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character in play.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

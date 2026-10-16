@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\State\Model;
 
+use App\Enum\ConflictType;
 use App\Enum\PersonalHonor;
 use App\Exception\Rules\NotEnoughFateException;
 use App\Exception\Rules\PersonalHonorException;
@@ -20,6 +21,16 @@ class CardState
     private int $fate = 0;
 
     private PersonalHonor $personalHonor = PersonalHonor::Ordinary;
+
+    /**
+     * Military skill of the character set by the players, every modifier applied; null: the printed skill.
+     */
+    private ?int $militarySkill = null;
+
+    /**
+     * Political skill of the character set by the players, every modifier applied; null: the printed skill.
+     */
+    private ?int $politicalSkill = null;
 
     public function getFate(): int
     {
@@ -88,5 +99,48 @@ class CardState
             PersonalHonor::Ordinary => PersonalHonor::Dishonored,
             PersonalHonor::Dishonored => throw new PersonalHonorException(PersonalHonor::Dishonored),
         });
+    }
+
+    public function getMilitarySkill(): ?int
+    {
+        return $this->militarySkill;
+    }
+
+    public function setMilitarySkill(?int $militarySkill): self
+    {
+        $this->militarySkill = $militarySkill;
+
+        return $this;
+    }
+
+    public function getPoliticalSkill(): ?int
+    {
+        return $this->politicalSkill;
+    }
+
+    public function setPoliticalSkill(?int $politicalSkill): self
+    {
+        $this->politicalSkill = $politicalSkill;
+
+        return $this;
+    }
+
+    /**
+     * Sets the skill of the given type, every modifier applied.
+     */
+    public function setSkill(ConflictType $type, int $skill): self
+    {
+        return match ($type) {
+            ConflictType::Military => $this->setMilitarySkill($skill),
+            ConflictType::Political => $this->setPoliticalSkill($skill),
+        };
+    }
+
+    /**
+     * Back to the printed skills.
+     */
+    public function resetSkills(): self
+    {
+        return $this->setMilitarySkill(null)->setPoliticalSkill(null);
     }
 }

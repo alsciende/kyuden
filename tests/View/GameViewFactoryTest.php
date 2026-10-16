@@ -179,7 +179,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         $john = $this->playerView($view, $scenario, 'john');
         self::assertSame([11, 2], [$john->honor, $john->honorBid]);
         $toturi = $this->cardView($view, $scenario->card('toturi'));
-        self::assertSame(['01-akodo-toturi', Orientation::Sideways, 2, PersonalHonor::Honored], [$toturi->code, $toturi->orientation, $toturi->fate, $toturi->personalHonor]);
+        self::assertSame(['01-akodo-toturi', Orientation::Sideways, 2, PersonalHonor::Honored, null, null], [$toturi->code, $toturi->orientation, $toturi->fate, $toturi->personalHonor, $toturi->militarySkill, $toturi->politicalSkill]);
         self::assertSame('01-fine-katana', $this->cardView($view, $scenario->card('katana'))->code);
         $discardPile = $this->stackView($view, $scenario, 'john', 'conflict_discard_pile');
         self::assertSame(['01-banzai', '01-fine-katana'], array_map(fn (CardView $card): ?string => $card->code, $discardPile->cards ?? []));

@@ -18,6 +18,8 @@ use App\Message\MoveToConflict;
 use App\Message\PlayActionEvent;
 use App\Message\PlayCharacterFromHand;
 use App\Message\RemoveFate;
+use App\Message\ResetCharacterSkill;
+use App\Message\SetCharacterSkill;
 use App\Message\SetHonor;
 use App\Message\SetHonorBid;
 use App\Message\ShuffleConflictDeck;
@@ -78,6 +80,17 @@ class MessageLogTest extends AbstractKernelTestCase
         $this->messageBus->dispatch(new RemoveFate($gameId, $john, $toturi, 1));
 
         self::assertSame(['Akodo Toturi is now honored', '1 fate is removed from Akodo Toturi'], $this->janesLog($scenario));
+    }
+
+    public function testTheSkillsOfACharacter(): void
+    {
+        $scenario = $this->scenarioInActionWindow();
+        [$gameId, $jane, $toturi] = [$scenario->game()->getId(), $scenario->player('jane')->getId(), $scenario->card('toturi')->getId()];
+
+        $this->messageBus->dispatch(new SetCharacterSkill($gameId, $jane, $toturi, ConflictType::Military, 4));
+        $this->messageBus->dispatch(new ResetCharacterSkill($gameId, $jane, $toturi));
+
+        self::assertSame(['Akodo Toturi now has 4 military skill', 'Akodo Toturi is back to its printed skills'], $this->janesLog($scenario));
     }
 
     public function testAnEventPlayedFromHandIsRevealed(): void

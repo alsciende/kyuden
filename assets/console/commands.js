@@ -44,6 +44,8 @@ export const MESSAGE_ALIASES = {
     honor: 'honor_character',
     dishonor: 'dishonor_character',
     'remove-fate': 'remove_fate',
+    'set-skill': 'set_character_skill',
+    'reset-skill': 'reset_character_skill',
     gain: 'gain_honor',
     lose: 'lose_honor',
     'set-honor': 'set_honor',

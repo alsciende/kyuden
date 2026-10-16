@@ -113,6 +113,8 @@ final readonly class GameViewFactory
             orientation: $card->getOrientation(),
             fate: $state->getFate(),
             personalHonor: $state->getPersonalHonor(),
+            militarySkill: $state->getMilitarySkill(),
+            politicalSkill: $state->getPoliticalSkill(),
         );
     }
 }
