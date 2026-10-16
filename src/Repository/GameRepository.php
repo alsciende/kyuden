@@ -57,6 +57,26 @@ class GameRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * The games a user plays or has played, with their players, the last joined first (a single query).
+     *
+     * @return list<Game>
+     */
+    public function findByUser(string $userId): array
+    {
+        /** @var list<Game> */
+        return $this->createQueryBuilder('g')
+            ->addSelect('p')
+            ->join('g.players', 'mine', 'WITH', 'IDENTITY(mine.user) = :user')
+            ->join('g.players', 'p')
+            ->setParameter('user', $userId)
+            ->orderBy('mine.joinDate', 'DESC')
+            ->addOrderBy('g.id', 'ASC')
+            ->addOrderBy('p.joinRank', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     //    /**
     //     * @return Game[] Returns an array of Game objects
     //     */
