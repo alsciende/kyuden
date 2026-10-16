@@ -1,0 +1,16 @@
+mcp:
+    servers:
+        l5r:
+            description: 'Play Legend of the Five Rings LCG (Stronghold format) against another player.'
+            instructions: |
+                The engine is a board: it enforces the flow of the game (rounds, phases, steps), not the rules of the
+                cards. Wait for your opponent with wait_for_update, which returns the log of the game since the
+                version you know.
+            transports:
+                http: true
+                stdio: false
+            http:
+                # under the firewall of the API: a bot authenticates with its API key (Authorization: Bearer)
+                path: /api/mcp
+            registry:
+                tools: ['App\Mcp\']

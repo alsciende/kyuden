@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the long-poll on the log of a game (`wait`, for `wait_for_update`) and the nginx + PHP-FPM development stack (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -352,18 +352,30 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 **Not done**
 - Each waiting client holds a PHP-FPM worker (up to 30 s): the number of workers bounds the number of agents waiting at once. To revisit with a non-blocking runtime (FrankenPHP worker mode, or Mercure for the clients that can subscribe).
 
+## Decisions taken for the MCP server
+
+**Design**
+- A single server `l5r` (`config/packages/mcp.yaml`), HTTP transport only, at `/api/mcp`: under the firewall of the API, so the agents authenticate like any client (`Authorization: Bearer <API key>`), and `access_control` restricts it to the bots (`ROLE_BOT`): a human gets a 403. The tool reads the user through `Security`.
+- `wait_for_update(game_id, since = 0, timeout = 30)` (`Mcp/WaitForUpdateTool`): the same waiter and the same masked log as `GET /api/games/{id}/log?since=…&wait=…`, called in process rather than through HTTP. The log is returned as structured content (snake case, as the API). An unknown game or a game the bot does not play is a tool error (`isError`), the bounds of the arguments are checked by the server against the schema (JSON-RPC error).
+- Tools are registered from `src/Mcp` (`registry.tools`), described by their doc comments (read by the agents).
+- Sessions: the default file store of the bundle, in `var/cache` (a tmpfs in development): they are lost when the container restarts, the clients initialize again.
+- `nyholm/psr7`: the bundle converts the request to PSR-7 and needs a PSR-17 factory.
+
+**Not done**
+- `http.allowed_hosts`: the default of the SDK (localhost only) is kept for development; a public server must list its hosts.
+- The other tools: one per public message built from the same schemas, the view of the game, the rules and the cards as resources.
+
 ## Next steps
 
 ### API
 
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
-- **AI agents**: an MCP server in the application (`symfony/mcp-bundle`), with one tool per public message built from the same schemas, the rules and the cards as resources, and a blocking `wait_for_update` tool.
-- **`wait_for_update`**: the MCP tool wrapping the long-poll on the log (`GET /api/games/{id}/log?since=…&wait=…`, done).
+- **AI agents**: the MCP server has `wait_for_update`; add one tool per public message built from the same schemas, the view of the game, and the rules and the cards as resources.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
 - **Feedback of the players**: read the reasons of the concessions (payload of the `ConcedeGame` events), e.g. a console command or a listener of `GameConcededEvent`.
 - **Decks**: deleting a deck; the text export of EmeraldDB; the banned and restricted lists of a card pool.
 - **Mercure in development**: `MERCURE_URL` (`http://127.0.0.1:10001/...`) cannot be reached from the `symfony` container, so publishing fails (`app:mercure:test:publish`): creating a game from the queue answers a 500 (`GameCreatedNotification`), and other notifications should fail the same way. It should be the address of the `mercure` service inside the Docker network.
-- **Authentication**: issuing tokens through the API (`AccessTokenIssuer`). Guests (a human chooses a name and gets a session token; the account can later be linked to a real identity), then login without password: Discord (OAuth2) first, passkeys (WebAuthn) next; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable). The MCP server only accepts the tokens of bots (`ROLE_BOT`).
+- **Authentication**: issuing tokens through the API (`AccessTokenIssuer`). Guests (a human chooses a name and gets a session token; the account can later be linked to a real identity), then login without password: Discord (OAuth2) first, passkeys (WebAuthn) next; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable).
 - Private Mercure topics (the topic `/games/{id}` is public, it carries no data of the game).
 
 
