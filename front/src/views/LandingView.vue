@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { fetchCard, type Card } from '@/api/client'
@@ -36,7 +36,35 @@ onMounted(() => {
         })
     }
   }
+  window.addEventListener('keydown', browse)
 })
+
+onBeforeUnmount(() => window.removeEventListener('keydown', browse))
+
+const clanButtons = useTemplateRef<HTMLButtonElement[]>('clanButtons')
+
+/** the arrow keys go through the clans, from the first or the last when none is picked */
+function browse(event: KeyboardEvent): void {
+  const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key]
+  if (step === undefined || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return
+  }
+  const target = event.target
+  if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select'))) {
+    return
+  }
+  event.preventDefault()
+
+  const index = CLANS.findIndex((clan) => clan.id === newcomer.clanId)
+  const next = index === -1 ? (step > 0 ? 0 : CLANS.length - 1) : (index + step + CLANS.length) % CLANS.length
+  newcomer.clanId = CLANS[next]!.id
+
+  // the focus follows the selection, so that Enter does not pick the clan left
+  const buttons = clanButtons.value ?? []
+  if (buttons.some((button) => button === document.activeElement)) {
+    void nextTick(() => buttons[next]?.focus())
+  }
+}
 
 function toggle(id: ClanId): void {
   newcomer.clanId = newcomer.clanId === id ? null : id
@@ -66,6 +94,7 @@ function play(): void {
         <button
           v-for="clan in CLANS"
           :key="clan.id"
+          ref="clanButtons"
           type="button"
           class="clan"
           :class="{ 'is-selected': clan.id === newcomer.clanId }"
@@ -109,6 +138,7 @@ function play(): void {
         <ClanMon :src="enso" :size="260" />
         <h2>The seven Great Clans</h2>
         <p>Each clan plays its own way. Pick one to see its starter deck.</p>
+        <p class="hint">Browse them with <kbd>←</kbd> <kbd>→</kbd></p>
       </div>
       <template v-else>
         <div :key="selected.id" class="panel-clan screen">
@@ -291,6 +321,20 @@ h1 {
   line-height: 1.6;
   color: var(--ink-2);
   max-width: 360px;
+}
+
+.panel-empty .hint {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+kbd {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--paper);
 }
 
 .panel-clan {

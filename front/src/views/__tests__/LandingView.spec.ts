@@ -1,5 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { newcomer } from '@/lib/newcomer'
@@ -21,6 +21,8 @@ async function mountLanding() {
 }
 
 describe('LandingView', () => {
+  enableAutoUnmount(afterEach)
+
   beforeEach(() => {
     newcomer.clanId = null
     vi.stubGlobal(
@@ -53,5 +55,36 @@ describe('LandingView', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('name')
+  })
+
+  it('browses the clans with the arrow keys, wrapping around', async () => {
+    const { wrapper } = await mountLanding()
+    const press = async (key: string) => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key }))
+      await flushPromises()
+    }
+
+    await press('ArrowRight')
+    expect(newcomer.clanId).toBe('crab')
+    expect(wrapper.find('.panel h2').text()).toBe('The Crab Clan')
+
+    await press('ArrowLeft')
+    expect(wrapper.findAll('.clan').at(-1)!.attributes('aria-pressed')).toBe('true')
+
+    await press('ArrowRight')
+    expect(newcomer.clanId).toBe('crab')
+
+    wrapper.unmount()
+    await press('ArrowRight')
+    expect(newcomer.clanId).toBe('crab')
+  })
+
+  it('starts from the last clan when going left with none picked', async () => {
+    const { wrapper } = await mountLanding()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    await flushPromises()
+
+    expect(wrapper.findAll('.clan').at(-1)!.attributes('aria-pressed')).toBe('true')
   })
 })
