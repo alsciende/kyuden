@@ -15,7 +15,7 @@ class ConsoleControllerTest extends AbstractKernelTestCase
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
 
-        $client->request('GET', '/');
+        $client->request('GET', '/console');
 
         $response = $client->getResponse();
         self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());

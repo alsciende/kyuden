@@ -61,6 +61,18 @@ services:
       - 8080:80
     depends_on:
       - symfony
+      - node
+
+  # the web client (front/): the Vite development server, behind nginx
+  node:
+    image: node:24-alpine
+    working_dir: /app/front
+    volumes:
+      - .:/app
+    env_file:
+      - path: proxy.env
+        required: false
+    command: sh -c 'npm install && npm run dev'
 
   mailer:
     image: axllent/mailpit

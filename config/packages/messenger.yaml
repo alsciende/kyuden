@@ -27,6 +27,8 @@ framework:
         buses:
             default.bus:
                 middleware:
+                    # once the message is handled, the house bot may have something to do in its game
+                    - 'App\Middleware\HouseBotMiddleware'
                     # values of the message (constraints of the Validator), before any lock or transaction
                     - validation
                     # after the commit

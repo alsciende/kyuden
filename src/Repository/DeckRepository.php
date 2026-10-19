@@ -46,4 +46,12 @@ class DeckRepository extends ServiceEntityRepository
 
         return $deck instanceof Deck && $deck->isUsableBy($user) ? $deck : null;
     }
+
+    /**
+     * @return list<Deck> the decks every user can use (the starter decks), by id
+     */
+    public function findWithoutOwner(): array
+    {
+        return $this->findBy(['owner' => null], ['id' => 'ASC']);
+    }
 }

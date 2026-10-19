@@ -25,6 +25,8 @@ security:
         - { path: ^/api/actions$, roles: PUBLIC_ACCESS }
         # the cards as printed depend on no game
         - { path: ^/api/cards(/|$), roles: PUBLIC_ACCESS }
+        # anyone gets a guest account to try the game
+        - { path: ^/api/guests$, roles: PUBLIC_ACCESS }
         # the MCP server is for the programs playing as a bot
         - { path: ^/api/mcp$, roles: ROLE_BOT }
         - { path: ^/api, roles: ROLE_USER }

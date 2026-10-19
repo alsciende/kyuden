@@ -2,6 +2,8 @@ EXEC          := docker compose --env-file proxy.env exec
 EXEC_SYMFONY  := $(EXEC) -it -u www-data symfony
 EXEC_COMPOSER := $(EXEC_SYMFONY) composer
 PHP           := ${EXEC_SYMFONY} php
+# the web client (front/), in a container of its own so that the node service may be stopped
+NPM           := docker compose --env-file proxy.env run --rm --no-deps -T node npm
 
 install:
 	$(EXEC_COMPOSER) install
@@ -34,9 +36,25 @@ rector:
 phpstan:
 	$(PHP) vendor/bin/phpstan -v --memory-limit=1G
 
-lint: check-symfony rector phpstan
+front-install:
+	$(NPM) install
 
-test:
+# type checking (vue-tsc), ESLint and Prettier
+front-lint:
+	$(NPM) run lint
+
+front-test:
+	$(NPM) test
+
+# production build of the web client in front/dist
+front-build:
+	$(NPM) run build
+
+lint: check-symfony rector phpstan front-lint
+
+test: test-php front-test
+
+test-php:
 	$(PHP) vendor/bin/phpunit
 
 # the database of the tests lives in memory: run it after starting the database_test service

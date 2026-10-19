@@ -21,7 +21,7 @@ class ConsoleController extends AbstractController
     ) {
     }
 
-    #[Route('/', name: 'app_console', methods: ['GET'])]
+    #[Route('/console', name: 'app_console', methods: ['GET'])]
     public function index(): Response
     {
         return $this->render('console/index.html.twig', [
