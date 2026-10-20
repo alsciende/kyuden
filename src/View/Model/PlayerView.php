@@ -29,6 +29,14 @@ final readonly class PlayerView
         public bool $honorBidSelected,
         public ?string $strongholdProvinceId,
         public bool $passed,
+        /**
+         * The player has taken an action during their opportunity to act and has not ended it yet.
+         */
+        public bool $acted,
+        /**
+         * Number of interrupts and reactions the player has initiated and has not ended yet.
+         */
+        public int $resolvingInterruptsAndReactions,
         public bool $fateCollected,
         public int $conflictOpportunities,
         public array $declaredConflictTypes,

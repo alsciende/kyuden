@@ -12,7 +12,7 @@ use App\Attribute\Description;
  * abilities are triggered with `TriggerInterruptAbility` and `TriggerReactionAbility`.
  *
  * The engine does not apply card effects: the message only records which card is used. The player pays the costs
- * and resolves the effects with other actions, then ends their opportunity to act (`EndOpportunity`).
+ * and resolves the effects with other actions, then ends it (`EndResolution`), which ends their opportunity to act.
  */
 #[AppAction]
 final readonly class TriggerActionAbility implements PlayerActionInterface

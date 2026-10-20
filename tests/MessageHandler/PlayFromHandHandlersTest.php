@@ -71,6 +71,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_IN_PLAY, $scenario->card('ambusher')->getCurrentPlace());
         self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getFate());
         self::assertSame(1, self::service(CardStateManager::class)->getState($scenario->card('ambusher'))->getFate());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     public function testACharacterIsPlayedIntoTheConflictOnItsControllersSide(): void
@@ -143,6 +144,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
 
         self::assertSame($scenario->card('spear')->getStack(), $scenario->card('katana')->getStack());
         self::assertSame(ConflictCard::STATE_IN_PLAY, $scenario->card('katana')->getCurrentPlace());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     private function playEvent(Scenario $scenario, string $player = 'john', string $card = 'banzai'): void
@@ -163,6 +165,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
 
         self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('banzai')->getCurrentPlace());
         self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     public function testAnEventIsPlayedByAnActivePlayer(): void

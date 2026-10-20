@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "play_reaction_event",
-    "description": "A player plays a reaction event from hand after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.",
+    "description": "A player plays a reaction event from hand after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.",
     "type": "object",
     "properties": {
         "card_id": {

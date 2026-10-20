@@ -12,6 +12,8 @@ use Symfony\Component\Validator\Constraints as Assert;
  * The active player plays an attachment from hand during an action window and attaches it to a card in play (a
  * character of any player, or a province). The player says what they pay (`cardCost`), since card effects may modify
  * costs.
+ * The player resolves what follows with other actions, then ends their action (`EndResolution`), which ends
+ * their opportunity to act.
  */
 #[AppAction]
 final readonly class PlayAttachment implements PlayerActionInterface

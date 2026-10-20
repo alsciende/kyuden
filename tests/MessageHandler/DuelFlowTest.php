@@ -9,9 +9,10 @@ use App\Exception\Rules\DuelInProgressException;
 use App\Message\BidHonor;
 use App\Message\DeclareDuelStatistic;
 use App\Message\EndDuel;
-use App\Message\EndOpportunity;
+use App\Message\EndResolution;
 use App\Message\InitiateDuel;
 use App\Message\PassOpportunity;
+use App\Message\TriggerActionAbility;
 use App\MessageHandler\PassOpportunityHandler;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
@@ -43,6 +44,8 @@ class DuelFlowTest extends AbstractKernelTestCase
         $scenario = $this->scenarioInActionWindow();
         $gameId = $scenario->game()->getId();
 
+        // the duel is initiated by an action ability of Akodo Toturi
+        $this->messageBus->dispatch(new TriggerActionAbility($gameId, $this->id($scenario, 'john'), $scenario->card('toturi')->getId()));
         $this->messageBus->dispatch(new InitiateDuel($gameId, $this->id($scenario, 'john'), DuelType::Military, [$scenario->card('toturi')->getId()], [$scenario->card('spear')->getId()]));
         $this->messageBus->dispatch(new BidHonor($gameId, $this->id($scenario, 'john'), 4));
         $this->messageBus->dispatch(new BidHonor($gameId, $this->id($scenario, 'jane'), 2));
@@ -56,12 +59,13 @@ class DuelFlowTest extends AbstractKernelTestCase
         self::assertSame(12, $this->playerStateManager->getState($scenario->player('jane'))->getHonor());
 
         $this->messageBus->dispatch(new EndDuel($gameId, $this->id($scenario, 'john')));
-        $this->messageBus->dispatch(new EndOpportunity($gameId, $this->id($scenario, 'john')));
+        $this->messageBus->dispatch(new EndResolution($gameId, $this->id($scenario, 'john')));
 
         self::assertNull(self::service(GameStateManager::class)->getState($scenario->game())->duel);
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('jane')));
         self::assertSame('draw_phase_action_window', $scenario->game()->getCurrentPlace());
         self::assertSame([
+            'An ability of Akodo Toturi is triggered',
             'john initiates a military duel: Akodo Toturi against Master of the Spear',
             'john bids ? honor',
             'jane bids 2 honor',

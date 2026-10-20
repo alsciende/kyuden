@@ -33,7 +33,7 @@ export const MESSAGE_ALIASES = {
     'trigger-interrupt': 'trigger_interrupt_ability',
     'trigger-reaction': 'trigger_reaction_ability',
     pass: 'pass_opportunity',
-    end: 'end_opportunity',
+    end: 'end_resolution',
     bid: 'bid_honor',
     'set-bid': 'set_honor_bid',
     draw: 'draw_conflict_cards',

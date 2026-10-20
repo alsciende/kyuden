@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * A player plays a reaction event from hand after its triggering condition has resolved, whether or not they have the
  * opportunity to act, and pays its cost (`cardCost`); the event goes to the discard pile. The player resolves
- * its effects with other actions. Action and interrupt events are played with `PlayActionEvent` and `PlayInterruptEvent`.
+ * its effects with other actions, then ends it (`EndResolution`): the opportunities to act do not change. Action and interrupt events are played with `PlayActionEvent` and `PlayInterruptEvent`.
  */
 #[AppAction]
 final readonly class PlayReactionEvent implements PlayerActionInterface

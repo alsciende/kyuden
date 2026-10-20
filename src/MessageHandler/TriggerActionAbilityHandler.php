@@ -19,7 +19,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * used (App\Service\AbilityService). Interrupt and reaction abilities are triggered with TriggerInterruptAbility and
  * TriggerReactionAbility, by any player whose triggering condition occurs.
  * The player keeps the opportunity to act: they pay the costs and resolve the effects with other actions, then end
- * their opportunity (EndOpportunity).
+ * their action (EndResolution), which ends their opportunity.
  */
 #[AsMessageHandler]
 final readonly class TriggerActionAbilityHandler implements PlayerActionHandlerInterface
@@ -46,5 +46,7 @@ final readonly class TriggerActionAbilityHandler implements PlayerActionHandlerI
         $this->assertAvailable($game, $player);
 
         $this->abilityService->trigger($this->cardRepository->get($message->getCardId(), $game), $player);
+
+        $this->opportunityService->takeAction($player);
     }
 }

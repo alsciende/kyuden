@@ -13,7 +13,8 @@ use App\Attribute\Description;
  * `TriggerInterruptAbility`.
  *
  * The engine does not apply card effects: the message only records which card is used. The player pays the costs
- * and resolves the effects with other actions.
+ * and resolves the effects with other actions, then ends it (`EndResolution`): the opportunities to act do not
+ * change.
  */
 #[AppAction]
 final readonly class TriggerReactionAbility implements PlayerActionInterface

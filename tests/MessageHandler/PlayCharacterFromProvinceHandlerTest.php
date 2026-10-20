@@ -80,6 +80,7 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
 
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('john')));
         self::assertCount(1, $scenario->card('province')->getStack()->getCards());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     public function testRejectsAPlayerWhoCannotPay(): void

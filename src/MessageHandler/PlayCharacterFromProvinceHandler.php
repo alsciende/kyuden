@@ -16,6 +16,7 @@ use App\Message\PlayCharacterFromProvince;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\OpportunityService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -27,8 +28,8 @@ use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
  * The player pays the cost of the character, which enters play ready, then places fate on it.
- * The player keeps the opportunity to act: they refill the province (FillProvince) and end their opportunity
- * (EndOpportunity) themselves, possibly after other actions triggered by the character entering play.
+ * The player keeps the opportunity to act: they refill the province (FillProvince) and end their action
+ * (EndResolution) themselves, possibly after other actions triggered by the character entering play.
  */
 #[AsMessageHandler]
 final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHandlerInterface
@@ -42,6 +43,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         private CardStateManager $cardStateManager,
         private WorkflowInterface $dynastyCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
+        private OpportunityService $opportunityService,
     ) {
     }
 
@@ -85,5 +87,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         if ($message->getFate() > 0) {
             $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $card, $message->getFate()));
         }
+
+        $this->opportunityService->takeAction($player);
     }
 }

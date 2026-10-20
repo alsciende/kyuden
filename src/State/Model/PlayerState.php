@@ -63,6 +63,18 @@ class PlayerState
     private bool $passed = false;
 
     /**
+     * The player has taken an action during their opportunity to act (played a card, triggered an action ability) and
+     * resolves it: they end it (EndResolution), which ends their opportunity, instead of passing.
+     */
+    private bool $acted = false;
+
+    /**
+     * Interrupts and reactions the player has initiated and is resolving, whether or not they have the opportunity to
+     * act: each one ends with EndResolution, the last one initiated first. They do not use the opportunity to act.
+     */
+    private int $resolvingInterruptsAndReactions = 0;
+
+    /**
      * The player has conceded the game: they are eliminated.
      */
     private bool $conceded = false;
@@ -264,6 +276,38 @@ class PlayerState
         $this->passed = $passed;
 
         return $this;
+    }
+
+    public function hasActed(): bool
+    {
+        return $this->acted;
+    }
+
+    public function setActed(bool $acted): self
+    {
+        $this->acted = $acted;
+
+        return $this;
+    }
+
+    public function getResolvingInterruptsAndReactions(): int
+    {
+        return $this->resolvingInterruptsAndReactions;
+    }
+
+    public function setResolvingInterruptsAndReactions(int $resolvingInterruptsAndReactions): self
+    {
+        $this->resolvingInterruptsAndReactions = max($resolvingInterruptsAndReactions, 0);
+
+        return $this;
+    }
+
+    /**
+     * The player resolves what they have played (an action, an interrupt or a reaction) and has not ended it yet.
+     */
+    public function isResolving(): bool
+    {
+        return $this->acted || $this->resolvingInterruptsAndReactions > 0;
     }
 
     public function isConceded(): bool

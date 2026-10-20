@@ -23,8 +23,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 /**
  * Allowed in any game place marked `opportunities` in the game workflow. The player is no longer active; the other
  * players keep acting (in player order, or simultaneously) until every player has passed. In action windows
- * (PassingRule::Consecutive), a player who acts afterwards cancels the passes (EndOpportunity). The rules specific to a
- * step listen to OpportunityPassedEvent.
+ * (PassingRule::Consecutive), a player who acts afterwards cancels the passes (EndResolution). A player who resolves what
+ * they have played ends it instead of passing. The rules specific to a step listen to OpportunityPassedEvent.
  */
 #[AsMessageHandler]
 final readonly class PassOpportunityHandler implements PlayerActionHandlerInterface
@@ -50,6 +50,8 @@ final readonly class PassOpportunityHandler implements PlayerActionHandlerInterf
         if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
             throw new NotActivePlayerException();
         }
+
+        $this->opportunityService->assertNotResolving($player);
     }
 
     public function __invoke(PassOpportunity $message): void

@@ -10,7 +10,8 @@ use App\Enum\StackType;
 use App\Enum\VictoryCondition;
 use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
-use App\Message\EndOpportunity;
+use App\Exception\Rules\ResolutionInProgressException;
+use App\Message\EndResolution;
 use App\Message\PassOpportunity;
 use App\MessageHandler\PassOpportunityHandler;
 use App\State\Manager\GameStateManager;
@@ -170,13 +171,14 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john')
-            ->withPlayer('jane')
+            // jane has acted once the opportunity to act reaches jane
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->acted())
             ->activePlayer('john')
             ->persist();
 
         // through the bus, so that automatic transitions happen
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
-        $this->messageBus->dispatch(new EndOpportunity($scenario->game()->getId(), $scenario->player('jane')->getId()));
+        $this->messageBus->dispatch(new EndResolution($scenario->game()->getId(), $scenario->player('jane')->getId()));
 
         // jane has acted: john, who had passed, gets the opportunity to act again
         self::assertSame('draw_phase_action_window', $scenario->game()->getCurrentPlace());
@@ -218,5 +220,33 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         $this->messageBus->dispatch($this->pass($scenario, 'john'));
 
         self::assertSame('glory_count', $scenario->game()->getCurrentPlace());
+    }
+
+    public function testAPlayerWhoHasActedEndsTheirActionInsteadOfPassing(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->acted())
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->persist();
+
+        $this->expectException(ResolutionInProgressException::class);
+
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
+    }
+
+    public function testAPlayerEndsTheirReactionBeforePassing(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_honor_dials')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))
+            ->withPlayer('jane')
+            ->activePlayers('john', 'jane')
+            ->persist();
+
+        $this->expectException(ResolutionInProgressException::class);
+
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
     }
 }

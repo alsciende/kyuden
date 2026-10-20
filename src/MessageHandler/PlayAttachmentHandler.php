@@ -25,7 +25,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
 /**
  * Allowed in the action windows where attachments can be played from hand. The player pays the cost of the attachment,
  * which joins the stack of the card it is attached to: a character in play of any player, or a province. Attachment
- * restrictions printed on cards are not checked. The player keeps the opportunity to act and ends it (EndOpportunity).
+ * restrictions printed on cards are not checked. The player keeps the opportunity to act and ends their action (EndResolution).
  */
 #[AsMessageHandler]
 final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterface
@@ -72,5 +72,7 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
         $this->conflictCardStateMachine->apply($card, 'play_card', [
             'stack' => $target->getStack(),
         ]);
+
+        $this->opportunityService->takeAction($player);
     }
 }

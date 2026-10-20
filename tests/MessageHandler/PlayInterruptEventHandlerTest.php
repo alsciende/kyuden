@@ -58,6 +58,7 @@ class PlayInterruptEventHandlerTest extends AbstractKernelTestCase
         $state = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
         self::assertFalse($state->isActivePlayer($scenario->player('jane')));
+        self::assertSame(1, self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
     }
 
     public function testRejectsAnEventOfAnotherPlayer(): void

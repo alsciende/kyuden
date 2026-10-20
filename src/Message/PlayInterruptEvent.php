@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * A player plays an interrupt event from hand before its triggering condition resolves, whether or not they have the
  * opportunity to act (e.g. Stay Your Hand during a duel initiated by an opponent), and pays its cost (`cardCost`); the event goes to the discard pile. The player resolves
- * its effects with other actions. Action and reaction events are played with `PlayActionEvent` and `PlayReactionEvent`.
+ * its effects with other actions, then ends it (`EndResolution`): the opportunities to act do not change. Action and reaction events are played with `PlayActionEvent` and `PlayReactionEvent`.
  */
 #[AppAction]
 final readonly class PlayInterruptEvent implements PlayerActionInterface

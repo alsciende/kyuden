@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "play_character_from_hand",
-    "description": "The active player plays a character from hand during an action window, at home or, during a conflict in which they take part, into the conflict on their side.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character.",
+    "description": "The active player plays a character from hand during an action window, at home or, during a conflict in which they take part, into the conflict on their side.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.",
     "type": "object",
     "properties": {
         "card_id": {

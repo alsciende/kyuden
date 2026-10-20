@@ -42,6 +42,8 @@ final class PlayerBuilder
     private ?int $pendingHonorBid = null;
 
     private bool $passed = false;
+    private bool $acted = false;
+    private int $resolvingInterruptsAndReactions = 0;
 
     private int $conflictOpportunities = PlayerState::CONFLICT_OPPORTUNITIES;
 
@@ -135,6 +137,26 @@ final class PlayerBuilder
     public function passed(): self
     {
         $this->passed = true;
+
+        return $this;
+    }
+
+    /**
+     * Records that the player has taken an action during their opportunity to act, not ended yet.
+     */
+    public function acted(): self
+    {
+        $this->acted = true;
+
+        return $this;
+    }
+
+    /**
+     * Records interrupts and reactions the player has initiated, not ended yet.
+     */
+    public function resolvingInterruptsAndReactions(int $count): self
+    {
+        $this->resolvingInterruptsAndReactions = $count;
 
         return $this;
     }
@@ -339,6 +361,16 @@ final class PlayerBuilder
     public function isPassed(): bool
     {
         return $this->passed;
+    }
+
+    public function hasActed(): bool
+    {
+        return $this->acted;
+    }
+
+    public function getResolvingInterruptsAndReactions(): int
+    {
+        return $this->resolvingInterruptsAndReactions;
     }
 
     /**

@@ -11,6 +11,8 @@ use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\DuelInProgressException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
+use App\Exception\Rules\NothingToResolveException;
+use App\Exception\Rules\ResolutionInProgressException;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
@@ -22,6 +24,10 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * the opportunity goes to the next player in player order who has not passed during the current step. In steps where
  * players act simultaneously, every player is active until they pass. In action windows (PassingRule::Consecutive),
  * a player who acts cancels the passes.
+ *
+ * A player who acts (a card played, an action ability triggered) resolves their action, then ends it (EndResolution)
+ * instead of passing. Interrupts and reactions are resolved the same way, by any player, without using an
+ * opportunity to act.
  */
 readonly class OpportunityService
 {
@@ -83,6 +89,87 @@ readonly class OpportunityService
         if ($this->gameStateManager->getState($game)->duel !== null) {
             throw new DuelInProgressException();
         }
+    }
+
+    /**
+     * The active player has taken an action: they resolve it, then end it (EndResolution), which ends their
+     * opportunity to act. Taking other actions before ending it is allowed.
+     */
+    public function takeAction(Player $player): void
+    {
+        $this->playerStateManager->withState(
+            $player,
+            fn (PlayerState $state): PlayerState => $state->setActed(true),
+        );
+    }
+
+    /**
+     * The player has initiated an interrupt or a reaction, whether or not they have the opportunity to act: they
+     * resolve it, then end it (EndResolution).
+     */
+    public function startInterruptOrReaction(Player $player): void
+    {
+        $this->playerStateManager->withState(
+            $player,
+            fn (PlayerState $state): PlayerState => $state->setResolvingInterruptsAndReactions($state->getResolvingInterruptsAndReactions() + 1),
+        );
+    }
+
+    /**
+     * A player cannot pass while they resolve what they have played.
+     *
+     * @throws ResolutionInProgressException
+     */
+    public function assertNotResolving(Player $player): void
+    {
+        if ($this->playerStateManager->getState($player)->isResolving()) {
+            throw new ResolutionInProgressException();
+        }
+    }
+
+    /**
+     * An interrupt or a reaction can be ended anytime, during a duel too. An action is ended by the active player once
+     * no duel is being resolved.
+     *
+     * @throws NothingToResolveException|DuelInProgressException|NotActivePlayerException
+     */
+    public function assertCanEndResolution(Game $game, Player $player): void
+    {
+        $state = $this->playerStateManager->getState($player);
+        if ($state->getResolvingInterruptsAndReactions() > 0) {
+            return;
+        }
+
+        if (! $state->hasActed()) {
+            throw new NothingToResolveException();
+        }
+
+        $this->assertNoDuel($game);
+        if (! $this->gameStateManager->getState($game)->isActivePlayer($player)) {
+            throw new NotActivePlayerException();
+        }
+    }
+
+    /**
+     * Ends the last interrupt or reaction the player has initiated, otherwise their action, which ends their
+     * opportunity to act.
+     */
+    public function endResolution(Game $game, Player $player): void
+    {
+        if ($this->playerStateManager->getState($player)->getResolvingInterruptsAndReactions() > 0) {
+            $this->playerStateManager->withState(
+                $player,
+                fn (PlayerState $state): PlayerState => $state->setResolvingInterruptsAndReactions($state->getResolvingInterruptsAndReactions() - 1),
+            );
+
+            return;
+        }
+
+        $this->playerStateManager->withState(
+            $player,
+            fn (PlayerState $state): PlayerState => $state->setActed(false),
+        );
+        $this->passToNextPlayer($game, $player);
     }
 
     /**

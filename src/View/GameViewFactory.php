@@ -82,6 +82,8 @@ final readonly class GameViewFactory
             honorBidSelected: $state->getPendingHonorBid() !== null,
             strongholdProvinceId: $isViewer ? $state->getStrongholdProvinceId() : null,
             passed: $state->isPassed(),
+            acted: $state->hasActed(),
+            resolvingInterruptsAndReactions: $state->getResolvingInterruptsAndReactions(),
             fateCollected: $state->isFateCollected(),
             conflictOpportunities: $state->getConflictOpportunities(),
             declaredConflictTypes: $state->getDeclaredConflictTypes(),

@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "trigger_interrupt_ability",
-    "description": "A player triggers an interrupt ability of one of their cards before its triggering condition resolves, whether or not they have the opportunity to act. Action and reaction abilities are triggered with `trigger_action_ability` and `trigger_reaction_ability`.\n\nThe engine does not apply card effects: the message only records which card is used. The player pays the costs and resolves the effects with other actions.",
+    "description": "A player triggers an interrupt ability of one of their cards before its triggering condition resolves, whether or not they have the opportunity to act. Action and reaction abilities are triggered with `trigger_action_ability` and `trigger_reaction_ability`.\n\nThe engine does not apply card effects: the message only records which card is used. The player pays the costs and resolves the effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change.",
     "type": "object",
     "properties": {
         "card_id": {

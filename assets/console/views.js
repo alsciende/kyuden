@@ -50,6 +50,8 @@ export function writePlayerSummary(block, game, player) {
     else if (player.pending_honor_bid !== null) facts.push(`secret bid ${player.pending_honor_bid}`);
     else if (player.honor_bid_selected) facts.push('bid selected');
     if (player.passed) facts.push('passed');
+    if (player.acted) facts.push('resolving their action');
+    if (player.resolving_interrupts_and_reactions > 0) facts.push(`resolving ${player.resolving_interrupts_and_reactions} interrupt/reaction`);
     if (player.fate_collected) facts.push('fate collected');
     facts.push(`${player.conflict_opportunities} conflict opportunities`);
     if (player.declared_conflict_types.length > 0) facts.push(`declared ${player.declared_conflict_types.join(', ')}`);

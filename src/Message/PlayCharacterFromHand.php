@@ -14,6 +14,8 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * The player says what they pay, since card effects may modify costs: `cardCost` for the card, `fateCost` for the
  * additional fate, and `fate` is the number of fate placed on the character.
+ * The player resolves what follows with other actions, then ends their action (`EndResolution`), which ends
+ * their opportunity to act.
  */
 #[AppAction]
 final readonly class PlayCharacterFromHand implements PlayerActionInterface

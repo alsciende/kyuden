@@ -62,6 +62,8 @@ class TriggerActionAbilityHandlerTest extends AbstractKernelTestCase
         self::assertSame($stack, $toturi->getStack());
         self::assertSame(Orientation::FaceUp, $toturi->getOrientation());
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('john')));
+        // the player ends their action instead of passing
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     public function testAcceptsTheCardsWhoseAbilitiesCanBeUsed(): void

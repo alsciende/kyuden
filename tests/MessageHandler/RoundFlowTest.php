@@ -15,7 +15,7 @@ use App\Message\DeclareConflict;
 use App\Message\DeclareConflictSkill;
 use App\Message\DeclareDefenders;
 use App\Message\DeclareGloryCount;
-use App\Message\EndOpportunity;
+use App\Message\EndResolution;
 use App\Message\FillProvince;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
@@ -76,7 +76,7 @@ class RoundFlowTest extends AbstractKernelTestCase
         $cost = $this->scenario->card($character)->getLogicalCard()->getCost() ?? 0;
         $this->dispatch(new PlayCharacterFromProvince($this->gameId(), $this->id($player), $this->card($character), $cost, 1, 1));
         $this->dispatch(new FillProvince($this->gameId(), $this->id($player), $this->card($province)));
-        $this->dispatch(new EndOpportunity($this->gameId(), $this->id($player)));
+        $this->dispatch(new EndResolution($this->gameId(), $this->id($player)));
     }
 
     public function testARoundWithAConflict(): void

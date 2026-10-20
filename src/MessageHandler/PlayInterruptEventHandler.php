@@ -12,13 +12,14 @@ use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\HandService;
+use App\Service\OpportunityService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Accepted in any game place, during a duel too, and from any player of the game, whether or not they have the
  * opportunity to act: interrupts are triggered by their triggering condition, which the engine does not know.
  * Neither the presence of an interrupt ability on the event nor its triggering condition is checked. The
- * opportunities to act do not change.
+ * opportunities to act do not change: the player ends the interrupt once resolved (EndResolution).
  */
 #[AsMessageHandler]
 final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInterface
@@ -28,6 +29,7 @@ final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInt
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private HandService $handService,
+        private OpportunityService $opportunityService,
     ) {
     }
 
@@ -45,5 +47,7 @@ final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInt
         $this->assertAvailable($game, $player);
 
         $this->handService->playEvent($this->cardRepository->get($message->getCardId(), $game), $player, $message->getCardCost(), AbilityTiming::Interrupt);
+
+        $this->opportunityService->startInterruptOrReaction($player);
     }
 }

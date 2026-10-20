@@ -20,7 +20,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  * resolved, like TriggerActionAbility. Interrupt and reaction events are played with PlayInterruptEvent and
  * PlayReactionEvent, by any player whose triggering condition occurs. Neither the presence of an action ability on the event nor its limits are
  * checked. The player pays its cost and the event goes to the discard pile; the player resolves its effects with other
- * actions, then ends their opportunity (EndOpportunity).
+ * actions, then ends their action (EndResolution), which ends their opportunity.
  */
 #[AsMessageHandler]
 final readonly class PlayActionEventHandler implements PlayerActionHandlerInterface
@@ -48,5 +48,7 @@ final readonly class PlayActionEventHandler implements PlayerActionHandlerInterf
         $this->assertAvailable($game, $player);
 
         $this->handService->playEvent($this->cardRepository->get($message->getCardId(), $game), $player, $message->getCardCost(), AbilityTiming::Action);
+
+        $this->opportunityService->takeAction($player);
     }
 }

@@ -44,11 +44,11 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
 
         $actions = $this->resolve($scenario, 'john');
 
-        foreach (['pass_opportunity', 'end_opportunity', 'trigger_action_ability', 'play_character_from_hand', 'play_attachment', 'play_action_event', 'initiate_duel', 'bow_card', 'lose_honor'] as $type) {
+        foreach (['pass_opportunity', 'trigger_action_ability', 'play_character_from_hand', 'play_attachment', 'play_action_event', 'initiate_duel', 'bow_card', 'lose_honor'] as $type) {
             self::assertContains($type, $actions);
         }
 
-        foreach (['collect_fate', 'declare_conflict', 'bid_honor', 'move_home', 'end_duel'] as $type) {
+        foreach (['end_resolution', 'collect_fate', 'declare_conflict', 'bid_honor', 'move_home', 'end_duel'] as $type) {
             self::assertNotContains($type, $actions);
         }
     }
@@ -71,6 +71,34 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
         foreach (['pass_opportunity', 'trigger_action_ability', 'play_action_event'] as $type) {
             self::assertNotContains($type, $actions);
         }
+    }
+
+    public function testAPlayerWhoHasActedEndsTheirActionInsteadOfPassing(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->acted())
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->build();
+
+        $actions = $this->resolve($scenario, 'john');
+
+        self::assertContains('end_resolution', $actions);
+        self::assertNotContains('pass_opportunity', $actions);
+    }
+
+    public function testAPlayerResolvingAReactionEndsItWithoutTheOpportunityToAct(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))
+            ->activePlayer('john')
+            ->build();
+
+        self::assertContains('end_resolution', $this->resolve($scenario, 'jane'));
+        self::assertNotContains('end_resolution', $this->resolve($scenario, 'john'));
     }
 
     public function testNoCharacterFromHandInTheActionWindowOfTheDynastyPhase(): void

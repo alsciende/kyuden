@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "play_character_from_province",
-    "description": "The active player plays a character from one of their provinces during the play cards from provinces step.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. Refilling the province and ending the opportunity to act are separate actions of the player.",
+    "description": "The active player plays a character from one of their provinces during the play cards from provinces step.\n\nThe player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. Refilling the province and ending the action (`end_resolution`), which ends the opportunity to act, are separate actions of the player.",
     "type": "object",
     "properties": {
         "card_id": {

@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "end_resolution",
+    "description": "The player has resolved what they played, once its effects are applied with other messages. An interrupt or a reaction ends first, the last one initiated first, without changing the opportunity to act. Otherwise the active player ends the action they have taken (a card played, an action ability triggered): their opportunity to act ends, and the next player who has not passed gets one. A player who has played nothing passes (PassOpportunity).",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

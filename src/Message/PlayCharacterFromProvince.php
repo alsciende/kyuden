@@ -13,7 +13,8 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * The player says what they pay, since card effects may modify costs: `cardCost` for the card, `fateCost` for the
  * additional fate, and `fate` is the number of fate placed on the character.
- * Refilling the province and ending the opportunity to act are separate actions of the player.
+ * Refilling the province and ending the action (`EndResolution`), which ends the opportunity to act, are separate
+ * actions of the player.
  */
 #[AppAction]
 final readonly class PlayCharacterFromProvince implements PlayerActionInterface

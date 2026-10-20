@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "play_attachment",
-    "description": "The active player plays an attachment from hand during an action window and attaches it to a card in play (a character of any player, or a province). The player says what they pay (`card_cost`), since card effects may modify costs.",
+    "description": "The active player plays an attachment from hand during an action window and attaches it to a card in play (a character of any player, or a province). The player says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.",
     "type": "object",
     "properties": {
         "card_id": {

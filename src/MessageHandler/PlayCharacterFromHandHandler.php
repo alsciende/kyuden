@@ -31,7 +31,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
 /**
  * Allowed in the action windows where characters can be played from hand. The player pays the cost of the character,
  * which enters play ready, at home or participating in the conflict on its controller's side, then places fate on it.
- * The player keeps the opportunity to act and ends it (EndOpportunity).
+ * The player keeps the opportunity to act and ends their action (EndResolution).
  */
 #[AsMessageHandler]
 final readonly class PlayCharacterFromHandHandler implements PlayerActionHandlerInterface
@@ -100,5 +100,7 @@ final readonly class PlayCharacterFromHandHandler implements PlayerActionHandler
             });
             $this->eventDispatcher->dispatch(new CharacterPlayedIntoConflictEvent($game, $card));
         }
+
+        $this->opportunityService->takeAction($player);
     }
 }
