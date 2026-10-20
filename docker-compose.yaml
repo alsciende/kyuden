@@ -84,7 +84,7 @@ services:
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   mercure:
-    image: dunglas/mercure
+    image: dunglas/mercure:v0.24
     restart: unless-stopped
     environment:
       SERVER_NAME: ':80'

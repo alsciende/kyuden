@@ -1,9 +1,9 @@
-EXEC          := docker compose --env-file proxy.env exec
+EXEC          := docker compose exec
 EXEC_SYMFONY  := $(EXEC) -it -u www-data symfony
 EXEC_COMPOSER := $(EXEC_SYMFONY) composer
 PHP           := ${EXEC_SYMFONY} php
 # the web client (front/), in a container of its own so that the node service may be stopped
-NPM           := docker compose --env-file proxy.env run --rm --no-deps -T node npm
+NPM           := docker compose run --rm --no-deps -T node npm
 
 install:
 	$(EXEC_COMPOSER) install

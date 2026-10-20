@@ -2,6 +2,21 @@
 
 [kyuden.app](https://kyuden.app): server-side engine to play **Legend of the Five Rings LCG** (Fantasy Flight Games). PHP 8.4 (PHP-FPM behind nginx in development), Symfony 7.4, Doctrine ORM on PostgreSQL, Symfony Messenger, Symfony Workflow, Mercure; and its web client (`front/`): Vue 3, Vite, TypeScript.
 
+## Installation
+
+You need git, make and Docker.
+
+```shell
+git clone <this repo>
+cd kyuden
+make build
+make up
+make install
+make db
+make front-install
+open http://localhost:8080
+```
+
 ## MVP scope
 
 - The engine acts as a **board**: it enforces the game flow (rounds, phases, framework steps) but **does not enforce card rules**.
