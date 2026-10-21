@@ -1,9 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CLANS } from '@/data/clans'
-import { loadSession, rename, session, signIn, signOut, signUp, startIntroductoryGame } from '@/lib/session'
+import { newcomer } from '@/lib/newcomer'
+import {
+  loadSession,
+  preferClan,
+  rename,
+  session,
+  signIn,
+  signOut,
+  signUp,
+  startIntroductoryGame,
+  suggestedClan,
+} from '@/lib/session'
 
 const crab = CLANS[0]!
+const crane = CLANS[1]!
 
 const botGame = {
   game_id: 'game-1',
@@ -41,7 +53,13 @@ describe('startIntroductoryGame', () => {
     expect(fetchMock.mock.calls[1]![0]).toBe('/api/bot-games')
     expect(JSON.parse(fetchMock.mock.calls[1]![1]!.body as string)).toEqual({ deck_id: 'crab-starter-deck' })
     expect((fetchMock.mock.calls[1]![1]!.headers as Record<string, string>).Authorization).toBe('Bearer l5r_token')
-    expect(loadSession()).toEqual({ userId: 'guest-1', name: 'Hida Takeshi', username: null, token: 'l5r_token' })
+    expect(loadSession()).toEqual({
+      userId: 'guest-1',
+      name: 'Hida Takeshi',
+      username: null,
+      preferredClan: null,
+      token: 'l5r_token',
+    })
   })
 
   it('keeps the guest of the same name', async () => {
@@ -82,7 +100,13 @@ describe('startIntroductoryGame', () => {
 
 describe('accounts', () => {
   const fetchMock = vi.fn<typeof fetch>()
-  const account = { user_id: 'user-1', name: 'Hida Takeshi', username: 'takeshi', token: 'l5r_account' }
+  const account = {
+    user_id: 'user-1',
+    name: 'Hida Takeshi',
+    username: 'takeshi',
+    preferred_clan: 'crab',
+    token: 'l5r_account',
+  }
 
   beforeEach(() => {
     localStorage.clear()
@@ -99,25 +123,33 @@ describe('accounts', () => {
     localStorage.setItem('kyuden.session', JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', token: 'l5r_a' }))
     fetchMock.mockResolvedValueOnce(json(201, account))
 
-    await signUp('takeshi', 'wallmusthold')
+    await signUp('takeshi', 'wallmusthold', crab)
 
     expect(fetchMock.mock.calls[0]![0]).toBe('/api/accounts')
     expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({
       username: 'takeshi',
       password: 'wallmusthold',
+      clan: 'crab',
     })
     expect((fetchMock.mock.calls[0]![1]!.headers as Record<string, string>).Authorization).toBe('Bearer l5r_a')
-    expect(loadSession()).toEqual({ userId: 'user-1', name: 'Hida Takeshi', username: 'takeshi', token: 'l5r_account' })
+    expect(loadSession()).toEqual({
+      userId: 'user-1',
+      name: 'Hida Takeshi',
+      username: 'takeshi',
+      preferredClan: 'crab',
+      token: 'l5r_account',
+    })
     expect(session.value?.username).toBe('takeshi')
   })
 
-  it('gives a name at court drawn at random to a new user', async () => {
-    fetchMock.mockResolvedValueOnce(json(201, account))
+  it('gives a new user a name at court drawn from the families of their clan', async () => {
+    fetchMock.mockResolvedValueOnce(json(201, { ...account, name: 'Doji Takeshi', preferred_clan: 'crane' }))
 
-    await signUp('takeshi', 'wallmusthold', () => 0)
+    await signUp('takeshi', 'wallmusthold', crane, () => 0)
 
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as Record<string, string>
-    expect(body.name).toBe('Hida Takeshi')
+    expect(body.name).toBe('Doji Takeshi')
+    expect(body.clan).toBe('crane')
     expect((fetchMock.mock.calls[0]![1]!.headers as Record<string, string>).Authorization).toBeUndefined()
   })
 
@@ -130,9 +162,9 @@ describe('accounts', () => {
       .mockResolvedValueOnce(json(401, { type: 'unauthorized', detail: 'Invalid credentials.' }))
       .mockResolvedValueOnce(json(201, { ...account, name: 'Kaiu Aiko' }))
 
-    await signUp('takeshi', 'wallmusthold')
+    await signUp('takeshi', 'wallmusthold', crab)
 
-    expect(JSON.parse(fetchMock.mock.calls[1]![1]!.body as string)).toMatchObject({ name: 'Kaiu Aiko' })
+    expect(JSON.parse(fetchMock.mock.calls[1]![1]!.body as string)).toMatchObject({ name: 'Kaiu Aiko', clan: 'crab' })
     expect(loadSession()?.name).toBe('Kaiu Aiko')
   })
 
@@ -149,12 +181,24 @@ describe('accounts', () => {
 
   it('renames the account', async () => {
     localStorage.setItem('kyuden.session', JSON.stringify({ ...account, userId: 'user-1' }))
-    fetchMock.mockResolvedValueOnce(json(200, { name: 'Hida Kisada', username: 'takeshi' }))
+    fetchMock.mockResolvedValueOnce(json(200, { name: 'Hida Kisada', username: 'takeshi', preferred_clan: 'crab' }))
 
     await rename('Hida Kisada')
 
     expect(fetchMock.mock.calls[0]![1]!.method).toBe('PATCH')
+    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ name: 'Hida Kisada' })
     expect(loadSession()?.name).toBe('Hida Kisada')
+  })
+
+  it('changes the preferred clan of the account', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify({ ...account, userId: 'user-1', preferredClan: 'crab' }))
+    fetchMock.mockResolvedValueOnce(json(200, { name: 'Hida Takeshi', username: 'takeshi', preferred_clan: 'crane' }))
+
+    await preferClan('crane')
+
+    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ preferred_clan: 'crane' })
+    expect(loadSession()?.preferredClan).toBe('crane')
+    expect(session.value?.preferredClan).toBe('crane')
   })
 
   it('forgets the account when signing out, even if the token is refused', async () => {
@@ -170,5 +214,61 @@ describe('accounts', () => {
     expect(fetchMock.mock.calls[0]![1]!.method).toBe('DELETE')
     expect(loadSession()).toBeNull()
     expect(session.value).toBeNull()
+  })
+})
+
+describe('suggestedClan', () => {
+  const fetchMock = vi.fn<typeof fetch>()
+  const guest = { userId: 'user-1', name: 'Hida Takeshi', username: null, token: 'l5r_a' }
+
+  beforeEach(() => {
+    localStorage.clear()
+    newcomer.clanId = null
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    fetchMock.mockReset()
+    vi.unstubAllGlobals()
+  })
+
+  it('offers a guest the clan of their last game', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify(guest))
+    newcomer.clanId = 'lion'
+    fetchMock
+      .mockResolvedValueOnce(json(200, [{ id: 'game-2', player_id: 'p-1', version: 3, ended: true, players: [] }]))
+      .mockResolvedValueOnce(
+        json(200, {
+          players: [
+            { user_id: 'kyuden-bot', clan: 'lion' },
+            { user_id: 'user-1', clan: 'crane' },
+          ],
+        }),
+      )
+
+    expect((await suggestedClan()).id).toBe('crane')
+    expect(fetchMock.mock.calls[1]![0]).toBe('/api/games/game-2')
+  })
+
+  it('offers a guest without games the clan chosen on their way', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify(guest))
+    newcomer.clanId = 'lion'
+    fetchMock.mockResolvedValueOnce(json(200, []))
+
+    expect((await suggestedClan()).id).toBe('lion')
+  })
+
+  it('draws a clan at random when nothing tells', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify(guest))
+    fetchMock.mockResolvedValueOnce(json(500, { type: 'unknown', detail: 'Down.' }))
+
+    expect((await suggestedClan(() => 0.99)).id).toBe(CLANS[CLANS.length - 1]!.id)
+  })
+
+  it('draws a clan at random for a visitor without a session', async () => {
+    newcomer.clanId = 'lion'
+
+    expect((await suggestedClan(() => 0)).id).toBe('crab')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

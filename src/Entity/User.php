@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\Clan;
 use App\Enum\UserType;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -17,7 +18,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
  *
  * Its id is its user identifier. A Player and a Candidate belong to a user. Its name (its name at court) is what the
  * other players see, not unique. A human signs in with a username and a password once registered; before that, it is
- * a guest. The username is unique whatever its case (`usernameCanonical`).
+ * a guest. The username is unique whatever its case (`usernameCanonical`). Their preferred clan, one of the Great Clans,
+ * is chosen when they create their account and changed at any time.
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table('users')]
@@ -56,6 +58,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?User $owner;
+
+    #[ORM\Column(length: 16, nullable: true, enumType: Clan::class)]
+    private ?Clan $preferredClan = null;
 
     /**
      * @param non-empty-string $id
@@ -141,6 +146,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getOwner(): ?User
     {
         return $this->owner;
+    }
+
+    public function getPreferredClan(): ?Clan
+    {
+        return $this->preferredClan;
+    }
+
+    public function preferClan(Clan $clan): void
+    {
+        if (! in_array($clan, Clan::greatClans(), true)) {
+            throw new \InvalidArgumentException("The clan {$clan->value} is not a Great Clan.");
+        }
+
+        $this->preferredClan = $clan;
     }
 
     #[\Override]

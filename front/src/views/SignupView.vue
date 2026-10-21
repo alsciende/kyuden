@@ -1,23 +1,30 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
-import { findClan } from '@/data/clans'
+import ClanPicker from '@/components/ClanPicker.vue'
+import { findClan, type ClanId } from '@/data/clans'
 import { formErrors, passwordProblem, usernameProblem, type FormErrors } from '@/lib/credentials'
-import { newcomer } from '@/lib/newcomer'
-import { isGuest, session, signUp } from '@/lib/session'
+import { isGuest, session, signUp, suggestedClan } from '@/lib/session'
 
 /**
- * Creates an account: a username and a password, nothing else. A guest keeps their name at court and their games;
- * anyone else gets a name at court drawn at random, which they change from their account.
+ * Creates an account: the preferred clan, which gives a copy of its starter deck, then a username and a password. A
+ * guest keeps their name at court and their games, and is offered the clan of their last game; anyone else gets a clan
+ * drawn at random, and a name at court drawn from its families, which they change from their account.
  */
 const router = useRouter()
 
 const guest = computed(() => (isGuest(session.value) ? session.value : null))
-// the clan of the introductory game, while the tab remembers it
-const clan = computed(() => (guest.value === null ? undefined : findClan(newcomer.clanId)))
+const clanId = ref<ClanId | null>(null)
+const clan = computed(() => findClan(clanId.value))
+
+onMounted(async () => {
+  const suggested = await suggestedClan()
+  // the visitor may have chosen meanwhile
+  clanId.value ??= suggested.id
+})
 
 const username = ref('')
 const password = ref('')
@@ -29,6 +36,9 @@ async function submit(): Promise<void> {
     return
   }
   const checked: FormErrors = {}
+  if (clan.value === undefined) {
+    checked.clan = 'Choose your clan.'
+  }
   const badUsername = usernameProblem(username.value)
   const badPassword = passwordProblem(password.value)
   if (badUsername !== null) {
@@ -38,13 +48,13 @@ async function submit(): Promise<void> {
     checked.password = badPassword
   }
   errors.value = checked
-  if (Object.keys(checked).length > 0) {
+  if (Object.keys(checked).length > 0 || clan.value === undefined) {
     return
   }
 
   sending.value = true
   try {
-    await signUp(username.value, password.value)
+    await signUp(username.value, password.value, clan.value)
     await router.push({ name: 'account', query: { created: '1' } })
   } catch (problem) {
     errors.value = formErrors(problem)
@@ -65,17 +75,25 @@ async function submit(): Promise<void> {
         <div class="eyebrow">Create your account</div>
         <h1>{{ guest.name }}</h1>
         <p class="lead">
-          You keep your name at court and your games. Choose how you will sign in; you can change your name later from
-          your account.
+          You keep your name at court and your games. Choose your clan and how you will sign in; you can change your
+          name later from your account.
         </p>
       </template>
       <template v-else>
         <div class="eyebrow">Join the court</div>
         <h1>Create your account</h1>
         <p class="lead">
-          Choose how you will sign in. The court gives you a name, which you can change from your account.
+          Choose your clan and how you will sign in. The court gives you a name, which you can change from your account.
         </p>
       </template>
+      <div class="form-field">
+        <span class="form-label" aria-hidden="true">Preferred clan</span>
+        <ClanPicker v-model="clanId" label="Preferred clan" aria-describedby="clan-hint" />
+        <p v-if="errors.clan" class="form-error" role="alert">{{ errors.clan }}</p>
+        <p id="clan-hint" class="form-hint">
+          You receive its starter deck to play with. You can change your preferred clan at any time.
+        </p>
+      </div>
       <div class="form-field">
         <label for="username">Username</label>
         <input

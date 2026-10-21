@@ -2,13 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import ClanPicker from '@/components/ClanPicker.vue'
+import type { ClanId } from '@/data/clans'
 import { MAX_NAME_LENGTH } from '@/lib/names'
 import { formErrors } from '@/lib/credentials'
-import { refreshSession, rename, session, signOut } from '@/lib/session'
+import { preferClan, refreshSession, rename, session, signOut } from '@/lib/session'
 
 /**
- * The account of the player: their username (how they sign in) and their name at court (what the other players see),
- * which they change here.
+ * The account of the player: their username (how they sign in), their preferred clan and their name at court (what the
+ * other players see), which they change here.
  */
 const route = useRoute()
 const router = useRouter()
@@ -18,6 +20,11 @@ const name = ref(session.value?.name ?? '')
 const saved = ref(false)
 const error = ref<string | null>(null)
 const sending = ref(false)
+
+const clanId = ref<ClanId | null>(session.value?.preferredClan ?? null)
+const clanSaved = ref(false)
+const clanError = ref<string | null>(null)
+const clanSending = ref(false)
 
 const changed = computed(() => name.value.trim() !== '' && name.value.trim() !== session.value?.name)
 
@@ -30,6 +37,7 @@ onMounted(async () => {
       return
     }
     name.value = current.name
+    clanId.value = current.preferredClan
   } catch {
     // the account shown is the one the browser remembers
   }
@@ -53,6 +61,25 @@ async function save(): Promise<void> {
   }
 }
 
+async function changeClan(id: ClanId | null): Promise<void> {
+  if (id === null || id === session.value?.preferredClan) {
+    return
+  }
+  clanSending.value = true
+  clanError.value = null
+  clanSaved.value = false
+  try {
+    clanId.value = (await preferClan(id)).preferredClan
+    clanSaved.value = true
+  } catch (problem) {
+    clanId.value = session.value?.preferredClan ?? null
+    const errors = formErrors(problem)
+    clanError.value = errors.clan ?? errors.form ?? null
+  } finally {
+    clanSending.value = false
+  }
+}
+
 async function leave(): Promise<void> {
   await signOut()
   await router.push({ name: 'landing' })
@@ -72,6 +99,19 @@ async function leave(): Promise<void> {
       <div class="row">
         <div class="username">{{ session.username }}</div>
         <p class="form-hint">How you sign in. Only you see it.</p>
+      </div>
+
+      <div class="form-label row-label clan-label" aria-hidden="true">Preferred clan</div>
+      <div class="row">
+        <ClanPicker
+          :model-value="clanId"
+          label="Preferred clan"
+          :disabled="clanSending"
+          @update:model-value="changeClan"
+        />
+        <p v-if="clanError" class="form-error" role="alert">{{ clanError }}</p>
+        <p v-else-if="clanSaved" class="form-hint" role="status">Saved.</p>
+        <p v-else class="form-hint">You can change it at any time.</p>
       </div>
 
       <label class="form-label row-label" for="court-name">Name at court</label>
@@ -150,6 +190,10 @@ h1 {
 
 .row-label {
   padding-top: 14px;
+}
+
+.clan-label {
+  padding-top: 32px;
 }
 
 .linked-label {

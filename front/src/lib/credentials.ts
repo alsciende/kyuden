@@ -17,6 +17,7 @@ export function passwordProblem(password: string): string | null {
 }
 
 export interface FormErrors {
+  clan?: string
   username?: string
   password?: string
   name?: string
@@ -32,8 +33,8 @@ export function formErrors(error: unknown): FormErrors {
   }
   const errors: FormErrors = {}
   for (const violation of error.violations) {
-    const field = violation.property_path
-    if (field === 'username' || field === 'password' || field === 'name') {
+    const field = violation.property_path === 'preferred_clan' ? 'clan' : violation.property_path
+    if (field === 'clan' || field === 'username' || field === 'password' || field === 'name') {
       errors[field] ??= violation.message
     } else {
       errors.form ??= violation.message

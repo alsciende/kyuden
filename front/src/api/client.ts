@@ -1,3 +1,5 @@
+import type { ClanId } from '@/data/clans'
+
 /**
  * The HTTP API of the engine, on the same origin (nginx sends /api to Symfony). Errors are problem details
  * (RFC 9457), thrown as ApiProblem.
@@ -60,15 +62,29 @@ export interface Account {
   user_id: string
   name: string
   username: string
+  preferred_clan: ClanId | null
   token: string
 }
 
 /**
- * The authenticated user: a guest has no username.
+ * The authenticated user: a guest has no username nor preferred clan.
  */
 export interface Self {
   name: string
   username: string | null
+  preferred_clan: ClanId | null
+}
+
+/**
+ * A game of the authenticated user, the last joined first.
+ */
+export interface UserGame {
+  id: string
+  player_id: string
+  version: number
+  ended: boolean
+  /** the user ids, in player order */
+  players: string[]
 }
 
 export interface BotGame {
@@ -149,11 +165,11 @@ export function createBotGame(token: string, deckId: string): Promise<BotGame> {
 }
 
 /**
- * Creates an account: with the token of a guest, the guest becomes the account; without, a new user with the name at
- * court given.
+ * Creates an account with its preferred clan, which gets a copy of the starter deck of the clan: with the token of a
+ * guest, the guest becomes the account; without, a new user with the name at court given.
  */
 export function createAccount(
-  credentials: { username: string; password: string; name?: string },
+  credentials: { username: string; password: string; clan: ClanId; name?: string },
   token: string | null,
 ): Promise<Account> {
   return request<Account>('/api/accounts', { method: 'POST', body: credentials, token })
@@ -171,6 +187,10 @@ export function fetchSelf(token: string): Promise<Self> {
   return request<Self>('/api/self', { token })
 }
 
-export function renameSelf(token: string, name: string): Promise<Self> {
-  return request<Self>('/api/self', { method: 'PATCH', body: { name }, token })
+export function updateSelf(token: string, changes: { name?: string; preferred_clan?: ClanId }): Promise<Self> {
+  return request<Self>('/api/self', { method: 'PATCH', body: changes, token })
+}
+
+export function fetchSelfGames(token: string): Promise<UserGame[]> {
+  return request<UserGame[]>('/api/self/games', { token })
 }

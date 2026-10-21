@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\View\Model;
 
+use App\Enum\Clan;
+
 /**
  * The authenticated user (`GET /api/self`).
  */
@@ -15,6 +17,8 @@ final readonly class SelfView
         public string $name,
         /** how the human signs in, null for a guest or a bot */
         public ?string $username,
+        /** a Great Clan, chosen with the account and changed at any time; null for a guest or a bot */
+        public ?Clan $preferredClan,
     ) {
     }
 }

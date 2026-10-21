@@ -59,12 +59,12 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
 
     public function testAUserReadsTheirIdentifierNameAndUsername(): void
     {
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe'], $this->decode($this->get('/api/self', 'jane')));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane'], $this->decode($this->get('/api/self', 'jane')));
     }
 
     public function testAGuestHasNoUsername(): void
     {
-        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null], $this->decode($this->get('/api/self', 'harry')));
+        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null, 'preferred_clan' => null], $this->decode($this->get('/api/self', 'harry')));
     }
 
     public function testTheSelfRequiresAToken(): void
@@ -76,8 +76,43 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => '  Doji Hotaru ']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe'], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane'], $this->decode($response));
         self::assertSame('Doji Hotaru', $this->decode($this->get('/api/self', 'jane'))['name']);
+    }
+
+    public function testAUserChangesTheirPreferredClan(): void
+    {
+        $response = $this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => 'phoenix']);
+
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix'], $this->decode($response));
+        self::assertSame('phoenix', $this->decode($this->get('/api/self', 'jane'))['preferred_clan']);
+    }
+
+    public function testAUserChangesTheirNameAndPreferredClanAtOnce(): void
+    {
+        $response = $this->request('PATCH', '/api/self', 'jane', ['name' => 'Shiba Tsukune', 'preferred_clan' => 'phoenix']);
+
+        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix'], $this->decode($response));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidClans(): iterable
+    {
+        yield 'unknown' => ['mantis'];
+        yield 'neutral' => ['neutral'];
+    }
+
+    #[DataProvider('invalidClans')]
+    public function testRejectsAnInvalidPreferredClan(string $clan): void
+    {
+        $problem = $this->decodeProblem($this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => $clan]), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        self::assertSame('validation_failed', $problem['type']);
+        self::assertIsArray($problem['violations']);
+        self::assertSame(['preferred_clan'], array_column($problem['violations'], 'property_path'));
+        self::assertSame('crane', $this->decode($this->get('/api/self', 'jane'))['preferred_clan']);
     }
 
     /**
@@ -87,6 +122,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         yield 'no name' => [[]];
         yield 'name not a string' => [['name' => 12]];
+        yield 'clan not a string' => [['preferred_clan' => null]];
         yield 'unexpected field' => [['name' => 'Doji Hotaru', 'username' => 'hotaru']];
     }
 

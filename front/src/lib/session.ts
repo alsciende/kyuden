@@ -8,12 +8,16 @@ import {
   createSession,
   deleteSession,
   fetchSelf,
-  renameSelf,
+  fetchSelfGames,
+  updateSelf,
   type Account,
   type BotGame,
+  type Self,
 } from '@/api/client'
-import { CLANS, type Clan } from '@/data/clans'
+import { fetchGame } from '@/api/game'
+import { CLANS, findClan, type Clan, type ClanId } from '@/data/clans'
 import { drawCourtName } from '@/lib/names'
+import { newcomer } from '@/lib/newcomer'
 
 /**
  * The account of the visitor, kept by the browser so that the visitor finds it again on their next visit: a guest
@@ -24,6 +28,8 @@ export interface Session {
   name: string
   /** null for a guest */
   username: string | null
+  /** null for a guest */
+  preferredClan: ClanId | null
   token: string
 }
 
@@ -35,10 +41,13 @@ export function loadSession(): Session | null {
     if (value === null) {
       return null
     }
-    const stored = JSON.parse(value) as Omit<Session, 'username'> & { username?: string | null }
+    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan'> & {
+      username?: string | null
+      preferredClan?: ClanId | null
+    }
 
-    // the guests kept before the accounts have no username
-    return { ...stored, username: stored.username ?? null }
+    // the guests kept before the accounts have no username, the sessions kept before the clans no preferred clan
+    return { ...stored, username: stored.username ?? null, preferredClan: stored.preferredClan ?? null }
   } catch {
     return null
   }
@@ -74,7 +83,7 @@ async function guestSession(name: string): Promise<Session> {
   }
 
   const guest = await createGuest(name)
-  const created = { userId: guest.user_id, name: guest.name, username: null, token: guest.token }
+  const created = { userId: guest.user_id, name: guest.name, username: null, preferredClan: null, token: guest.token }
   saveSession(created)
 
   return created
@@ -100,33 +109,73 @@ export async function startIntroductoryGame(name: string, clan: Clan): Promise<B
 }
 
 function accountSession(account: Account): Session {
-  const created = { userId: account.user_id, name: account.name, username: account.username, token: account.token }
+  const created = {
+    userId: account.user_id,
+    name: account.name,
+    username: account.username,
+    preferredClan: account.preferred_clan,
+    token: account.token,
+  }
   saveSession(created)
 
   return created
 }
 
 /**
- * Creates the account of the visitor: a guest keeps their user (their name at court and their games); anyone else
- * gets a new user, with a name at court drawn at random, which they can change from their account.
+ * The clan a visitor creating their account probably prefers: for a guest, the clan of their last game, else the clan
+ * chosen on their way to it while the tab remembers it; for anyone else, or when nothing tells, a clan drawn at random.
  */
-export async function signUp(username: string, password: string, random: () => number = Math.random): Promise<Session> {
+export async function suggestedClan(random: () => number = Math.random): Promise<Clan> {
   const current = loadSession()
   if (current !== null && current.username === null) {
     try {
-      return accountSession(await createAccount({ username, password }, current.token))
+      const games = await fetchSelfGames(current.token)
+      if (games.length > 0) {
+        const { game } = await fetchGame(current.token, games[0]!.id)
+        const clan = findClan(game.players.find((player) => player.user_id === current.userId)?.clan)
+        if (clan !== undefined) {
+          return clan
+        }
+      }
+    } catch {
+      // nothing tells the clan of the last game
+    }
+    const chosen = findClan(newcomer.clanId)
+    if (chosen !== undefined) {
+      return chosen
+    }
+  }
+
+  return CLANS[Math.floor(random() * CLANS.length)]!
+}
+
+/**
+ * Creates the account of the visitor with their preferred clan, which gives them a copy of the starter deck of the
+ * clan: a guest keeps their user (their name at court and their games); anyone else gets a new user, with a name at
+ * court drawn from the families of the clan, which they can change from their account.
+ */
+export async function signUp(
+  username: string,
+  password: string,
+  clan: Clan,
+  random: () => number = Math.random,
+): Promise<Session> {
+  const current = loadSession()
+  if (current !== null && current.username === null) {
+    try {
+      return accountSession(await createAccount({ username, password, clan: clan.id }, current.token))
     } catch (error) {
       if (!(error instanceof ApiProblem) || error.status !== 401) {
         throw error
       }
       // the guest is no longer valid: a new user with the same name
-      return accountSession(await createAccount({ username, password, name: current.name }, null))
+      return accountSession(await createAccount({ username, password, clan: clan.id, name: current.name }, null))
     }
   }
 
-  const clan = CLANS[Math.floor(random() * CLANS.length)]!
-
-  return accountSession(await createAccount({ username, password, name: drawCourtName(clan, random) }, null))
+  return accountSession(
+    await createAccount({ username, password, clan: clan.id, name: drawCourtName(clan, random) }, null),
+  )
 }
 
 export async function signIn(username: string, password: string): Promise<Session> {
@@ -160,7 +209,7 @@ export async function refreshSession(): Promise<Session | null> {
   }
   try {
     const self = await fetchSelf(current.token)
-    const refreshed = { ...current, name: self.name, username: self.username }
+    const refreshed = withSelf(current, self)
     saveSession(refreshed)
 
     return refreshed
@@ -174,14 +223,25 @@ export async function refreshSession(): Promise<Session | null> {
   }
 }
 
-export async function rename(name: string): Promise<Session> {
+function withSelf(current: Session, self: Self): Session {
+  return { ...current, name: self.name, username: self.username, preferredClan: self.preferred_clan }
+}
+
+async function updateAccount(changes: { name?: string; preferred_clan?: ClanId }): Promise<Session> {
   const current = loadSession()
   if (current === null) {
-    throw new Error('No session to rename.')
+    throw new Error('No session to change.')
   }
-  const self = await renameSelf(current.token, name)
-  const renamed = { ...current, name: self.name, username: self.username }
-  saveSession(renamed)
+  const changed = withSelf(current, await updateSelf(current.token, changes))
+  saveSession(changed)
 
-  return renamed
+  return changed
+}
+
+export function rename(name: string): Promise<Session> {
+  return updateAccount({ name })
+}
+
+export function preferClan(clan: ClanId): Promise<Session> {
+  return updateAccount({ preferred_clan: clan })
 }
