@@ -1,4 +1,12 @@
 /* Ink and paper: the visual identity of Kyūden */
+
+/* the icons of fiveringsdb-ui: the elements, the conflict types, the clans */
+@font-face {
+  font-family: 'fiveringsdb';
+  src: url('../assets/fonts/fiveringsdb.woff') format('woff');
+  font-display: block;
+}
+
 :root {
   --paper: #f4eee2;
   --paper-2: #ebe3d3;
@@ -9,9 +17,13 @@
   --ink-3: #6b6155;
   --seal: #b3311f;
   --seal-ink: #fbf6ec;
+  /* the game board, lighter than the paper of the pages */
+  --board: #faf7f1;
+  --card: #fbf6ec;
 
   --font-display: 'EB Garamond', 'Shippori Mincho', serif;
   --font-ui: 'Barlow', system-ui, sans-serif;
+  --font-icons: 'fiveringsdb';
 
   color-scheme: light;
 }
@@ -28,8 +40,8 @@ body {
 }
 
 body {
-  /* desktop only */
-  min-width: 1024px;
+  /* desktop only: designed for 1536px */
+  min-width: 1280px;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-ui);
@@ -172,6 +184,14 @@ p {
   .screen {
     animation: none;
   }
+}
+
+.icon {
+  font-family: var(--font-icons);
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  speak: none;
 }
 
 .visually-hidden {

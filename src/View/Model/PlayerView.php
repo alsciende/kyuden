@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\View\Model;
 
+use App\Enum\Clan;
 use App\Enum\ConflictType;
 
 /**
@@ -19,6 +20,14 @@ final readonly class PlayerView
     public function __construct(
         public string $id,
         public string $userId,
+        /**
+         * The name of the user playing.
+         */
+        public string $name,
+        /**
+         * The clan of the stronghold of the player (public, face up from the start), null before their cards exist.
+         */
+        public ?Clan $clan,
         public ?int $honor,
         public int $fate,
         public ?int $honorBid,

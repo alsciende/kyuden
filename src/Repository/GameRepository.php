@@ -45,8 +45,10 @@ class GameRepository extends ServiceEntityRepository
     {
         /** @var Game|null */
         return $this->createQueryBuilder('g')
-            ->addSelect('p', 's', 'c', 'l')
+            ->addSelect('p', 'u', 's', 'c', 'l')
             ->leftJoin('g.players', 'p')
+            // the view names the players
+            ->leftJoin('p.user', 'u')
             ->leftJoin('p.stacks', 's')
             ->leftJoin('s.cards', 'c')
             // the available actions read the abilities of the cards in hand

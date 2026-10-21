@@ -20,11 +20,30 @@ export class ApiProblem extends Error {
   }
 }
 
+export type AbilityTiming = 'action' | 'interrupt' | 'reaction'
+
+/**
+ * A card as printed. Skills are strings, as printed (`-` when the card has none).
+ */
 export interface Card {
   code: string
   name: string
+  side?: string | null
   type: string
   clan: string | null
+  cost?: number | null
+  fate?: number | null
+  honor?: number | null
+  glory?: number | null
+  military?: string | null
+  military_bonus?: string | null
+  political?: string | null
+  political_bonus?: string | null
+  strength?: number | null
+  strength_bonus?: string | null
+  text?: string | null
+  ability_timings?: AbilityTiming[]
+  ability_granted_to_attached?: boolean
   image_url: string | null
 }
 
@@ -72,7 +91,7 @@ export async function request<T>(path: string, { method = 'GET', body, token }: 
   return (response.status === 204 ? undefined : await response.json()) as T
 }
 
-async function toProblem(response: Response): Promise<ApiProblem> {
+export async function toProblem(response: Response): Promise<ApiProblem> {
   try {
     const problem = (await response.json()) as Partial<{ type: string; detail: string; violations: Violation[] }>
 

@@ -19,6 +19,8 @@ export interface Clan {
   families: string[]
   /** the color of the clan on paper, for its mon */
   color: string
+  /** a light tint of the color, behind ink: the name of a player of the clan */
+  tint: string
   /** URL of the mon (an SVG used as a mask) */
   mon: string
   /** the starter deck of the clan, a deck of the engine without owner */
@@ -37,6 +39,7 @@ export const CLANS: Clan[] = [
       'Unbreakable defenders and a punishing military game. Let the enemy break on your provinces, then strike back.',
     families: ['Hida', 'Hiruma', 'Kaiu', 'Yasuki'],
     color: '#3e5c84',
+    tint: '#b4bbc1',
     mon: crab,
     deckId: 'crab-starter-deck',
     strongholdCode: '01-shiro-nishiyama',
@@ -50,6 +53,7 @@ export const CLANS: Clan[] = [
     style: 'Duelists and courtiers. Win through honor, political strength and the favor of the Emperor.',
     families: ['Doji', 'Kakita', 'Daidoji', 'Asahina'],
     color: '#4f86b8',
+    tint: '#bacad3',
     mon: crane,
     deckId: 'crane-starter-deck',
     strongholdCode: '01-shizuka-toshi',
@@ -63,6 +67,7 @@ export const CLANS: Clan[] = [
     style: 'Monks and two-sword duelists. Few characters, well equipped, who can strike more than once.',
     families: ['Togashi', 'Mirumoto', 'Kitsuki', 'Agasha'],
     color: '#2f7a5c',
+    tint: '#afc5b3',
     mon: dragon,
     deckId: 'dragon-starter-deck',
     strongholdCode: '01-mountain-s-anvil-castle',
@@ -76,6 +81,7 @@ export const CLANS: Clan[] = [
     style: 'Overwhelming military force. Fill the battlefield and break provinces through sheer numbers.',
     families: ['Akodo', 'Matsu', 'Ikoma', 'Kitsu'],
     color: '#a87a22',
+    tint: '#d9c59f',
     mon: lion,
     deckId: 'lion-starter-deck',
     strongholdCode: '01-yojin-no-shiro',
@@ -89,6 +95,7 @@ export const CLANS: Clan[] = [
     style: 'Shugenja who bend the rings to their will. Claim the right ring and its power is yours.',
     families: ['Isawa', 'Shiba', 'Asako'],
     color: '#c0652b',
+    tint: '#e2bea2',
     mon: phoenix,
     deckId: 'phoenix-starter-deck',
     strongholdCode: '01-isawa-mori-seido',
@@ -102,6 +109,7 @@ export const CLANS: Clan[] = [
     style: 'Dishonor and deceit. Drain your opponent’s honor and turn their own strength against them.',
     families: ['Bayushi', 'Shosuro', 'Soshi', 'Yogo'],
     color: '#a52a2f',
+    tint: '#d8a9a3',
     mon: scorpion,
     deckId: 'scorpion-starter-deck',
     strongholdCode: '01-city-of-the-open-hand',
@@ -115,6 +123,7 @@ export const CLANS: Clan[] = [
     style: 'Speed and raw power. Ride where the enemy is weakest and strike before they can answer.',
     families: ['Shinjo', 'Utaku', 'Ide', 'Iuchi', 'Moto'],
     color: '#6e3f8e',
+    tint: '#c5b1c5',
     mon: unicorn,
     deckId: 'unicorn-starter-deck',
     strongholdCode: '01-golden-plains-outpost',

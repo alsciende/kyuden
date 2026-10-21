@@ -85,10 +85,21 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertIsArray($john);
         self::assertIsArray($jane);
         self::assertSame(10, $john['honor']);
+        self::assertSame('John', $john['name']);
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => ['01-fine-katana']]], $this->hands($john));
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($jane));
         self::assertIsArray($game['available_actions']);
         self::assertContains('bow_card', $game['available_actions']);
+    }
+
+    public function testTheViewLinksTheMercureHub(): void
+    {
+        $scenario = $this->scenarioWithHands();
+
+        $response = $this->get($scenario->game()->getId());
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertMatchesRegularExpression('/<[^>]+\/\.well-known\/mercure>; rel="mercure"/', (string) $response->headers->get('Link'));
     }
 
     public function testTheETagIsTheVersionOfTheGame(): void

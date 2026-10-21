@@ -25,7 +25,7 @@ export const router = createRouter({
       meta: { title: 'Your opponent · Kyūden' },
       beforeEnter: () => (findClan(newcomer.clanId) && newcomer.name ? true : { name: 'landing' }),
     },
-    { path: '/games/:id', name: 'game', component: GameView, meta: { title: 'The table is set · Kyūden' } },
+    { path: '/games/:id', name: 'game', component: GameView, meta: { title: 'Game · Kyūden', fullscreen: true } },
     { path: '/:path(.*)*', redirect: { name: 'landing' } },
   ],
 })

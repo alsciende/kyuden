@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\View;
 
 use App\Entity\PhysicalCard;
+use App\Enum\Clan;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
@@ -59,6 +60,21 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         }
 
         self::fail("No view of card {$card->getId()}.");
+    }
+
+    public function testThePlayersAreNamedWithTheClanOfTheirStronghold(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->stronghold('01-shizuka-toshi'))
+            ->withPlayer('jane')
+            ->build();
+
+        $view = $this->view($scenario, 'jane');
+
+        self::assertSame('John', $this->playerView($view, $scenario, 'john')->name);
+        self::assertSame(Clan::Crane, $this->playerView($view, $scenario, 'john')->clan);
+        self::assertNull($this->playerView($view, $scenario, 'jane')->clan);
     }
 
     public function testTheHandIsHiddenFromTheOpponents(): void

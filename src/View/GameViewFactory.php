@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\View;
 
+use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\StackType;
 use App\Service\AvailableActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
@@ -75,6 +77,8 @@ final readonly class GameViewFactory
         return new PlayerView(
             id: $player->getId(),
             userId: $player->getUserId(),
+            name: $player->getUser()->getName(),
+            clan: $this->findStronghold($player)?->getLogicalCard()->getClan(),
             honor: $state->getHonor(),
             fate: $state->getFate(),
             honorBid: $state->getHonorBid(),
@@ -90,6 +94,22 @@ final readonly class GameViewFactory
             gloryCount: $state->getGloryCount(),
             stacks: array_map(fn (Stack $stack): StackView => $this->createStackView($stack, $viewer), $stacks),
         );
+    }
+
+    /**
+     * The stronghold, read from the stacks loaded with the game (not from all the cards of the player).
+     */
+    private function findStronghold(Player $player): ?StrongholdCard
+    {
+        foreach ($player->getStacks(StackType::StrongholdProvince) as $stack) {
+            foreach ($stack->getCards() as $card) {
+                if ($card instanceof StrongholdCard) {
+                    return $card;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function createStackView(Stack $stack, Player $viewer): StackView

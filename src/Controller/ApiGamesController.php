@@ -12,6 +12,7 @@ use App\View\GameViewFactory;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mercure\Discovery;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -23,6 +24,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * The ETag is the version of the game: the view only depends on the state and the viewer, so a player who sends the
  * ETag of the version they have (`If-None-Match`) gets a 304 until the game changes. So does the log of the game, from
  * a given version (`since`), masked for the player (see GameLogViewFactory).
+ *
+ * The view links the Mercure hub (`Link: <…>; rel="mercure"`), where the client subscribes to the topic of the game.
  *
  * The log is also a long-poll (`wait`, in seconds): the response waits until the game changes after `since`, then
  * sends what changed; if nothing has changed when the time is up, it is sent as is (no message, or a 304).
@@ -41,6 +44,7 @@ class ApiGamesController extends AbstractController
         private readonly GameViewFactory $gameViewFactory,
         private readonly GameLogViewFactory $gameLogViewFactory,
         private readonly GameUpdateWaiter $gameUpdateWaiter,
+        private readonly Discovery $discovery,
     ) {
     }
 
@@ -54,6 +58,8 @@ class ApiGamesController extends AbstractController
 
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $user->getUserIdentifier()) {
+                $this->discovery->addLink($request);
+
                 $notModified = $this->withVersion(new Response(), $game);
                 if ($notModified->isNotModified($request)) {
                     return $notModified;
