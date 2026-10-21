@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the private Mercure topics with a subscriber token per user (`GET /api/self/subscription`, `game_started`), the screen of the queue, the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool and one tool per public message, the development console in the browser (now `/console`), the skills of a character set by the players (`SetCharacterSkill` / `ResetCharacterSkill`), the web client (`front/`, Vue 3 + Vite + TypeScript) with the way of newcomers to a first game, the guest accounts (`POST /api/guests`), the games against the house bot (`POST /api/bot-games`) and the first version of the bot (`Service/Bot`), the distinction between passing and ending what a player has played (`EndResolution`), the game board of the web client, the player accounts with a username and a password (the API: `POST /api/accounts`, `/api/sessions`, `PATCH /api/self`, and the screens of the web client: sign in, create an account, the account), the preferred clan of an account and its copy of the starter deck of that clan (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the private Mercure topics with a subscriber token per user (`GET /api/self/subscription`, `game_started`), the screen of the queue, the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool and one tool per public message, the MCP tools to find a game and read it (`get_game`, `get_cards`, the queue and the games of the bot) and the prompt of an agent playing through them (`agent/`), the development console in the browser (now `/console`), the skills of a character set by the players (`SetCharacterSkill` / `ResetCharacterSkill`), the web client (`front/`, Vue 3 + Vite + TypeScript) with the way of newcomers to a first game, the guest accounts (`POST /api/guests`), the games against the house bot (`POST /api/bot-games`) and the first version of the bot (`Service/Bot`), the distinction between passing and ending what a player has played (`EndResolution`), the game board of the web client, the player accounts with a username and a password (the API: `POST /api/accounts`, `/api/sessions`, `PATCH /api/self`, and the screens of the web client: sign in, create an account, the account), the preferred clan of an account and its copy of the starter deck of that clan (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -381,7 +381,7 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 
 **Not done**
 - `http.allowed_hosts`: the default of the SDK (localhost only) is kept for development; a public server must list its hosts.
-- The other tools: the view of the game, the rules and the cards as resources.
+- The rules as resources: an agent with a file system reads them from `doc/` (see the tools to play).
 
 ## Decisions taken for the tools of the messages
 
@@ -396,6 +396,21 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 **Alternatives rejected**
 - A single `send_message` tool: the agent would need the catalogue (`GET /api/actions`) and could not rely on the schema check of the client.
 - The tools calling the HTTP API: a second request, and the bot's key to forward.
+
+## Decisions taken for the tools to play (MCP)
+
+Playing a first game with Claude Code through the HTTP API failed: its permissions block every command holding a variable (`curl -H "Authorization: Bearer $KYUDEN_API_KEY"`), and a headless agent cannot approve it. An agent now plays through the MCP server alone, its API key in the configuration of the client, never in its context.
+
+**Design**
+- What the HTTP API gives a player, as tools: `get_game` (`GameViewFactory`, the view masked for the bot: unknown game or not a player is a tool error), `list_my_games` (`View/UserGameViewFactory`, shared with `GET /api/self/games`), `list_decks` (`View/DeckViewFactory`, shared with `/api/decks`), `join_queue` / `leave_queue` (`Service/MatchMaking/MatchMakingQueue`, the logic of `ApiQueueController` moved to a service: `DeckNotFoundException`, `AlreadyQueuedException`, `NotQueuedException`), `get_cards` (several codes at once, at most 50: an agent reads a hand or a deck in one call; an unknown code is a tool error).
+- `wait_for_game(timeout = 30)`: the long-poll of an agent waiting in the queue, so that it does not loop on `list_my_games` (`Service/GameStartWaiter`: the games of the user read every second through the Symfony clock, returns the games in progress, at once when there are some, none once the time is up).
+- A list is returned inside an object (`{"games": [...]}`, `{"decks": [...]}`, `{"cards": [...]}`): the structured content of a tool is an object.
+- `agent/`: `PLAYER.md` (the prompt: tools, finding the game, the loop on `wait_for_update` / `get_game` / one action with `expected_version`, reading the view, the engine as a board, fair play; any error but `stale_version`, or a blocking situation, ends the game: the agent concedes with the reason, the game being a test of the engine), `mcp.json` (the server, `KYUDEN_URL`, `KYUDEN_API_KEY`), `play.sh <API key> [deck]` (copies the prompt as `CLAUDE.md` and `doc/` as `rules/` into a temporary directory, so that the agent loads neither the instructions of the repository nor its code, and allows only the tools of `l5r`, `Read` and `Grep`).
+
+**Not done**
+- No game played by the agent yet.
+- The view is sent whole on each `get_game`: a long game may fill the context of the agent; a compact view to consider once seen in play.
+- An agent that stops without conceding blocks the game: no timeout.
 
 ## Decisions taken for the development console
 
@@ -513,8 +528,9 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 
 ### API
 
+- **Placing fate on a character** (seen while playing against the agent, 2026-10-21): no message adds fate to a card in play, so an effect that places fate on a character (supply → character, pool → character) cannot be applied, from the board or the API. To do with `MoveFate` (see the analysis of fate in the action abilities below), or a narrower `PlaceFate(card, amount)` first.
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
-- **AI agents**: the MCP server has `wait_for_update` and a tool per public message; add the view of the game (with its available actions), and the rules and the cards as resources.
+- **AI agents**: play a game against the agent (`agent/play.sh`) and fix what it reports; a compact view of the game if the context fills; a timeout for an agent that stops; the rules as MCP resources for agents without a file system.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
 - **Feedback of the players**: read the reasons of the concessions (payload of the `ConcedeGame` events), e.g. a console command or a listener of `GameConcededEvent`.
 - **Decks**: deleting a deck; the text export of EmeraldDB; the banned and restricted lists of a card pool.
@@ -525,7 +541,7 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 
 ### Step 1.4 (play cards from provinces)
 
-- **Automatic refill**: when a dynasty card leaves a province (played with `PlayCharacterFromProvince`, discarded, duplicate discarded…), the province is refilled at once, face down, with the top card of its owner's dynasty deck (glossary: a province emptied of its dynasty card refills automatically; not while a holding remains on it). For now the player sends `FillProvince` themselves (see the decisions taken for `PlayCharacterFromProvince`); `FillProvince` stays for the effects that refill a province otherwise (e.g. face up).
+- **Automatic refill** (decided, 2026-10-21): when a dynasty card leaves a province (played with `PlayCharacterFromProvince`, discarded, duplicate discarded…), the engine refills the province at once, face down, with the top card of its owner's dynasty deck (learn to play, "Draw and Refill": "If a player's province is empty, they must immediately refill it"; not while a holding or another card remains on it). For now the player sends `FillProvince` themselves (see the decisions taken for `PlayCharacterFromProvince`), and a human forgets it: in a game against the agent, the opponent played two characters from their provinces and left them empty, which nothing showed. `FillProvince` stays for the effects that refill a province otherwise (e.g. face up). To revisit if a situation turns out where the refill must wait or be chosen.
 - **Discard a duplicate** (`DiscardDuplicate`): discard a copy of a unique character from hand or province to place 1 fate on the copy in play; the province is then refilled.
 
 ### Action abilities

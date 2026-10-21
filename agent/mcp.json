@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "l5r": {
+            "type": "http",
+            "url": "${KYUDEN_URL:-http://localhost:8080}/api/mcp",
+            "headers": {
+                "Authorization": "Bearer ${KYUDEN_API_KEY}"
+            }
+        }
+    }
+}

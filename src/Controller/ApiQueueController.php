@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Candidate;
-use App\Entity\Deck;
 use App\Entity\User;
-use App\Repository\CandidateRepository;
-use App\Repository\DeckRepository;
-use App\Service\MatchMaking\MatchMakingInterface;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Exception\Api\AlreadyQueuedException;
+use App\Exception\Api\NotQueuedException;
+use App\Exception\Data\DeckNotFoundException;
+use App\Service\MatchMaking\MatchMakingQueue;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,31 +17,27 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * The matchmaking queue: the authenticated user joins it with one of the decks they can use (`{"deck_id": ...}`), and
- * is matched with the next candidate at once (MatchMakingInterface). A user waits in the queue once; once matched,
- * they are no longer in it. Errors are problem details (RFC 9457).
+ * The matchmaking queue (MatchMakingQueue): the authenticated user joins it with one of the decks they can use
+ * (`{"deck_id": ...}`), and is matched with the next candidate at once. Errors are problem details (RFC 9457).
  */
 class ApiQueueController extends AbstractController
 {
     use ProblemResponseTrait;
 
     public function __construct(
-        private readonly CandidateRepository $candidateRepository,
-        private readonly DeckRepository $deckRepository,
-        private readonly MatchMakingInterface $matchMaking,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly MatchMakingQueue $queue,
     ) {
     }
 
     #[Route('/api/queue', name: 'app_api_queue', methods: ['GET'])]
     public function show(#[CurrentUser] User $user): Response
     {
-        $candidate = $this->candidateRepository->findOneBy(['user' => $user]);
-        if (! $candidate instanceof Candidate) {
+        $deckId = $this->queue->findDeckId($user);
+        if ($deckId === null) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'not_queued', 'The user is not in the queue.');
         }
 
-        return $this->json(['deck_id' => $candidate->getDeck()->getId()]);
+        return $this->json(['deck_id' => $deckId]);
     }
 
     #[Route('/api/queue', name: 'app_api_queue_join', methods: ['POST'])]
@@ -63,27 +56,13 @@ class ApiQueueController extends AbstractController
             ]);
         }
 
-        $deck = $this->deckRepository->findUsable($deckId, $user);
-        if (! $deck instanceof Deck) {
-            return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'deck_not_found', "Deck not found: [{$deckId}]");
-        }
-
-        if ($this->candidateRepository->count(['user' => $user]) > 0) {
-            return $this->problem(Response::HTTP_CONFLICT, 'already_queued', 'The user is already in the queue.');
-        }
-
-        $candidate = new Candidate();
-        $candidate->setUser($user);
-        $candidate->setDeck($deck);
-        $this->entityManager->persist($candidate);
         try {
-            $this->entityManager->flush();
-        } catch (UniqueConstraintViolationException) {
-            // joined concurrently
-            return $this->problem(Response::HTTP_CONFLICT, 'already_queued', 'The user is already in the queue.');
+            $this->queue->join($user, $deckId);
+        } catch (DeckNotFoundException $exception) {
+            return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'deck_not_found', $exception->getMessage());
+        } catch (AlreadyQueuedException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'already_queued', $exception->getMessage());
         }
-
-        $this->matchMaking->findMatches();
 
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
@@ -91,15 +70,11 @@ class ApiQueueController extends AbstractController
     #[Route('/api/queue', name: 'app_api_queue_leave', methods: ['DELETE'])]
     public function leave(#[CurrentUser] User $user): Response
     {
-        $candidate = $this->candidateRepository->findOneBy(['user' => $user]);
-        if (! $candidate instanceof Candidate) {
-            return $this->problem(Response::HTTP_NOT_FOUND, 'not_queued', 'The user is not in the queue.');
+        try {
+            $this->queue->leave($user);
+        } catch (NotQueuedException $exception) {
+            return $this->problem(Response::HTTP_NOT_FOUND, 'not_queued', $exception->getMessage());
         }
-
-        $this->candidateRepository->withQueueLock(function () use ($candidate): void {
-            $this->entityManager->remove($candidate);
-            $this->entityManager->flush();
-        });
 
         return new Response(status: Response::HTTP_NO_CONTENT);
     }

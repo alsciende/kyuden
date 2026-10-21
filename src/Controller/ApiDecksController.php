@@ -9,7 +9,7 @@ use App\Entity\User;
 use App\Exception\Api\InvalidDeckException;
 use App\Repository\DeckRepository;
 use App\Service\Deck\DeckImporter;
-use App\View\Model\DeckView;
+use App\View\DeckViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
@@ -33,13 +33,14 @@ class ApiDecksController extends AbstractController
         private readonly DeckRepository $deckRepository,
         private readonly DeckImporter $deckImporter,
         private readonly EntityManagerInterface $entityManager,
+        private readonly DeckViewFactory $deckViewFactory,
     ) {
     }
 
     #[Route('/api/decks', name: 'app_api_decks', methods: ['GET'])]
     public function list(#[CurrentUser] User $user): Response
     {
-        return $this->json(array_map($this->createView(...), $this->deckRepository->findUsableBy($user)));
+        return $this->json(array_map($this->deckViewFactory->create(...), $this->deckRepository->findUsableBy($user)));
     }
 
     #[Route('/api/decks/{id}', name: 'app_api_deck', methods: ['GET'])]
@@ -50,7 +51,7 @@ class ApiDecksController extends AbstractController
             return $this->problem(Response::HTTP_NOT_FOUND, 'deck_not_found', "Deck not found: [{$id}]");
         }
 
-        return $this->json($this->createView($deck));
+        return $this->json($this->deckViewFactory->create($deck));
     }
 
     #[Route('/api/decks', name: 'app_api_decks_import', methods: ['POST'])]
@@ -75,7 +76,7 @@ class ApiDecksController extends AbstractController
         }
         $this->entityManager->flush();
 
-        $response = $this->json($this->createView($deck), Response::HTTP_CREATED);
+        $response = $this->json($this->deckViewFactory->create($deck), Response::HTTP_CREATED);
         $response->headers->set('Location', $this->generateUrl('app_api_deck', ['id' => $deck->getId()]));
 
         return $response;
@@ -114,10 +115,5 @@ class ApiDecksController extends AbstractController
         }
 
         return $violations;
-    }
-
-    private function createView(Deck $deck): DeckView
-    {
-        return new DeckView($deck->getId(), $deck->getName(), $deck->getOwner()?->getId(), $deck->getCards());
     }
 }

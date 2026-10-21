@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Game;
-use App\Entity\Player;
 use App\Entity\User;
 use App\Enum\Clan;
 use App\Model\AccountRequest;
@@ -13,6 +12,7 @@ use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
 use App\View\Model\SelfView;
 use App\View\Model\UserGameView;
+use App\View\UserGameViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
@@ -41,6 +41,7 @@ class ApiSelfController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ValidatorInterface $validator,
         private readonly SubscriptionFactory $subscriptionFactory,
+        private readonly UserGameViewFactory $userGameViewFactory,
     ) {
     }
 
@@ -110,7 +111,7 @@ class ApiSelfController extends AbstractController
         $userId = $user->getUserIdentifier();
 
         return $this->json(array_map(
-            fn (Game $game): UserGameView => $this->createView($game, $userId),
+            fn (Game $game): UserGameView => $this->userGameViewFactory->create($game, $userId),
             $this->gameRepository->findByUser($userId),
         ));
     }
@@ -125,20 +126,5 @@ class ApiSelfController extends AbstractController
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;
-    }
-
-    private function createView(Game $game, string $userId): UserGameView
-    {
-        $players = $game->getPlayers()->getValues();
-        $player = array_find($players, fn (Player $player): bool => $player->getUserId() === $userId)
-            ?? throw new \LogicException("The user {$userId} does not play the game {$game->getId()}.");
-
-        return new UserGameView(
-            id: $game->getId(),
-            playerId: $player->getId(),
-            version: $game->getVersion(),
-            ended: $game->getCurrentPlace() === Game::STATE_ENDED,
-            players: array_map(fn (Player $player): string => $player->getUserId(), $players),
-        );
     }
 }
