@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 
 import AppFooter from '@/components/AppFooter.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import { inverted } from '@/lib/page'
 
 const route = useRoute()
 </script>
@@ -10,7 +11,7 @@ const route = useRoute()
 <template>
   <!-- the game board takes the whole window -->
   <RouterView v-if="route.meta.fullscreen" />
-  <div v-else class="page">
+  <div v-else class="page" :class="{ inverted }">
     <AppHeader />
     <main class="main">
       <RouterView />
@@ -24,6 +25,8 @@ const route = useRoute()
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .main {

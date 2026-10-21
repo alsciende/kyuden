@@ -7,8 +7,6 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Event\GameCreatedEvent;
 use App\Message\CreateGame;
-use App\Notification\GameCreatedNotification;
-use App\Notifier\NotifierInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -19,7 +17,6 @@ final readonly class CreateGameHandler
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private NotifierInterface $notifier,
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {
@@ -31,8 +28,6 @@ final readonly class CreateGameHandler
         $this->gameStateMachine->getMarking($game);
         $this->entityManager->persist($game);
         $this->eventDispatcher->dispatch(new GameCreatedEvent($game));
-
-        $this->notifier->notify(new GameCreatedNotification($game));
 
         return $game;
     }

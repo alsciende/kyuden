@@ -131,7 +131,7 @@ export async function suggestedClan(random: () => number = Math.random): Promise
     try {
       const games = await fetchSelfGames(current.token)
       if (games.length > 0) {
-        const { game } = await fetchGame(current.token, games[0]!.id)
+        const game = await fetchGame(current.token, games[0]!.id)
         const clan = findClan(game.players.find((player) => player.user_id === current.userId)?.clan)
         if (clan !== undefined) {
           return clan

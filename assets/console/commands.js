@@ -166,11 +166,9 @@ function staticCommands() {
                     if (result.ok) block.info(`Waiting with ${result.data.deck_id}.`);
                     return;
                 }
-                const known = await ctx.knownGameIds();
                 const result = await ctx.api.post('/api/queue', { deck_id: args[0] }, { trace: block });
                 if (result.ok) {
                     block.success('In the queue: the game starts as soon as another player joins.');
-                    await ctx.waitForMatch(known);
                 }
             },
         },
@@ -179,7 +177,6 @@ function staticCommands() {
             async run(ctx, args, block) {
                 requireUser(ctx);
                 const result = await ctx.api.delete('/api/queue', { trace: block });
-                ctx.stopWaitingForMatch();
                 if (result.ok) block.success('Left the queue.');
             },
         },

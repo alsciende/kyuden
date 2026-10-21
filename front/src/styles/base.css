@@ -28,6 +28,20 @@
   color-scheme: light;
 }
 
+/* light ink on a dark ground (the wait in the queue): the tokens swap, the components follow */
+.inverted {
+  --paper: #1f1b16;
+  --paper-2: #2a251f;
+  --paper-3: #3a332b;
+  --line: #4a4238;
+  --ink: #f4eee2;
+  --ink-2: #cfc5b3;
+  --ink-3: #b3a894;
+  --seal: #ec6a52;
+
+  color-scheme: dark;
+}
+
 *,
 *::before,
 *::after {

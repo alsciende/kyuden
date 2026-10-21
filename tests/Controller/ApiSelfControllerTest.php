@@ -201,4 +201,25 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self/games', null)->getStatusCode());
     }
+
+    public function testAUserGetsATokenForTheirTopicAndTheirGames(): void
+    {
+        $subscription = $this->decode($this->get('/api/self/subscription', 'jane'));
+
+        self::assertSame('no-store, private', $this->get('/api/self/subscription', 'jane')->headers->get('Cache-Control'));
+        self::assertIsString($subscription['hub']);
+        self::assertStringEndsWith('/.well-known/mercure', $subscription['hub']);
+        self::assertSame('/users/jane', $subscription['topic']);
+        self::assertIsString($subscription['token']);
+        $claims = json_decode(base64_decode(strtr(explode('.', $subscription['token'])[1], '-_', '+/'), true) ?: '', true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($claims);
+        self::assertSame(['publish' => [], 'subscribe' => ['/users/jane', '/users/jane/games/{gameId}']], $claims['mercure']);
+        self::assertIsString($subscription['expires_at']);
+        self::assertSame(new \DateTimeImmutable($subscription['expires_at'])->getTimestamp(), $claims['exp']);
+    }
+
+    public function testTheSubscriptionRequiresAToken(): void
+    {
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self/subscription', null)->getStatusCode());
+    }
 }

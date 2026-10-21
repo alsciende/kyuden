@@ -97,6 +97,29 @@ export interface BotGame {
   }
 }
 
+/**
+ * A deck the user can play: their own, or a deck without owner (the starter decks).
+ */
+export interface Deck {
+  id: string
+  name: string | null
+  /** null for the decks every user can use */
+  owner_id: string | null
+  /** quantity by card code */
+  cards: Record<string, number>
+}
+
+/**
+ * The subscription of the user to the Mercure hub: a subscriber token for their topic and the games they play.
+ */
+export interface Subscription {
+  hub: string
+  token: string
+  /** the topic of the user, where they learn they have joined a game */
+  topic: string
+  expires_at: string
+}
+
 interface RequestOptions {
   method?: string
   body?: unknown
@@ -193,4 +216,30 @@ export function updateSelf(token: string, changes: { name?: string; preferred_cl
 
 export function fetchSelfGames(token: string): Promise<UserGame[]> {
   return request<UserGame[]>('/api/self/games', { token })
+}
+
+export function fetchSubscription(token: string): Promise<Subscription> {
+  return request<Subscription>('/api/self/subscription', { token })
+}
+
+export function fetchDecks(token: string): Promise<Deck[]> {
+  return request<Deck[]>('/api/decks', { token })
+}
+
+/**
+ * The deck the user waits with in the queue; a 404 (`not_queued`) once matched or left.
+ */
+export function fetchQueue(token: string): Promise<{ deck_id: string }> {
+  return request<{ deck_id: string }>('/api/queue', { token })
+}
+
+/**
+ * Joins the queue: the user is matched at once when another player waits, and told on their topic once the game has started (`game_started`).
+ */
+export function joinQueue(token: string, deckId: string): Promise<void> {
+  return request<void>('/api/queue', { method: 'POST', body: { deck_id: deckId }, token })
+}
+
+export function leaveQueue(token: string): Promise<void> {
+  return request<void>('/api/queue', { method: 'DELETE', token })
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Middleware;
 
+use App\Message\JoinGame;
 use App\Message\LoseHonor;
 use App\Middleware\GameUpdatedNotificationMiddleware;
 use App\Notification\NotificationInterface;
@@ -70,8 +71,40 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
         self::assertCount(1, $this->notifications);
         $notification = $this->notifications[0];
         self::assertInstanceOf(NotificationInterface::class, $notification);
-        self::assertSame(['/games/' . $game->getId()], $notification->getTopics());
+        self::assertSame([
+            '/games/' . $game->getId(),
+            '/users/john/games/' . $game->getId(),
+            '/users/jane/games/' . $game->getId(),
+        ], $notification->getTopics());
         self::assertSame(['id' => $game->getId(), 'version' => 1, 'event' => 'game_updated'], $notification->getData());
+    }
+
+    public function testTellsThePlayersOnceTheLastOneHasJoined(): void
+    {
+        $scenario = $this->scenarioWithJohn();
+        $gameId = $scenario->game()->getId();
+
+        $this->middleware()->handle(new Envelope(new JoinGame($gameId, $scenario->player('jane')->getId(), 'jane', 'deck')), new StackMiddleware());
+
+        self::assertCount(2, $this->notifications);
+        $notification = $this->notifications[1];
+        self::assertInstanceOf(NotificationInterface::class, $notification);
+        self::assertSame(['/users/john', '/users/jane'], $notification->getTopics());
+        self::assertSame([
+            'id' => $gameId,
+            'player_ids' => ['john' => $scenario->player('john')->getId(), 'jane' => $scenario->player('jane')->getId()],
+            'event' => 'game_started',
+        ], $notification->getData());
+    }
+
+    public function testDoesNotTellAPlayerWhoJoinsAGameWaitingForOthers(): void
+    {
+        $scenario = $this->scenario()->atPlace('join_game')->withPlayer('john')->persist();
+        $gameId = $scenario->game()->getId();
+
+        $this->middleware()->handle(new Envelope(new JoinGame($gameId, $scenario->player('john')->getId(), 'john', 'deck')), new StackMiddleware());
+
+        self::assertCount(1, $this->notifications);
     }
 
     public function testDoesNotNotifyAMessageThatFailed(): void

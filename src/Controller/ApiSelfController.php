@@ -9,6 +9,7 @@ use App\Entity\Player;
 use App\Entity\User;
 use App\Enum\Clan;
 use App\Model\AccountRequest;
+use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
 use App\View\Model\SelfView;
 use App\View\Model\UserGameView;
@@ -27,7 +28,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /**
  * The authenticated user: their identifier, their name at court and their preferred clan (which they change,
  * `PATCH {"name": ..., "preferred_clan": ...}`, either or both) and their username, and their games (in progress or ended, the last joined first), so that a user matched by the queue finds
- * the id of their game. Errors are problem details (RFC 9457).
+ * the id of their game; and their subscription to the Mercure hub. Errors are problem details (RFC 9457).
  */
 class ApiSelfController extends AbstractController
 {
@@ -39,6 +40,7 @@ class ApiSelfController extends AbstractController
         private readonly GameRepository $gameRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly ValidatorInterface $validator,
+        private readonly SubscriptionFactory $subscriptionFactory,
     ) {
     }
 
@@ -111,6 +113,18 @@ class ApiSelfController extends AbstractController
             fn (Game $game): UserGameView => $this->createView($game, $userId),
             $this->gameRepository->findByUser($userId),
         ));
+    }
+
+    /**
+     * The subscription of the user to the Mercure hub: the hub and a token for their topic and the games they play.
+     */
+    #[Route('/api/self/subscription', name: 'app_api_self_subscription', methods: ['GET'])]
+    public function subscription(#[CurrentUser] UserInterface $user): JsonResponse
+    {
+        $response = $this->json($this->subscriptionFactory->create($user->getUserIdentifier()));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     private function createView(Game $game, string $userId): UserGameView

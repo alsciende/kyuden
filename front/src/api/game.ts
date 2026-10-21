@@ -144,35 +144,8 @@ export interface GameLog {
   messages: LoggedMessage[]
 }
 
-export interface LoadedGame {
-  game: GameView
-  /** the Mercure hub announced by the view (`Link: <…>; rel="mercure"`) */
-  hub: string | null
-}
-
-export async function fetchGame(token: string, gameId: string): Promise<LoadedGame> {
-  const response = await fetch(`/api/games/${encodeURIComponent(gameId)}`, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-  })
-  if (!response.ok) {
-    throw await toProblem(response)
-  }
-
-  return { game: (await response.json()) as GameView, hub: mercureHub(response.headers.get('Link')) }
-}
-
-/**
- * The URL of the Mercure hub in a Link header.
- */
-export function mercureHub(link: string | null): string | null {
-  for (const part of (link ?? '').split(',')) {
-    const match = /<([^>]+)>\s*;(.*)$/.exec(part.trim())
-    if (match && /rel\s*=\s*"?mercure"?/.test(match[2]!)) {
-      return match[1]!
-    }
-  }
-
-  return null
+export function fetchGame(token: string, gameId: string): Promise<GameView> {
+  return request<GameView>(`/api/games/${encodeURIComponent(gameId)}`, { token })
 }
 
 export function fetchLog(token: string, gameId: string, since: number): Promise<GameLog> {

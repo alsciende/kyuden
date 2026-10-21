@@ -90,10 +90,9 @@ services:
       SERVER_NAME: ':80'
       MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
       MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      # the URLs of the Symfony project (without trailing slash!); the topics are public: anonymous subscribers
+      # the URLs of the Symfony project (without trailing slash!); the topics are private: no anonymous subscriber
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins http://localhost:8080 http://127.0.0.1:8080
-        anonymous
     volumes:
       - mercure_data:/data
       - mercure_config:/config

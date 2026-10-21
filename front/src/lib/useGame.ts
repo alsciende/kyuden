@@ -3,6 +3,7 @@ import { onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 import { ApiProblem, fetchCard } from '@/api/client'
 import { fetchGame, fetchLog, sendMessage, type GameView, type LoggedMessage } from '@/api/game'
 import { visibleCodes, type Cards } from '@/lib/board'
+import { follow } from '@/lib/hub'
 import { loadSession } from '@/lib/session'
 
 /**
@@ -20,7 +21,7 @@ export function useGame(gameId: string) {
   const error = ref<string | null>(null)
   const sending = ref(false)
 
-  let source: EventSource | null = null
+  let unfollow: (() => void) | null = null
   let refreshing: Promise<void> | null = null
   let refreshAgain = false
 
@@ -52,10 +53,10 @@ export function useGame(gameId: string) {
     }
     try {
       const loaded = await fetchGame(session.token, gameId)
-      game.value = loaded.game
+      game.value = loaded
       loadError.value = null
-      readCards(visibleCodes(loaded.game))
-      subscribe(loaded.hub)
+      readCards(visibleCodes(loaded))
+      unfollow ??= follow(session.token, [`/games/${gameId}`], () => void refresh())
       await readLog()
     } catch (problem) {
       if (problem instanceof ApiProblem) {
@@ -97,16 +98,6 @@ export function useGame(gameId: string) {
     }
   }
 
-  function subscribe(hub: string | null): void {
-    if (hub === null || source !== null || typeof EventSource === 'undefined') {
-      return
-    }
-    const url = new URL(hub, window.location.href)
-    url.searchParams.append('topic', `/games/${gameId}`)
-    source = new EventSource(url)
-    source.onmessage = () => void refresh()
-  }
-
   /**
    * Sends a message of the player for the version of the game they see. Returns whether it was handled.
    */
@@ -138,8 +129,8 @@ export function useGame(gameId: string) {
   }
 
   onBeforeUnmount(() => {
-    source?.close()
-    source = null
+    unfollow?.()
+    unfollow = null
   })
 
   return { session, game, log, cards, loadError, error, sending, send, refresh }

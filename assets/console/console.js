@@ -28,9 +28,9 @@ export class Console {
         this.verbose = false;
         this.sending = false;
         this.refreshing = Promise.resolve();
-        this.matchTimer = null;
         this.mercure = new Mercure(
             root.dataset.mercureUrl,
+            this.api,
             () => this.onChange(),
             (data) => this.onNotification(data),
         );
@@ -70,6 +70,7 @@ export class Console {
     }
 
     async login(token, block, preferredGameId = null) {
+        this.mercure.logout();
         this.token = token;
         const self = await this.api.get('/api/self', { trace: block });
         if (!self.ok) {
@@ -95,54 +96,19 @@ export class Console {
         const queue = await this.api.get('/api/queue');
         if (queue.ok) {
             block.info(`Waiting in the queue with ${queue.data.deck_id}.`);
-            this.waitForMatch();
         }
 
         return true;
     }
 
-    /**
-     * Waits for the game the queue matches the user in. The hub does not tell the users yet (GameCreatedNotification
-     * is published before the players join the game): the console reads their games until a new one appears.
-     */
-    async waitForMatch(knownGameIds = null) {
-        this.stopWaitingForMatch();
-        const known = knownGameIds ?? await this.knownGameIds();
-        const check = async () => {
-            const current = await this.api.get('/api/self/games');
-            const found = current.ok ? current.data.find((game) => !game.ended && !known.has(game.id)) : undefined;
-            if (found) {
-                this.stopWaitingForMatch();
-                const block = this.terminal.block('matched', 'game');
-                block.success(`The queue found a game against ${found.players.filter((user) => user !== this.userId).join(', ')}.`);
-                await this.selectGame(found.id, block);
-            }
-        };
-        this.matchTimer = setInterval(check, 2000);
-        await check();
-    }
-
-    /** The ids of the games of the user, to tell the game the queue matches them in. */
-    async knownGameIds() {
-        const games = await this.api.get('/api/self/games');
-
-        return new Set(games.ok ? games.data.map((game) => game.id) : []);
-    }
-
-    stopWaitingForMatch() {
-        clearInterval(this.matchTimer);
-        this.matchTimer = null;
-    }
-
     logout() {
-        this.stopWaitingForMatch();
+        this.mercure.logout();
         this.token = null;
         this.userId = null;
         this.gameId = null;
         this.game = null;
         storage(() => sessionStorage.removeItem(TOKEN_KEY));
         storage(() => sessionStorage.removeItem(GAME_KEY));
-        this.mercure.close();
         this.onChange();
     }
 
@@ -274,10 +240,10 @@ export class Console {
             }
             return;
         }
-        if (data.event === 'game_created') {
-            this.stopWaitingForMatch();
-            const block = this.terminal.block('game created', 'game');
-            block.success(`The queue found a game: ${data.id}.`);
+        // a game of the user has started: the queue has matched them, or they play the house bot
+        if (data.event === 'game_started' && data.id !== this.gameId) {
+            const block = this.terminal.block('game started', 'game');
+            block.success(`Your game ${data.id} has started.`);
             if (!this.game || this.game.view.winner_id) {
                 this.selectGame(data.id, block);
             } else {
