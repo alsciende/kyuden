@@ -6,7 +6,9 @@ namespace App\Tests\Controller;
 
 use App\DataFixtures\UserFixtures;
 use App\Entity\Game;
+use App\Entity\User;
 use App\Tests\AbstractKernelTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,15 +16,33 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
 {
     private function get(string $path, ?string $user): Response
     {
+        return $this->request('GET', $path, $user);
+    }
+
+    private function request(string $method, string $path, ?string $user, mixed $body = null): Response
+    {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
         $client->disableReboot();
 
-        $client->request('GET', $path, server: array_filter([
+        $client->request($method, $path, server: array_filter([
+            'CONTENT_TYPE' => 'application/json',
             'HTTP_AUTHORIZATION' => $user === null ? null : 'Bearer ' . UserFixtures::TOKENS[$user],
-        ]));
+        ]), content: $body === null ? null : json_encode($body, \JSON_THROW_ON_ERROR));
 
         return $client->getResponse();
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function decodeProblem(Response $response, int $status): array
+    {
+        self::assertSame($status, $response->getStatusCode(), (string) $response->getContent());
+        $content = json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($content);
+
+        return $content;
     }
 
     /**
@@ -37,9 +57,63 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
         return $content;
     }
 
-    public function testAUserReadsTheirIdentifier(): void
+    public function testAUserReadsTheirIdentifierNameAndUsername(): void
     {
-        self::assertSame(['user' => 'john'], $this->decode($this->get('/api/self', 'john')));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe'], $this->decode($this->get('/api/self', 'jane')));
+    }
+
+    public function testAGuestHasNoUsername(): void
+    {
+        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null], $this->decode($this->get('/api/self', 'harry')));
+    }
+
+    public function testTheSelfRequiresAToken(): void
+    {
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self', null)->getStatusCode());
+    }
+
+    public function testAUserChangesTheirNameAtCourt(): void
+    {
+        $response = $this->request('PATCH', '/api/self', 'jane', ['name' => '  Doji Hotaru ']);
+
+        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe'], $this->decode($response));
+        self::assertSame('Doji Hotaru', $this->decode($this->get('/api/self', 'jane'))['name']);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function invalidNameBodies(): iterable
+    {
+        yield 'no name' => [[]];
+        yield 'name not a string' => [['name' => 12]];
+        yield 'unexpected field' => [['name' => 'Doji Hotaru', 'username' => 'hotaru']];
+    }
+
+    #[DataProvider('invalidNameBodies')]
+    public function testRejectsAnInvalidBody(mixed $body): void
+    {
+        self::assertSame('invalid_payload', $this->decodeProblem($this->request('PATCH', '/api/self', 'jane', $body), Response::HTTP_BAD_REQUEST)['type']);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidNames(): iterable
+    {
+        yield 'blank' => ['   '];
+        yield 'too long' => [str_repeat('é', User::MAX_NAME_LENGTH + 1)];
+    }
+
+    #[DataProvider('invalidNames')]
+    public function testRejectsAnInvalidName(string $name): void
+    {
+        $problem = $this->decodeProblem($this->request('PATCH', '/api/self', 'jane', ['name' => $name]), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        self::assertSame('validation_failed', $problem['type']);
+        self::assertIsArray($problem['violations']);
+        self::assertIsArray($problem['violations'][0]);
+        self::assertSame('name', $problem['violations'][0]['property_path']);
     }
 
     public function testAUserFindsTheGamesTheyPlay(): void

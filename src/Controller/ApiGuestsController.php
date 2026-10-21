@@ -19,16 +19,14 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Guest accounts: anyone gets a human account by choosing a name (`{"name": ...}`), with a session token, to try the
- * game without signing up. The account is not linked to any identity yet. Public. Errors are problem details
+ * game without signing up, until they create their account (`POST /api/accounts`). Public. Errors are problem details
  * (RFC 9457).
  */
 class ApiGuestsController extends AbstractController
 {
     use ProblemResponseTrait;
 
-    public const int MAX_NAME_LENGTH = 64;
-
-    public const string ID_PREFIX = 'guest-';
+    public const int MAX_NAME_LENGTH = User::MAX_NAME_LENGTH;
 
     public function __construct(
         private readonly AccessTokenIssuer $accessTokenIssuer,
@@ -53,7 +51,7 @@ class ApiGuestsController extends AbstractController
             ]);
         }
 
-        $user = new User(self::ID_PREFIX . Uuid::v4()->toString(), $name, UserType::Human);
+        $user = new User(Uuid::v4()->toString(), $name, UserType::Human);
         $this->entityManager->persist($user);
         $token = $this->accessTokenIssuer->issue($user, AccessTokenType::Session);
         $this->entityManager->flush();

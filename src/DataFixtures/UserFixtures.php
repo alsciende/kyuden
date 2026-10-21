@@ -10,13 +10,37 @@ use App\Enum\AccessTokenType;
 use App\Enum\UserType;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * The users of the development and the tests, with their access tokens in clear: humans with a session that does not
- * expire, and bots owned by john with an API key, and the house bot owned by the platform. Each user is a reference named after its id. These tokens are public: never load the fixtures in production.
+ * expire, and bots owned by john with an API key, and the house bot owned by the platform. Each user is a reference
+ * named after its id. john and jane have an account they sign in to (USERNAMES, PASSWORDS); harry and sally are
+ * guests. These tokens and passwords are public: never load the fixtures in production.
  */
 class UserFixtures extends Fixture
 {
+    /**
+     * The username of each human with an account, by user id.
+     */
+    public const array USERNAMES = [
+        'john' => 'john',
+        'jane' => 'Jane_Doe',
+    ];
+
+    /**
+     * The password of each human with an account, by user id.
+     */
+    public const array PASSWORDS = [
+        'john' => 'john-dev-password',
+        'jane' => 'jane-dev-password',
+    ];
+
+    public function __construct(
+        private readonly UserPasswordHasherInterface $passwordHasher,
+    ) {
+    }
+
     /**
      * The access token of each user, by user id.
      */
@@ -48,6 +72,11 @@ class UserFixtures extends Fixture
             $kyuden,
             new User('kyuden-bot', 'Kyūden Bot', UserType::Bot, $kyuden),
         ];
+        foreach (self::USERNAMES as $id => $username) {
+            $user = array_find($users, static fn (User $user): bool => $user->getId() === $id);
+            \assert($user instanceof User);
+            $user->register($username, $this->passwordHasher->hashPassword($user, self::PASSWORDS[$id]));
+        }
         foreach ($users as $user) {
             $manager->persist($user);
             $this->addReference($user->getId(), $user);

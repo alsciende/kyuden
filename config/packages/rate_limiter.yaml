@@ -1,0 +1,12 @@
+framework:
+    rate_limiter:
+        # the attempts to sign in (POST /api/sessions): each attempt counts, a success resets the count of the username
+        login_username:
+            policy: sliding_window
+            limit: 5
+            interval: '1 minute'
+        login_ip:
+            policy: sliding_window
+            limit: 20
+            interval: '1 minute'
+

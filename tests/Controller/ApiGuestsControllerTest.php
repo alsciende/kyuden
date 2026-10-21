@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Uid\Uuid;
 
 class ApiGuestsControllerTest extends AbstractKernelTestCase
 {
@@ -52,16 +53,17 @@ class ApiGuestsControllerTest extends AbstractKernelTestCase
         self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
         $guest = $this->decode($response);
         self::assertIsString($guest['user_id']);
-        self::assertStringStartsWith(ApiGuestsController::ID_PREFIX, $guest['user_id']);
+        self::assertTrue(Uuid::isValid($guest['user_id']));
         self::assertSame('Hida Takeshi', $guest['name']);
         self::assertIsString($guest['token']);
 
         $user = self::service(EntityManagerInterface::class)->find(User::class, $guest['user_id']);
         self::assertInstanceOf(User::class, $user);
         self::assertSame(UserType::Human, $user->getType());
+        self::assertTrue($user->isGuest());
 
         $self = $this->request('GET', '/api/self', token: $guest['token']);
-        self::assertSame(['user' => $guest['user_id']], $this->decode($self));
+        self::assertSame(['user_id' => $guest['user_id'], 'name' => 'Hida Takeshi', 'username' => null], $this->decode($self));
     }
 
     /**

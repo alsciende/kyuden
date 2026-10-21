@@ -17,4 +17,12 @@ class UserRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, User::class);
     }
+
+    /**
+     * The user signing in with a username, whatever its case.
+     */
+    public function findOneByUsername(string $username): ?User
+    {
+        return $this->findOneBy(['usernameCanonical' => User::canonicalizeUsername($username)]);
+    }
 }

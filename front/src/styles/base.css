@@ -165,6 +165,37 @@ p {
   width: 100%;
 }
 
+.field-ui {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 20px;
+}
+
+/* a field of a form: its label above, its error and hint below */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field > label,
+.form-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.form-hint {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.form-error {
+  font-size: 15px;
+  color: var(--seal);
+}
+
 .screen {
   animation: fade 0.45s ease-out both;
 }

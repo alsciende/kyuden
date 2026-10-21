@@ -77,7 +77,7 @@ export class Console {
             block.error('Unknown token.');
             return false;
         }
-        this.userId = self.data.user;
+        this.userId = self.data.user_id;
         storage(() => sessionStorage.setItem(TOKEN_KEY, token));
         block.success(`Logged in as ${this.userId}.`);
         this.subscribe();

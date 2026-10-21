@@ -53,6 +53,24 @@ export interface Guest {
   token: string
 }
 
+/**
+ * An account and a new session token: the guest who created it (same user), a new user, or a user signing in.
+ */
+export interface Account {
+  user_id: string
+  name: string
+  username: string
+  token: string
+}
+
+/**
+ * The authenticated user: a guest has no username.
+ */
+export interface Self {
+  name: string
+  username: string | null
+}
+
 export interface BotGame {
   game_id: string
   player_id: string
@@ -128,4 +146,31 @@ export function createGuest(name: string): Promise<Guest> {
 
 export function createBotGame(token: string, deckId: string): Promise<BotGame> {
   return request<BotGame>('/api/bot-games', { method: 'POST', body: { deck_id: deckId }, token })
+}
+
+/**
+ * Creates an account: with the token of a guest, the guest becomes the account; without, a new user with the name at
+ * court given.
+ */
+export function createAccount(
+  credentials: { username: string; password: string; name?: string },
+  token: string | null,
+): Promise<Account> {
+  return request<Account>('/api/accounts', { method: 'POST', body: credentials, token })
+}
+
+export function createSession(username: string, password: string): Promise<Account> {
+  return request<Account>('/api/sessions', { method: 'POST', body: { username, password } })
+}
+
+export function deleteSession(token: string): Promise<void> {
+  return request<void>('/api/sessions/current', { method: 'DELETE', token })
+}
+
+export function fetchSelf(token: string): Promise<Self> {
+  return request<Self>('/api/self', { token })
+}
+
+export function renameSelf(token: string, name: string): Promise<Self> {
+  return request<Self>('/api/self', { method: 'PATCH', body: { name }, token })
 }

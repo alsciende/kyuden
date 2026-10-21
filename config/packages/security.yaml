@@ -1,4 +1,8 @@
 security:
+    # the players sign in with a username and a password (POST /api/sessions), which gives them an access token
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         app_user_provider:
@@ -11,7 +15,7 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
-            # the users authenticate with an access token (App\Entity\AccessToken), never with a password
+            # the users authenticate with an access token (App\Entity\AccessToken); the password only gets a token
             access_token:
                 token_handler: App\Security\AccessTokenHandler
             lazy: true
@@ -27,6 +31,19 @@ security:
         - { path: ^/api/cards(/|$), roles: PUBLIC_ACCESS }
         # anyone gets a guest account to try the game
         - { path: ^/api/guests$, roles: PUBLIC_ACCESS }
+        # anyone creates an account (a guest keeps theirs by sending its token) and signs in
+        - { path: ^/api/accounts$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/sessions$, roles: PUBLIC_ACCESS }
         # the MCP server is for the programs playing as a bot
         - { path: ^/api/mcp$, roles: ROLE_BOT }
         - { path: ^/api, roles: ROLE_USER }
+
+when@test:
+    security:
+        # hashing is slow on purpose: as fast as possible in the tests
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

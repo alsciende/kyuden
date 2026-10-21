@@ -2,10 +2,17 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { findClan } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
+import { session } from '@/lib/session'
+import AccountView from '@/views/AccountView.vue'
 import GameView from '@/views/GameView.vue'
 import LandingView from '@/views/LandingView.vue'
+import LoginView from '@/views/LoginView.vue'
 import NameView from '@/views/NameView.vue'
 import OpponentView from '@/views/OpponentView.vue'
+import QueueView from '@/views/QueueView.vue'
+import SignupView from '@/views/SignupView.vue'
+
+const hasAccount = () => session.value !== null && session.value.username !== null
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -24,6 +31,28 @@ export const router = createRouter({
       component: OpponentView,
       meta: { title: 'Your opponent · Kyūden' },
       beforeEnter: () => (findClan(newcomer.clanId) && newcomer.name ? true : { name: 'landing' }),
+    },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Sign in · Kyūden' } },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: SignupView,
+      meta: { title: 'Create your account · Kyūden' },
+      beforeEnter: () => (hasAccount() ? { name: 'account' } : true),
+    },
+    {
+      path: '/account',
+      name: 'account',
+      component: AccountView,
+      meta: { title: 'Your account · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
+    },
+    {
+      path: '/queue',
+      name: 'queue',
+      component: QueueView,
+      meta: { title: 'Find an opponent · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
     },
     { path: '/games/:id', name: 'game', component: GameView, meta: { title: 'Game · Kyūden', fullscreen: true } },
     { path: '/:path(.*)*', redirect: { name: 'landing' } },

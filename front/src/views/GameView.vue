@@ -15,6 +15,7 @@ import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { gameEnded, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { hidePreview } from '@/lib/preview'
+import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
 import { hideTooltip } from '@/lib/tooltip'
 import { useGame } from '@/lib/useGame'
@@ -71,6 +72,8 @@ const result = computed(() =>
     ? null
     : { victory: game.value.winner_id === game.value.viewer_id, text: victoryText(game.value) },
 )
+
+const guest = computed(() => (isGuest(session.value) ? session.value : null))
 
 function chooseRing(element: Element): void {
   selection.ring = selection.ring === element ? null : element
@@ -148,7 +151,16 @@ const problem = computed(() => {
         <ClanMon :src="enso" :size="96" color="var(--paper)" />
         <h1 id="game-result">{{ result.victory ? 'Victory' : 'Defeat' }}</h1>
         <p v-if="result.text">{{ result.text }}</p>
-        <RouterLink to="/" class="btn leave">Leave the game</RouterLink>
+        <!-- a guest is invited to keep their name: the introductory game is over -->
+        <div v-if="guest" class="invitation">
+          <p class="invitation-title">Stay at court, {{ guest.name }}</p>
+          <p>Create an account to keep your name and this game, and to play again from any browser.</p>
+          <div class="invitation-actions">
+            <RouterLink :to="{ name: 'signup' }" class="btn leave">Create an account</RouterLink>
+            <RouterLink to="/" class="btn-link">Leave the game</RouterLink>
+          </div>
+        </div>
+        <RouterLink v-else to="/" class="btn leave">Leave the game</RouterLink>
       </div>
     </div>
 
@@ -227,6 +239,43 @@ const problem = computed(() => {
 .ended p {
   font-size: 17px;
   color: #d8cdb8;
+}
+
+.invitation {
+  margin-top: 22px;
+  padding-top: 26px;
+  border-top: 1px solid rgba(244, 238, 226, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 560px;
+}
+
+.ended .invitation-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--paper);
+}
+
+.ended p {
+  line-height: 1.55;
+}
+
+.invitation-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.invitation-actions .leave {
+  margin-top: 0;
+}
+
+.invitation-actions .btn-link {
+  color: var(--paper);
 }
 
 .leave {
