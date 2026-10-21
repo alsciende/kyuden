@@ -6,6 +6,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
   stepOf,
   charactersInPlay,
+  gameEnded,
   gloryCount,
   locate,
   opponent,
@@ -14,6 +15,7 @@ import {
   sideSkill,
   skillOf,
   strongholdFate,
+  victoryText,
   viewer,
   type Cards,
 } from '@/lib/board'
@@ -37,7 +39,7 @@ const available = computed(() => new Set(props.game.available_actions))
 const me = computed(() => viewer(props.game))
 const opp = computed(() => opponent(props.game))
 
-const ended = computed(() => props.game.place === 'game_ended' || props.game.winner_id !== null)
+const ended = computed(() => gameEnded(props.game))
 
 const status = computed(() => {
   if (ended.value) {
@@ -194,7 +196,7 @@ const nothing = computed(
   <div class="actions">
     <div v-if="ended" class="result">
       <h2>{{ game.winner_id === me.id ? 'Victory' : 'Defeat' }}</h2>
-      <p v-if="game.victory_condition">{{ game.victory_condition.replaceAll('_', ' ') }}</p>
+      <p v-if="game.victory_condition">{{ victoryText(game) }}</p>
     </div>
 
     <div v-if="status" class="status" :class="{ mine: status.mine }"><span class="dot" />{{ status.text }}</div>
@@ -495,7 +497,6 @@ const nothing = computed(
 
 .result p {
   color: var(--ink-2);
-  text-transform: capitalize;
 }
 
 .aside {

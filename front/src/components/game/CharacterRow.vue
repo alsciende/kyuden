@@ -41,6 +41,7 @@ function click(id: string, selectable: string[] | null): void {
         :cards="cards"
         :mine="mine"
         :size="size"
+        :attachments="character.attachments"
         :selected="selectedIds.includes(character.card.id)"
         :muted="selectable !== null && !selectable.includes(character.card.id)"
         :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"

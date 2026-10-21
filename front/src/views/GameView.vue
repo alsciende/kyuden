@@ -11,14 +11,17 @@ import GameBoard from '@/components/game/GameBoard.vue'
 import GameSidebar from '@/components/game/GameSidebar.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerDialog from '@/components/game/PlayerDialog.vue'
+import TooltipLayer from '@/components/game/TooltipLayer.vue'
+import { gameEnded, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { hidePreview } from '@/lib/preview'
 import { emptySelection, toggle } from '@/lib/selection'
+import { hideTooltip } from '@/lib/tooltip'
 import { useGame } from '@/lib/useGame'
 
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
- * right. It follows the game through the Mercure hub.
+ * right. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result.
  */
 const route = useRoute()
 const { game, log, cards, loadError, error, sending, send, refresh } = useGame(String(route.params.id))
@@ -56,6 +59,19 @@ function open(id: string): void {
   openCardId.value = id
 }
 
+function reveal(id: string): void {
+  if (!sending.value) {
+    void send('reveal_dynasty_card', { card_id: id })
+  }
+}
+
+const ended = computed(() => game.value !== null && gameEnded(game.value))
+const result = computed(() =>
+  game.value === null
+    ? null
+    : { victory: game.value.winner_id === game.value.viewer_id, text: victoryText(game.value) },
+)
+
 function chooseRing(element: Element): void {
   selection.ring = selection.ring === element ? null : element
 }
@@ -80,6 +96,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   hidePreview()
+  hideTooltip()
 })
 
 const problem = computed(() => {
@@ -112,6 +129,7 @@ const problem = computed(() => {
       @province="chooseProvince"
       @attacker="selection.attackerIds = toggle(selection.attackerIds, $event)"
       @defender="selection.defenderIds = toggle(selection.defenderIds, $event)"
+      @reveal="reveal"
     />
     <GameSidebar
       :game="game"
@@ -125,7 +143,17 @@ const problem = computed(() => {
       @open-player="openPlayerId = $event"
     />
 
+    <div v-if="ended && result" class="ended" role="dialog" aria-labelledby="game-result">
+      <div class="ended-content">
+        <ClanMon :src="enso" :size="96" color="var(--paper)" />
+        <h1 id="game-result">{{ result.victory ? 'Victory' : 'Defeat' }}</h1>
+        <p v-if="result.text">{{ result.text }}</p>
+        <RouterLink to="/" class="btn leave">Leave the game</RouterLink>
+      </div>
+    </div>
+
     <CardPreview :cards="cards" :board-right="boardRight" />
+    <TooltipLayer />
 
     <CardDialog
       v-if="menu"
@@ -167,6 +195,45 @@ const problem = computed(() => {
   height: 100vh;
   overflow: hidden;
   background: var(--board);
+}
+
+.ended {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 340px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(31, 27, 22, 0.78);
+  color: var(--paper);
+  text-align: center;
+}
+
+.ended-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.ended h1 {
+  font-size: 72px;
+  line-height: 1;
+}
+
+.ended p {
+  font-size: 17px;
+  color: #d8cdb8;
+}
+
+.leave {
+  margin-top: 14px;
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--seal-ink);
 }
 
 .waiting {

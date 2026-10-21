@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { ConflictType, Element, GameView } from '@/api/game'
 import CharacterRow from '@/components/game/CharacterRow.vue'
@@ -11,6 +11,7 @@ import {
   cardsOf,
   charactersInPlay,
   conflictsLeft,
+  locate,
   opponent,
   provinces,
   rings,
@@ -19,13 +20,14 @@ import {
   viewer,
   type Cards,
 } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import type { Selection } from '@/lib/selection'
+import { vTip } from '@/lib/tooltip'
 
 /**
  * The board, laid out for the current step: what the player does not need now folds into a line, what they need
- * comes forward. Declaring a conflict shows the opponent's provinces, the rings and the characters; a conflict shows
- * its two sides.
+ * comes forward; a click on a line unfolds it until the next step. Declaring a conflict shows the opponent's
+ * provinces, the rings and the characters; a conflict shows its two sides.
  */
 const props = defineProps<{ game: GameView; cards: Cards; selection: Selection }>()
 
@@ -36,6 +38,7 @@ const emit = defineEmits<{
   province: [id: string]
   attacker: [id: string]
   defender: [id: string]
+  reveal: [id: string]
 }>()
 
 const available = computed(() => new Set(props.game.available_actions))
@@ -105,6 +108,47 @@ const myProvinceNames = computed(() =>
 const myIntact = computed(() => provinces(me.value).filter((province) => !province.broken).length)
 const oppIntact = computed(() => (opp.value ? provinces(opp.value).filter((province) => !province.broken).length : 0))
 
+/** the lines unfolded by the player, folded again at the next step */
+const unfolded = ref<string[]>([])
+
+watch(
+  () => props.game.place,
+  () => (unfolded.value = []),
+)
+
+function unfold(area: string): void {
+  unfolded.value = [...unfolded.value, area]
+}
+
+/** a line holding cards unfolds on a click beside them: a click on a card opens it */
+function unfoldStrip(event: MouseEvent, area: string): void {
+  if (!(event.target as HTMLElement).closest('.card')) {
+    unfold(area)
+  }
+}
+
+function fold(area: string): void {
+  unfolded.value = unfolded.value.filter((candidate) => candidate !== area)
+}
+
+/** while revealing the dynasty cards, a click on a face-down card of the viewer's provinces turns it face up */
+function openInMyProvinces(id: string): void {
+  if (props.game.place === 'reveal_facedown_dynasty_cards' && available.value.has('reveal_dynasty_card')) {
+    const located = locate(props.game, id)
+    if (
+      located?.player.id === me.value.id &&
+      located.stack.type === 'regular_province' &&
+      located.under !== null &&
+      located.card.orientation === 'face_down'
+    ) {
+      emit('reveal', id)
+
+      return
+    }
+  }
+  emit('open', id)
+}
+
 const candidates = computed(() => strongholdCandidates(me.value))
 const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province'))[0])
 </script>
@@ -166,6 +210,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
           <div class="rings">
             <div v-for="ring in ringChoices" :key="ring.element" class="ring-cell">
               <button
+                v-tip="ringTip(ring.element)"
                 type="button"
                 class="ring"
                 :class="[ring.status, { selected: selection.ring === ring.element }]"
@@ -229,25 +274,62 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
       </section>
 
       <div class="strips">
-        <div class="strip">
+        <section v-if="unfolded.includes('provinces')" class="zone" aria-label="Your provinces">
+          <span class="label"
+            ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces
+            <button type="button" class="btn-link fold" @click="fold('provinces')">Fold</button></span
+          >
+          <ProvinceRow :game="game" :player="me" :cards="cards" size="small" @open="emit('open', $event)" />
+        </section>
+        <button v-else type="button" class="strip" :aria-expanded="false" @click="unfold('provinces')">
           <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces</span>
           <span class="strip-text">{{ myProvinceNames }}</span>
-          <span class="strip-end">{{ myIntact }} intact</span>
-        </div>
-        <div class="strip">
+          <span class="strip-end">{{ myIntact }} intact <span class="chevron" aria-hidden="true">▾</span></span>
+        </button>
+
+        <section v-if="unfolded.includes('hand')" class="zone" aria-label="Your hand">
+          <span class="label"
+            >Hand · {{ hand.length }} cards · no action while declaring
+            <button type="button" class="btn-link fold" @click="fold('hand')">Fold</button></span
+          >
+          <div class="row dimmed">
+            <GameCard
+              v-for="card in hand"
+              :key="card.id"
+              :card="card"
+              :cards="cards"
+              :mine="true"
+              size="small"
+              @click="emit('open', card.id)"
+            />
+          </div>
+        </section>
+        <button v-else type="button" class="strip" :aria-expanded="false" @click="unfold('hand')">
           <span class="label">Hand</span>
           <span class="strip-text">{{ hand.length }} cards</span>
-          <span class="strip-end">No action while declaring</span>
-        </div>
+          <span class="strip-end">No action while declaring <span class="chevron" aria-hidden="true">▾</span></span>
+        </button>
       </div>
     </template>
 
     <!-- a conflict -->
     <template v-else-if="mode === 'conflict'">
-      <div class="strip">
+      <section v-if="unfolded.includes('opponent')" class="zone" aria-label="Opponent at home">
+        <span class="label"
+          ><PlayerChip :player="opp" :viewer-id="game.viewer_id" /> · at home and provinces
+          <button type="button" class="btn-link fold" @click="fold('opponent')">Fold</button></span
+        >
+        <div class="unfolded">
+          <ProvinceRow v-if="opp" :game="game" :player="opp" :cards="cards" size="small" @open="emit('open', $event)" />
+          <CharacterRow :characters="oppHome" :cards="cards" :mine="false" @open="emit('open', $event)" />
+        </div>
+      </section>
+      <div v-else class="strip" @click="unfoldStrip($event, 'opponent')">
         <span class="label"><PlayerChip :player="opp" :viewer-id="game.viewer_id" /> · at home</span>
         <CharacterRow :characters="oppHome" :cards="cards" :mine="false" size="small" @open="emit('open', $event)" />
-        <span class="strip-end">{{ oppIntact }} provinces intact</span>
+        <button type="button" class="strip-end strip-toggle" :aria-expanded="false">
+          {{ oppIntact }} provinces intact <span class="chevron" aria-hidden="true">▾</span>
+        </button>
       </div>
 
       <ConflictField :game="game" :cards="cards" @open="emit('open', $event)" />
@@ -267,10 +349,22 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
           @select="emit('defender', $event)"
         />
       </section>
-      <div v-else class="strip">
+      <section v-else-if="unfolded.includes('me')" class="zone" aria-label="You at home">
+        <span class="label"
+          ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home and provinces
+          <button type="button" class="btn-link fold" @click="fold('me')">Fold</button></span
+        >
+        <div class="unfolded">
+          <CharacterRow :characters="myHome" :cards="cards" :mine="true" @open="emit('open', $event)" />
+          <ProvinceRow :game="game" :player="me" :cards="cards" size="small" @open="emit('open', $event)" />
+        </div>
+      </section>
+      <div v-else class="strip" @click="unfoldStrip($event, 'me')">
         <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home</span>
         <CharacterRow :characters="myHome" :cards="cards" :mine="true" size="small" @open="emit('open', $event)" />
-        <span class="strip-end">{{ myIntact }} provinces intact</span>
+        <button type="button" class="strip-end strip-toggle" :aria-expanded="false">
+          {{ myIntact }} provinces intact <span class="chevron" aria-hidden="true">▾</span>
+        </button>
       </div>
 
       <section class="zone hand" aria-label="Your hand">
@@ -314,7 +408,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
       <section class="zone" aria-label="Your provinces">
         <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces</span>
-        <ProvinceRow :game="game" :player="me" :cards="cards" @open="emit('open', $event)" />
+        <ProvinceRow :game="game" :player="me" :cards="cards" @open="openInMyProvinces" />
       </section>
 
       <section class="zone hand" aria-label="Your hand">
@@ -574,5 +668,47 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 .strip-end {
   margin-left: auto;
   white-space: nowrap;
+}
+
+button.strip,
+div.strip {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.strip:hover {
+  border-color: var(--ink-3);
+  background: var(--paper-2);
+}
+
+.strip-toggle {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chevron {
+  margin-left: 6px;
+}
+
+.fold {
+  margin-left: 10px;
+  padding: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.unfolded {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 18px 36px;
 }
 </style>

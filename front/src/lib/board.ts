@@ -276,6 +276,45 @@ const OPPORTUNITY_PLACES = [
   'react_to_ring_claim',
 ]
 
+/** the steps of a conflict once its result is determined, until it ends */
+const RESULT_PLACES = [
+  'react_to_conflict_result',
+  'apply_unopposed',
+  'break_province',
+  'react_to_broken_province',
+  'resolve_ring_effects',
+  'claim_ring',
+  'react_to_ring_claim',
+  'return_home',
+  'conflict_ends',
+]
+
+/** whether the result of the conflict being resolved is determined */
+export function conflictResolved(game: GameView): boolean {
+  return game.conflict !== null && RESULT_PLACES.includes(game.place ?? '')
+}
+
+export function gameEnded(game: GameView): boolean {
+  return game.place === 'game_ended' || game.winner_id !== null
+}
+
+/** how the game was won, from the point of view of the viewer */
+export function victoryText(game: GameView): string {
+  const won = game.winner_id === game.viewer_id
+  switch (game.victory_condition) {
+    case 'honor_win':
+      return won ? 'You reached 25 honor.' : 'The opponent reached 25 honor.'
+    case 'honor_loss':
+      return won ? 'The opponent has no honor left.' : 'You have no honor left.'
+    case 'stronghold_province_broken':
+      return won ? "You broke the opponent's stronghold province." : 'The opponent broke your stronghold province.'
+    case 'concession':
+      return won ? 'The opponent conceded.' : 'You conceded.'
+    default:
+      return ''
+  }
+}
+
 /** whether a player has passed in the current step (the flag of an earlier step is not reset until the next one) */
 export function hasPassed(game: GameView, player: PlayerView): boolean {
   return player.passed && OPPORTUNITY_PLACES.includes(game.place ?? '')
@@ -354,7 +393,7 @@ export function hasSkill(card: Card | undefined, type: ConflictType): boolean {
  * The current skill of a character: the one recorded by the players, else the printed skill with the bonuses of its
  * attachments and its personal honor (glory added when honored, subtracted when dishonored), at least 0.
  */
-export function skillOf(character: Character, cards: Cards, type: ConflictType): number {
+export function skillOf(character: Pick<Character, 'card' | 'attachments'>, cards: Cards, type: ConflictType): number {
   const recorded = type === 'military' ? character.card.military_skill : character.card.political_skill
   if (recorded !== null) {
     return recorded
@@ -376,6 +415,28 @@ export function skillOf(character: Character, cards: Cards, type: ConflictType):
   }
 
   return Math.max(0, skill)
+}
+
+export interface ShownSkill {
+  /** null for a character without that skill (a dash) */
+  value: number | null
+  /** recorded by a player (`SetCharacterSkill`), else computed by the client from the cards */
+  recorded: boolean
+}
+
+/** the skill shown on a character: the one recorded by the players, else the one computed from the cards */
+export function shownSkill(
+  character: Pick<Character, 'card' | 'attachments'>,
+  cards: Cards,
+  type: ConflictType,
+): ShownSkill {
+  const recorded = type === 'military' ? character.card.military_skill : character.card.political_skill
+  if (recorded !== null) {
+    return { value: recorded, recorded: true }
+  }
+  const card = character.card.code ? cards[character.card.code] : undefined
+
+  return { value: hasSkill(card, type) ? skillOf(character, cards, type) : null, recorded: false }
 }
 
 /** the total skill of the participating characters among `ids` */

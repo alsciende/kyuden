@@ -2,9 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
 
 import type { GameView, LoggedMessage } from '@/api/game'
+import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import type { Cards } from '@/lib/board'
-import { entryText } from '@/lib/logText'
 
 /**
  * The whole log of the game, over the sidebar: each message handled, by whom, and what it changed.
@@ -20,7 +20,7 @@ const messages = computed(() =>
     version: message.version,
     player: props.game.players.find((player) => player.id === message.player_id),
     type: message.type.replaceAll('_', ' '),
-    lines: message.entries.map((entry) => entryText(entry, props.game, props.cards)),
+    entries: message.entries,
   })),
 )
 
@@ -52,7 +52,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <PlayerChip v-if="message.player" :player="message.player" :viewer-id="game.viewer_id" short />
           <span class="type">{{ message.type }}</span>
         </div>
-        <p v-for="(line, index) in message.lines" :key="index">{{ line }}</p>
+        <LogLine v-for="(entry, index) in message.entries" :key="index" :entry="entry" :game="game" :cards="cards" />
       </li>
     </ol>
   </aside>

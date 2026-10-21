@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { entryText } from '@/lib/logText'
+import { entryParts, entryText } from '@/lib/logText'
 
 import { game, player, printed } from './gameFixture'
 
@@ -53,5 +53,35 @@ describe('entryText', () => {
     expect(entryText({ template: 'The conflict phase begins', params: [] }, view, cards)).toBe(
       'The conflict phase begins',
     )
+  })
+})
+
+describe('entryParts', () => {
+  it('puts the cards apart with their code, to show their image', () => {
+    const parts = entryParts(
+      {
+        template: '{player} plays {card} and discards {cards}',
+        params: {
+          player: { type: 'player', id: 'opp' },
+          card: { type: 'card', id: 'c', code: 'kaezin' },
+          cards: {
+            type: 'list',
+            items: [
+              { type: 'card', id: 'd', code: null },
+              { type: 'card', id: 'e', code: 'kaezin' },
+            ],
+          },
+        },
+      },
+      view,
+      cards,
+    )
+
+    expect(parts).toEqual([
+      { text: 'Opp. plays ', code: null },
+      { text: 'Kakita Kaezin', code: 'kaezin' },
+      { text: ' and discards a hidden card, ', code: null },
+      { text: 'Kakita Kaezin', code: 'kaezin' },
+    ])
   })
 })

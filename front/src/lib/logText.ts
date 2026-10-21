@@ -58,7 +58,28 @@ function secondPerson(verb: string): string {
   return verb.endsWith('s') ? verb.slice(0, -1) : verb
 }
 
-export function entryText(entry: LogEntry, game: GameView, cards: Cards): string {
+/** a piece of the text of an entry: a card names its code, so that its image can be shown */
+export interface TextPart {
+  text: string
+  code: string | null
+}
+
+function paramParts(param: LogParam, game: GameView, cards: Cards): TextPart[] {
+  if (param.type === 'card' && param.code !== null) {
+    return [{ text: paramText(param, game, cards), code: param.code }]
+  }
+  if (param.type === 'list' && param.items.length > 0) {
+    return param.items.flatMap((item, index) => [
+      ...(index > 0 ? [{ text: ', ', code: null }] : []),
+      ...paramParts(item, game, cards),
+    ])
+  }
+
+  return [{ text: paramText(param, game, cards), code: null }]
+}
+
+/** the text of an entry, in pieces: the cards apart, the rest merged */
+export function entryParts(entry: LogEntry, game: GameView, cards: Cards): TextPart[] {
   const params = Array.isArray(entry.params) ? {} : entry.params
   let template = entry.template
 
@@ -72,9 +93,33 @@ export function entryText(entry: LogEntry, game: GameView, cards: Cards): string
     )
   }
 
-  return template.replace(/\{(\w+)\}/g, (placeholder, name: string) => {
-    const param = params[name]
+  const parts: TextPart[] = []
+  const push = (part: TextPart) => {
+    const last = parts.at(-1)
+    if (part.code === null && last !== undefined && last.code === null) {
+      last.text += part.text
+    } else if (part.text !== '') {
+      parts.push({ ...part })
+    }
+  }
+  let index = 0
+  for (const match of template.matchAll(/\{(\w+)\}/g)) {
+    push({ text: template.slice(index, match.index), code: null })
+    const param = params[match[1]!]
+    if (param === undefined) {
+      push({ text: match[0], code: null })
+    } else {
+      paramParts(param, game, cards).forEach(push)
+    }
+    index = match.index + match[0].length
+  }
+  push({ text: template.slice(index), code: null })
 
-    return param === undefined ? placeholder : paramText(param, game, cards)
-  })
+  return parts
+}
+
+export function entryText(entry: LogEntry, game: GameView, cards: Cards): string {
+  return entryParts(entry, game, cards)
+    .map((part) => part.text)
+    .join('')
 }

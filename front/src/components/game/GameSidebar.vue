@@ -3,11 +3,12 @@ import { computed } from 'vue'
 
 import type { GameView, LoggedMessage } from '@/api/game'
 import ActionPanel from '@/components/game/ActionPanel.vue'
+import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import { PHASES, conflictsLeft, hasPassed, playerById, rings, stackOf, stepOf, type Cards } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
-import { entryText } from '@/lib/logText'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import type { Selection } from '@/lib/selection'
+import { vTip } from '@/lib/tooltip'
 
 /**
  * The bar on the right of the board: the step of the round, what the player does in it, then the state of the game
@@ -63,12 +64,7 @@ const RING_STATUS = { unclaimed: '', contested: 'Contested', yours: 'You', their
 const favorHolder = computed(() => playerById(props.game, props.game.imperial_favor_holder_id))
 
 /** the last lines of the log */
-const tail = computed(() =>
-  props.log
-    .flatMap((message) => message.entries)
-    .slice(-3)
-    .map((entry) => entryText(entry, props.game, props.cards)),
-)
+const tail = computed(() => props.log.flatMap((message) => message.entries).slice(-3))
 </script>
 
 <template>
@@ -141,9 +137,11 @@ const tail = computed(() =>
       <div class="ring-list">
         <div v-for="ring in ringList" :key="ring.element" class="ring-cell">
           <div
+            v-tip="ringTip(ring.element)"
             class="ring"
             :class="ring.status"
             role="img"
+            tabindex="0"
             :aria-label="`${ELEMENT_NAMES[ring.element]} ring, ${ring.status === 'unclaimed' ? `unclaimed, ${ring.fate} fate` : ring.status === 'contested' ? 'contested' : ring.status === 'yours' ? 'claimed by you' : 'claimed by the opponent'}`"
           >
             <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
@@ -172,7 +170,7 @@ const tail = computed(() =>
         <span class="label">Log</span>
         <button type="button" class="btn-link" @click="$emit('openLog')">Show all</button>
       </div>
-      <p v-for="(line, index) in tail" :key="index">{{ line }}</p>
+      <LogLine v-for="(entry, index) in tail" :key="index" :entry="entry" :game="game" :cards="cards" />
     </section>
   </aside>
 </template>

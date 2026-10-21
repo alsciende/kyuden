@@ -4,13 +4,14 @@ import { computed, useTemplateRef } from 'vue'
 import type { CardView } from '@/api/game'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
-import { hasSkill, printed, type Cards } from '@/lib/board'
+import { printed, shownSkill, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS } from '@/lib/icons'
 import { hidePreview, showPreview } from '@/lib/preview'
 
 /**
  * A card on the board: its face (name, type, values) when the viewer sees it, its back otherwise. A bowed card lies
- * sideways; fate and personal honor are marked on it. Hovering it shows its image beside it.
+ * sideways; fate and personal honor are marked on it. Hovering it shows its image beside it. A character shows its
+ * current skills: recorded by a player (solid), else computed from the cards (dotted underline, nobody recorded them).
  */
 const props = withDefaults(
   defineProps<{
@@ -25,8 +26,10 @@ const props = withDefaults(
     tag?: string | null
     /** the cost of a character instead of its glory: in a province, to be played */
     showCost?: boolean
+    /** the attachments of a character in play, which change its skills */
+    attachments?: CardView[]
   }>(),
-  { size: 'normal', selected: false, muted: false, tag: null, showCost: false },
+  { size: 'normal', selected: false, muted: false, tag: null, showCost: false, attachments: () => [] },
 )
 
 defineEmits<{ click: [] }>()
@@ -47,16 +50,20 @@ const skills = computed(() => {
   if (!isCharacter.value || card === undefined) {
     return null
   }
-  const skill = (type: 'military' | 'political', recorded: number | null) =>
-    recorded ?? (hasSkill(card, type) ? printed(card[type]) : '–')
+  const character = { card: props.card, attachments: props.attachments }
 
   return {
-    military: skill('military', props.card.military_skill),
-    political: skill('political', props.card.political_skill),
+    military: shownSkill(character, props.cards, 'military'),
+    political: shownSkill(character, props.cards, 'political'),
     glory: printed(card.glory),
-    recorded: props.card.military_skill !== null || props.card.political_skill !== null,
   }
 })
+
+function skillLabel(type: string, skill: { value: number | null; recorded: boolean }): string {
+  return skill.value === null
+    ? `no ${type} skill`
+    : `${type} ${skill.value} (${skill.recorded ? 'recorded' : 'computed'})`
+}
 
 const corner = computed(() => {
   const card = printedCard.value
@@ -81,6 +88,9 @@ const label = computed(() => {
     return 'Face-down card'
   }
   const parts = [printedCard.value?.name ?? 'Card']
+  if (skills.value) {
+    parts.push(skillLabel('military', skills.value.military), skillLabel('political', skills.value.political))
+  }
   if (bowed.value) {
     parts.push('bowed')
   }
@@ -127,16 +137,22 @@ function enter(): void {
     <template v-else>
       <span class="name">{{ printedCard?.name ?? '…' }}</span>
       <span class="kind">{{ secret ? 'Face down' : broken ? 'Broken' : (printedCard?.type ?? '') }}</span>
-      <span v-if="skills" class="stats" :class="{ recorded: skills.recorded }">
+      <span v-if="skills" class="stats">
         <span
+          class="skill"
+          :class="{ recorded: skills.military.recorded, computed: !skills.military.recorded }"
+          :title="skills.military.recorded ? 'Recorded by a player' : 'Computed from the cards, not recorded'"
           ><span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.military }}</span
-          >{{ skills.military }}</span
+          ><span class="value">{{ skills.military.value ?? '–' }}</span></span
         >
         <span v-if="showCost && printedCard?.cost !== null" class="cost">{{ printedCard?.cost }}</span>
         <span v-else class="glory">{{ skills.glory }}</span>
         <span
+          class="skill"
+          :class="{ recorded: skills.political.recorded, computed: !skills.political.recorded }"
+          :title="skills.political.recorded ? 'Recorded by a player' : 'Computed from the cards, not recorded'"
           ><span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.political }}</span
-          >{{ skills.political }}</span
+          ><span class="value">{{ skills.political.value ?? '–' }}</span></span
         >
       </span>
       <span v-else-if="corner" class="stats"
@@ -272,7 +288,12 @@ function enter(): void {
   margin-right: 2px;
 }
 
-.stats.recorded {
+.skill.computed .value {
+  text-decoration: underline dotted var(--ink-3);
+  text-underline-offset: 2px;
+}
+
+.skill.recorded {
   color: var(--seal);
 }
 

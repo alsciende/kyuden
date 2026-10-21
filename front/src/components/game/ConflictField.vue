@@ -2,14 +2,26 @@
 import { computed } from 'vue'
 
 import type { GameView } from '@/api/game'
+import CardName from '@/components/game/CardName.vue'
 import CharacterRow from '@/components/game/CharacterRow.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
-import { charactersInPlay, locate, opponent, provinceStrength, sideSkill, viewer, type Cards } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import {
+  charactersInPlay,
+  conflictResolved,
+  locate,
+  opponent,
+  provinceStrength,
+  sideSkill,
+  viewer,
+  type Cards,
+} from '@/lib/board'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } from '@/lib/icons'
+import { vTip } from '@/lib/tooltip'
 
 /**
  * The conflict being resolved: the contested ring and province, the participating characters of the opponent above
- * those of the viewer, and the skill of each side (declared, else computed from the cards).
+ * those of the viewer, and the skill of each side (declared, else computed from the cards). Once its result is
+ * determined: the winner, the broken province, then the effect of the ring.
  */
 const props = defineProps<{ game: GameView; cards: Cards }>()
 
@@ -47,9 +59,43 @@ const province = computed(() => {
   const strength = conflict.value.province_strengths[id] ?? provinceStrength(props.game, props.cards, id)
 
   return {
+    code: card?.code ?? null,
     name: card?.code ? (props.cards[card.code]?.name ?? 'a province') : 'a face-down province',
     strength: card?.code ? strength : null,
+    broken: conflict.value.broken_province_ids.includes(id),
   }
+})
+
+const resolved = computed(() => conflictResolved(props.game))
+
+const result = computed(() => {
+  const winner = conflict.value.winner_id
+  const text = winner === null ? 'No winner' : winner === me.value.id ? 'You won' : 'The opponent won'
+  const note = province.value.broken
+    ? attacking.value
+      ? 'You broke the province'
+      : 'The opponent broke your province'
+    : winner === null
+      ? 'Nobody claims the ring'
+      : ''
+
+  return { text, note, mine: winner === me.value.id }
+})
+
+/** the effect of the ring, once the attacker may resolve it */
+const ringEffect = computed(() => {
+  if (props.game.place !== 'resolve_ring_effects') {
+    return null
+  }
+  const attackerWon = conflict.value.winner_id === conflict.value.attacking_player_id
+  let who = 'The attacker did not win the conflict: no ring effect.'
+  if (attackerWon) {
+    who = attacking.value
+      ? 'You may resolve it: click the cards or open the player it concerns, then pass.'
+      : 'The opponent may resolve it.'
+  }
+
+  return { text: RING_EFFECTS[conflict.value.ring], who, active: attackerWon }
 })
 
 const outcome = computed(() => {
@@ -81,7 +127,13 @@ const outcome = computed(() => {
       </div>
 
       <div class="contest">
-        <div class="ring" role="img" :aria-label="`${ELEMENT_NAMES[conflict.ring]} ring`">
+        <div
+          v-tip="ringTip(conflict.ring)"
+          class="ring"
+          role="img"
+          tabindex="0"
+          :aria-label="`${ELEMENT_NAMES[conflict.ring]} ring`"
+        >
           <span class="icon">{{ ELEMENT_ICONS[conflict.ring] }}</span>
         </div>
         <div class="contest-text">
@@ -90,10 +142,19 @@ const outcome = computed(() => {
             <span class="capitalize">{{ conflict.type }}</span> conflict for the {{ ELEMENT_NAMES[conflict.ring] }} ring
           </h2>
           <p>
-            {{ attacking ? 'You attack' : 'The opponent attacks' }} {{ province.name
-            }}<template v-if="province.strength !== null">, strength {{ province.strength }}</template>
+            {{ attacking ? 'You attack' : 'The opponent attacks' }}
+            <CardName v-if="province.code" :code="province.code" :above="false">{{ province.name }}</CardName
+            ><template v-else>{{ province.name }}</template
+            ><template v-if="province.broken">, broken</template
+            ><template v-else-if="province.strength !== null">, strength {{ province.strength }}</template>
           </p>
         </div>
+      </div>
+
+      <div v-if="ringEffect" class="effect" :class="{ inactive: !ringEffect.active }">
+        <span class="label">{{ ELEMENT_NAMES[conflict.ring] }} ring effect</span>
+        <p class="effect-text">{{ ringEffect.text }}</p>
+        <p class="effect-who">{{ ringEffect.who }}</p>
       </div>
 
       <div class="side">
@@ -109,7 +170,11 @@ const outcome = computed(() => {
         <span class="total muted">{{ top.skill }}</span>
         <span class="label">{{ top.declared ? 'Declared' : conflict.type }} skill</span>
       </div>
-      <div class="lead">
+      <div v-if="resolved" class="lead">
+        <span class="result-text" :class="{ leading: result.mine }">{{ result.text }}</span>
+        <span v-if="result.note" class="note">{{ result.note }}</span>
+      </div>
+      <div v-else class="lead">
         <span class="lead-text" :class="{ leading: outcome.leading }">{{ outcome.text }}</span>
         <span v-if="outcome.note" class="note">{{ outcome.note }}</span>
       </div>
@@ -240,8 +305,41 @@ h2 {
   color: var(--ink-2);
 }
 
-.lead-text.leading {
+.lead-text.leading,
+.result-text.leading {
   color: var(--seal);
+}
+
+.result-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.effect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--seal);
+  background: var(--paper-2);
+}
+
+.effect.inactive {
+  border-left-color: var(--line);
+  color: var(--ink-3);
+}
+
+.effect-text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.effect-who {
+  font-size: 13px;
+  color: var(--ink-2);
 }
 
 .note {

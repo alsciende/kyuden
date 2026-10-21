@@ -2,16 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import {
   charactersInPlay,
+  conflictResolved,
   conflictsLeft,
   gloryCount,
   locate,
   provinceStrength,
   provinces,
   rings,
+  shownSkill,
   sideSkill,
   skillOf,
   stepOf,
   strongholdFate,
+  victoryText,
   visibleCodes,
 } from '@/lib/board'
 
@@ -82,6 +85,18 @@ describe('skills', () => {
     const me = player('me', [stack('in_play', [card('samurai', { military_skill: 7 }), card('katana')])])
 
     expect(skillOf(charactersInPlay(me)[0]!, cards, 'military')).toBe(7)
+  })
+
+  it('shows the skill recorded, else the one computed, and no skill for a dash', () => {
+    const me = player('me', [
+      stack('in_play', [card('samurai', { political_skill: 6 }), card('katana')]),
+      stack('in_play', [card('courtier')]),
+    ])
+    const [samurai, courtier] = charactersInPlay(me)
+
+    expect(shownSkill(samurai!, cards, 'military')).toEqual({ value: 4, recorded: false })
+    expect(shownSkill(samurai!, cards, 'political')).toEqual({ value: 6, recorded: true })
+    expect(shownSkill(courtier!, cards, 'military')).toEqual({ value: null, recorded: false })
   })
 
   it('sums the ready characters of a side', () => {
@@ -171,6 +186,41 @@ describe('the state of the game', () => {
   it('tells the conflicts a player may still declare', () => {
     expect(conflictsLeft(player('me', [], { declared_conflict_types: ['political'] }))).toEqual(['military'])
     expect(conflictsLeft(player('me', [], { conflict_opportunities: 0 }))).toEqual([])
+  })
+
+  it('tells when the result of the conflict is determined', () => {
+    const conflict = {
+      attacking_player_id: 'me',
+      defending_player_id: 'opp',
+      ring: 'fire' as const,
+      type: 'military' as const,
+      province_id: 'p',
+      attacked_province_ids: ['p'],
+      attacker_ids: [],
+      defender_ids: [],
+      evaded_ids: [],
+      attacker_skill: 3,
+      defender_skill: 1,
+      province_strengths: {},
+      winner_id: 'me',
+      broken_province_ids: [],
+    }
+
+    expect(conflictResolved(game(player('me'), player('opp'), { place: 'conflict_action_window', conflict }))).toBe(
+      false,
+    )
+    expect(conflictResolved(game(player('me'), player('opp'), { place: 'resolve_ring_effects', conflict }))).toBe(true)
+    expect(conflictResolved(game(player('me'), player('opp'), { place: 'resolve_ring_effects' }))).toBe(false)
+  })
+
+  it('tells how the game was won, from the point of view of the viewer', () => {
+    const ended = (winner_id: string, victory_condition: string) =>
+      victoryText(game(player('me'), player('opp'), { place: 'game_ended', winner_id, victory_condition }))
+
+    expect(ended('me', 'honor_win')).toBe('You reached 25 honor.')
+    expect(ended('opp', 'honor_loss')).toBe('You have no honor left.')
+    expect(ended('me', 'stronghold_province_broken')).toBe("You broke the opponent's stronghold province.")
+    expect(ended('opp', 'concession')).toBe('You conceded.')
   })
 
   it('names the step of the round of a place', () => {

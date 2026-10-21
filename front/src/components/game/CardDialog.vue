@@ -337,6 +337,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <button type="submit" class="btn btn-ghost set" :disabled="sending">Set</button>
         </div>
         <span class="hint">
+          {{ recorded ? 'Recorded by a player.' : 'Computed from the cards: nobody has recorded it.' }}
           Every modifier applied, for both players to see.
           <button
             v-if="recorded"
