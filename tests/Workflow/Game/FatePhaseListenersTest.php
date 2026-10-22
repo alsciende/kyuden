@@ -38,7 +38,8 @@ class FatePhaseListenersTest extends AbstractKernelTestCase
                 ->inPlay(['toturi' => '01-akodo-toturi'], bowed: true, fate: 2)
                 ->inPlay(['hotaru' => '01-doji-hotaru'])
                 ->province('01-entrenched-position', as: 'broken', orientation: Orientation::UpsideDown, dynasty: '01-akodo-toturi', dynastyAs: 'in-broken', dynastyFaceup: true)
-                ->province('01-entrenched-position', orientation: Orientation::FaceUp, dynasty: '01-doji-hotaru', dynastyAs: 'in-unbroken', dynastyFaceup: true))
+                ->province('01-entrenched-position', orientation: Orientation::FaceUp, dynasty: '01-doji-hotaru', dynastyAs: 'in-unbroken', dynastyFaceup: true)
+                ->dynastyDeck(['refill' => '01-doji-hotaru']))
             ->withPlayer('jane')
             ->ring(Element::Air, fate: 1)
             ->ring(Element::Fire, fate: 2, claimedBy: 'jane')
@@ -106,7 +107,7 @@ class FatePhaseListenersTest extends AbstractKernelTestCase
         self::assertSame(Orientation::FaceUp, $scenario->card('stronghold')->getOrientation());
     }
 
-    public function testFaceupCardsInBrokenProvincesAreDiscarded(): void
+    public function testFaceupCardsInBrokenProvincesAreDiscardedAndTheProvincesRefilled(): void
     {
         $scenario = $this->scenarioInFatePhase();
 
@@ -114,6 +115,8 @@ class FatePhaseListenersTest extends AbstractKernelTestCase
 
         self::assertSame(DynastyCard::STATE_DISCARD_PILE, $scenario->card('in-broken')->getCurrentPlace());
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEUP, $scenario->card('in-unbroken')->getCurrentPlace());
+        self::assertSame($scenario->card('broken')->getStack(), $scenario->card('refill')->getStack());
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('refill')->getCurrentPlace());
     }
 
     public function testClaimedRingsReturnToTheUnclaimedRingPool(): void

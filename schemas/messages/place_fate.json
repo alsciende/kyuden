@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "place_fate",
+    "description": "Places fate from the general token pool on a character in play (e.g. \"place 1 fate on that character\").\n\nThe character can belong to any player: effects often target an opponent's character. Fate taken from a fate pool is not placed this way: the fate spent from the pool is not moved yet.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character in play the fate is placed on.",
+            "type": "string"
+        },
+        "amount": {
+            "description": "Fate placed.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "amount"
+    ],
+    "additionalProperties": false
+}

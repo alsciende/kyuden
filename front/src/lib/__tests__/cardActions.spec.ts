@@ -9,6 +9,7 @@ const EFFECTS = [
   'ready_card',
   'honor_character',
   'dishonor_character',
+  'place_fate',
   'remove_fate',
   'move_home',
   'move_to_conflict',
@@ -47,6 +48,7 @@ describe('cardMenu', () => {
       'bow_card',
       'honor_character',
       'dishonor_character',
+      'place_fate',
       'remove_fate',
     ])
     expect(menu.skill).toBe(true)
@@ -60,7 +62,7 @@ describe('cardMenu', () => {
     const menu = cardMenu(view, cards, kaezin.id)!
 
     expect(menu.mine).toBe(false)
-    expect(menu.state.map((action) => action.type)).toEqual(['ready_card', 'dishonor_character'])
+    expect(menu.state.map((action) => action.type)).toEqual(['ready_card', 'dishonor_character', 'place_fate'])
   })
 
   it('sends a participating character home and moves the others to the conflict', () => {

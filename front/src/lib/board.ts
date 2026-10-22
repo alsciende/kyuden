@@ -164,7 +164,7 @@ const STEPS: Record<string, Step> = {
     phase: 'dynasty',
     title: 'Play cards from your provinces',
     help: 'Pay the cost of a character to bring it into play, or pass. The first player to pass gains 1 fate.',
-    hint: 'Click a character in your provinces to play it, then an empty province to refill it.',
+    hint: 'Click a character in your provinces to play it: its province is refilled.',
   },
   honor_bid: {
     phase: 'draw',
@@ -254,8 +254,8 @@ const STEPS: Record<string, Step> = {
   discard_from_provinces: {
     phase: 'fate',
     title: 'Discard from your provinces',
-    help: 'Discard the face up dynasty cards you do not want, refill your provinces, then pass.',
-    hint: 'Click a dynasty card to discard it, or an empty province to refill it.',
+    help: 'Discard the face up dynasty cards you do not want, then pass. Your provinces are refilled.',
+    hint: 'Click a dynasty card to discard it.',
   },
   game_ended: { phase: null, title: 'The game is over', help: '' },
 }

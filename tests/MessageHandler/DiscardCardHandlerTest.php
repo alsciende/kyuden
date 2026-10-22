@@ -12,6 +12,7 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 use Symfony\Component\Workflow\Exception\NotEnabledTransitionException;
+use Symfony\Component\Workflow\Registry;
 
 class DiscardCardHandlerTest extends AbstractKernelTestCase
 {
@@ -21,7 +22,8 @@ class DiscardCardHandlerTest extends AbstractKernelTestCase
             ->atPlace('react_to_broken_province')
             ->withPlayer('john')
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
-                ->province('01-entrenched-position', dynasty: '01-akodo-toturi', dynastyAs: 'toturi')
+                ->province('01-entrenched-position', as: 'province', dynasty: '01-akodo-toturi', dynastyAs: 'toturi')
+                ->dynastyDeck(['refill' => '01-doji-hotaru'])
                 ->hand(['katana' => '01-fine-katana'])
                 ->conflictDiscardPile(['banzai' => '01-banzai']))
             ->persist();
@@ -43,6 +45,29 @@ class DiscardCardHandlerTest extends AbstractKernelTestCase
         $this->discard($scenario, 'toturi');
 
         self::assertSame(DynastyCard::STATE_DISCARD_PILE, $scenario->card('toturi')->getCurrentPlace());
+    }
+
+    public function testAProvinceADynastyCardIsDiscardedFromIsRefilledFacedown(): void
+    {
+        $scenario = $this->scenarioWithCards();
+
+        $this->discard($scenario, 'toturi');
+
+        self::assertSame($scenario->card('province')->getStack(), $scenario->card('refill')->getStack());
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('refill')->getCurrentPlace());
+    }
+
+    public function testAProvinceIsNotRefilledWhileADynastyCardRemainsOnIt(): void
+    {
+        $scenario = $this->scenarioWithCards();
+        // a second card on the province, as a holding can be
+        self::service(Registry::class)->get($scenario->card('refill'))->apply($scenario->card('refill'), 'draw_card', [
+            'stack' => $scenario->card('province')->getStack(),
+        ]);
+
+        $this->discard($scenario, 'toturi');
+
+        self::assertCount(2, $scenario->card('province')->getStack()->getCards());
     }
 
     public function testAnyPlayerDiscardsACardFromHand(): void

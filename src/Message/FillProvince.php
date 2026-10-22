@@ -8,8 +8,8 @@ use App\Attribute\AppAction;
 use App\Attribute\Description;
 
 /**
- * Puts the top card of the dynasty deck of its owner face down on a province: during setup, and whenever a card has
- * left the province.
+ * Puts the top card of the dynasty deck of its owner face down on a province, for the effects that fill a province: a
+ * province a dynasty card has left (played, discarded) is refilled by the engine.
  */
 #[AppAction]
 final readonly class FillProvince implements PlayerActionInterface

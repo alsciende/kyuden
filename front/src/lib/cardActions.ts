@@ -199,6 +199,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (view.personal_honor !== 'dishonored') {
           add(menu.state, 'dishonor_character', 'Dishonor')
         }
+        add(menu.state, 'place_fate', 'Place 1 fate', { card_id: id, amount: 1 })
         if (view.fate > 0) {
           add(menu.state, 'remove_fate', 'Remove 1 fate', { card_id: id, amount: 1 })
         }

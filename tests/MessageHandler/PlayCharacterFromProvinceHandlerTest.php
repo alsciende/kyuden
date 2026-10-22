@@ -30,7 +30,8 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->fate(7)
                 ->province('01-entrenched-position', as: 'province', dynasty: '01-akodo-toturi', dynastyAs: 'toturi', dynastyFaceup: $faceup)
-                ->province('01-entrenched-position', dynasty: '01-imperial-storehouse', dynastyAs: 'storehouse', dynastyFaceup: true))
+                ->province('01-entrenched-position', dynasty: '01-imperial-storehouse', dynastyAs: 'storehouse', dynastyFaceup: true)
+                ->dynastyDeck(['refill' => '01-doji-hotaru']))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->province('01-entrenched-position', dynasty: '01-doji-hotaru', dynastyAs: 'hotaru', dynastyFaceup: true))
             ->activePlayer('john')
@@ -72,15 +73,24 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
         self::assertSame(2, self::service(CardStateManager::class)->getState($scenario->card('toturi'))->getFate());
     }
 
-    public function testThePlayerKeepsTheOpportunityToActAndTheProvinceIsNotRefilled(): void
+    public function testThePlayerKeepsTheOpportunityToAct(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces();
 
         $this->play($scenario, 'toturi');
 
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('john')));
-        self::assertCount(1, $scenario->card('province')->getStack()->getCards());
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
+    }
+
+    public function testTheProvinceIsRefilledFacedown(): void
+    {
+        $scenario = $this->scenarioAtPlayCardsFromProvinces();
+
+        $this->play($scenario, 'toturi');
+
+        self::assertSame($scenario->card('province')->getStack(), $scenario->card('refill')->getStack());
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('refill')->getCurrentPlace());
     }
 
     public function testRejectsAPlayerWhoCannotPay(): void

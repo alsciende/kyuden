@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "fill_province",
-    "description": "Puts the top card of the dynasty deck of its owner face down on a province: during setup, and whenever a card has left the province.",
+    "description": "Puts the top card of the dynasty deck of its owner face down on a province, for the effects that fill a province: a province a dynasty card has left (played, discarded) is refilled by the engine.",
     "type": "object",
     "properties": {
         "province_id": {

@@ -23,6 +23,7 @@ use App\Message\PlayCharacterFromHand;
 use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayInterruptEvent;
 use App\Message\PlayReactionEvent;
+use App\Message\PlaceFate;
 use App\Message\RemoveFate;
 use App\Message\SetHonorBid;
 use App\Message\TransferHonor;
@@ -56,6 +57,7 @@ class MessageConstraintsTest extends AbstractKernelTestCase
         yield 'no honor loss' => [new LoseHonor('g', 'p', 't', 0), []];
         yield 'negative honor transfer' => [new TransferHonor('g', 'p', 'a', 'b', -1), ['amount']];
         yield 'negative honor bid set' => [new SetHonorBid('g', 'p', 't', -1), ['bid']];
+        yield 'no fate placed' => [new PlaceFate('g', 'p', 'c', 0), ['amount']];
         yield 'negative fate removed' => [new RemoveFate('g', 'p', 'c', -1), ['amount']];
         yield 'negative action event cost' => [new PlayActionEvent('g', 'p', 'c', -1), ['cardCost']];
         yield 'negative interrupt event cost' => [new PlayInterruptEvent('g', 'p', 'c', -1), ['cardCost']];

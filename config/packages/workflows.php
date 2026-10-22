@@ -163,8 +163,8 @@ return App::config([
                         ],
                     ],
                     [
-                        // each player may discard faceup dynasty cards from their unbroken provinces (DiscardCard), then
-                        // refill them (FillProvince)
+                        // each player may discard faceup dynasty cards from their unbroken provinces (DiscardCard, which
+                        // refills them)
                         'name' => 'discard_from_provinces',
                         'metadata' => [
                             'opportunities' => PassingRule::Final,

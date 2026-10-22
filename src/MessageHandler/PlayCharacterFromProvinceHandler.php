@@ -17,6 +17,7 @@ use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\OpportunityService;
+use App\Service\ProvinceRefiller;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -27,9 +28,9 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * The player pays the cost of the character, which enters play ready, then places fate on it.
- * The player keeps the opportunity to act: they refill the province (FillProvince) and end their action
- * (EndResolution) themselves, possibly after other actions triggered by the character entering play.
+ * The player pays the cost of the character, which enters play ready, then places fate on it; the province is then
+ * refilled (ProvinceRefiller). The player keeps the opportunity to act: they end their action (EndResolution)
+ * themselves, possibly after other actions triggered by the character entering play.
  */
 #[AsMessageHandler]
 final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHandlerInterface
@@ -44,6 +45,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         private WorkflowInterface $dynastyCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
         private OpportunityService $opportunityService,
+        private ProvinceRefiller $provinceRefiller,
     ) {
     }
 
@@ -78,6 +80,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         if ($message->getCardCost() + $message->getFateCost() > 0) {
             $this->eventDispatcher->dispatch(new FateSpentEvent($game, $player, $message->getCardCost() + $message->getFateCost()));
         }
+        $province = $card->getStack();
         // fails unless the card is face up in a province
         $this->dynastyCardStateMachine->apply($card, 'play');
         $this->cardStateManager->withState(
@@ -87,6 +90,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         if ($message->getFate() > 0) {
             $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $card, $message->getFate()));
         }
+        $this->provinceRefiller->refillIfEmpty($province);
 
         $this->opportunityService->takeAction($player);
     }

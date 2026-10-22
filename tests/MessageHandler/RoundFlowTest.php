@@ -16,7 +16,6 @@ use App\Message\DeclareConflictSkill;
 use App\Message\DeclareDefenders;
 use App\Message\DeclareGloryCount;
 use App\Message\EndResolution;
-use App\Message\FillProvince;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Message\PlayCharacterFromProvince;
@@ -71,11 +70,10 @@ class RoundFlowTest extends AbstractKernelTestCase
         return self::service(GameStateManager::class)->getState($this->scenario->game());
     }
 
-    private function playFromProvince(string $player, string $character, string $province): void
+    private function playFromProvince(string $player, string $character): void
     {
         $cost = $this->scenario->card($character)->getLogicalCard()->getCost() ?? 0;
         $this->dispatch(new PlayCharacterFromProvince($this->gameId(), $this->id($player), $this->card($character), $cost, 1, 1));
-        $this->dispatch(new FillProvince($this->gameId(), $this->id($player), $this->card($province)));
         $this->dispatch(new EndResolution($this->gameId(), $this->id($player)));
     }
 
@@ -104,8 +102,8 @@ class RoundFlowTest extends AbstractKernelTestCase
             ->persist();
 
         // dynasty phase: each player plays a character, then passes
-        $this->playFromProvince('john', 'toturi', 'johns-province');
-        $this->playFromProvince('jane', 'hotaru', 'janes-province');
+        $this->playFromProvince('john', 'toturi');
+        $this->playFromProvince('jane', 'hotaru');
         $this->pass('john', 'jane');
 
         // draw phase

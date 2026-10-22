@@ -11,10 +11,12 @@ use App\Exception\Rules\WrongCardTypeException;
 use App\Message\DiscardRandomCardFromHand;
 use App\Message\DishonorCharacter;
 use App\Message\HonorCharacter;
+use App\Message\PlaceFate;
 use App\Message\RemoveFate;
 use App\MessageHandler\DiscardRandomCardFromHandHandler;
 use App\MessageHandler\DishonorCharacterHandler;
 use App\MessageHandler\HonorCharacterHandler;
+use App\MessageHandler\PlaceFateHandler;
 use App\MessageHandler\RemoveFateHandler;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
@@ -77,6 +79,24 @@ class RingEffectHandlersTest extends AbstractKernelTestCase
         self::service(RemoveFateHandler::class)(new RemoveFate($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('toturi')->getId(), 1));
 
         self::assertSame(1, $this->cardState($scenario, 'toturi')->getFate());
+    }
+
+    public function testAPlayerPlacesFateOnAnOpponentsCharacter(): void
+    {
+        $scenario = $this->scenarioWithCards();
+
+        self::service(PlaceFateHandler::class)(new PlaceFate($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('toturi')->getId(), 1));
+
+        self::assertSame(3, $this->cardState($scenario, 'toturi')->getFate());
+    }
+
+    public function testFateIsOnlyPlacedOnACharacterInPlay(): void
+    {
+        $scenario = $this->scenarioWithCards();
+
+        $this->expectException(WrongCardTypeException::class);
+
+        self::service(PlaceFateHandler::class)(new PlaceFate($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('katana')->getId(), 1));
     }
 
     public function testAPlayerDiscardsARandomCardFromTheHandOfAnOpponent(): void

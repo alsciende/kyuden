@@ -43,6 +43,7 @@ export const MESSAGE_ALIASES = {
     'discard-random': 'discard_random_card_from_hand',
     honor: 'honor_character',
     dishonor: 'dishonor_character',
+    'place-fate': 'place_fate',
     'remove-fate': 'remove_fate',
     'set-skill': 'set_character_skill',
     'reset-skill': 'reset_character_skill',
