@@ -90,6 +90,8 @@ const values = reactive({ fate: 0, bid: 2, skill: 0, glory: 0, statistic: 0, str
 
 function prefill(): void {
   values.fate = strongholdFate(me.value, props.cards)
+  // only the provinces attacked in the current conflict
+  values.strengths = {}
   if (conflict.value !== null && mySide.value !== null) {
     values.skill = sideSkill(props.game, props.cards, mySide.value, conflict.value.type)
     for (const id of conflict.value.attacked_province_ids) {

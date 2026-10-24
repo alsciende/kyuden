@@ -8,9 +8,9 @@ use App\Attribute\AppAction;
 use App\Attribute\Description;
 
 /**
- * Sets the starting honor of the target player, once, during setup.
+ * Sets the starting honor of the target player, once, during setup. Sent by the engine, not by the players.
  */
-#[AppAction]
+#[AppAction(public: false)]
 final readonly class SetHonor implements PlayerActionInterface
 {
     public function __construct(

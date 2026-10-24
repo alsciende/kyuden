@@ -133,6 +133,8 @@ class PlayerState
     }
 
     /**
+     * Spends or loses fate from the fate pool, to the general token pool.
+     *
      * @throws NotEnoughFateException if the fate pool does not hold that much fate
      */
     public function spendFate(int $amount): self

@@ -11,8 +11,10 @@ use App\Message\ChooseStrongholdProvince;
 use App\Message\DeclareConflict;
 use App\Message\DeclareProvinceStrength;
 use App\Message\DrawConflictCards;
+use App\Message\GainFate;
 use App\Message\GainHonor;
 use App\Message\HonorCharacter;
+use App\Message\LoseFate;
 use App\Message\MoveHome;
 use App\Message\MoveToConflict;
 use App\Message\PlayActionEvent;
@@ -69,6 +71,17 @@ class MessageLogTest extends AbstractKernelTestCase
         $this->messageBus->dispatch(new SetHonorBid($gameId, $jane, $john, 3));
 
         self::assertSame(['john gains 2 honor', 'john gives 1 honor to jane', 'The honor bid of john is now 3'], $this->janesLog($scenario));
+    }
+
+    public function testTheFateOfThePlayers(): void
+    {
+        $scenario = $this->scenarioInActionWindow();
+        [$gameId, $john, $jane] = [$scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId()];
+
+        $this->messageBus->dispatch(new GainFate($gameId, $john, $john, 2));
+        $this->messageBus->dispatch(new LoseFate($gameId, $jane, $john, 1));
+
+        self::assertSame(['john gains 2 fate', 'john loses 1 fate'], $this->janesLog($scenario));
     }
 
     public function testTheTokensOfACharacter(): void

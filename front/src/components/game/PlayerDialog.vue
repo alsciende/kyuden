@@ -5,7 +5,7 @@ import type { GameView, PlayerView } from '@/api/game'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 
 /**
- * The effects applied to a player (honor, cards, decks), for the costs and effects the engine does not apply itself.
+ * The effects applied to a player (honor, fate, cards, decks), for the costs and effects the engine does not apply itself.
  * They apply to every player.
  */
 const props = defineProps<{
@@ -49,7 +49,16 @@ const actions = computed(() =>
         label: `Give ${amount.value} honor`,
         payload: { giver_id: props.player.id, recipient_id: other.value.id, amount: amount.value },
       },
-      { type: 'set_honor', label: `Set honor to ${amount.value}`, payload: { ...target.value, honor: amount.value } },
+      {
+        type: 'gain_fate',
+        label: `Gain ${amount.value} fate`,
+        payload: { ...target.value, fate_gain: amount.value },
+      },
+      {
+        type: 'lose_fate',
+        label: `Lose ${amount.value} fate`,
+        payload: { ...target.value, fate_loss: amount.value },
+      },
       {
         type: 'draw_conflict_cards',
         label: `Draw ${amount.value} card${amount.value === 1 ? '' : 's'}`,

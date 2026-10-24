@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\Game;
-use App\Entity\Player;
 use App\Event\HonorSetEvent;
 use App\Exception\Rules\HonorAlreadySetException;
 use App\Message\SetHonor;
@@ -16,8 +14,11 @@ use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
+/**
+ * Sent by the engine during setup (SetupGameTransitionListener): players cannot send it.
+ */
 #[AsMessageHandler]
-final readonly class SetHonorHandler implements PlayerActionHandlerInterface
+final readonly class SetHonorHandler
 {
     public function __construct(
         private GameRepository $gameRepository,
@@ -27,17 +28,9 @@ final readonly class SetHonorHandler implements PlayerActionHandlerInterface
     ) {
     }
 
-    #[\Override]
-    public function assertAvailable(Game $game, Player $player): void
-    {
-        // accepted in any game place, from any player of the game
-    }
-
     public function __invoke(SetHonor $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
-        // checks that the sender is a player of the game
-        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $player = $this->playerRepository->get($message->getTargetPlayerId(), $game);
         $this->stateManager->withState(
             $player,

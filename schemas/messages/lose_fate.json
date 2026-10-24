@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "lose_fate",
+    "description": "The target player loses fate from their fate pool, which returns to the general token pool, e.g. to pay a cost or resolve an effect. Rejected when their fate pool does not hold that much fate.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who loses fate.",
+            "type": "string"
+        },
+        "fate_loss": {
+            "description": "Fate lost.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "target_player_id",
+        "fate_loss"
+    ],
+    "additionalProperties": false
+}
