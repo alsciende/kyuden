@@ -69,7 +69,11 @@ const actions = computed(() =>
         label: `Set the bid to ${amount.value}`,
         payload: { ...target.value, bid: amount.value },
       },
-      { type: 'discard_random_card_from_hand', label: 'Discard a card at random', payload: target.value },
+      {
+        type: 'discard_random_card_from_hand',
+        label: `Discard ${amount.value} card${amount.value === 1 ? '' : 's'} at random`,
+        payload: { ...target.value, quantity: amount.value },
+      },
       { type: 'shuffle_conflict_deck', label: 'Shuffle the conflict deck', payload: target.value },
       { type: 'shuffle_dynasty_deck', label: 'Shuffle the dynasty deck', payload: target.value },
     ] as (Effect | false | undefined)[]

@@ -14,8 +14,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * Accepted in any game place and from any player of the game, on the hand of any player. Nothing happens when the hand
- * is empty.
+ * Accepted in any game place and from any player of the game, on the hand of any player. Each card is drawn from the
+ * hand left by the previous ones; nothing happens once the hand is empty.
  */
 #[AsMessageHandler]
 final readonly class DiscardRandomCardFromHandHandler implements PlayerActionHandlerInterface
@@ -40,12 +40,15 @@ final readonly class DiscardRandomCardFromHandHandler implements PlayerActionHan
         $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
-        $hand = $target->getUniqueStack(StackType::Hand)->getOrderedCards();
-        if ($hand === []) {
-            return;
-        }
+        $stack = $target->getUniqueStack(StackType::Hand);
+        for ($i = 0; $i < $message->getQuantity(); ++$i) {
+            $hand = $stack->getOrderedCards();
+            if ($hand === []) {
+                return;
+            }
 
-        $card = $hand[$game->getRandomizer()->getInt(0, count($hand) - 1)];
-        $this->conflictCardStateMachine->apply($card, 'discard_card');
+            $card = $hand[$game->getRandomizer()->getInt(0, count($hand) - 1)];
+            $this->conflictCardStateMachine->apply($card, 'discard_card');
+        }
     }
 }

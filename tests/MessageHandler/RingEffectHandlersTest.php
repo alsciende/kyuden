@@ -108,6 +108,31 @@ class RingEffectHandlersTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('katana')->getCurrentPlace());
     }
 
+    public function testAPlayerDiscardsSeveralRandomCards(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('resolve_ring_effects')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->hand(['katana' => '01-fine-katana', 'banzai' => '01-banzai', 'ambusher' => '01-hiruma-ambusher']))
+            ->persist();
+
+        self::service(DiscardRandomCardFromHandHandler::class)(new DiscardRandomCardFromHand($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId(), 2));
+
+        self::assertCount(1, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
+        self::assertCount(2, $scenario->player('jane')->getUniqueStack(StackType::ConflictDiscardPile)->getCards());
+    }
+
+    public function testTheWholeHandIsDiscardedWhenItHoldsFewerCards(): void
+    {
+        $scenario = $this->scenarioWithCards();
+
+        self::service(DiscardRandomCardFromHandHandler::class)(new DiscardRandomCardFromHand($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId(), 3));
+
+        self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('katana')->getCurrentPlace());
+        self::assertCount(0, $scenario->player('jane')->getUniqueStack(StackType::Hand)->getCards());
+    }
+
     public function testNothingHappensWhenTheHandIsEmpty(): void
     {
         $scenario = $this->scenarioWithCards();

@@ -334,21 +334,35 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
       <ConflictField :game="game" :cards="cards" @open="emit('open', $event)" />
 
-      <section v-if="defending" class="zone" aria-label="Your characters">
-        <span class="label"
-          ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home · choose your defenders</span
-        >
-        <CharacterRow
-          :characters="myHome"
-          :cards="cards"
-          :mine="true"
-          :selectable="defendable"
-          :selected-ids="selection.defenderIds"
-          selected-tag="Defends"
-          @open="emit('open', $event)"
-          @select="emit('defender', $event)"
-        />
-      </section>
+      <template v-if="defending">
+        <section class="zone" aria-label="Your characters">
+          <span class="label"
+            ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home · choose your defenders</span
+          >
+          <CharacterRow
+            :characters="myHome"
+            :cards="cards"
+            :mine="true"
+            :selectable="defendable"
+            :selected-ids="selection.defenderIds"
+            selected-tag="Defends"
+            @open="emit('open', $event)"
+            @select="emit('defender', $event)"
+          />
+        </section>
+        <section v-if="unfolded.includes('provinces')" class="zone" aria-label="Your provinces">
+          <span class="label"
+            ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces
+            <button type="button" class="btn-link fold" @click="fold('provinces')">Fold</button></span
+          >
+          <ProvinceRow :game="game" :player="me" :cards="cards" size="small" @open="emit('open', $event)" />
+        </section>
+        <button v-else type="button" class="strip" :aria-expanded="false" @click="unfold('provinces')">
+          <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces</span>
+          <span class="strip-text">{{ myProvinceNames }}</span>
+          <span class="strip-end">{{ myIntact }} intact <span class="chevron" aria-hidden="true">▾</span></span>
+        </button>
+      </template>
       <section v-else-if="unfolded.includes('me')" class="zone" aria-label="You at home">
         <span class="label"
           ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home and provinces
