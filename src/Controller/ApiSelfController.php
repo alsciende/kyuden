@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\User;
 use App\Enum\CardDisplay;
 use App\Enum\Clan;
+use App\Enum\Theme;
 use App\Model\AccountRequest;
 use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
@@ -28,7 +29,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * The authenticated user: their identifier, their name at court, their preferred clan and their settings (which they
- * change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ...}}`, any of them; a setting left out
+ * change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ..., "theme": ...}}`, any of them; a setting left out
  * is kept) and their username, and their games (in progress or ended, the last joined first), so that a user matched by
  * the queue finds the id of their game; and their subscription to the Mercure hub. Errors are problem details (RFC 9457).
  */
@@ -40,7 +41,7 @@ class ApiSelfController extends AbstractController
 
     private const array STRING_FIELDS = ['name', 'preferred_clan'];
 
-    private const array SETTINGS = ['card_display'];
+    private const array SETTINGS = ['card_display', 'theme'];
 
     public function __construct(
         private readonly GameRepository $gameRepository,
@@ -95,10 +96,11 @@ class ApiSelfController extends AbstractController
         if ($structureViolations !== []) {
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Invalid changes of the user.', ['violations' => $structureViolations]);
         }
-        /** @var array{name?: string, preferred_clan?: string, settings?: array{card_display?: string}} $body */
+        /** @var array{name?: string, preferred_clan?: string, settings?: array{card_display?: string, theme?: string}} $body */
         $name = isset($body['name']) ? trim($body['name']) : null;
         $clan = $body['preferred_clan'] ?? null;
         $cardDisplay = $body['settings']['card_display'] ?? null;
+        $theme = $body['settings']['theme'] ?? null;
 
         $validator = $this->validator->startContext();
         if ($name !== null) {
@@ -116,6 +118,12 @@ class ApiSelfController extends AbstractController
                 message: 'Choose one of: {{ choices }}.',
             ));
         }
+        if ($theme !== null) {
+            $validator->atPath('settings.theme')->validate($theme, new Assert\Choice(
+                choices: array_column(Theme::cases(), 'value'),
+                message: 'Choose one of: {{ choices }}.',
+            ));
+        }
         $violations = $validator->getViolations();
         if ($violations->count() > 0) {
             return $this->validationProblem($violations);
@@ -129,6 +137,9 @@ class ApiSelfController extends AbstractController
         }
         if ($cardDisplay !== null) {
             $user->changeSettings($user->getSettings()->withCardDisplay(CardDisplay::from($cardDisplay)));
+        }
+        if ($theme !== null) {
+            $user->changeSettings($user->getSettings()->withTheme(Theme::from($theme)));
         }
         $this->entityManager->flush();
 

@@ -15,7 +15,15 @@ const cards = {
 }
 
 function show(view: CardView, cardDisplay: CardDisplay, attachments: CardView[] = []) {
-  session.value = { userId: 'john', name: 'John', username: 'john', preferredClan: 'lion', cardDisplay, token: 'l5r_a' }
+  session.value = {
+    userId: 'john',
+    name: 'John',
+    username: 'john',
+    preferredClan: 'lion',
+    cardDisplay,
+    theme: 'auto',
+    token: 'l5r_a',
+  }
 
   return mount(GameCard, { props: { card: view, cards, mine: true, attachments } })
 }

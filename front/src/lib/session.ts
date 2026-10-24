@@ -14,6 +14,7 @@ import {
   type BotGame,
   type CardDisplay,
   type Self,
+  type Theme,
 } from '@/api/client'
 import { fetchGame } from '@/api/game'
 import { CLANS, findClan, type Clan, type ClanId } from '@/data/clans'
@@ -33,6 +34,8 @@ export interface Session {
   preferredClan: ClanId | null
   /** how the board draws the cards: always drawn for a guest, who has no account to change it */
   cardDisplay: CardDisplay
+  /** light or dark: as the system says for a guest */
+  theme: Theme
   token: string
 }
 
@@ -44,19 +47,21 @@ export function loadSession(): Session | null {
     if (value === null) {
       return null
     }
-    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan' | 'cardDisplay'> & {
+    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan' | 'cardDisplay' | 'theme'> & {
       username?: string | null
       preferredClan?: ClanId | null
       cardDisplay?: CardDisplay
+      theme?: Theme
     }
 
     // the guests kept before the accounts have no username, the sessions kept before the clans no preferred clan,
-    // those kept before the settings no card display
+    // those kept before the settings no card display nor theme
     return {
       ...stored,
       username: stored.username ?? null,
       preferredClan: stored.preferredClan ?? null,
       cardDisplay: stored.cardDisplay ?? 'drawn',
+      theme: stored.theme ?? 'auto',
     }
   } catch {
     return null
@@ -99,6 +104,7 @@ async function guestSession(name: string): Promise<Session> {
     username: null,
     preferredClan: null,
     cardDisplay: 'drawn',
+    theme: 'auto',
     token: guest.token,
   }
   saveSession(created)
@@ -132,6 +138,7 @@ function accountSession(account: Account): Session {
     username: account.username,
     preferredClan: account.preferred_clan,
     cardDisplay: account.settings.card_display,
+    theme: account.settings.theme,
     token: account.token,
   }
   saveSession(created)
@@ -248,6 +255,7 @@ function withSelf(current: Session, self: Self): Session {
     username: self.username,
     preferredClan: self.preferred_clan,
     cardDisplay: self.settings.card_display,
+    theme: self.settings.theme,
   }
 }
 
@@ -272,4 +280,8 @@ export function preferClan(clan: ClanId): Promise<Session> {
 
 export function chooseCardDisplay(cardDisplay: CardDisplay): Promise<Session> {
   return updateAccount({ settings: { card_display: cardDisplay } })
+}
+
+export function chooseTheme(theme: Theme): Promise<Session> {
+  return updateAccount({ settings: { theme } })
 }

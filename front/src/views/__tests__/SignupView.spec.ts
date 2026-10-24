@@ -38,6 +38,7 @@ describe('SignupView', () => {
       username: null,
       preferredClan: null,
       cardDisplay: 'drawn' as const,
+      theme: 'auto' as const,
       token: 'l5r_a',
     }
     localStorage.setItem('kyuden.session', JSON.stringify(guest))
@@ -81,7 +82,7 @@ describe('SignupView', () => {
           name: 'Hida Takeshi',
           username: 'takeshi_2',
           preferred_clan: 'crab',
-          settings: { card_display: 'drawn' },
+          settings: { card_display: 'drawn', theme: 'auto' },
           token: 'l5r_b',
         }),
       )
@@ -122,7 +123,7 @@ describe('SignupView', () => {
         name: 'Hida Takeshi',
         username: 'takeshi',
         preferred_clan: 'phoenix',
-        settings: { card_display: 'drawn' },
+        settings: { card_display: 'drawn', theme: 'auto' },
         token: 'l5r_b',
       }),
     )

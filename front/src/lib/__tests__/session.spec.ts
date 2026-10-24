@@ -4,6 +4,7 @@ import { CLANS } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 import {
   chooseCardDisplay,
+  chooseTheme,
   loadSession,
   preferClan,
   rename,
@@ -60,6 +61,7 @@ describe('startIntroductoryGame', () => {
       username: null,
       preferredClan: null,
       cardDisplay: 'drawn',
+      theme: 'auto',
       token: 'l5r_token',
     })
   })
@@ -107,7 +109,7 @@ describe('accounts', () => {
     name: 'Hida Takeshi',
     username: 'takeshi',
     preferred_clan: 'crab',
-    settings: { card_display: 'images' },
+    settings: { card_display: 'images', theme: 'dark' },
     token: 'l5r_account',
   }
 
@@ -141,6 +143,7 @@ describe('accounts', () => {
       username: 'takeshi',
       preferredClan: 'crab',
       cardDisplay: 'images',
+      theme: 'dark',
       token: 'l5r_account',
     })
     expect(session.value?.username).toBe('takeshi')
@@ -190,7 +193,7 @@ describe('accounts', () => {
         name: 'Hida Kisada',
         username: 'takeshi',
         preferred_clan: 'crab',
-        settings: { card_display: 'drawn' },
+        settings: { card_display: 'drawn', theme: 'auto' },
       }),
     )
 
@@ -208,7 +211,7 @@ describe('accounts', () => {
         name: 'Hida Takeshi',
         username: 'takeshi',
         preferred_clan: 'crane',
-        settings: { card_display: 'drawn' },
+        settings: { card_display: 'drawn', theme: 'auto' },
       }),
     )
 
@@ -226,7 +229,7 @@ describe('accounts', () => {
         name: 'Hida Takeshi',
         username: 'takeshi',
         preferred_clan: 'crab',
-        settings: { card_display: 'images' },
+        settings: { card_display: 'images', theme: 'auto' },
       }),
     )
 
@@ -236,6 +239,24 @@ describe('accounts', () => {
     expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ settings: { card_display: 'images' } })
     expect(loadSession()?.cardDisplay).toBe('images')
     expect(session.value?.cardDisplay).toBe('images')
+  })
+
+  it('changes the theme of the site', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', token: 'l5r_a' }))
+    fetchMock.mockResolvedValueOnce(
+      json(200, {
+        name: 'Hida Takeshi',
+        username: 'takeshi',
+        preferred_clan: 'crab',
+        settings: { card_display: 'drawn', theme: 'dark' },
+      }),
+    )
+
+    expect(loadSession()?.theme).toBe('auto')
+    await chooseTheme('dark')
+
+    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ settings: { theme: 'dark' } })
+    expect(session.value?.theme).toBe('dark')
   })
 
   it('forgets the account when signing out, even if the token is refused', async () => {

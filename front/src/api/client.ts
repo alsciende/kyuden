@@ -61,11 +61,15 @@ export interface Guest {
 /** how the board draws the cards: a frame with their name and values, or their image */
 export type CardDisplay = 'drawn' | 'images'
 
+/** whether the site is light or dark: as the system says, day or night */
+export type Theme = 'auto' | 'light' | 'dark'
+
 /**
  * The preferences of a user.
  */
 export interface UserSettings {
   card_display: CardDisplay
+  theme: Theme
 }
 
 export interface Account {

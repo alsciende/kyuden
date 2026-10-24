@@ -25,10 +25,54 @@
   --font-ui: 'Barlow', system-ui, sans-serif;
   --font-icons: 'fiveringsdb';
 
+  /* the primary button hovered, the deck chosen */
+  --ink-hover: #000;
+  --selected: #fbf3ea;
+
   color-scheme: light;
 }
 
-/* light ink on a dark ground (the wait in the queue): the tokens swap, the components follow */
+/*
+ * Night: light ink on a dark ground, when the player chooses it (`data-theme` on the root, from their settings) or
+ * when their system is dark and they did not choose the day. The tokens swap, the components follow.
+ */
+:root[data-theme='dark'] {
+  --paper: #1f1b16;
+  --paper-2: #2a251f;
+  --paper-3: #3a332b;
+  --line: #4a4238;
+  --ink: #f4eee2;
+  --ink-2: #cfc5b3;
+  --ink-3: #b3a894;
+  --ink-hover: #fff;
+  --seal: #ec6a52;
+  --selected: #3a2a22;
+  --board: #26211b;
+  --card: #2f2922;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #1f1b16;
+    --paper-2: #2a251f;
+    --paper-3: #3a332b;
+    --line: #4a4238;
+    --ink: #f4eee2;
+    --ink-2: #cfc5b3;
+    --ink-3: #b3a894;
+    --ink-hover: #fff;
+    --seal: #ec6a52;
+    --selected: #3a2a22;
+    --board: #26211b;
+    --card: #2f2922;
+
+    color-scheme: dark;
+  }
+}
+
+/* light ink on a dark ground whatever the theme (the wait in the queue): the tokens swap, the components follow */
 .inverted {
   --paper: #1f1b16;
   --paper-2: #2a251f;
@@ -37,7 +81,9 @@
   --ink: #f4eee2;
   --ink-2: #cfc5b3;
   --ink-3: #b3a894;
+  --ink-hover: #fff;
   --seal: #ec6a52;
+  --selected: #3a2a22;
 
   color-scheme: dark;
 }
@@ -121,7 +167,7 @@ p {
 }
 
 .btn-primary:hover {
-  background: #000;
+  background: var(--ink-hover);
   color: var(--paper);
 }
 

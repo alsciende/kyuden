@@ -2,16 +2,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import type { CardDisplay } from '@/api/client'
+import type { CardDisplay, Theme } from '@/api/client'
 import ClanPicker from '@/components/ClanPicker.vue'
 import type { ClanId } from '@/data/clans'
 import { MAX_NAME_LENGTH } from '@/lib/names'
 import { formErrors } from '@/lib/credentials'
-import { chooseCardDisplay, preferClan, refreshSession, rename, session, signOut } from '@/lib/session'
+import { chooseCardDisplay, chooseTheme, preferClan, refreshSession, rename, session, signOut } from '@/lib/session'
 
 /**
  * The account of the player: their username (how they sign in), their preferred clan, their name at court (what the
- * other players see) and how the board draws the cards, which they change here.
+ * other players see), how the board draws the cards and whether the site is light or dark, which they change here.
  */
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +37,17 @@ const displaySaved = ref(false)
 const displayError = ref<string | null>(null)
 const displaySending = ref(false)
 
+const THEMES: { value: Theme; label: string; hint: string }[] = [
+  { value: 'light', label: 'Day', hint: 'Ink on paper.' },
+  { value: 'dark', label: 'Night', hint: 'Light ink on a dark ground.' },
+  { value: 'auto', label: 'Auto', hint: 'As your system: day or night.' },
+]
+
+const theme = ref<Theme>(session.value?.theme ?? 'auto')
+const themeSaved = ref(false)
+const themeError = ref<string | null>(null)
+const themeSending = ref(false)
+
 const changed = computed(() => name.value.trim() !== '' && name.value.trim() !== session.value?.name)
 
 onMounted(async () => {
@@ -50,6 +61,7 @@ onMounted(async () => {
     name.value = current.name
     clanId.value = current.preferredClan
     cardDisplay.value = current.cardDisplay
+    theme.value = current.theme
   } catch {
     // the account shown is the one the browser remembers
   }
@@ -107,6 +119,24 @@ async function changeCardDisplay(value: CardDisplay): Promise<void> {
     displayError.value = formErrors(problem).form ?? 'The setting could not be saved.'
   } finally {
     displaySending.value = false
+  }
+}
+
+async function changeTheme(value: Theme): Promise<void> {
+  if (value === session.value?.theme) {
+    return
+  }
+  themeSending.value = true
+  themeError.value = null
+  themeSaved.value = false
+  try {
+    theme.value = (await chooseTheme(value)).theme
+    themeSaved.value = true
+  } catch (problem) {
+    theme.value = session.value?.theme ?? 'auto'
+    themeError.value = formErrors(problem).form ?? 'The setting could not be saved.'
+  } finally {
+    themeSending.value = false
   }
 }
 
@@ -184,6 +214,28 @@ async function leave(): Promise<void> {
         </div>
         <p v-if="displayError" class="form-error" role="alert">{{ displayError }}</p>
         <p v-else-if="displaySaved" class="form-hint" role="status">Saved.</p>
+      </div>
+
+      <div id="theme-label" class="form-label row-label display-label">Appearance</div>
+      <div class="row">
+        <div class="choices" role="radiogroup" aria-labelledby="theme-label">
+          <label v-for="choice in THEMES" :key="choice.value" class="choice">
+            <input
+              type="radio"
+              name="theme"
+              :value="choice.value"
+              :checked="theme === choice.value"
+              :disabled="themeSending"
+              @change="changeTheme(choice.value)"
+            />
+            <span class="choice-text">
+              <span class="choice-label">{{ choice.label }}</span>
+              <span class="form-hint">{{ choice.hint }}</span>
+            </span>
+          </label>
+        </div>
+        <p v-if="themeError" class="form-error" role="alert">{{ themeError }}</p>
+        <p v-else-if="themeSaved" class="form-hint" role="status">Saved.</p>
       </div>
 
       <div class="form-label row-label linked-label">Linked accounts</div>

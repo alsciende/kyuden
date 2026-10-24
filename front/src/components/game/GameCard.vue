@@ -444,7 +444,7 @@ function enter(): void {
   padding: 0 5px;
   border-radius: 11px;
   background: var(--ink);
-  color: var(--seal-ink);
+  color: var(--paper);
   font-size: 11px;
   font-weight: 700;
   display: flex;

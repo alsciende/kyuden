@@ -70,6 +70,7 @@ describe('QueueView', () => {
       username: 'john',
       preferredClan: 'crab',
       cardDisplay: 'drawn',
+      theme: 'auto',
       token: 'l5r_a',
     }
     FakeEventSource.opened = []

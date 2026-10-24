@@ -326,7 +326,7 @@ h2.form-label {
 
 .deck[aria-pressed='true'] {
   border: 2px solid var(--seal);
-  background: #fbf3ea;
+  background: var(--selected);
 }
 
 .kanji {

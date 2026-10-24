@@ -11,6 +11,8 @@ import './styles/base.css'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+import { followTheme } from './lib/theme'
 import { router } from './router'
 
+followTheme()
 createApp(App).use(router).mount('#app')
