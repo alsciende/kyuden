@@ -88,7 +88,7 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - **Result** (3.2.3): each player of the conflict declares the total skill of their side (`DeclareConflictSkill`, any order, can be declared again until both are known); `result_determined` is automatic once both are declared (`ResultDeterminedGuardListener`), and `ConflictState::determineWinner()` applies the rules (ties to the attacker, 1 skill needed to win, no winner at 0 / 0).
 - **Province strength**: when the game enters `determine_result`, each attacked province gets its printed strength, plus the strength bonus of the stronghold for the stronghold province (`DetermineResultEnterListener`). The defending player replaces it with `DeclareProvinceStrength`, which must be sent before the skill totals (the result is determined as soon as both are known).
 - **Unopposed** (3.2.4): the defending player loses 1 honor when the attacking player wins with no defender left in the conflict (`UnopposedAppliedTransitionListener`).
-- **Breaking provinces** (3.2.5): each attacked unbroken province whose strength is at most the excess skill of the winning attacker breaks (`province_card.break`); the broken ones are recorded in `ConflictState::brokenProvinceIds`.
+- **Breaking provinces** (3.2.5): each attacked unbroken province whose strength is at most the excess skill of the winning attacker breaks (`province_card.break`); the broken ones are recorded in `ConflictState::brokenProvinceIds`. When none is broken, `react_to_broken_province` is left at once for `resolve_ring_effects` (`no_province_broken`, automatic, `NoProvinceBrokenGuardListener`): there is nothing to react to, and the step would show "Province broken" to the players.
 - **Discarding from a broken province**: `DiscardCard` (any card, any player, any place: `discard_card` transition of the conflict and dynasty card workflows; the dynasty one now also starts from the provinces, so a faceup holding can be discarded), then `FillProvince`, during `react_to_broken_province`.
 - **Ring effects** (3.2.6): in `resolve_ring_effects`, the attacking player who won is the only active player and the others count as having passed (`ResolveRingEffectsEnterListener`); when the attacking player did not win, every player has passed and the step ends at once. The attacking player resolves the effect with effect messages, then passes: Air `TransferHonor` / `GainHonor`; Earth `DrawConflictCards` + `DiscardRandomCardFromHand` (the engine picks the card); Fire `HonorCharacter` / `DishonorCharacter`; Water `ReadyCard` / `BowCard`; Void `RemoveFate`. The engine does not check that the effect matches the ring.
 - **Personal honor** is `CardState::personalHonor` (`Enum/PersonalHonor`); honoring an honored character or dishonoring a dishonored one is rejected (`PersonalHonorException`). Its effect on skill and glory is part of the totals declared by the players.
@@ -532,6 +532,12 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 - **Waiting**: the page in reverse, header and footer included (`lib/page.ts`, `inverted`: the color tokens swap under `.inverted`, `styles/base.css`; the vermilion is lighter there, `#ec6a52`, for the contrast), the ensō turning, the time waited (from when the page learns it: the API does not tell when the user joined), the deck, "Leave the queue".
 - **Matched**: the screen follows the topic of the user from the start and opens the game on `game_started`. After joining, it reads the queue again: not queued any more means matched before the hub could tell (the subscription may not be open yet), and the last game of the user opens. Already in the queue (another tab, 409) waits with that deck; leaving once matched (404) opens the game the same way.
 
+## Decisions taken for rejoining a game in progress
+
+- A banner under the header of every page (not the game, which has none, nor the wait in the queue) offers to rejoin the last game joined that has not ended, naming the opponent: a proposal, the player is not sent to the game.
+- It is read again on every navigation and when the session changes, so that it disappears once the game has ended and appears once a player signs in to an account that plays one; nothing on the API side (`GET /api/self/games` already says `ended`).
+- Only one game is offered (the last joined); the older games in progress (a guest who started a game then another) are left as they are: no list nor concession from the banner.
+
 ## Decisions taken for the databases
 
 - The tests run on their own database, the `database_test` service (`DATABASE_URL` of `.env.test`), in memory (tmpfs): playing in development no longer changes what the tests find. `make db-test` creates its schema and loads the fixtures, after each start of the service.
@@ -543,6 +549,7 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 ### Web client and house bot
 
 - **Board**: dedicated layouts for the remaining steps (defenders seen from the attacker, the draw and fate phases, the duels on the board, the reaction windows), the opponent declaring a conflict against the viewer (not seen yet: the house bot passes its conflicts), the round number, a menu for the cards of the opponent's hand and decks (shuffles are in the effects on a player), and a component test of `GameView`.
+- **Declaring defenders**: the defender cannot see their provinces nor the dynasty cards on them; let them unfold them (a folded line), as the attacker does while declaring the conflict.
 - **Types of the messages** generated from `schemas/messages` (`json-schema-to-typescript`): the client writes its payloads by hand for now.
 - **Mulligan**: setup has no mulligan yet (the copy of the opponent screen does not promise one).
 - **Bot**: duels (statistic, end of the duel), playing characters, declaring conflicts and defenders; a bot stuck in a step waits for the next message (or `app:bot:play`).
@@ -562,6 +569,7 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 - **Development console**: commands for what is not in the API yet (`SeeCard`, spectators).
 - **Authentication**: guests and accounts with a password are done (`POST /api/guests`, `POST /api/accounts`, `POST /api/sessions`); a limit of rate on the creation of guests and accounts (by IP); linking an account to Discord or Google (OAuth2), pressed on the players since there is no email to recover an account; sessions expiring after a few hours, renewed by the web client. A human linked to a real identity creates bots and their API keys (revocable).
 - **Mercure**: the subscriber token of a revoked session stays valid until it expires (an hour); `SeeCard` or spectators may need topics of their own (`/users/{id}` is there for what a player is shown alone).
+- **Rewinding a game**: deleting the last events changes nothing (the state lives in the entities, the events are its record); rewind by replay instead, e.g. `app:game:rewind <game> <version>`: read the events up to the version, delete the game (events, log entries, players and cards cascade), replay them with `EventPlayer` (same seed, same player ids, so the same card ids and log), in a transaction. Caveats: a deck changed or deleted since `JoinGame` (read by id at replay) or an engine changed since makes the replay diverge or fail; the house bot must not play during the replay (`HouseBotMiddleware` schedules each message, it plays on `kernel.terminate`); the clients get a notification per message replayed.
 
 
 ### Step 1.4 (play cards from provinces)
@@ -652,6 +660,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 - **A War on Two Fronts**: an effect message adding an attacked province to the conflict (`ConflictState::attackedProvinceIds` is ready for it).
 - **Other conflict effects**: moving the contested ring to another province, switching the conflict type or the contested ring, discarding the Imperial Favor, taking control of a card.
 - **Reactions**: reaction windows only exist where listed above; reactions to other framework steps (e.g. characters discarded during the fate phase) go through the next window. To be locked down once the game has been tested.
+- **Totals declared twice**: in `determine_result`, `assertAvailable()` of `DeclareConflictSkillHandler` (and of `DeclareProvinceStrengthHandler`) only checks the place and the player, not that they have declared already: once the defender has declared their skill, `declare_conflict_skill` stays in `available_actions` and the web client keeps asking for it beside the strength of the province. An action already done must no longer be available (a total can only be corrected if the rules call for it).
 - **Skill announcements**: after each action of the conflict action window, a player should announce the current skill of both sides (3.2.2); not recorded.
 
 ### Game rules not enforced yet

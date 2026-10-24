@@ -57,6 +57,8 @@ $gameTransitions = [
     WorkflowConfig::transition('unopposed_applied', 'apply_unopposed', 'break_province', ['auto' => true, 'log' => 'The conflict is checked for being unopposed']),
     WorkflowConfig::transition('provinces_broken', 'break_province', 'react_to_broken_province', ['auto' => true, 'log' => 'The attacked provinces are checked for breaking']),
     WorkflowConfig::transition('break_reactions_passed', 'react_to_broken_province', 'resolve_ring_effects', ['auto' => true, 'log' => 'The reactions to the broken province are over']),
+    // nothing to react to when no province is broken
+    WorkflowConfig::transition('no_province_broken', 'react_to_broken_province', 'resolve_ring_effects', ['auto' => true, 'log' => 'No province is broken']),
     WorkflowConfig::transition('ring_effects_resolved', 'resolve_ring_effects', 'claim_ring', ['auto' => true, 'log' => 'The ring effects are resolved']),
     WorkflowConfig::transition('ring_claimed', 'claim_ring', 'react_to_ring_claim', ['auto' => true, 'log' => 'The winner of the conflict, if any, claims the contested ring']),
     WorkflowConfig::transition('claim_reactions_passed', 'react_to_ring_claim', 'return_home', ['auto' => true, 'log' => 'The reactions to the ring claim are over']),

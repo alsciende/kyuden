@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router'
 
 import AppFooter from '@/components/AppFooter.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import GameInProgressBanner from '@/components/GameInProgressBanner.vue'
 import { inverted } from '@/lib/page'
 
 const route = useRoute()
@@ -13,6 +14,7 @@ const route = useRoute()
   <RouterView v-if="route.meta.fullscreen" />
   <div v-else class="page" :class="{ inverted }">
     <AppHeader />
+    <GameInProgressBanner />
     <main class="main">
       <RouterView />
     </main>

@@ -125,9 +125,7 @@ class RoundFlowTest extends AbstractKernelTestCase
         $this->dispatch(new DeclareConflictSkill($this->gameId(), $this->id('john'), 2));
         $this->dispatch(new DeclareConflictSkill($this->gameId(), $this->id('jane'), 3));
         $this->pass('john', 'jane');
-        // jane won as the defending player: no ring effect, she claims the ring
-        $this->assertPlace('react_to_broken_province');
-        $this->pass('john', 'jane');
+        // jane won as the defending player: no province broken, no ring effect, she claims the ring
         $this->assertPlace('react_to_ring_claim');
         $this->pass('john', 'jane');
         self::assertSame($this->id('jane'), $this->gameState()->getRing(Element::Water)->claimedById);
