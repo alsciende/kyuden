@@ -80,7 +80,9 @@ const resolved = computed(() => conflictResolved(props.game))
 
 const result = computed(() => {
   const winner = conflict.value.winner_id
-  const text = winner === null ? 'No winner' : winner === me.value.id ? 'You won' : 'The opponent won'
+  const unopposed = winner === conflict.value.attacking_player_id && conflict.value.defender_ids.length === 0
+  const won = winner === me.value.id ? 'You won' : 'The opponent won'
+  const text = winner === null ? 'No winner' : unopposed ? `${won} unopposed` : won
   const note = province.value.broken
     ? attacking.value
       ? 'You broke the province'

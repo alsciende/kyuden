@@ -110,6 +110,20 @@ describe('skills', () => {
 
     expect(sideSkill(view, cards, [samurai.id, courtier.id, bowed.id], 'political')).toBe(4)
   })
+
+  it('adds the Imperial Favor of the type of the conflict when its bearer has a participating character', () => {
+    const bowed = card('samurai', { orientation: 'sideways' })
+    const courtier = card('courtier')
+    const view = game(player('me', [stack('in_play', [bowed])]), player('opp', [stack('in_play', [courtier])]), {
+      imperial_favor_holder_id: 'me',
+      imperial_favor_side: 'military',
+    })
+
+    expect(sideSkill(view, cards, [bowed.id], 'military')).toBe(1)
+    expect(sideSkill(view, cards, [bowed.id], 'political')).toBe(0)
+    expect(sideSkill(view, cards, [courtier.id], 'military')).toBe(0)
+    expect(sideSkill(view, cards, [], 'military')).toBe(0)
+  })
 })
 
 describe('the values prefilled for the players', () => {

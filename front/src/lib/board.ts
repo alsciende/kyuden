@@ -442,12 +442,24 @@ export function shownSkill(
   return { value: hasSkill(card, type) ? skillOf(character, cards, type) : null, recorded: false }
 }
 
-/** the total skill of the participating characters among `ids` */
+/** the total skill of the participating characters among `ids`, with the Imperial Favor */
 export function sideSkill(game: GameView, cards: Cards, ids: string[], type: ConflictType): number {
-  return game.players
+  const skill = game.players
     .flatMap(charactersInPlay)
     .filter((character) => ids.includes(character.card.id) && character.card.orientation !== 'sideways')
     .reduce((total, character) => total + skillOf(character, cards, type), 0)
+
+  return skill + (hasImperialFavor(game, ids, type) ? 1 : 0)
+}
+
+/** whether the Imperial Favor is set to the type of the conflict and its bearer controls one of the participating characters (bowed or not) */
+function hasImperialFavor(game: GameView, ids: string[], type: ConflictType): boolean {
+  const holder = game.players.find((player) => player.id === game.imperial_favor_holder_id)
+  if (holder === undefined || game.imperial_favor_side !== type) {
+    return false
+  }
+
+  return charactersInPlay(holder).some((character) => ids.includes(character.card.id))
 }
 
 /** the fate value of the stronghold of a player */
