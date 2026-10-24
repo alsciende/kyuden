@@ -6,6 +6,7 @@ namespace App\Tests\MessageHandler;
 
 use App\Enum\Orientation;
 use App\Exception\Rules\NotInConflictException;
+use App\Exception\Rules\SkillAlreadyDeclaredException;
 use App\Message\DeclareConflictSkill;
 use App\MessageHandler\DeclareConflictSkillHandler;
 use App\State\Manager\GameStateManager;
@@ -65,5 +66,15 @@ class DeclareConflictSkillHandlerTest extends AbstractKernelTestCase
         $this->expectException(NotInConflictException::class);
 
         self::service(DeclareConflictSkillHandler::class)($this->declare($scenario, 'jack', 2));
+    }
+
+    public function testRejectsAPlayerWhoHasDeclaredTheirSkill(): void
+    {
+        $scenario = $this->scenarioAtDetermineResult();
+        self::service(DeclareConflictSkillHandler::class)($this->declare($scenario, 'jane', 2));
+
+        $this->expectException(SkillAlreadyDeclaredException::class);
+
+        self::service(DeclareConflictSkillHandler::class)($this->declare($scenario, 'jane', 3));
     }
 }

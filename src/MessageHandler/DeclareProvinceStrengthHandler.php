@@ -10,6 +10,7 @@ use App\Event\ProvinceStrengthDeclaredEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotAttackedProvinceException;
 use App\Exception\Rules\NotDefendingPlayerException;
+use App\Exception\Rules\StrengthAlreadyDeclaredException;
 use App\Message\DeclareProvinceStrength;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -21,7 +22,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Replaces the printed strength of an attacked province (DetermineResultEnterListener) with the one declared by the
- * defending player.
+ * defending player, once for each province.
  */
 #[AsMessageHandler]
 final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandlerInterface
@@ -43,6 +44,10 @@ final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandl
         if ($player->getId() !== $conflict->defendingPlayerId) {
             throw new NotDefendingPlayerException();
         }
+
+        if ($conflict->strengthsDeclared()) {
+            throw new StrengthAlreadyDeclaredException();
+        }
     }
 
     public function __invoke(DeclareProvinceStrength $message): void
@@ -57,7 +62,12 @@ final readonly class DeclareProvinceStrengthHandler implements PlayerActionHandl
                 throw new NotAttackedProvinceException();
             }
 
+            if (in_array($message->getProvinceId(), $conflict->declaredStrengthProvinceIds, true)) {
+                throw new StrengthAlreadyDeclaredException();
+            }
+
             $conflict->provinceStrengths[$message->getProvinceId()] = $message->getStrength();
+            $conflict->declaredStrengthProvinceIds[] = $message->getProvinceId();
 
             return $state;
         });

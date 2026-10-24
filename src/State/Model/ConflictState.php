@@ -57,6 +57,13 @@ class ConflictState
     public array $provinceStrengths = [];
 
     /**
+     * Attacked provinces whose strength the defending player has declared: once each.
+     *
+     * @var list<string>
+     */
+    public array $declaredStrengthProvinceIds = [];
+
+    /**
      * Set when the result is determined; null when no player won the conflict.
      */
     public ?string $winnerId = null;
@@ -86,6 +93,26 @@ class ConflictState
     public function skillsDeclared(): bool
     {
         return $this->attackerSkill !== null && $this->defenderSkill !== null;
+    }
+
+    /**
+     * The player of the conflict has declared the skill of their side.
+     */
+    public function skillDeclaredBy(string $playerId): bool
+    {
+        return match ($playerId) {
+            $this->attackingPlayerId => $this->attackerSkill !== null,
+            $this->defendingPlayerId => $this->defenderSkill !== null,
+            default => false,
+        };
+    }
+
+    /**
+     * The defending player has declared the strength of every attacked province.
+     */
+    public function strengthsDeclared(): bool
+    {
+        return array_diff($this->attackedProvinceIds, $this->declaredStrengthProvinceIds) === [];
     }
 
     /**

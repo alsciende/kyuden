@@ -55,7 +55,7 @@ lint: check-symfony rector phpstan front-lint
 test: test-php front-test
 
 test-php:
-	$(PHP) vendor/bin/phpunit
+	$(PHP) -d memory_limit=1G vendor/bin/phpunit
 
 # the database of the tests lives in memory: run it after starting the database_test service
 db-test:

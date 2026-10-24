@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Exception\Rules\DuelStatisticAlreadyDeclaredException;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NotInDuelException;
 use App\Message\DeclareDuelStatistic;
@@ -101,5 +102,15 @@ class DeclareDuelStatisticHandlerTest extends AbstractKernelTestCase
         $this->expectException(NotInDuelException::class);
 
         $this->declare($scenario, 'jack', 2);
+    }
+
+    public function testRejectsAPlayerWhoHasDeclaredTheirStatistic(): void
+    {
+        $scenario = $this->scenarioInDuel();
+        $this->declare($scenario, 'jane', 2);
+
+        $this->expectException(DuelStatisticAlreadyDeclaredException::class);
+
+        $this->declare($scenario, 'jane', 3);
     }
 }

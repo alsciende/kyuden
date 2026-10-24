@@ -9,6 +9,7 @@ use App\Entity\Player;
 use App\Event\DuelStatisticDeclaredEvent;
 use App\Event\DuelTiedEvent;
 use App\Event\DuelWonEvent;
+use App\Exception\Rules\DuelStatisticAlreadyDeclaredException;
 use App\Exception\Rules\DuelStepException;
 use App\Exception\Rules\NoHonorBidException;
 use App\Exception\Rules\NotInDuelException;
@@ -23,8 +24,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Once the honor dials of the duel are revealed, both players involved declare their dueling statistic, in any order;
- * a player can declare it again until the other one has declared theirs. Once both are declared, the honor is
+ * Once the honor dials of the duel are revealed, both players involved declare their dueling statistic, once each, in
+ * any order. Once both are declared, the honor is
  * transferred (D.5, with the bids changed by cards since the reveal) and the result is determined (D.7).
  */
 #[AsMessageHandler]
@@ -50,6 +51,10 @@ final readonly class DeclareDuelStatisticHandler implements PlayerActionHandlerI
 
         if (! $duel->involves($player->getId())) {
             throw new NotInDuelException();
+        }
+
+        if ($duel->statisticDeclaredBy($player->getId())) {
+            throw new DuelStatisticAlreadyDeclaredException();
         }
     }
 

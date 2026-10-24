@@ -83,6 +83,7 @@ describe('cardMenu', () => {
         attacker_skill: null,
         defender_skill: null,
         province_strengths: {},
+        declared_strength_province_ids: [],
         winner_id: null,
         broken_province_ids: [],
       },

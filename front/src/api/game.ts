@@ -83,6 +83,7 @@ export interface ConflictView {
   attacker_skill: number | null
   defender_skill: number | null
   province_strengths: Record<string, number>
+  declared_strength_province_ids: string[]
   winner_id: string | null
   broken_province_ids: string[]
 }

@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Event\GloryCountDeclaredEvent;
+use App\Exception\Rules\GloryCountAlreadyDeclaredException;
 use App\Message\DeclareGloryCount;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
@@ -16,8 +17,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Players declare their glory count in any order, and can declare it again until every player has declared theirs:
- * the glory count is then resolved (`glory_counted`).
+ * Players declare their glory count, once each, in any order: the glory count is resolved once every player has
+ * declared theirs (`glory_counted`).
  */
 #[AsMessageHandler]
 final readonly class DeclareGloryCountHandler implements PlayerActionHandlerInterface
@@ -34,6 +35,9 @@ final readonly class DeclareGloryCountHandler implements PlayerActionHandlerInte
     public function assertAvailable(Game $game, Player $player): void
     {
         $game->assertPlace('glory_count');
+        if ($this->stateManager->getState($player)->getGloryCount() !== null) {
+            throw new GloryCountAlreadyDeclaredException();
+        }
     }
 
     public function __invoke(DeclareGloryCount $message): void

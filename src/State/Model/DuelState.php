@@ -85,6 +85,18 @@ class DuelState
         return $this->revealed && ! $this->resolved;
     }
 
+    /**
+     * The player involved has declared the dueling statistic of their side.
+     */
+    public function statisticDeclaredBy(string $playerId): bool
+    {
+        return match ($playerId) {
+            $this->challengerId => $this->challengerStatistic !== null,
+            $this->challengedId => $this->challengedStatistic !== null,
+            default => false,
+        };
+    }
+
     public function statisticsDeclared(): bool
     {
         return $this->challengerStatistic !== null && $this->challengedStatistic !== null;

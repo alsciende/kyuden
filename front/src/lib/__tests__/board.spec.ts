@@ -169,6 +169,7 @@ describe('the state of the game', () => {
         attacker_skill: null,
         defender_skill: null,
         province_strengths: {},
+        declared_strength_province_ids: [],
         winner_id: null,
         broken_province_ids: [],
       },
@@ -202,6 +203,7 @@ describe('the state of the game', () => {
       attacker_skill: 3,
       defender_skill: 1,
       province_strengths: {},
+      declared_strength_province_ids: [],
       winner_id: 'me',
       broken_province_ids: [],
     }

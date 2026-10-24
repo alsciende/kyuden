@@ -86,13 +86,10 @@ final readonly class BotStrategy
         }
 
         if (in_array('declare_conflict_skill', $available, true)) {
-            $skill = $this->undeclaredConflictSkill($game, $player);
-            if ($skill !== null) {
-                return new DeclareConflictSkill($gameId, $playerId, $skill);
-            }
+            return new DeclareConflictSkill($gameId, $playerId, $this->conflictSkill($game, $player));
         }
 
-        if (in_array('declare_glory_count', $available, true) && $playerState->getGloryCount() === null) {
+        if (in_array('declare_glory_count', $available, true)) {
             return new DeclareGloryCount($gameId, $playerId, $this->gloryCount($player));
         }
 
@@ -132,17 +129,12 @@ final readonly class BotStrategy
     }
 
     /**
-     * @return int|null the printed skill of the ready characters of the player in the conflict, null once declared
+     * The printed skill of the ready characters of the player in the conflict.
      */
-    private function undeclaredConflictSkill(Game $game, Player $player): ?int
+    private function conflictSkill(Game $game, Player $player): int
     {
         $conflict = $this->gameStateManager->getState($game)->currentConflict();
-        $attacking = $conflict->attackingPlayerId === $player->getId();
-        if (($attacking ? $conflict->attackerSkill : $conflict->defenderSkill) !== null) {
-            return null;
-        }
-
-        $participantIds = $attacking ? $conflict->attackerIds : $conflict->defenderIds;
+        $participantIds = $conflict->attackingPlayerId === $player->getId() ? $conflict->attackerIds : $conflict->defenderIds;
         $skill = 0;
         foreach ($player->getCharactersInPlay() as $character) {
             if (in_array($character->getId(), $participantIds, true) && $character->getOrientation() !== Orientation::Sideways) {

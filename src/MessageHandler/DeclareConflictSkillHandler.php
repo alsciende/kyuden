@@ -9,6 +9,7 @@ use App\Entity\Player;
 use App\Event\ConflictSkillDeclaredEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotInConflictException;
+use App\Exception\Rules\SkillAlreadyDeclaredException;
 use App\Message\DeclareConflictSkill;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
@@ -18,8 +19,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Both players of the conflict declare their total skill, in any order; a player can declare it again until the other
- * one has declared theirs. The result is determined once both have declared (`result_determined`).
+ * Both players of the conflict declare their total skill, once each, in any order. The result is determined once both
+ * have declared (`result_determined`).
  */
 #[AsMessageHandler]
 final readonly class DeclareConflictSkillHandler implements PlayerActionHandlerInterface
@@ -39,6 +40,10 @@ final readonly class DeclareConflictSkillHandler implements PlayerActionHandlerI
         $conflict = $this->gameStateManager->getState($game)->conflict ?? throw new NoConflictException();
         if (! in_array($player->getId(), [$conflict->attackingPlayerId, $conflict->defendingPlayerId], true)) {
             throw new NotInConflictException();
+        }
+
+        if ($conflict->skillDeclaredBy($player->getId())) {
+            throw new SkillAlreadyDeclaredException();
         }
     }
 
