@@ -2,7 +2,7 @@
 
 ## Current status
 
-Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the private Mercure topics with a subscriber token per user (`GET /api/self/subscription`, `game_started`), the screen of the queue, the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool and one tool per public message, the MCP tools to find a game and read it (`get_game`, `get_cards`, the queue and the games of the bot) and the prompt of an agent playing through them (`agent/`), the development console in the browser (now `/console`), the skills of a character set by the players (`SetCharacterSkill` / `ResetCharacterSkill`), the web client (`front/`, Vue 3 + Vite + TypeScript) with the way of newcomers to a first game, the guest accounts (`POST /api/guests`), the games against the house bot (`POST /api/bot-games`) and the first version of the bot (`Service/Bot`), the distinction between passing and ending what a player has played (`EndResolution`), the game board of the web client, the player accounts with a username and a password (the API: `POST /api/accounts`, `/api/sessions`, `PATCH /api/self`, and the screens of the web client: sign in, create an account, the account), the preferred clan of an account and its copy of the starter deck of that clan, the automatic refill of the provinces, placing fate on a character (`PlaceFate`) and the settings of a user: the cards drawn or shown as images, the theme of the site (day, night or as the system) (latest).
+Early stage. Implemented: matchmaking, game creation/setup, stronghold province choice, deck shuffling, drawing, filling provinces, the dynasty phase (discarding duplicates is not implemented yet) the honor bid, the reveal of the honor dials, the honor transfer and the card draw of the draw phase (`cards_drawn`), the action window of the draw phase, the conflict phase, the fate phase, the move to the conflict phase (`draw_phase_ended`), running out of cards, the end of the game by honor and the API to send messages (`POST /api/games/{id}/messages`), the secret honor bids and the duels, new ids for the cards of a shuffled stack, the reading API (`GET /api/games/{id}`), the validation and the JSON schemas of the messages (`GET /api/actions`), the actions available to the player (`available_actions`), the interrupts and reactions of players without the opportunity to act, the ability timings of the cards, the version of the state (ETags, optimistic check of the messages, Mercure notification after each change), the log of the game (`GET /api/games/{id}/log`, `app:game:log`), the user accounts and their access tokens, the API of the cards (`GET /api/cards`, `GET /api/cards/{code}`), the import of decks (`POST /api/decks`, EmeraldDB format, deckbuilding rules) the matchmaking queue (`/api/queue`) and the games of a user (`GET /api/self/games`), conceding a game (`ConcedeGame`), the private Mercure topics with a subscriber token per user (`GET /api/self/subscription`, `game_started`), the screen of the queue, the long-poll on the log of a game (`wait`, for `wait_for_update`) the nginx + PHP-FPM development stack, the MCP server with the `wait_for_update` tool and one tool per public message, the MCP tools to find a game and read it (`get_game`, `get_cards`, the queue and the games of the bot) and the prompt of an agent playing through them (`agent/`), the development console in the browser (now `/console`), the skills of a character set by the players (`SetCharacterSkill` / `ResetCharacterSkill`), the web client (`front/`, Vue 3 + Vite + TypeScript) with the way of newcomers to a first game, the guest accounts (`POST /api/guests`), the games against the house bot (`POST /api/bot-games`) and the first version of the bot (`Service/Bot`), the distinction between passing and ending what a player has played (`EndResolution`), the game board of the web client, the player accounts with a username and a password (the API: `POST /api/accounts`, `/api/sessions`, `PATCH /api/self`, and the screens of the web client: sign in, create an account, the account), the preferred clan of an account and its copy of the starter deck of that clan, the automatic refill of the provinces, placing fate on a character (`PlaceFate`) and the settings of a user: the cards drawn or shown as images, the theme of the site (day, night or as the system), sacrificing a card and returning it to hand (`SacrificeCard`, `ReturnCardToHand`) and the checks of `FillProvince` (latest).
 
 Every phase of the round is modeled: the `game` workflow has no placeholder transition left, and a game loops from round to round until a victory condition is met.
 
@@ -163,6 +163,19 @@ Every phase of the round is modeled: the `game` workflow has no placeholder tran
 - The card must be where its abilities can be used, as listed by the `trigger_ability` transition of its workflow (shared with `TriggerInterruptAbility` and `TriggerReactionAbility`, through `Service/AbilityService`): in play (dynasty, conflict, stronghold), unbroken province, or faceup holding in a province (`Workflow/DynastyCard/TriggerAbilityGuardListener`). Role cards are not covered.
 - Not checked: the presence of an action ability on the card, the once-per-round limit ("Limit X per", "Max X per").
 - The owner of the card is checked instead of its controller (control is not modeled).
+
+## Decisions taken for `SacrificeCard` / `ReturnCardToHand`
+
+- Accepted in any game place, from any player of the game, on any card, like `DiscardCard`: the engine does not know which ability is being resolved, nor who controls a card.
+- `SacrificeCard` is apart from `DiscardCard` although the card goes to the same discard pile: a sacrifice is not a discard (glossary), and the log says which it is. Only a card in play can be sacrificed: a character or an attachment in play, a faceup holding in a province (`Workflow/DynastyCard/SacrificeGuardListener`); the province is then refilled.
+- `ReturnCardToHand` returns a conflict card in play to the hand of its owner; a dynasty card goes to the dynasty discard pile instead ("If a dynasty card would enter a player's hand of conflict cards, it is put into its owner's dynasty discard pile instead"), through a `return_to_hand` transition of its own, so that the log says why.
+- No `DiscardFromHand`: `DiscardCard` already discards a chosen card from hand.
+- The card dialog of the web client offers them beside "Discard" (`CardMenu::removals`): return to hand and sacrifice for a card in play, sacrifice for a holding in a province.
+
+## Decisions taken for the checks of `FillProvince`
+
+- Only a regular province without a dynasty card on it can be filled (`CannotFillProvinceException`; a card that is not a province: `WrongCardTypeException`): no dynasty card goes on the stronghold province, and a holding keeps a province from being refilled.
+- The owner of the province is not checked: any player may fill any province, like the other effects, and the card comes from the deck of the owner of the province.
 
 ## Decisions taken for `BowCard` / `ReadyCard`
 
@@ -554,7 +567,6 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 - **Mulligan**: setup has no mulligan yet (the copy of the opponent screen does not promise one).
 - **Bot**: duels (statistic, end of the duel), playing characters, declaring conflicts and defenders; a bot stuck in a step waits for the next message (or `app:bot:play`).
 - **Players with an account**: the list and the edition of their decks; "Leave the game" at the end of a game leads a player with an account to the queue (the home page for now).
-- **Game view**: a game still in `join_game` (no players yet) breaks the sidebar (`GameSidebar`); the queue only opens a game once it has started, but a link to such a game would show it.
 - **Production**: the nginx configuration serving `front/dist`, HTTPS (required by the `.app` domain), the public URL of Mercure.
 - `npm audit`: 4 high vulnerabilities in a dependency of the lint tooling (`braces` through `@vue/eslint-config-typescript`), not shipped with the site; the fix is a breaking downgrade: wait for an update.
 
@@ -578,7 +590,7 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 
 ### Action abilities
 
-- **Costs and effects of abilities**: `BowCard` / `ReadyCard`, `LoseHonor` / `GainHonor` / `TransferHonor`, `HonorCharacter` / `DishonorCharacter`, `SetCharacterSkill` / `ResetCharacterSkill`, `PlaceFate` / `RemoveFate`, `DiscardCard`, `DiscardRandomCardFromHand`, `MoveToConflict` / `MoveHome` exist. Missing: spending or moving fate (`MoveFate`), sacrificing, returning to hand, the province and information messages. See the analysis below.
+- **Costs and effects of abilities**: `BowCard` / `ReadyCard`, `LoseHonor` / `GainHonor` / `TransferHonor`, `HonorCharacter` / `DishonorCharacter`, `SetCharacterSkill` / `ResetCharacterSkill`, `PlaceFate` / `RemoveFate`, `DiscardCard`, `DiscardRandomCardFromHand`, `SacrificeCard`, `ReturnCardToHand`, `MoveToConflict` / `MoveHome` exist. Missing: spending or moving fate (`MoveFate`), the province and information messages. See the analysis below.
 
 #### Messages needed for costs and effects
 
@@ -604,9 +616,9 @@ Recommendation: a single `MoveFate(source, target, amount)` with typed holders (
 
 **Moving cards between stacks**
 
-- `SacrificeCard` / `DiscardCard` (29 / ~30; `DiscardCard` done): same physical effect (in play → discard pile), kept apart for a readable event log (sacrifice is a cost).
-- `ReturnCardToHand` (7; Adept of Shadows, Court Mask, Niten).
-- `DiscardFromHand` (chosen card) and `DiscardRandomFromHand` (the engine picks; Kuni Yori, Thunder Guard Elite).
+- `SacrificeCard` / `DiscardCard` (29 / ~30; done): same physical effect (in play → discard pile), kept apart for a readable event log (sacrifice is a cost).
+- `ReturnCardToHand` (7; Adept of Shadows, Court Mask, Niten). Done.
+- `DiscardFromHand` (chosen card: `DiscardCard`) and `DiscardRandomFromHand` (the engine picks; Kuni Yori, Thunder Guard Elite: `DiscardRandomCardFromHand`). Done.
 - `DrawConflictCards` exists (19).
 - `PutCardIntoPlay` (20): enters play without paying costs, from discard pile, hand, province or deck. Different from `PlayCharacterFromProvince`, which pays.
 - `PutCardOnDeck(top|bottom)` (Chrysanthemum Steward, Overhear, Kaiu Siege Force, "put the rest on the bottom"); shuffling uses the existing `Shuffle*Deck`.
@@ -651,7 +663,7 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 2. ~~`LoseHonor`, `TransferHonor`~~ (done)
 3. `MoveFate`
 4. `HonorCharacter` / `DishonorCharacter` / `DiscardStatusToken`
-5. `SacrificeCard` / `DiscardCard`, `DiscardFromHand`
+5. ~~`SacrificeCard` / `DiscardCard`, `DiscardFromHand`~~ (done)
 6. Province messages (turn, discard, `FillProvince` faceup)
 7. Information messages (look, search, reveal) with `PutCardOnDeck` and `TakeCardIntoHand`
 
@@ -665,7 +677,6 @@ The player then sorts the cards with generic messages: `TakeCardIntoHand`, `PutC
 ### Game rules not enforced yet
 
 - **Uniqueness**: a player cannot have two unique characters with the same title in play.
-- **FillProvince checks**: neither the owner of the province nor the presence of a dynasty card already on it is checked.
 - **Mulligan**: players cannot replace cards of their starting hand or provinces during setup.
 - **Limited** keyword and "max X per conflict / round" restrictions on playing cards.
 

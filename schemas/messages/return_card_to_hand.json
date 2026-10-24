@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "return_card_to_hand",
+    "description": "Returns a card in play (a character, an attachment) to its owner's hand. A dynasty card is put into its owner's dynasty discard pile instead.\n\nThe card can belong to any player: effects often target an opponent's card.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card in play to return to its owner's hand.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

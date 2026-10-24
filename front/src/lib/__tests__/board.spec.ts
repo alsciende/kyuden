@@ -184,6 +184,13 @@ describe('the state of the game', () => {
     ])
   })
 
+  it('has no rings before the game starts', () => {
+    const view = game(player('me'), player('opp'), { place: 'join_game', rings: {} })
+
+    expect(rings(view)).toEqual([])
+    expect(gloryCount(view, view.players[0]!, {})).toBe(0)
+  })
+
   it('tells the conflicts a player may still declare', () => {
     expect(conflictsLeft(player('me', [], { declared_conflict_types: ['political'] }))).toEqual(['military'])
     expect(conflictsLeft(player('me', [], { conflict_opportunities: 0 }))).toEqual([])

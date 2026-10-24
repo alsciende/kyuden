@@ -353,8 +353,11 @@ export interface Ring {
 }
 
 export function rings(game: GameView): Ring[] {
-  return ELEMENTS.map((element) => {
+  return ELEMENTS.flatMap((element) => {
     const ring = game.rings[element]
+    if (ring === undefined) {
+      return []
+    }
     let status: RingStatus = 'unclaimed'
     if (game.conflict?.ring === element) {
       status = 'contested'
@@ -362,7 +365,7 @@ export function rings(game: GameView): Ring[] {
       status = ring.claimed_by_id === game.viewer_id ? 'yours' : 'theirs'
     }
 
-    return { element, fate: ring.fate, status }
+    return [{ element, fate: ring.fate, status }]
   })
 }
 
@@ -474,7 +477,7 @@ export function gloryCount(game: GameView, player: PlayerView, cards: Cards): nu
   const glory = charactersInPlay(player)
     .filter((character) => character.card.orientation !== 'sideways')
     .reduce((total, character) => total + printed(character.card.code ? cards[character.card.code]?.glory : null), 0)
-  const claimed = ELEMENTS.filter((element) => game.rings[element].claimed_by_id === player.id).length
+  const claimed = ELEMENTS.filter((element) => game.rings[element]?.claimed_by_id === player.id).length
 
   return glory + claimed
 }

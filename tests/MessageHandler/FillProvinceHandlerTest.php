@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Exception\Rules\CannotFillProvinceException;
+use App\Exception\Rules\WrongCardTypeException;
 use App\Message\FillProvince;
 use App\MessageHandler\FillProvinceHandler;
 use App\Tests\AbstractKernelTestCase;
@@ -84,5 +86,50 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
         $this->fill($scenario);
 
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('toturi')->getCurrentPlace());
+    }
+
+    public function testRejectsAProvinceWithADynastyCardOnIt(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', as: 'province', dynasty: '01-akodo-toturi')
+                ->dynastyDeck(['01-doji-hotaru']))
+            ->withPlayer('jane')
+            ->persist();
+
+        $this->expectException(CannotFillProvinceException::class);
+
+        $this->fill($scenario);
+    }
+
+    public function testRejectsTheStrongholdProvince(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->strongholdProvince('01-entrenched-position', as: 'province')
+                ->dynastyDeck(['01-doji-hotaru']))
+            ->withPlayer('jane')
+            ->persist();
+
+        $this->expectException(CannotFillProvinceException::class);
+
+        $this->fill($scenario);
+    }
+
+    public function testRejectsACardThatIsNotAProvince(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['province' => '01-akodo-toturi'])
+                ->dynastyDeck(['01-doji-hotaru']))
+            ->withPlayer('jane')
+            ->persist();
+
+        $this->expectException(WrongCardTypeException::class);
+
+        $this->fill($scenario);
     }
 }

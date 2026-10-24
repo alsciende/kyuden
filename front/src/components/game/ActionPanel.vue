@@ -298,8 +298,8 @@ const nothing = computed(
         <dd>
           <template v-if="selection.ring">
             {{ ELEMENT_NAMES[selection.ring] }}
-            <span v-if="game.rings[selection.ring].fate" class="aside"
-              >· you take its {{ game.rings[selection.ring].fate }} fate</span
+            <span v-if="game.rings[selection.ring]?.fate" class="aside"
+              >· you take its {{ game.rings[selection.ring]?.fate }} fate</span
             >
           </template>
           <span v-else class="missing">Choose a ring</span>

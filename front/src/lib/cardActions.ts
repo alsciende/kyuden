@@ -35,7 +35,8 @@ export interface CardMenu {
   skill: boolean
   /** a character in play may challenge a character of the opponent */
   duel: boolean
-  discard: SimpleAction | null
+  /** the ways it leaves where it is: returned to hand, sacrificed, discarded */
+  removals: SimpleAction[]
 }
 
 const ABILITY_TYPES: Record<AbilityTiming, string> = {
@@ -100,7 +101,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     state: [],
     skill: false,
     duel: false,
-    discard: null,
+    removals: [],
   }
   const add = (
     list: SimpleAction[],
@@ -112,11 +113,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       list.push({ type, label, payload })
     }
   }
-  const discard = () => {
-    if (available.has('discard_card')) {
-      menu.discard = { type: 'discard_card', label: 'Discard', payload: { card_id: id } }
-    }
-  }
+  const discard = () => add(menu.removals, 'discard_card', 'Discard')
+  const sacrifice = () => add(menu.removals, 'sacrifice_card', 'Sacrifice')
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -169,6 +167,9 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (card?.type !== 'character') {
           abilities()
         }
+        if (card?.type === 'holding') {
+          sacrifice()
+        }
         discard()
       }
       break
@@ -214,6 +215,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         }
         menu.skill = available.has('set_character_skill')
       }
+      add(menu.removals, 'return_card_to_hand', 'Return to hand')
+      sacrifice()
       discard()
       break
 

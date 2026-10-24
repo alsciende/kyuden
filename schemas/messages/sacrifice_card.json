@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "sacrifice_card",
+    "description": "Sacrifices a card in play (a character, an attachment, a holding in a province) to its owner's discard pile, usually as the cost of an ability. Not a discard: effects reacting to a discarded card do not apply.\n\nThe card can belong to any player: an effect can make an opponent sacrifice a card.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card in play to sacrifice.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

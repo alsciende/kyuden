@@ -199,6 +199,16 @@ return App::config([
                         'stack' => StackType::ConflictDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    WorkflowConfig::transition('sacrifice', ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE, [
+                        'log' => '{card} is sacrificed',
+                        'stack' => StackType::ConflictDiscardPile,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    WorkflowConfig::transition('return_to_hand', ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_HAND, [
+                        'log' => '{card} is returned to {to}',
+                        'stack' => StackType::Hand,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
                     WorkflowConfig::transition('put_back', [ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_DRAW_DECK, [
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::ConflictDrawDeck,
@@ -238,6 +248,18 @@ return App::config([
                     // from a province: a card discarded from a broken province, or during the fate phase
                     WorkflowConfig::transition('discard_card', [DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY], DynastyCard::STATE_DISCARD_PILE, [
                         'log' => '{card} is discarded from {from}',
+                        'stack' => StackType::DynastyDiscardPile,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    // from a province: a holding (App\Workflow\DynastyCard\SacrificeGuardListener)
+                    WorkflowConfig::transition('sacrifice', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY], DynastyCard::STATE_DISCARD_PILE, [
+                        'log' => '{card} is sacrificed',
+                        'stack' => StackType::DynastyDiscardPile,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a dynasty card that would enter a hand is put into the dynasty discard pile instead
+                    WorkflowConfig::transition('return_to_hand', DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, [
+                        'log' => '{card} would return to hand and is put into {to}',
                         'stack' => StackType::DynastyDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),

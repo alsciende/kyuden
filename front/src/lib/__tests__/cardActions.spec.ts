@@ -15,6 +15,8 @@ const EFFECTS = [
   'move_to_conflict',
   'set_character_skill',
   'discard_card',
+  'sacrifice_card',
+  'return_card_to_hand',
   'reveal_dynasty_card',
   'fill_province',
 ]
@@ -52,7 +54,11 @@ describe('cardMenu', () => {
       'remove_fate',
     ])
     expect(menu.skill).toBe(true)
-    expect(menu.discard?.payload).toEqual({ card_id: kaezin.id })
+    expect(menu.removals.map((action) => [action.type, action.payload])).toEqual([
+      ['return_card_to_hand', { card_id: kaezin.id }],
+      ['sacrifice_card', { card_id: kaezin.id }],
+      ['discard_card', { card_id: kaezin.id }],
+    ])
   })
 
   it('offers the manipulations on the cards of the opponent too, but not their state they already have', () => {
@@ -121,6 +127,26 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, shown.id)!.plays).toEqual([
       { type: 'play_character_from_province', kind: 'from_province', label: 'Play this character', cost: 1 },
     ])
+  })
+
+  it('sacrifices a holding in a province, but not a character', () => {
+    const academy = card('academy')
+    const shown = card('scout')
+    const view = game(
+      player('me', [
+        stack('regular_province', [card('raid'), academy]),
+        stack('regular_province', [card('raid'), shown]),
+      ]),
+      player('opp'),
+      { available_actions: EFFECTS },
+    )
+    const holdings = { ...cards, academy: printed('academy', { type: 'holding' }) }
+
+    expect(cardMenu(view, holdings, academy.id)!.removals.map((action) => action.type)).toEqual([
+      'sacrifice_card',
+      'discard_card',
+    ])
+    expect(cardMenu(view, holdings, shown.id)!.removals.map((action) => action.type)).toEqual(['discard_card'])
   })
 
   it('fills an empty province', () => {

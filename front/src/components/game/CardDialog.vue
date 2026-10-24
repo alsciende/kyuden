@@ -366,14 +366,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
       <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-      <div v-if="menu.discard" class="discard">
+      <div v-if="menu.removals.length > 0" class="removals">
         <button
+          v-for="action in menu.removals"
+          :key="action.type"
           type="button"
           class="btn danger"
           :disabled="sending"
-          @click="run(menu.discard.type, menu.discard.payload)"
+          @click="run(action.type, action.payload)"
         >
-          Discard
+          {{ action.label }}
         </button>
       </div>
     </section>
@@ -611,13 +613,15 @@ h2 {
   color: var(--seal);
 }
 
-.discard {
+.removals {
+  display: flex;
+  gap: 8px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
 .danger {
-  width: 100%;
+  flex: 1;
   min-height: 44px;
   font-size: 15px;
   background: transparent;

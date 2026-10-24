@@ -111,7 +111,8 @@ export interface GameView {
   first_player_id: string | null
   active_player_ids: string[]
   players: PlayerView[]
-  rings: Record<Element, RingView>
+  /** empty until the game starts */
+  rings: Partial<Record<Element, RingView>>
   conflict: ConflictView | null
   duel: DuelView | null
   imperial_favor_holder_id: string | null
