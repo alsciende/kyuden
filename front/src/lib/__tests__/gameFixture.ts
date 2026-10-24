@@ -13,6 +13,7 @@ export function card(code: string | null, changes: Partial<CardView> = {}): Card
   return {
     id: changes.id ?? `card-${next}`,
     code,
+    side: 'conflict',
     orientation: 'face_up',
     fate: 0,
     personal_honor: 'ordinary',

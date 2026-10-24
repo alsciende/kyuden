@@ -32,7 +32,14 @@ describe('SignupView', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    const guest = { userId: 'user-1', name: 'Hida Takeshi', username: null, preferredClan: null, token: 'l5r_a' }
+    const guest = {
+      userId: 'user-1',
+      name: 'Hida Takeshi',
+      username: null,
+      preferredClan: null,
+      cardDisplay: 'drawn' as const,
+      token: 'l5r_a',
+    }
     localStorage.setItem('kyuden.session', JSON.stringify(guest))
     session.value = guest
     // the guest has played no game yet: the clan chosen on their way is offered
@@ -74,6 +81,7 @@ describe('SignupView', () => {
           name: 'Hida Takeshi',
           username: 'takeshi_2',
           preferred_clan: 'crab',
+          settings: { card_display: 'drawn' },
           token: 'l5r_b',
         }),
       )
@@ -114,6 +122,7 @@ describe('SignupView', () => {
         name: 'Hida Takeshi',
         username: 'takeshi',
         preferred_clan: 'phoenix',
+        settings: { card_display: 'drawn' },
         token: 'l5r_b',
       }),
     )

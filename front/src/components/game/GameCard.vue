@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 
-import type { CardView } from '@/api/game'
+import type { CardView, Side } from '@/api/game'
+import conflictBack from '@/assets/images/card-back-conflit.webp'
+import dynastyBack from '@/assets/images/card-back-dynasty.webp'
+import provinceBack from '@/assets/images/card-back-province.webp'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
-import { printed, shownSkill, type Cards } from '@/lib/board'
+import { hasSkill, printed, shownSkill, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS } from '@/lib/icons'
 import { hidePreview, showPreview } from '@/lib/preview'
+import { session } from '@/lib/session'
 
 /**
  * A card on the board: its face (name, type, values) when the viewer sees it, its back otherwise. A bowed card lies
  * sideways; fate and personal honor are marked on it. Hovering it shows its image beside it. A character shows its
  * current skills: recorded by a player (solid), else computed from the cards (dotted underline, nobody recorded them).
+ *
+ * When the player prefers the images of the cards (their settings), the card shows its image, or the back of its side
+ * when face down; its skills are only marked when they differ from the printed ones. A card without an image is drawn.
  */
 const props = withDefaults(
   defineProps<{
@@ -45,6 +52,17 @@ const secret = computed(() => !hidden.value && props.card.orientation === 'face_
 
 const isCharacter = computed(() => printedCard.value?.type === 'character')
 
+const BACKS: Partial<Record<Side, string>> = { conflict: conflictBack, dynasty: dynastyBack, province: provinceBack }
+
+/** the image shown instead of the drawn card, null when the card is drawn */
+const art = computed(() => {
+  if (session.value?.cardDisplay !== 'images') {
+    return null
+  }
+
+  return hidden.value ? (BACKS[props.card.side] ?? null) : (printedCard.value?.image_url ?? null)
+})
+
 const skills = computed(() => {
   const card = printedCard.value
   if (!isCharacter.value || card === undefined) {
@@ -57,6 +75,19 @@ const skills = computed(() => {
     political: shownSkill(character, props.cards, 'political'),
     glory: printed(card.glory),
   }
+})
+
+/** on an image, the skills are marked only when they are not the printed ones */
+const changedSkills = computed(() => {
+  const card = printedCard.value
+  const shown = skills.value
+  if (shown === null || card === undefined) {
+    return false
+  }
+
+  return (['military', 'political'] as const).some(
+    (type) => shown[type].recorded || (hasSkill(card, type) && shown[type].value !== printed(card[type])),
+  )
 })
 
 function skillLabel(type: string, skill: { value: number | null; recorded: boolean }): string {
@@ -122,7 +153,7 @@ function enter(): void {
     ref="element"
     type="button"
     class="card"
-    :class="[size, { hidden, bowed, broken, secret, selected, muted }]"
+    :class="[size, { hidden, bowed, broken, secret, selected, muted, art: art !== null }]"
     :aria-label="label"
     :aria-pressed="selected ? 'true' : undefined"
     @click="$emit('click')"
@@ -131,7 +162,23 @@ function enter(): void {
     @focus="enter"
     @blur="hidePreview"
   >
-    <template v-if="hidden">
+    <template v-if="art !== null">
+      <img class="art-image" :src="art" alt="" draggable="false" />
+      <span v-if="!hidden && (secret || broken)" class="art-state" aria-hidden="true">{{
+        secret ? 'Face down' : 'Broken'
+      }}</span>
+      <span v-if="skills && changedSkills" class="art-stats" aria-hidden="true">
+        <span class="skill" :class="{ recorded: skills.military.recorded }"
+          ><span class="icon">{{ CONFLICT_ICONS.military }}</span
+          >{{ skills.military.value ?? '–' }}</span
+        >
+        <span class="skill" :class="{ recorded: skills.political.recorded }"
+          ><span class="icon">{{ CONFLICT_ICONS.political }}</span
+          >{{ skills.political.value ?? '–' }}</span
+        >
+      </span>
+    </template>
+    <template v-else-if="hidden">
       <ClanMon :src="enso" :size="size === 'small' ? 30 : 44" color="#a89c88" />
     </template>
     <template v-else>
@@ -242,6 +289,87 @@ function enter(): void {
 .selected {
   outline: 3px solid var(--seal);
   outline-offset: 3px;
+}
+
+.art {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.art-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--w);
+  height: var(--h);
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  display: block;
+  pointer-events: none;
+}
+
+.art.bowed .art-image {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.art.broken .art-image {
+  transform: translate(-50%, -50%) rotate(180deg);
+  filter: grayscale(0.8) brightness(0.7);
+}
+
+.art.secret .art-image {
+  opacity: 0.55;
+}
+
+.art-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.art-stats {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgb(31 27 22 / 0.85);
+  color: #fbf6ec;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.small .art-stats {
+  font-size: 10px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 3px;
+}
+
+.art-stats .icon {
+  font-size: 0.9em;
+  margin-right: 2px;
+}
+
+.art-stats .skill.recorded {
+  color: #f08a73;
 }
 
 .name {

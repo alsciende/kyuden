@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CLANS } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 import {
+  chooseCardDisplay,
   loadSession,
   preferClan,
   rename,
@@ -58,6 +59,7 @@ describe('startIntroductoryGame', () => {
       name: 'Hida Takeshi',
       username: null,
       preferredClan: null,
+      cardDisplay: 'drawn',
       token: 'l5r_token',
     })
   })
@@ -105,6 +107,7 @@ describe('accounts', () => {
     name: 'Hida Takeshi',
     username: 'takeshi',
     preferred_clan: 'crab',
+    settings: { card_display: 'images' },
     token: 'l5r_account',
   }
 
@@ -137,6 +140,7 @@ describe('accounts', () => {
       name: 'Hida Takeshi',
       username: 'takeshi',
       preferredClan: 'crab',
+      cardDisplay: 'images',
       token: 'l5r_account',
     })
     expect(session.value?.username).toBe('takeshi')
@@ -181,7 +185,14 @@ describe('accounts', () => {
 
   it('renames the account', async () => {
     localStorage.setItem('kyuden.session', JSON.stringify({ ...account, userId: 'user-1' }))
-    fetchMock.mockResolvedValueOnce(json(200, { name: 'Hida Kisada', username: 'takeshi', preferred_clan: 'crab' }))
+    fetchMock.mockResolvedValueOnce(
+      json(200, {
+        name: 'Hida Kisada',
+        username: 'takeshi',
+        preferred_clan: 'crab',
+        settings: { card_display: 'drawn' },
+      }),
+    )
 
     await rename('Hida Kisada')
 
@@ -192,13 +203,39 @@ describe('accounts', () => {
 
   it('changes the preferred clan of the account', async () => {
     localStorage.setItem('kyuden.session', JSON.stringify({ ...account, userId: 'user-1', preferredClan: 'crab' }))
-    fetchMock.mockResolvedValueOnce(json(200, { name: 'Hida Takeshi', username: 'takeshi', preferred_clan: 'crane' }))
+    fetchMock.mockResolvedValueOnce(
+      json(200, {
+        name: 'Hida Takeshi',
+        username: 'takeshi',
+        preferred_clan: 'crane',
+        settings: { card_display: 'drawn' },
+      }),
+    )
 
     await preferClan('crane')
 
     expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ preferred_clan: 'crane' })
     expect(loadSession()?.preferredClan).toBe('crane')
     expect(session.value?.preferredClan).toBe('crane')
+  })
+
+  it('changes how the board draws the cards', async () => {
+    localStorage.setItem('kyuden.session', JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', token: 'l5r_a' }))
+    fetchMock.mockResolvedValueOnce(
+      json(200, {
+        name: 'Hida Takeshi',
+        username: 'takeshi',
+        preferred_clan: 'crab',
+        settings: { card_display: 'images' },
+      }),
+    )
+
+    expect(loadSession()?.cardDisplay).toBe('drawn')
+    await chooseCardDisplay('images')
+
+    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ settings: { card_display: 'images' } })
+    expect(loadSession()?.cardDisplay).toBe('images')
+    expect(session.value?.cardDisplay).toBe('images')
   })
 
   it('forgets the account when signing out, even if the token is refused', async () => {

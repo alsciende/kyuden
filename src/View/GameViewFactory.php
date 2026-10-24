@@ -132,6 +132,7 @@ final readonly class GameViewFactory
         return new CardView(
             id: $card->getId(),
             code: $visible ? $card->getLogicalCard()->getId() : null,
+            side: $card->getLogicalCard()->getSide(),
             orientation: $card->getOrientation(),
             fate: $state->getFate(),
             personalHonor: $state->getPersonalHonor(),

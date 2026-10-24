@@ -12,6 +12,7 @@ import {
   updateSelf,
   type Account,
   type BotGame,
+  type CardDisplay,
   type Self,
 } from '@/api/client'
 import { fetchGame } from '@/api/game'
@@ -30,6 +31,8 @@ export interface Session {
   username: string | null
   /** null for a guest */
   preferredClan: ClanId | null
+  /** how the board draws the cards: always drawn for a guest, who has no account to change it */
+  cardDisplay: CardDisplay
   token: string
 }
 
@@ -41,13 +44,20 @@ export function loadSession(): Session | null {
     if (value === null) {
       return null
     }
-    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan'> & {
+    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan' | 'cardDisplay'> & {
       username?: string | null
       preferredClan?: ClanId | null
+      cardDisplay?: CardDisplay
     }
 
-    // the guests kept before the accounts have no username, the sessions kept before the clans no preferred clan
-    return { ...stored, username: stored.username ?? null, preferredClan: stored.preferredClan ?? null }
+    // the guests kept before the accounts have no username, the sessions kept before the clans no preferred clan,
+    // those kept before the settings no card display
+    return {
+      ...stored,
+      username: stored.username ?? null,
+      preferredClan: stored.preferredClan ?? null,
+      cardDisplay: stored.cardDisplay ?? 'drawn',
+    }
   } catch {
     return null
   }
@@ -83,7 +93,14 @@ async function guestSession(name: string): Promise<Session> {
   }
 
   const guest = await createGuest(name)
-  const created = { userId: guest.user_id, name: guest.name, username: null, preferredClan: null, token: guest.token }
+  const created: Session = {
+    userId: guest.user_id,
+    name: guest.name,
+    username: null,
+    preferredClan: null,
+    cardDisplay: 'drawn',
+    token: guest.token,
+  }
   saveSession(created)
 
   return created
@@ -114,6 +131,7 @@ function accountSession(account: Account): Session {
     name: account.name,
     username: account.username,
     preferredClan: account.preferred_clan,
+    cardDisplay: account.settings.card_display,
     token: account.token,
   }
   saveSession(created)
@@ -224,10 +242,16 @@ export async function refreshSession(): Promise<Session | null> {
 }
 
 function withSelf(current: Session, self: Self): Session {
-  return { ...current, name: self.name, username: self.username, preferredClan: self.preferred_clan }
+  return {
+    ...current,
+    name: self.name,
+    username: self.username,
+    preferredClan: self.preferred_clan,
+    cardDisplay: self.settings.card_display,
+  }
 }
 
-async function updateAccount(changes: { name?: string; preferred_clan?: ClanId }): Promise<Session> {
+async function updateAccount(changes: Parameters<typeof updateSelf>[1]): Promise<Session> {
   const current = loadSession()
   if (current === null) {
     throw new Error('No session to change.')
@@ -244,4 +268,8 @@ export function rename(name: string): Promise<Session> {
 
 export function preferClan(clan: ClanId): Promise<Session> {
   return updateAccount({ preferred_clan: clan })
+}
+
+export function chooseCardDisplay(cardDisplay: CardDisplay): Promise<Session> {
+  return updateAccount({ settings: { card_display: cardDisplay } })
 }

@@ -58,11 +58,22 @@ export interface Guest {
 /**
  * An account and a new session token: the guest who created it (same user), a new user, or a user signing in.
  */
+/** how the board draws the cards: a frame with their name and values, or their image */
+export type CardDisplay = 'drawn' | 'images'
+
+/**
+ * The preferences of a user.
+ */
+export interface UserSettings {
+  card_display: CardDisplay
+}
+
 export interface Account {
   user_id: string
   name: string
   username: string
   preferred_clan: ClanId | null
+  settings: UserSettings
   token: string
 }
 
@@ -73,6 +84,7 @@ export interface Self {
   name: string
   username: string | null
   preferred_clan: ClanId | null
+  settings: UserSettings
 }
 
 /**
@@ -210,7 +222,10 @@ export function fetchSelf(token: string): Promise<Self> {
   return request<Self>('/api/self', { token })
 }
 
-export function updateSelf(token: string, changes: { name?: string; preferred_clan?: ClanId }): Promise<Self> {
+export function updateSelf(
+  token: string,
+  changes: { name?: string; preferred_clan?: ClanId; settings?: Partial<UserSettings> },
+): Promise<Self> {
   return request<Self>('/api/self', { method: 'PATCH', body: changes, token })
 }
 

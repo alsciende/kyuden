@@ -59,12 +59,12 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
 
     public function testAUserReadsTheirIdentifierNameAndUsername(): void
     {
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane'], $this->decode($this->get('/api/self', 'jane')));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn']], $this->decode($this->get('/api/self', 'jane')));
     }
 
     public function testAGuestHasNoUsername(): void
     {
-        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null, 'preferred_clan' => null], $this->decode($this->get('/api/self', 'harry')));
+        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null, 'preferred_clan' => null, 'settings' => ['card_display' => 'drawn']], $this->decode($this->get('/api/self', 'harry')));
     }
 
     public function testTheSelfRequiresAToken(): void
@@ -76,23 +76,42 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => '  Doji Hotaru ']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane'], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn']], $this->decode($response));
         self::assertSame('Doji Hotaru', $this->decode($this->get('/api/self', 'jane'))['name']);
     }
 
     public function testAUserChangesTheirPreferredClan(): void
     {
-        $response = $this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => 'phoenix']);
+        $response = $this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn']]);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix'], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn']], $this->decode($response));
         self::assertSame('phoenix', $this->decode($this->get('/api/self', 'jane'))['preferred_clan']);
     }
 
     public function testAUserChangesTheirNameAndPreferredClanAtOnce(): void
     {
-        $response = $this->request('PATCH', '/api/self', 'jane', ['name' => 'Shiba Tsukune', 'preferred_clan' => 'phoenix']);
+        $response = $this->request('PATCH', '/api/self', 'jane', ['name' => 'Shiba Tsukune', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn']]);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix'], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn']], $this->decode($response));
+    }
+
+    public function testAUserChangesTheirCardDisplay(): void
+    {
+        $response = $this->request('PATCH', '/api/self', 'jane', ['settings' => ['card_display' => 'images']]);
+
+        self::assertSame(['card_display' => 'images'], $this->decode($response)['settings']);
+        self::assertSame(['card_display' => 'images'], $this->decode($this->get('/api/self', 'jane'))['settings']);
+        self::assertSame('Jane', $this->decode($this->get('/api/self', 'jane'))['name']);
+    }
+
+    public function testRejectsAnUnknownCardDisplay(): void
+    {
+        $problem = $this->decodeProblem($this->request('PATCH', '/api/self', 'jane', ['settings' => ['card_display' => 'ascii']]), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        self::assertSame('validation_failed', $problem['type']);
+        self::assertIsArray($problem['violations']);
+        self::assertSame(['settings.card_display'], array_column($problem['violations'], 'property_path'));
+        self::assertSame(['card_display' => 'drawn'], $this->decode($this->get('/api/self', 'jane'))['settings']);
     }
 
     /**
@@ -122,8 +141,12 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         yield 'no name' => [[]];
         yield 'name not a string' => [['name' => 12]];
-        yield 'clan not a string' => [['preferred_clan' => null]];
+        yield 'clan not a string' => [['preferred_clan' => null, 'settings' => ['card_display' => 'drawn']]];
         yield 'unexpected field' => [['name' => 'Doji Hotaru', 'username' => 'hotaru']];
+        yield 'settings not an object' => [['settings' => 'images']];
+        yield 'settings a list' => [['settings' => ['images']]];
+        yield 'setting not a string' => [['settings' => ['card_display' => true]]];
+        yield 'unexpected setting' => [['settings' => ['theme' => 'dark']]];
     }
 
     #[DataProvider('invalidNameBodies')]

@@ -6,7 +6,9 @@ namespace App\Entity;
 
 use App\Enum\Clan;
 use App\Enum\UserType;
+use App\Model\UserSettings;
 use App\Repository\UserRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -19,7 +21,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * Its id is its user identifier. A Player and a Candidate belong to a user. Its name (its name at court) is what the
  * other players see, not unique. A human signs in with a username and a password once registered; before that, it is
  * a guest. The username is unique whatever its case (`usernameCanonical`). Their preferred clan, one of the Great Clans,
- * is chosen when they create their account and changed at any time.
+ * is chosen when they create their account and changed at any time. Their settings (UserSettings) are their preferences,
+ * e.g. how the web client draws the cards.
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table('users')]
@@ -61,6 +64,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 16, nullable: true, enumType: Clan::class)]
     private ?Clan $preferredClan = null;
+
+    /**
+     * @var array<mixed> the settings as stored, read through UserSettings
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private array $settings = [];
 
     /**
      * @param non-empty-string $id
@@ -160,6 +169,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->preferredClan = $clan;
+    }
+
+    public function getSettings(): UserSettings
+    {
+        return UserSettings::fromArray($this->settings);
+    }
+
+    public function changeSettings(UserSettings $settings): void
+    {
+        $this->settings = $settings->toArray();
     }
 
     #[\Override]

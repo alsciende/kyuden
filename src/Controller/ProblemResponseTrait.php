@@ -29,14 +29,18 @@ trait ProblemResponseTrait
     }
 
     /**
-     * The values of a payload break constraints of the Validator: 422 `validation_failed`, with its violations.
+     * The values of a payload break constraints of the Validator: 422 `validation_failed`, with its violations (each
+     * segment of the path in snake case: `settings.card_display`).
      */
     private function validationProblem(ConstraintViolationListInterface $violations): JsonResponse
     {
         $list = [];
         foreach ($violations as $violation) {
             $list[] = [
-                'property_path' => u($violation->getPropertyPath())->snake()->toString(),
+                'property_path' => implode('.', array_map(
+                    static fn (string $segment): string => u($segment)->snake()->toString(),
+                    explode('.', $violation->getPropertyPath()),
+                )),
                 'message' => (string) $violation->getMessage(),
             ];
         }

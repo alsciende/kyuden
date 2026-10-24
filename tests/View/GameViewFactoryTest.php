@@ -9,6 +9,7 @@ use App\Enum\Clan;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
+use App\Enum\Side;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -127,6 +128,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame('01-entrenched-position', $this->cardView($johnsView, $scenario->card('facedown'))->code);
         self::assertNull($this->cardView($janesView, $scenario->card('facedown'))->code);
         self::assertSame(Orientation::FaceDown, $this->cardView($janesView, $scenario->card('facedown'))->orientation);
+        self::assertSame(Side::Province, $this->cardView($janesView, $scenario->card('facedown'))->side);
         self::assertSame('01-ancestral-lands', $this->cardView($janesView, $scenario->card('revealed'))->code);
     }
 
@@ -145,6 +147,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
 
         self::assertNull($this->cardView($johnsView, $scenario->card('facedown'))->code);
         self::assertNull($this->cardView($janesView, $scenario->card('facedown'))->code);
+        self::assertSame(Side::Dynasty, $this->cardView($janesView, $scenario->card('facedown'))->side);
         self::assertSame('01-akodo-toturi', $this->cardView($janesView, $scenario->card('faceup'))->code);
     }
 

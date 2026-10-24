@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Model;
 
 use App\Enum\Clan;
+use App\Model\UserSettings;
 
 /**
  * An account a human has just created (`POST /api/accounts`) or signed in to (`POST /api/sessions`), with a new
@@ -20,6 +21,8 @@ final readonly class AccountView
         public string $username,
         /** a Great Clan, changed at any time */
         public ?Clan $preferredClan,
+        /** their preferences, e.g. how the web client draws the cards */
+        public UserSettings $settings,
         /** the session token, sent once: `Authorization: Bearer <token>` */
         public string $token,
     ) {

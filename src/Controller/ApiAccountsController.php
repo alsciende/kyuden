@@ -79,7 +79,7 @@ class ApiAccountsController extends AbstractController
         $username = $account->getUsername();
         \assert($username !== null);
 
-        return $this->json(new AccountView($account->getId(), $account->getName(), $username, $account->getPreferredClan(), $token), Response::HTTP_CREATED);
+        return $this->json(new AccountView($account->getId(), $account->getName(), $username, $account->getPreferredClan(), $account->getSettings(), $token), Response::HTTP_CREATED);
     }
 
     private function usernameTaken(AccountRequest $accountRequest): JsonResponse

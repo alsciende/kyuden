@@ -92,7 +92,7 @@ class ApiSessionsController extends AbstractController
         $registeredUsername = $user->getUsername();
         \assert($registeredUsername !== null);
 
-        return $this->json(new AccountView($user->getId(), $user->getName(), $registeredUsername, $user->getPreferredClan(), $token), Response::HTTP_CREATED);
+        return $this->json(new AccountView($user->getId(), $user->getName(), $registeredUsername, $user->getPreferredClan(), $user->getSettings(), $token), Response::HTTP_CREATED);
     }
 
     #[Route('/api/sessions/current', name: 'app_api_sessions_delete', methods: ['DELETE'])]

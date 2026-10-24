@@ -2,15 +2,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import type { CardDisplay } from '@/api/client'
 import ClanPicker from '@/components/ClanPicker.vue'
 import type { ClanId } from '@/data/clans'
 import { MAX_NAME_LENGTH } from '@/lib/names'
 import { formErrors } from '@/lib/credentials'
-import { preferClan, refreshSession, rename, session, signOut } from '@/lib/session'
+import { chooseCardDisplay, preferClan, refreshSession, rename, session, signOut } from '@/lib/session'
 
 /**
- * The account of the player: their username (how they sign in), their preferred clan and their name at court (what the
- * other players see), which they change here.
+ * The account of the player: their username (how they sign in), their preferred clan, their name at court (what the
+ * other players see) and how the board draws the cards, which they change here.
  */
 const route = useRoute()
 const router = useRouter()
@@ -26,6 +27,16 @@ const clanSaved = ref(false)
 const clanError = ref<string | null>(null)
 const clanSending = ref(false)
 
+const CARD_DISPLAYS: { value: CardDisplay; label: string; hint: string }[] = [
+  { value: 'drawn', label: 'Drawn', hint: 'The name and the values of each card, easy to read at a glance.' },
+  { value: 'images', label: 'Card images', hint: 'The printed cards, as on a real table.' },
+]
+
+const cardDisplay = ref<CardDisplay>(session.value?.cardDisplay ?? 'drawn')
+const displaySaved = ref(false)
+const displayError = ref<string | null>(null)
+const displaySending = ref(false)
+
 const changed = computed(() => name.value.trim() !== '' && name.value.trim() !== session.value?.name)
 
 onMounted(async () => {
@@ -38,6 +49,7 @@ onMounted(async () => {
     }
     name.value = current.name
     clanId.value = current.preferredClan
+    cardDisplay.value = current.cardDisplay
   } catch {
     // the account shown is the one the browser remembers
   }
@@ -77,6 +89,24 @@ async function changeClan(id: ClanId | null): Promise<void> {
     clanError.value = errors.clan ?? errors.form ?? null
   } finally {
     clanSending.value = false
+  }
+}
+
+async function changeCardDisplay(value: CardDisplay): Promise<void> {
+  if (value === session.value?.cardDisplay) {
+    return
+  }
+  displaySending.value = true
+  displayError.value = null
+  displaySaved.value = false
+  try {
+    cardDisplay.value = (await chooseCardDisplay(value)).cardDisplay
+    displaySaved.value = true
+  } catch (problem) {
+    cardDisplay.value = session.value?.cardDisplay ?? 'drawn'
+    displayError.value = formErrors(problem).form ?? 'The setting could not be saved.'
+  } finally {
+    displaySending.value = false
   }
 }
 
@@ -133,6 +163,28 @@ async function leave(): Promise<void> {
         <p v-else-if="saved" class="form-hint" role="status">Saved.</p>
         <p v-else class="form-hint">What the other players see at the table.</p>
       </form>
+
+      <div id="card-display-label" class="form-label row-label display-label">Cards on the board</div>
+      <div class="row">
+        <div class="choices" role="radiogroup" aria-labelledby="card-display-label">
+          <label v-for="choice in CARD_DISPLAYS" :key="choice.value" class="choice">
+            <input
+              type="radio"
+              name="card-display"
+              :value="choice.value"
+              :checked="cardDisplay === choice.value"
+              :disabled="displaySending"
+              @change="changeCardDisplay(choice.value)"
+            />
+            <span class="choice-text">
+              <span class="choice-label">{{ choice.label }}</span>
+              <span class="form-hint">{{ choice.hint }}</span>
+            </span>
+          </label>
+        </div>
+        <p v-if="displayError" class="form-error" role="alert">{{ displayError }}</p>
+        <p v-else-if="displaySaved" class="form-hint" role="status">Saved.</p>
+      </div>
 
       <div class="form-label row-label linked-label">Linked accounts</div>
       <div class="row">
@@ -198,6 +250,43 @@ h1 {
 
 .linked-label {
   padding-top: 12px;
+}
+
+.display-label {
+  padding-top: 2px;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.choice input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--seal);
+  cursor: pointer;
+}
+
+.choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.choice-label {
+  font-size: 17px;
+  font-weight: 500;
 }
 
 .row {

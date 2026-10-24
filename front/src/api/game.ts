@@ -9,6 +9,8 @@ export type Element = 'air' | 'earth' | 'fire' | 'void' | 'water'
 export type ConflictType = 'military' | 'political'
 export type Orientation = 'face_down' | 'face_up' | 'sideways' | 'upside_down'
 export type PersonalHonor = 'ordinary' | 'honored' | 'dishonored'
+/** the side of a card, which tells its back */
+export type Side = 'conflict' | 'dynasty' | 'province' | 'role' | 'stronghold'
 export type StackType =
   | 'conflict_draw_deck'
   | 'conflict_discard_pile'
@@ -24,6 +26,8 @@ export interface CardView {
   id: string
   /** null when the viewer does not see the face of the card */
   code: string | null
+  /** public, even when the code is not: the back of the card */
+  side: Side
   orientation: Orientation
   fate: number
   personal_honor: PersonalHonor

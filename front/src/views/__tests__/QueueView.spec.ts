@@ -64,7 +64,14 @@ describe('QueueView', () => {
   let games: unknown[]
 
   beforeEach(() => {
-    session.value = { userId: 'john', name: 'Hida Takeshi', username: 'john', preferredClan: 'crab', token: 'l5r_a' }
+    session.value = {
+      userId: 'john',
+      name: 'Hida Takeshi',
+      username: 'john',
+      preferredClan: 'crab',
+      cardDisplay: 'drawn',
+      token: 'l5r_a',
+    }
     FakeEventSource.opened = []
     queue = []
     games = []
