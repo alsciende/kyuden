@@ -81,7 +81,7 @@ export const ANYTIME_ACTIONS = new Set([
     'draw_conflict_cards', 'fill_province', 'reveal_dynasty_card', 'gain_honor', 'lose_honor', 'set_honor',
     'set_honor_bid', 'transfer_honor', 'place_fate', 'remove_fate', 'shuffle_conflict_deck', 'shuffle_dynasty_deck', 'move_to_conflict',
     'move_home', 'play_interrupt_event', 'play_reaction_event', 'trigger_interrupt_ability', 'trigger_reaction_ability',
-    'initiate_duel', 'concede_game',
+    'initiate_duel', 'concede_game', 'point_at_card',
 ]);
 
 export function stepActions(view) {

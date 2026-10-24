@@ -15,5 +15,9 @@ export default defineConfig({
     hmr: {
       clientPort: 8080,
     },
+    // the sources are a bind mount: file events from the host do not always reach the container
+    watch: {
+      usePolling: true,
+    },
   },
 })

@@ -28,15 +28,15 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
      */
     public const array USERNAMES = [
         'john' => 'john',
-        'jane' => 'Jane_Doe',
+        'jane' => 'jane',
     ];
 
     /**
      * The password of each human with an account, by user id.
      */
     public const array PASSWORDS = [
-        'john' => 'john-dev-password',
-        'jane' => 'jane-dev-password',
+        'john' => 'john',
+        'jane' => 'jane',
     ];
 
     /**

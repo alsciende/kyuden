@@ -111,7 +111,7 @@ class ApiAccountsControllerTest extends AbstractKernelTestCase
 
     public function testNoDeckIsCopiedWhenTheAccountIsRejected(): void
     {
-        $this->decode($this->request('POST', '/api/accounts', ['username' => 'jane_doe', 'password' => 'password', 'clan' => 'crab'], UserFixtures::TOKENS['harry']), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $this->decode($this->request('POST', '/api/accounts', ['username' => 'JANE', 'password' => 'password', 'clan' => 'crab'], UserFixtures::TOKENS['harry']), Response::HTTP_UNPROCESSABLE_ENTITY);
 
         self::assertSame([], self::service(DeckRepository::class)->findBy(['owner' => 'harry']));
     }
@@ -137,7 +137,7 @@ class ApiAccountsControllerTest extends AbstractKernelTestCase
 
     public function testAUsernameIsTakenWhateverItsCase(): void
     {
-        $problem = $this->decode($this->request('POST', '/api/accounts', ['username' => 'jane_doe', 'password' => 'password', 'clan' => 'crab'], UserFixtures::TOKENS['harry']), Response::HTTP_UNPROCESSABLE_ENTITY);
+        $problem = $this->decode($this->request('POST', '/api/accounts', ['username' => 'JANE', 'password' => 'password', 'clan' => 'crab'], UserFixtures::TOKENS['harry']), Response::HTTP_UNPROCESSABLE_ENTITY);
 
         self::assertSame('validation_failed', $problem['type']);
         self::assertSame([['property_path' => 'username', 'message' => 'This username is taken.']], $problem['violations']);

@@ -167,4 +167,30 @@ describe('cardMenu', () => {
 
     expect(cardMenu(view, cards, raid.id)!.state.map((action) => action.type)).toEqual(['choose_stronghold_province'])
   })
+
+  it('points at a card every player sees, face down too, but not at a card in hand', () => {
+    const kaezin = card('kaezin')
+    const facedown = card(null, { orientation: 'face_down' })
+    const banzai = card('banzai')
+    const view = game(
+      player('me', [stack('in_play', [kaezin]), stack('hand', [banzai])]),
+      player('opp', [stack('regular_province', [card(null, { orientation: 'face_down' }), facedown])]),
+      { available_actions: [...EFFECTS, 'point_at_card'] },
+    )
+
+    expect(cardMenu(view, cards, kaezin.id)!.point).toEqual({
+      type: 'point_at_card',
+      label: 'Point at it',
+      payload: { card_id: kaezin.id },
+    })
+    expect(cardMenu(view, cards, facedown.id)!.point?.payload).toEqual({ card_id: facedown.id })
+    expect(cardMenu(view, cards, banzai.id)!.point).toBeNull()
+  })
+
+  it('does not point at a card when the action is not available', () => {
+    const kaezin = card('kaezin')
+    const view = game(player('me', [stack('in_play', [kaezin])]), player('opp'), { available_actions: EFFECTS })
+
+    expect(cardMenu(view, cards, kaezin.id)!.point).toBeNull()
+  })
 })

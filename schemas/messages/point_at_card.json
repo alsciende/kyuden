@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "point_at_card",
+    "description": "Points at a card to show it to the opponent, e.g. a card in a discard pile or the target of an ability: it changes nothing in the game, only writes an entry in its log.\n\nAny card of a stack every player sees (not a deck nor a hand), of any player; a face-down card is pointed at without showing its face.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card to point at.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

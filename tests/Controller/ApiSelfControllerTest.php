@@ -59,7 +59,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
 
     public function testAUserReadsTheirIdentifierNameAndUsername(): void
     {
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($this->get('/api/self', 'jane')));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($this->get('/api/self', 'jane')));
     }
 
     public function testAGuestHasNoUsername(): void
@@ -76,7 +76,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => '  Doji Hotaru ']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'Jane_Doe', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
         self::assertSame('Doji Hotaru', $this->decode($this->get('/api/self', 'jane'))['name']);
     }
 
@@ -84,7 +84,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => 'phoenix']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
         self::assertSame('phoenix', $this->decode($this->get('/api/self', 'jane'))['preferred_clan']);
     }
 
@@ -92,7 +92,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => 'Shiba Tsukune', 'preferred_clan' => 'phoenix']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'Jane_Doe', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($response));
     }
 
     public function testAUserChangesTheirCardDisplay(): void

@@ -508,7 +508,7 @@ Related : Personal Honor, Personal Dishonor, Glory Count
 When the players are asked to perform a glory count, each player or each team counts the total glory value among the ready characters they control and adds 1 to the total for each ring in their claimed ring pool. The player or team with the highest total wins the glory count.
 
 - Step 3.4.1 of the conflict phase consists of a framework glory count. The winner of this count claims the Imperial Favor and may set it to either side if appropriate.
-- h If players have the same total, the Imperial Favor remains in its current state (either unclaimed or under the possession of the player who currently has it, remaining set on its current side).
+  - If players have the same total, the Imperial Favor remains in its current state (either unclaimed or under the possession of the player who currently has it, remaining set on its current side).
 - Some card abilities may require the players to perform a glory count. Glory counts required by card abilities are made in the same manner, and the ability will detail how to process the result. Such counts do not affect the status of the Imperial Favor, unless the ability text causes the Imperial Favor status to change.
 
 - Other card abilities may require players to count current glory among their characters, or a subset of their characters. This is different from a glory count and rings in a player's claimed ring pool are not added. For such card abilities, players count current glory among their specified characters in the same way they would count current \uF2AC or \uF2AD skill.

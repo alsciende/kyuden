@@ -65,6 +65,7 @@ export const MESSAGE_ALIASES = {
     stat: 'declare_duel_statistic',
     'end-duel': 'end_duel',
     concede: 'concede_game',
+    point: 'point_at_card',
     'shuffle-conflict': 'shuffle_conflict_deck',
     'shuffle-dynasty': 'shuffle_dynasty_deck',
 };

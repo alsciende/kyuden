@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 
 import type { GameView } from '@/api/game'
-import CardName from '@/components/game/CardName.vue'
 import CharacterRow from '@/components/game/CharacterRow.vue'
+import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
   charactersInPlay,
@@ -19,8 +19,8 @@ import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } f
 import { vTip } from '@/lib/tooltip'
 
 /**
- * The conflict being resolved: the contested ring and province, the participating characters of the opponent above
- * those of the viewer, and the skill of each side (declared, else computed from the cards). Once its result is
+ * The conflict being resolved: the contested ring, the participating characters of the opponent above those of the
+ * viewer, the contested province first in the row of the defender, and the skill of each side (declared, else computed from the cards). Once its result is
  * determined: the winner, the broken province, then the effect of the ring.
  */
 const props = defineProps<{ game: GameView; cards: Cards }>()
@@ -35,7 +35,7 @@ const attacking = computed(() => conflict.value.attacking_player_id === me.value
 function side(playerId: string | undefined) {
   const player = props.game.players.find((candidate) => candidate.id === playerId)
   if (player === undefined) {
-    return { player, characters: [], skill: 0, declared: false, role: '' }
+    return { player, characters: [], skill: 0, declared: false, role: '', defending: false }
   }
   const isAttacker = player.id === conflict.value.attacking_player_id
   const ids = isAttacker ? conflict.value.attacker_ids : conflict.value.defender_ids
@@ -47,6 +47,7 @@ function side(playerId: string | undefined) {
     skill: declared ?? sideSkill(props.game, props.cards, ids, conflict.value.type),
     declared: declared !== null,
     role: isAttacker ? 'attacking' : 'defending',
+    defending: !isAttacker,
   }
 }
 
@@ -59,11 +60,20 @@ const province = computed(() => {
   const strength = conflict.value.province_strengths[id] ?? provinceStrength(props.game, props.cards, id)
 
   return {
-    code: card?.code ?? null,
-    name: card?.code ? (props.cards[card.code]?.name ?? 'a province') : 'a face-down province',
+    card,
     strength: card?.code ? strength : null,
     broken: conflict.value.broken_province_ids.includes(id),
   }
+})
+
+/** the Imperial Favor, when it is on the side of the type of the conflict */
+const favor = computed(() => {
+  const holder = props.game.imperial_favor_holder_id
+  if (holder === null || props.game.imperial_favor_side !== conflict.value.type) {
+    return null
+  }
+
+  return holder === me.value.id ? 'You have' : 'The opponent has'
 })
 
 const resolved = computed(() => conflictResolved(props.game))
@@ -110,6 +120,9 @@ const outcome = computed(() => {
       margin >= province.value.strength
         ? `Enough to break the province (strength ${province.value.strength})`
         : `Not enough to break the province (strength ${province.value.strength})`
+  } else if (lead === 0 && attacker.skill > 0 && attacker.characters.length > 0) {
+    // a tie at 1 or more goes to the attacker
+    note = 'Attacker wins'
   } else if (conflict.value.winner_id !== null) {
     note = conflict.value.winner_id === me.value.id ? 'You won the conflict' : 'The opponent won the conflict'
   }
@@ -123,32 +136,32 @@ const outcome = computed(() => {
     <div class="sides">
       <div class="side">
         <span class="label"> <PlayerChip :player="top.player" :viewer-id="game.viewer_id" /> · {{ top.role }} </span>
-        <CharacterRow :characters="top.characters" :cards="cards" :mine="false" @open="$emit('open', $event)" />
+        <CharacterRow :characters="top.characters" :cards="cards" :mine="false" @open="$emit('open', $event)">
+          <GameCard
+            v-if="top.defending && province.card"
+            :card="province.card"
+            :cards="cards"
+            :mine="false"
+            tag="Contested"
+            @click="$emit('open', province.card.id)"
+          />
+        </CharacterRow>
       </div>
 
       <div class="contest">
-        <div
-          v-tip="ringTip(conflict.ring)"
-          class="ring"
-          role="img"
-          tabindex="0"
-          :aria-label="`${ELEMENT_NAMES[conflict.ring]} ring`"
-        >
-          <span class="icon">{{ ELEMENT_ICONS[conflict.ring] }}</span>
-        </div>
-        <div class="contest-text">
-          <h2>
-            <span class="icon type" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
-            <span class="capitalize">{{ conflict.type }}</span> conflict for the {{ ELEMENT_NAMES[conflict.ring] }} ring
-          </h2>
-          <p>
-            {{ attacking ? 'You attack' : 'The opponent attacks' }}
-            <CardName v-if="province.code" :code="province.code" :above="false">{{ province.name }}</CardName
-            ><template v-else>{{ province.name }}</template
-            ><template v-if="province.broken">, broken</template
-            ><template v-else-if="province.strength !== null">, strength {{ province.strength }}</template>
-          </p>
-        </div>
+        <h2>
+          <span class="icon type" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
+          <span class="capitalize">{{ conflict.type }}</span> conflict for the
+          <span v-tip="ringTip(conflict.ring)" class="icon type ring" aria-hidden="true">{{
+            ELEMENT_ICONS[conflict.ring]
+          }}</span>
+          {{ ELEMENT_NAMES[conflict.ring] }} ring
+        </h2>
+        <p v-if="favor" class="favor">
+          {{ favor }} the Imperial Favor for
+          <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
+          {{ conflict.type }} conflicts
+        </p>
       </div>
 
       <div v-if="ringEffect" class="effect" :class="{ inactive: !ringEffect.active }">
@@ -161,7 +174,16 @@ const outcome = computed(() => {
         <span class="label">
           <PlayerChip :player="bottom.player" :viewer-id="game.viewer_id" /> · {{ bottom.role }}
         </span>
-        <CharacterRow :characters="bottom.characters" :cards="cards" :mine="true" @open="$emit('open', $event)" />
+        <CharacterRow :characters="bottom.characters" :cards="cards" :mine="true" @open="$emit('open', $event)">
+          <GameCard
+            v-if="bottom.defending && province.card"
+            :card="province.card"
+            :cards="cards"
+            :mine="true"
+            tag="Contested"
+            @click="$emit('open', province.card.id)"
+          />
+        </CharacterRow>
       </div>
     </div>
 
@@ -219,31 +241,19 @@ const outcome = computed(() => {
 }
 
 .contest {
-  display: flex;
-  align-items: center;
-  gap: 20px;
   padding: 16px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
 
-.ring {
-  width: 60px;
-  height: 60px;
-  flex: none;
-  border-radius: 50%;
-  border: 2px solid var(--seal);
-  color: var(--seal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
+.favor {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
 }
 
-.contest-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.ring {
+  margin-left: 2px;
 }
 
 h2 {
@@ -257,11 +267,6 @@ h2 {
 
 .capitalize {
   text-transform: capitalize;
-}
-
-.contest-text p {
-  font-size: 14px;
-  color: var(--ink-2);
 }
 
 .totals {

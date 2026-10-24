@@ -59,11 +59,11 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
 
     public function testAHumanSignsInWithTheirUsernameWhateverItsCase(): void
     {
-        $session = $this->decode($this->request('POST', '/api/sessions', ['username' => 'JANE_doe', 'password' => UserFixtures::PASSWORDS['jane']]), Response::HTTP_CREATED);
+        $session = $this->decode($this->request('POST', '/api/sessions', ['username' => 'JANE', 'password' => UserFixtures::PASSWORDS['jane']]), Response::HTTP_CREATED);
 
         self::assertSame('jane', $session['user_id']);
         self::assertSame('Jane', $session['name']);
-        self::assertSame('Jane_Doe', $session['username']);
+        self::assertSame('jane', $session['username']);
         self::assertSame(['card_display' => 'drawn', 'theme' => 'auto'], $session['settings']);
         self::assertIsString($session['token']);
         self::assertSame('jane', $this->decode($this->request('GET', '/api/self', token: $session['token']), Response::HTTP_OK)['user_id']);
@@ -116,7 +116,7 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
         self::assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
 
         // another username is not limited
-        $this->decode($this->request('POST', '/api/sessions', ['username' => 'jane_doe', 'password' => UserFixtures::PASSWORDS['jane']], ip: '203.0.113.9'), Response::HTTP_CREATED);
+        $this->decode($this->request('POST', '/api/sessions', ['username' => 'Jane', 'password' => UserFixtures::PASSWORDS['jane']], ip: '203.0.113.9'), Response::HTTP_CREATED);
     }
 
     public function testASuccessResetsTheAttemptsOnTheUsername(): void

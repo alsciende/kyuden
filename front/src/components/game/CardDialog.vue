@@ -364,6 +364,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <button type="submit" class="btn btn-ghost" :disabled="sending || duel.challenged === null">Challenge</button>
       </form>
 
+      <div v-if="menu.point" class="group">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="sending"
+          @click="run(menu.point.type, menu.point.payload)"
+        >
+          {{ menu.point.label }}
+        </button>
+        <span class="hint">Shows it to your opponent in the log.</span>
+      </div>
+
       <p v-if="error" class="error" role="alert">{{ error }}</p>
 
       <div v-if="menu.removals.length > 0" class="removals">

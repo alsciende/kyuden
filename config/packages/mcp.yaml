@@ -14,5 +14,7 @@ mcp:
             http:
                 # under the firewall of the API: a bot authenticates with its API key (Authorization: Bearer)
                 path: /api/mcp
+            # one tool per public message: every tool in a single page of tools/list
+            pagination_limit: 100
             registry:
                 tools: ['App\Mcp\']

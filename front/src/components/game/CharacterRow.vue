@@ -3,7 +3,8 @@ import type { Cards, Character } from '@/lib/board'
 import GameCard from '@/components/game/GameCard.vue'
 
 /**
- * Characters with their attachments, tucked under them. In a selection, the characters that can be chosen are the
+ * Characters with their attachments, tucked under them, after the cards of the default slot (e.g. the contested
+ * province). In a selection, the characters that can be chosen are the
  * targets of the click; the others are dimmed.
  */
 withDefaults(
@@ -35,6 +36,7 @@ function click(id: string, selectable: string[] | null): void {
 
 <template>
   <div class="characters" :class="size">
+    <slot />
     <div v-for="character in characters" :key="character.stack.id" class="unit">
       <GameCard
         :card="character.card"

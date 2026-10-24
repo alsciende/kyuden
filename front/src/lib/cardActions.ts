@@ -37,6 +37,8 @@ export interface CardMenu {
   duel: boolean
   /** the ways it leaves where it is: returned to hand, sacrificed, discarded */
   removals: SimpleAction[]
+  /** pointing at it to show it to the opponent: a card every player sees (not in a hand nor a deck) */
+  point: SimpleAction | null
 }
 
 const ABILITY_TYPES: Record<AbilityTiming, string> = {
@@ -44,6 +46,9 @@ const ABILITY_TYPES: Record<AbilityTiming, string> = {
   interrupt: 'trigger_interrupt_ability',
   reaction: 'trigger_reaction_ability',
 }
+
+/** the stacks whose cards some players do not see: nobody can point at them */
+const HIDDEN_STACKS = new Set(['hand', 'conflict_draw_deck', 'dynasty_draw_deck'])
 
 const EVENT_TYPES: Record<AbilityTiming, string> = {
   action: 'play_action_event',
@@ -102,6 +107,10 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     skill: false,
     duel: false,
     removals: [],
+    point:
+      available.has('point_at_card') && !HIDDEN_STACKS.has(stack.type)
+        ? { type: 'point_at_card', label: 'Point at it', payload: { card_id: id } }
+        : null,
   }
   const add = (
     list: SimpleAction[],
