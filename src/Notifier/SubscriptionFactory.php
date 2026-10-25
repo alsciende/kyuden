@@ -8,6 +8,7 @@ use App\Notification\Topics;
 use App\View\Model\SubscriptionView;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Jwt\Grant;
 
 /**
  * The subscription of a user to the Mercure hub: its public URL and a token for the topics they may read (see
@@ -29,10 +30,14 @@ readonly class SubscriptionFactory
         $factory = $this->hub->getFactory() ?? throw new \LogicException('The Mercure hub has no token factory.');
         // to the second: the claim and the response tell the same time
         $expiresAt = new \DateTimeImmutable('@' . ($this->clock->now()->getTimestamp() + self::LIFETIME));
+        // user can subscribe to their topics
+        $subscribe = new Grant([Grant::ACTION_SUBSCRIBE], Topics::subscribableBy($userId));
+        // user cannot publish
+        $publish = new Grant([Grant::ACTION_PUBLISH], []);
 
         return new SubscriptionView(
             hub: $this->hub->getPublicUrl(),
-            token: $factory->create(Topics::subscribableBy($userId), [], ['exp' => $expiresAt]),
+            token: $factory->create([$publish, $subscribe], ['exp' => $expiresAt]),
             topic: Topics::user($userId),
             expiresAt: $expiresAt->format(\DateTimeInterface::ATOM),
         );
