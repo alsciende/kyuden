@@ -1,0 +1,14 @@
+when@dev:
+    web_profiler:
+        toolbar:
+            enabled: true
+            # the web client (front/) shows the toolbar of its last call to the API (lib/debugToolbar.ts)
+            ajax_replace: true
+
+    framework:
+        profiler: true
+
+when@test:
+    framework:
+        profiler:
+            collect: false

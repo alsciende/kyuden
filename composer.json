@@ -115,6 +115,7 @@
         "symfony/browser-kit": "*",
         "symfony/css-selector": "*",
         "symfony/maker-bundle": "^1.68.0",
-        "symfony/stopwatch": "*"
+        "symfony/stopwatch": "*",
+        "symfony/web-profiler-bundle": "8.1.*"
     }
 }
