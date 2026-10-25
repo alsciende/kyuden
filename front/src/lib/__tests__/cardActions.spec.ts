@@ -158,6 +158,23 @@ describe('cardMenu', () => {
     ])
   })
 
+  it('reveals a face-down province, of either player, the stronghold province too', () => {
+    const mine = card('raid', { orientation: 'face_down' })
+    const theirs = card(null, { side: 'province', orientation: 'face_down' })
+    const shown = card('raid')
+    const view = game(
+      player('me', [stack('stronghold_province', [card('stronghold'), mine]), stack('regular_province', [shown])]),
+      player('opp', [stack('regular_province', [theirs])]),
+      { available_actions: ['reveal_province'] },
+    )
+
+    expect(cardMenu(view, cards, mine.id)!.state.map((action) => action.type)).toEqual(['reveal_province'])
+    expect(cardMenu(view, cards, theirs.id)!.state).toEqual([
+      { type: 'reveal_province', label: 'Reveal it', payload: { card_id: theirs.id } },
+    ])
+    expect(cardMenu(view, cards, shown.id)!.state).toEqual([])
+  })
+
   it('puts a province under the stronghold during setup', () => {
     const raid = card('raid', { orientation: 'face_down' })
     const view = game(player('me', [stack('stronghold_province', [card('stronghold'), raid])]), player('opp'), {

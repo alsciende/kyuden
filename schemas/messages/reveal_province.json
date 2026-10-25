@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "reveal_province",
+    "description": "Turns a face-down province face up, of any player: the defending player reveals the attacked province once a conflict is declared (3.2), and card effects reveal provinces.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Face-down province, of any player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

@@ -86,7 +86,7 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
         self::assertSame([$scenario->card('spear')->getId()], $state->conflict->evadedIds);
         self::assertFalse($state->isRingUnclaimed(Element::Air));
         self::assertSame($scenario->player('john')->getId(), $state->lastConflictPlayerId);
-        self::assertSame('react_to_conflict_declaration', $scenario->game()->getCurrentPlace());
+        self::assertSame('reveal_attacked_province', $scenario->game()->getCurrentPlace());
     }
 
     public function testTheAttackingPlayerTakesTheFateOnTheRing(): void
@@ -110,13 +110,49 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
         self::assertSame([ConflictType::Political], $state->getDeclaredConflictTypes());
     }
 
-    public function testTheAttackedProvinceIsTurnedFaceup(): void
+    public function testTheAttackedProvinceIsLeftToTheDefendingPlayerToReveal(): void
     {
         $scenario = $this->builder()->persist();
 
         $this->declare($scenario);
 
-        self::assertSame(ProvinceCard::STATE_UNBROKEN, $scenario->card('province')->getCurrentPlace());
+        self::assertSame(ProvinceCard::STATE_FACEDOWN, $scenario->card('province')->getCurrentPlace());
+    }
+
+    public function testTheDefendingPlayerRevealsTheAttackedProvince(): void
+    {
+        $scenario = $this->builder()->persist();
+
+        // through the bus, so that automatic transitions happen
+        $this->messageBus->dispatch(new DeclareConflict(
+            $scenario->game()->getId(),
+            $scenario->player('john')->getId(),
+            Element::Air,
+            ConflictType::Military,
+            $scenario->card('province')->getId(),
+            [$scenario->card('toturi')->getId()],
+        ));
+
+        self::assertSame('reveal_attacked_province', $scenario->game()->getCurrentPlace());
+        self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('jane')));
+    }
+
+    public function testAProvinceAlreadyFaceupIsNotRevealedAgain(): void
+    {
+        $scenario = $this->builder(jane: fn (PlayerBuilder $p): PlayerBuilder => $p
+            ->province('01-entrenched-position', as: 'faceup-province', orientation: Orientation::FaceUp))
+            ->persist();
+
+        $this->messageBus->dispatch(new DeclareConflict(
+            $scenario->game()->getId(),
+            $scenario->player('john')->getId(),
+            Element::Air,
+            ConflictType::Military,
+            $scenario->card('faceup-province')->getId(),
+            [$scenario->card('toturi')->getId()],
+        ));
+
+        self::assertSame('react_to_conflict_declaration', $scenario->game()->getCurrentPlace());
     }
 
     public function testRejectsAConflictOfATypeAlreadyDeclared(): void
@@ -179,7 +215,7 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
 
         $this->declare($scenario, province: 'stronghold-province');
 
-        self::assertSame('react_to_conflict_declaration', $scenario->game()->getCurrentPlace());
+        self::assertSame('reveal_attacked_province', $scenario->game()->getCurrentPlace());
     }
 
     public function testRejectsABowedAttacker(): void

@@ -21,6 +21,7 @@ use App\Message\PlayActionEvent;
 use App\Message\PlayCharacterFromHand;
 use App\Message\RemoveFate;
 use App\Message\ResetCharacterSkill;
+use App\Message\RevealProvince;
 use App\Message\SetCharacterSkill;
 use App\Message\SetHonor;
 use App\Message\SetHonorBid;
@@ -229,8 +230,25 @@ class MessageLogTest extends AbstractKernelTestCase
             'john declares a political conflict against jane for the fire ring, attacking a facedown card with Akodo Toturi',
             'Doji Hotaru are evaded by covert',
             'john takes 2 fate from the fire ring',
+            'The defending player reveals the attacked province',
+        ], $this->logLines($scenario->game(), $scenario->player('john')));
+    }
+
+    public function testRevealingTheAttackedProvince(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_attacked_province')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->province('01-entrenched-position', as: 'province'))
+            ->conflict('john', 'province', ['toturi'])
+            ->activePlayer('jane')
+            ->persist();
+
+        $this->messageBus->dispatch(new RevealProvince($scenario->game()->getId(), $scenario->player('jane')->getId(), $scenario->card('province')->getId()));
+
+        self::assertSame([
             'Entrenched Position is revealed',
             'The players may react to the conflict declaration',
-        ], array_slice($this->logLines($scenario->game(), $scenario->player('john')), 0, 5));
+        ], $this->logLines($scenario->game(), $scenario->player('john')));
     }
 }

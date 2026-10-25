@@ -60,9 +60,9 @@ function open(id: string): void {
   openCardId.value = id
 }
 
-function reveal(id: string): void {
+function reveal(type: 'reveal_dynasty_card' | 'reveal_province', id: string): void {
   if (!sending.value) {
-    void send('reveal_dynasty_card', { card_id: id })
+    void send(type, { card_id: id })
   }
 }
 

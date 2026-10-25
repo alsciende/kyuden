@@ -14,6 +14,7 @@ import {
   locate,
   opponent,
   provinces,
+  provinceToReveal,
   rings,
   stackOf,
   strongholdCandidates,
@@ -38,7 +39,7 @@ const emit = defineEmits<{
   province: [id: string]
   attacker: [id: string]
   defender: [id: string]
-  reveal: [id: string]
+  reveal: [type: 'reveal_dynasty_card' | 'reveal_province', id: string]
   switchType: []
   switchRing: [element: Element]
 }>()
@@ -143,10 +144,20 @@ function openInMyProvinces(id: string): void {
       located.under !== null &&
       located.card.orientation === 'face_down'
     ) {
-      emit('reveal', id)
+      emit('reveal', 'reveal_dynasty_card', id)
 
       return
     }
+  }
+  emit('open', id)
+}
+
+/** once a conflict is declared, a click of the defender on the face-down attacked province reveals it */
+function openInConflict(id: string): void {
+  if (provinceToReveal(props.game) === id) {
+    emit('reveal', 'reveal_province', id)
+
+    return
   }
   emit('open', id)
 }
@@ -337,7 +348,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
       <ConflictField
         :game="game"
         :cards="cards"
-        @open="emit('open', $event)"
+        @open="openInConflict"
         @switch-type="emit('switchType')"
         @switch-ring="emit('switchRing', $event)"
       />

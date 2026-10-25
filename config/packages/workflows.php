@@ -48,7 +48,9 @@ $gameTransitions = [
     WorkflowConfig::transition('conflict_opportunities_exhausted', 'conflict_phase_action_window', 'determine_imperial_favor', ['auto' => true, 'log' => 'No conflict opportunity is left']),
     WorkflowConfig::transition('conflict_passed', 'declare_conflict', 'conflict_ends', ['log' => 'No conflict is declared']),
     // conflict resolution (3.2 to 3.2.8)
-    WorkflowConfig::transition('conflict_declared', 'declare_conflict', 'react_to_conflict_declaration', ['log' => 'The players may react to the conflict declaration']),
+    WorkflowConfig::transition('conflict_declared', 'declare_conflict', 'reveal_attacked_province', ['log' => 'The defending player reveals the attacked province']),
+    // the defending player reveals the attacked province (RevealProvince); a province already faceup is passed at once
+    WorkflowConfig::transition('attacked_province_revealed', 'reveal_attacked_province', 'react_to_conflict_declaration', ['auto' => true, 'log' => 'The players may react to the conflict declaration']),
     WorkflowConfig::transition('declaration_reactions_passed', 'react_to_conflict_declaration', 'declare_defenders', ['auto' => true, 'log' => 'The reactions to the conflict declaration are over']),
     WorkflowConfig::transition('defenders_declared', 'declare_defenders', 'conflict_action_window', ['log' => 'The action window of the conflict opens']),
     WorkflowConfig::transition('conflict_actions_passed', 'conflict_action_window', 'determine_result', ['auto' => true, 'log' => 'The action window of the conflict closes']),

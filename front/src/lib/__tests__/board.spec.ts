@@ -7,6 +7,7 @@ import {
   gloryCount,
   locate,
   provinceStrength,
+  provinceToReveal,
   provinces,
   rings,
   shownSkill,
@@ -204,6 +205,37 @@ describe('the state of the game', () => {
       ),
     ).toEqual(['air', 'earth', 'water'])
     expect(switchableRings({ ...view, conflict: null })).toEqual([])
+  })
+
+  it('tells the defender which attacked province to reveal', () => {
+    const facedown = card('garden', { side: 'province', orientation: 'face_down' })
+    const view = game(player('me', [stack('regular_province', [facedown])]), player('opp'), {
+      place: 'reveal_attacked_province',
+      available_actions: ['reveal_province'],
+      conflict: {
+        attacking_player_id: 'opp',
+        defending_player_id: 'me',
+        ring: 'fire',
+        type: 'military',
+        province_id: facedown.id,
+        attacked_province_ids: [facedown.id],
+        attacker_ids: [],
+        defender_ids: [],
+        evaded_ids: [],
+        attacker_skill: null,
+        defender_skill: null,
+        province_strengths: {},
+        declared_strength_province_ids: [],
+        winner_id: null,
+        broken_province_ids: [],
+      },
+    })
+
+    expect(provinceToReveal(view)).toBe(facedown.id)
+    // the attacker waits for the defender
+    expect(provinceToReveal({ ...view, conflict: { ...view.conflict!, defending_player_id: 'opp' } })).toBeNull()
+    // a later step
+    expect(provinceToReveal({ ...view, place: 'react_to_conflict_declaration' })).toBeNull()
   })
 
   it('has no rings before the game starts', () => {

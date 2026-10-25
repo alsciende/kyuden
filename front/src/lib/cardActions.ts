@@ -156,6 +156,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         // the province itself
         if (faceUp) {
           abilities()
+        } else {
+          add(menu.state, 'reveal_province', 'Reveal it')
         }
         if ((stack.cards?.length ?? 0) <= 1) {
           add(menu.state, 'fill_province', 'Fill this province', { province_id: id })
@@ -192,6 +194,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         add(menu.state, 'choose_stronghold_province', 'Put it under your stronghold')
       } else if (faceUp) {
         abilities()
+      } else {
+        add(menu.state, 'reveal_province', 'Reveal it')
       }
       break
 

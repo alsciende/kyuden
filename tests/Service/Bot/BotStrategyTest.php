@@ -15,6 +15,7 @@ use App\Message\DeclareNoDefenders;
 use App\Message\PassOpportunity;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
+use App\Message\RevealProvince;
 use App\Service\Bot\BotStrategy;
 use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
@@ -115,6 +116,29 @@ class BotStrategyTest extends AbstractKernelTestCase
             ->build();
 
         self::assertNull($this->nextAction($scenario));
+    }
+
+    public function testRevealsTheProvinceItDefends(): void
+    {
+        $build = fn (string $defender): Scenario => $this->scenario()
+            ->atPlace('reveal_attacked_province')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['toturi' => '01-akodo-toturi'])
+                ->province('01-the-art-of-war', 'johns-province'))
+            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['kisada' => '01-hida-kisada'])
+                ->province('01-the-art-of-peace', 'bots-province'))
+            ->conflict($defender === self::BOT ? 'john' : self::BOT, $defender === self::BOT ? 'bots-province' : 'johns-province', [$defender === self::BOT ? 'toturi' : 'kisada'])
+            ->activePlayer($defender)
+            ->build();
+
+        $scenario = $build(self::BOT);
+        $action = $this->nextAction($scenario);
+
+        self::assertInstanceOf(RevealProvince::class, $action);
+        self::assertSame($scenario->card('bots-province')->getId(), $action->getCardId());
+        // the province of the opponent is theirs to reveal
+        self::assertNull($this->nextAction($build('john')));
     }
 
     public function testDeclaresNoDefenders(): void

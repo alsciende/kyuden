@@ -12,6 +12,7 @@ import {
   opponent,
   printed,
   provinceStrength,
+  provinceToReveal,
   sideSkill,
   skillOf,
   strongholdFate,
@@ -166,6 +167,8 @@ function concede(): void {
   }
 }
 
+const toReveal = computed(() => provinceToReveal(props.game))
+
 const duel = computed(() => props.game.duel)
 const DUEL_TYPES: Record<ConflictType | 'glory', string> = {
   military: 'Military',
@@ -190,7 +193,8 @@ const nothing = computed(
       'claim_imperial_favor',
       'declare_duel_statistic',
       'end_duel',
-    ].some((type) => available.value.has(type)),
+    ].some((type) => available.value.has(type)) &&
+    toReveal.value === null,
 )
 </script>
 
@@ -340,6 +344,16 @@ const nothing = computed(
       @click="send('pass_conflict')"
     >
       Pass this conflict
+    </button>
+
+    <button
+      v-if="toReveal"
+      type="button"
+      class="btn btn-primary"
+      :disabled="sending"
+      @click="send('reveal_province', { card_id: toReveal })"
+    >
+      Reveal {{ cardName(toReveal) }}
     </button>
 
     <div v-if="available.has('declare_defenders')" class="form">

@@ -13,6 +13,7 @@ use App\Message\DeclareConflictSkill;
 use App\Message\DeclareDefenders;
 use App\Message\GainHonor;
 use App\Message\PassOpportunity;
+use App\Message\RevealProvince;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -64,6 +65,9 @@ class ConflictFlowTest extends AbstractKernelTestCase
             ->persist();
 
         $this->messageBus->dispatch(new DeclareConflict($this->gameId(), $this->id('john'), Element::Air, ConflictType::Military, $this->card('province'), [$this->card('toturi')]));
+        $this->assertPlace('reveal_attacked_province');
+        $this->messageBus->dispatch(new RevealProvince($this->gameId(), $this->id('jane'), $this->card('province')));
+
         $this->assertPlace('react_to_conflict_declaration');
         $this->bothPass();
 

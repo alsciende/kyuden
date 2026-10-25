@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
@@ -30,7 +29,8 @@ use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
  * Uses the conflict opportunity of that type, moves the fate on the contested ring to the attacking player's fate
- * pool, records the conflict and turns the attacked province faceup. The players can then react to the declaration.
+ * pool and records the conflict. The defending player then reveals the attacked province (RevealProvince), before the
+ * players can react to the declaration.
  */
 #[AsMessageHandler]
 final readonly class DeclareConflictHandler implements PlayerActionHandlerInterface
@@ -43,7 +43,6 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
         private PlayerStateManager $playerStateManager,
         private ConflictService $conflictService,
         private WorkflowInterface $gameStateMachine,
-        private WorkflowInterface $provinceCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {
     }
@@ -113,10 +112,6 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
 
             return $state;
         });
-
-        if ($province->getCurrentPlace() === ProvinceCard::STATE_FACEDOWN) {
-            $this->provinceCardStateMachine->apply($province, 'reveal');
-        }
 
         $this->gameStateMachine->apply($game, 'conflict_declared');
     }

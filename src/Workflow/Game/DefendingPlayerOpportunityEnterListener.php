@@ -13,10 +13,11 @@ use Symfony\Component\Workflow\Attribute\AsEnterListener;
 use Symfony\Component\Workflow\Event\EnterEvent;
 
 /**
- * The defending player declares defenders (3.2.1), then has the first opportunity to act in the conflict action
+ * The defending player reveals the attacked province (3.2), declares defenders (3.2.1), then has the first opportunity to act in the conflict action
  * window (3.2.2), where the opportunity alternates between the players until they have passed consecutively. No
  * player has passed yet.
  */
+#[AsEnterListener(workflow: 'game', place: 'reveal_attacked_province')]
 #[AsEnterListener(workflow: 'game', place: 'declare_defenders')]
 #[AsEnterListener(workflow: 'game', place: 'conflict_action_window')]
 readonly class DefendingPlayerOpportunityEnterListener

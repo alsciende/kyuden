@@ -193,6 +193,12 @@ const STEPS: Record<string, Step> = {
     title: 'Declare a conflict',
     help: 'Choose a type, a ring, a province and your attackers, then declare. You may pass this conflict instead.',
   },
+  reveal_attacked_province: {
+    phase: 'conflict',
+    title: 'Reveal the attacked province',
+    help: 'The defender turns the attacked province face up, if it is face down.',
+    hint: 'Click the attacked province to reveal it.',
+  },
   react_to_conflict_declaration: {
     phase: 'conflict',
     title: 'Conflict declared',
@@ -288,6 +294,21 @@ const RESULT_PLACES = [
   'return_home',
   'conflict_ends',
 ]
+
+/** the attacked province the viewer, as the defender, has to reveal now; null when there is none */
+export function provinceToReveal(game: GameView): string | null {
+  const conflict = game.conflict
+  if (
+    game.place !== 'reveal_attacked_province' ||
+    conflict === null ||
+    conflict.defending_player_id !== game.viewer_id ||
+    !game.available_actions.includes('reveal_province')
+  ) {
+    return null
+  }
+
+  return conflict.attacked_province_ids.find((id) => locate(game, id)?.card.orientation === 'face_down') ?? null
+}
 
 /** whether the result of the conflict being resolved is determined */
 export function conflictResolved(game: GameView): boolean {

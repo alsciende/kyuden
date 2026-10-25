@@ -21,6 +21,7 @@ import {
 export const MESSAGE_ALIASES = {
     stronghold: 'choose_stronghold_province',
     reveal: 'reveal_dynasty_card',
+    'reveal-province': 'reveal_province',
     fill: 'fill_province',
     collect: 'collect_fate',
     'play-province': 'play_character_from_province',

@@ -19,6 +19,7 @@ use App\Message\EndResolution;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Message\PlayCharacterFromProvince;
+use App\Message\RevealProvince;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
@@ -119,6 +120,7 @@ class RoundFlowTest extends AbstractKernelTestCase
         $this->pass('john', 'jane');
         $this->assertPlace('declare_conflict');
         $this->dispatch(new DeclareConflict($this->gameId(), $this->id('john'), Element::Water, ConflictType::Military, $this->card('janes-province'), [$this->card('toturi')]));
+        $this->dispatch(new RevealProvince($this->gameId(), $this->id('jane'), $this->card('janes-province')));
         $this->pass('john', 'jane');
         $this->dispatch(new DeclareDefenders($this->gameId(), $this->id('jane'), [$this->card('hotaru')]));
         $this->pass('jane', 'john');
@@ -175,6 +177,7 @@ class RoundFlowTest extends AbstractKernelTestCase
         $declaration = array_search('john declares a military conflict against jane for the water ring, attacking Entrenched Position with Akodo Toturi', $log, true);
         self::assertIsInt($declaration);
         self::assertSame([
+            'The defending player reveals the attacked province',
             'Entrenched Position is revealed',
             'The players may react to the conflict declaration',
             'john passes',
@@ -182,7 +185,7 @@ class RoundFlowTest extends AbstractKernelTestCase
             'The reactions to the conflict declaration are over',
             'jane declares Doji Hotaru as defenders',
             'The action window of the conflict opens',
-        ], array_slice($log, $declaration + 1, 7));
+        ], array_slice($log, $declaration + 1, 8));
         self::assertContains('jane wins the conflict (2 against 3)', $log);
         self::assertContains('jane claims the water ring', $log);
         self::assertContains('jane claims the Imperial Favor, military side up', $log);

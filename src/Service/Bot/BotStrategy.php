@@ -23,6 +23,7 @@ use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
+use App\Message\RevealProvince;
 use App\Service\AvailableActionsResolver;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -32,7 +33,7 @@ use App\State\Manager\PlayerStateManager;
  * sends what the engine would refuse in the current step.
  *
  * First version: the bot only does what the framework steps require (choosing its stronghold province, revealing its
- * facedown dynasty cards, collecting fate, the declarations of totals), with the printed values of its cards, and
+ * facedown dynasty cards and the province it defends, collecting fate, the declarations of totals), with the printed values of its cards, and
  * passes every opportunity. It plays no card, declares no conflict and no defender; it bids 2 honor. It does not
  * resolve duels beyond the honor bid.
  */
@@ -66,6 +67,14 @@ final readonly class BotStrategy
             $card = $this->findFacedownDynastyCard($player);
             if ($card instanceof PhysicalCard) {
                 return new RevealDynastyCard($gameId, $playerId, $card->getId());
+            }
+        }
+
+        // RevealProvince is accepted anytime: the step tells when it is due
+        if ($game->getCurrentPlace() === 'reveal_attacked_province') {
+            $province = $this->findFacedownAttackedProvince($game, $player);
+            if ($province instanceof PhysicalCard) {
+                return new RevealProvince($gameId, $playerId, $province->getId());
             }
         }
 
@@ -122,6 +131,21 @@ final readonly class BotStrategy
                 if ($card->getCurrentPlace() === DynastyCard::STATE_PROVINCE_FACEDOWN) {
                     return $card;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A face-down province of the player attacked in the conflict (3.2).
+     */
+    private function findFacedownAttackedProvince(Game $game, Player $player): ?PhysicalCard
+    {
+        $attackedProvinceIds = $this->gameStateManager->getState($game)->currentConflict()->attackedProvinceIds;
+        foreach ($player->getCardsByClass(ProvinceCard::class) as $province) {
+            if (in_array($province->getId(), $attackedProvinceIds, true) && $province->getCurrentPlace() === ProvinceCard::STATE_FACEDOWN) {
+                return $province;
             }
         }
 
