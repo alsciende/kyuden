@@ -1,6 +1,7 @@
 mercure:
     hubs:
         default:
+#            protocol_version: 0.x
             url: '%env(MERCURE_URL)%'
             public_url: '%env(MERCURE_PUBLIC_URL)%'
             jwt:

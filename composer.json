@@ -27,7 +27,8 @@
         "symfony/intl": "*",
         "symfony/mailer": "*",
         "symfony/mcp-bundle": "^0.14.1",
-        "symfony/mercure-bundle": "^0.3.8",
+        "symfony/mercure": "0.7.2",
+        "symfony/mercure-bundle": "0.4.3",
         "symfony/messenger": "*",
         "symfony/mime": "*",
         "symfony/monolog-bundle": "^4.1",
@@ -98,12 +99,12 @@
     "extra": {
         "symfony": {
             "allow-contrib": true,
-            "require": "7.4.*",
+            "require": "8.2.*",
             "docker": true
         }
     },
     "require-dev": {
-        "doctrine/doctrine-fixtures-bundle": "^3.6",
+        "doctrine/doctrine-fixtures-bundle": "^4.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-doctrine": "^2.0",
@@ -112,7 +113,7 @@
         "rector/rector": "^2.1",
         "symfony/browser-kit": "*",
         "symfony/css-selector": "*",
-        "symfony/maker-bundle": "^1.52",
+        "symfony/maker-bundle": "^1.68.0",
         "symfony/stopwatch": "*"
     }
 }
