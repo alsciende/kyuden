@@ -19,12 +19,15 @@ open http://localhost:8080
 
 ## Production
 
-`docker/production` builds two images from the root of the repository (`Dockerfile`, targets `php` and `nginx`): PHP-FPM with the application (no development dependencies, opcache with preloading, cache warmed, assets of the console compiled), and nginx serving the web client (`front/dist`, built in the image) and the public files of Symfony, in front of PHP-FPM and of the Mercure hub, on the origin of the site (`/.well-known/mercure`). `compose.yaml` adds PostgreSQL and Mercure; the site listens on HTTP, behind the proxy that terminates TLS. On every start, the entrypoint of the `php` image brings the database up to date before PHP-FPM serves anything: the Doctrine migrations (`migrations/`), the card database (`app:cards:import`) and the house bot (`app:house-bot:create`); a failed step stops the container.
+`docker/production/Dockerfile` builds two images from the root of the repository (targets `php` and `nginx`): PHP-FPM with the application (no development dependencies, opcache with preloading, cache warmed, assets of the console compiled), and nginx serving the web client (`front/dist`, built in the image) and the public files of Symfony, in front of PHP-FPM and of the Mercure hub, on the origin of the site (`/.well-known/mercure`). `compose.yaml` adds PostgreSQL and Mercure; the site listens on HTTP, behind the proxy that terminates TLS. On every start, the entrypoint of the `php` image brings the database up to date before PHP-FPM serves anything: the Doctrine migrations (`migrations/`), the card database (`app:cards:import`) and the house bot (`app:house-bot:create`); a failed step stops the container.
+
+Continuous integration (GitHub Actions): every commit pushed, on any branch, runs `.github/workflows/test.yml`, the linters and the tests on the development stack (`CI` set: `make` runs `docker compose exec` without a terminal); a new commit on the branch cancels the run of the previous one. Releases: every git tag, on any branch, runs `.github/workflows/release.yml`: the same tests (`test.yml`), then the build of both images (`linux/amd64`), pushed to the GitHub Container Registry as `ghcr.io/alsciende/kyuden-php:<tag>` and `ghcr.io/alsciende/kyuden-nginx:<tag>` (public, no `latest`). The production host only needs `docker/production` (`compose.yaml` and the two files below), not the code: it deploys the release named by `KYUDEN_VERSION` in `.env`.
 
 ```shell
-cp docker/production/.env.dist docker/production/.env                # what the services share
+cp docker/production/.env.dist docker/production/.env                # what the services share, and the release (KYUDEN_VERSION)
 cp docker/production/symfony.env.dist docker/production/symfony.env  # the rest of the environment of the application
-docker compose -f docker/production/compose.yaml --env-file docker/production/.env up --build --detach
+docker compose -f docker/production/compose.yaml --env-file docker/production/.env pull
+docker compose -f docker/production/compose.yaml --env-file docker/production/.env up --detach
 ```
 
 `.env`, read by compose, holds what the services share (the database, the secret of Mercure): compose gives the application its `DATABASE_URL`, `MERCURE_URL` and `MERCURE_JWT_SECRET`. The rest of the environment of the application is `symfony.env`, on the host, mounted read-only as its `.env` in the `php` container (it replaces the `.env` of the repository; the variables set by compose and the image, `APP_ENV` and `APP_DEBUG`, win over it), so that compose does not list every variable of Symfony. Both files stay out of git.

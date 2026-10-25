@@ -1,5 +1,7 @@
 EXEC          := docker compose exec
-EXEC_SYMFONY  := $(EXEC) -it -u www-data symfony
+# the CI (GitHub Actions sets CI) has no terminal
+TTY           := $(if $(CI),-T,-it)
+EXEC_SYMFONY  := $(EXEC) $(TTY) -u www-data symfony
 EXEC_COMPOSER := $(EXEC_SYMFONY) composer
 PHP           := ${EXEC_SYMFONY} php
 # the web client (front/), in a container of its own so that the node service may be stopped
@@ -31,6 +33,9 @@ check-symfony:
 	$(PHP) bin/console lint:container
 
 rector:
+	$(PHP) vendor/bin/rector --dry-run
+
+rector-fix:
 	$(PHP) vendor/bin/rector
 
 phpstan:

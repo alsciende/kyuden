@@ -1,0 +1,45 @@
+# every commit pushed, on any branch: the linters and the tests on the development stack; also the first job of a
+# release (release.yml)
+name: Test
+
+on:
+  push:
+    branches: ['**']
+  workflow_call:
+
+permissions:
+  contents: read
+
+# a new commit on a branch cancels the run of the previous one
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # make: no terminal for docker compose exec
+      CI: true
+    steps:
+      - uses: actions/checkout@v7
+
+      # the symfony container runs as www-data and writes vendor/ and var/ in the checkout of the runner
+      - name: Open the checkout to the containers
+        run: chmod -R a+rwX .
+
+      - name: Start the databases
+        run: docker compose up --detach --wait database database_test
+
+      - name: Install the PHP dependencies
+        run: docker compose run --rm --no-deps --entrypoint composer symfony install --no-interaction --no-progress
+
+      - name: Start the application
+        run: docker compose up --detach symfony
+
+      - name: Install the dependencies of the web client
+        run: make front-install
+
+      - run: make lint
+      - run: make db-test
+      - run: make test
