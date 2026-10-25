@@ -10,6 +10,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Service\ProvinceRefiller;
 use App\State\Manager\GameStateManager;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\Attribute\AsEnterListener;
 use Symfony\Component\Workflow\Event\EnterEvent;
 use Symfony\Component\Workflow\WorkflowInterface;
@@ -24,6 +25,7 @@ readonly class DiscardFromProvincesEnterListener
 {
     public function __construct(
         private GameStateManager $stateManager,
+        #[Target('dynasty_card')]
         private WorkflowInterface $dynastyCardStateMachine,
         private ProvinceRefiller $provinceRefiller,
     ) {

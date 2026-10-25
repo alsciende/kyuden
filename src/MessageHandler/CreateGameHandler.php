@@ -9,6 +9,7 @@ use App\Event\GameCreatedEvent;
 use App\Message\CreateGame;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -17,6 +18,7 @@ final readonly class CreateGameHandler
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

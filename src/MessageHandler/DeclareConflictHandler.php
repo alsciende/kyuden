@@ -24,6 +24,7 @@ use App\State\Model\ConflictState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -42,6 +43,7 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         private ConflictService $conflictService,
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

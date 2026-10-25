@@ -24,6 +24,7 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\CardState;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -42,6 +43,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         private CardStateManager $cardStateManager,
+        #[Target('dynasty_card')]
         private WorkflowInterface $dynastyCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
         private OpportunityService $opportunityService,

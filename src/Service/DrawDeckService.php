@@ -11,6 +11,7 @@ use App\Event\HonorLostEvent;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -23,7 +24,9 @@ readonly class DrawDeckService
 
     public function __construct(
         private PlayerStateManager $playerStateManager,
+        #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
+        #[Target('dynasty_card')]
         private WorkflowInterface $dynastyCardStateMachine,
         private StackShuffler $stackShuffler,
         private EventDispatcherInterface $eventDispatcher,

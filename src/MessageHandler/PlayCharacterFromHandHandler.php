@@ -25,6 +25,7 @@ use App\State\Model\CardState;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -45,6 +46,7 @@ final readonly class PlayCharacterFromHandHandler implements PlayerActionHandler
         private CardStateManager $cardStateManager,
         private OpportunityService $opportunityService,
         private HandService $handService,
+        #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

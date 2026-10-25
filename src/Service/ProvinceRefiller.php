@@ -9,6 +9,7 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Stack;
 use App\Enum\StackType;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -19,6 +20,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
 readonly class ProvinceRefiller
 {
     public function __construct(
+        #[Target('dynasty_card')]
         private WorkflowInterface $dynastyCardStateMachine,
         private DrawDeckService $drawDeckService,
     ) {

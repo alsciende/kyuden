@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Message\ActionInterface;
 use App\Repository\GameRepository;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
 readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
 {
     public function __construct(
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private GameRepository $gameRepository,
         private LoggerInterface $logger,

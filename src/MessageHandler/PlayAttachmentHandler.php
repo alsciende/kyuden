@@ -19,6 +19,7 @@ use App\Service\OpportunityService;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -38,6 +39,7 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
         private OpportunityService $opportunityService,
         private HandService $handService,
         private ConflictService $conflictService,
+        #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

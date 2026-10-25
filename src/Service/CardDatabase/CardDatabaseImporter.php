@@ -57,7 +57,10 @@ readonly class CardDatabaseImporter
             if (! $pack instanceof Pack) {
                 ++$created;
             }
-            $pack = $this->serializer->deserialize($contents, Pack::class, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $pack]);
+            $pack = $this->serializer->deserialize($contents, Pack::class, 'json', [
+                AbstractNormalizer::OBJECT_TO_POPULATE => $pack,
+                'datetime_format' => 'Y-m-d',
+            ]);
             $this->entityManager->persist($pack);
         }
 

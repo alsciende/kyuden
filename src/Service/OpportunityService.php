@@ -17,6 +17,7 @@ use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -34,6 +35,7 @@ readonly class OpportunityService
     public function __construct(
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
     ) {
     }

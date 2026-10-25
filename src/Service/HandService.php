@@ -20,6 +20,7 @@ use App\Exception\Rules\WrongCardTypeException;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -29,6 +30,7 @@ readonly class HandService
 {
     public function __construct(
         private PlayerStateManager $playerStateManager,
+        #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

@@ -13,6 +13,7 @@ use App\Message\RevealDynastyCard;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -23,6 +24,7 @@ final readonly class RevealDynastyCardHandler implements PlayerActionHandlerInte
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
+        #[Target('dynasty_card')]
         private WorkflowInterface $dynastyCardStateMachine,
     ) {
     }

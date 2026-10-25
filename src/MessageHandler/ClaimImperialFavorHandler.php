@@ -14,6 +14,7 @@ use App\Repository\PlayerRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -28,6 +29,7 @@ final readonly class ClaimImperialFavorHandler implements PlayerActionHandlerInt
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private GameStateManager $gameStateManager,
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

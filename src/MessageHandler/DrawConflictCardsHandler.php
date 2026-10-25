@@ -11,6 +11,7 @@ use App\Message\DrawConflictCards;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\DrawDeckService;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -24,6 +25,7 @@ final readonly class DrawConflictCardsHandler implements PlayerActionHandlerInte
     public function __construct(
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
+        #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
         private DrawDeckService $drawDeckService,
     ) {

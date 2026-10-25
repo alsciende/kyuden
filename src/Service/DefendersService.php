@@ -11,6 +11,7 @@ use App\Exception\Rules\NotActivePlayerException;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
@@ -21,6 +22,7 @@ readonly class DefendersService
 {
     public function __construct(
         private GameStateManager $gameStateManager,
+        #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
     ) {

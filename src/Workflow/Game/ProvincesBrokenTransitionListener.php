@@ -9,6 +9,7 @@ use App\Entity\Game;
 use App\Repository\CardRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\WorkflowInterface;
@@ -23,6 +24,7 @@ readonly class ProvincesBrokenTransitionListener
     public function __construct(
         private GameStateManager $stateManager,
         private CardRepository $cardRepository,
+        #[Target('province_card')]
         private WorkflowInterface $provinceCardStateMachine,
     ) {
     }
