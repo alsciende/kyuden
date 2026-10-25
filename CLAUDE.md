@@ -19,6 +19,7 @@ Everything runs in Docker (service `symfony`: PHP-FPM; service `node`: the Vite 
 - `make rector-fix`: applies the changes of Rector; never run it unasked: show the diff of `make rector` to the user, who may rather disable a rule in `rector.php`
 - `make front-install` / `make front-build`: npm dependencies and production build of the web client
 - `make sql`: `psql` shell on the `database` service
+- `make prod-build` / `make prod-up` / `make prod-logs` / `make prod-down`: the production stack on the workstation, from images built locally (README, "Production"); stop the development stack first
 
 Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message).
 

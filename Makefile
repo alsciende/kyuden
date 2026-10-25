@@ -38,8 +38,9 @@ rector:
 rector-fix:
 	$(PHP) vendor/bin/rector
 
+# no progress bar in the CI
 phpstan:
-	$(PHP) vendor/bin/phpstan -v --memory-limit=1G
+	$(PHP) vendor/bin/phpstan -v --memory-limit=1G $(if $(CI),--no-progress)
 
 front-install:
 	$(NPM) install
@@ -75,3 +76,21 @@ db:
 
 sh:
 	$(EXEC_SYMFONY) bash
+
+# the production stack on a workstation (stop the development stack first: make down): images built from the working
+# tree under the tag "local", a compose project of its own (kyuden-prod), docker/production/.env and symfony.env
+PROD_COMPOSE := KYUDEN_VERSION=local docker compose -p kyuden-prod -f docker/production/compose.yaml --env-file docker/production/.env
+
+prod-build:
+	docker build -f docker/production/Dockerfile --target php -t ghcr.io/alsciende/kyuden-php:local .
+	docker build -f docker/production/Dockerfile --target nginx -t ghcr.io/alsciende/kyuden-nginx:local .
+
+prod-up:
+	$(PROD_COMPOSE) up --detach
+
+prod-logs:
+	$(PROD_COMPOSE) logs --follow
+
+# with its volumes: the next start begins with an empty database
+prod-down:
+	$(PROD_COMPOSE) down --remove-orphans --volumes

@@ -34,6 +34,16 @@ services:
             - '../src/State/Model/'
             - '../src/View/Model/'
 
+    # the fixtures and the makers extend classes of development dependencies, missing in production: private, so that
+    # the container drops them there (unused services whose class cannot be loaded) instead of failing
+    App\DataFixtures\:
+        resource: '../src/DataFixtures/'
+        public: false
+
+    App\Maker\:
+        resource: '../src/Maker/'
+        public: false
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 

@@ -35,8 +35,11 @@ COPY composer.json composer.lock symfony.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-progress --no-interaction
 
 COPY --exclude=front --exclude=docker . ./
+# public/bundles: assets:install creates it only for a bundle with public files (none without the development
+# dependencies), and the nginx image copies it
 RUN composer dump-autoload --no-dev --classmap-authoritative \
     && composer run-script --no-dev post-install-cmd \
+    && mkdir -p public/bundles \
     && bin/console asset-map:compile \
     && bin/console cache:warmup \
     && chown -R www-data:www-data var

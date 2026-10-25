@@ -26,11 +26,27 @@ Continuous integration (GitHub Actions): every commit pushed, on any branch, run
 ```shell
 cp docker/production/.env.dist docker/production/.env                # what the services share, and the release (KYUDEN_VERSION)
 cp docker/production/symfony.env.dist docker/production/symfony.env  # the rest of the environment of the application
+# replace every value of both files: those of the .dist files run the stack on a workstation, their secrets are public
 docker compose -f docker/production/compose.yaml --env-file docker/production/.env pull
 docker compose -f docker/production/compose.yaml --env-file docker/production/.env up --detach
 ```
 
 `.env`, read by compose, holds what the services share (the database, the secret of Mercure): compose gives the application its `DATABASE_URL`, `MERCURE_URL` and `MERCURE_JWT_SECRET`. The rest of the environment of the application is `symfony.env`, on the host, mounted read-only as its `.env` in the `php` container (it replaces the `.env` of the repository; the variables set by compose and the image, `APP_ENV` and `APP_DEBUG`, win over it), so that compose does not list every variable of Symfony. Both files stay out of git.
+
+To try the production stack on a workstation, stop the development stack first (`make down`: both listen on port 8080 if `HTTP_PORT` says so, and the targets below use a compose project of their own, `kyuden-prod`, so that `make down` does not remove its containers). The images are built from the working tree under the tag `local` (the images of a release are `linux/amd64` only), which the targets set as `KYUDEN_VERSION`:
+
+```shell
+make down
+cp docker/production/.env.dist docker/production/.env                # as is: the values of the .dist files run locally
+cp docker/production/symfony.env.dist docker/production/symfony.env
+make prod-build   # both images, ghcr.io/alsciende/kyuden-{php,nginx}:local
+make prod-up      # migrations, card database and house bot, then http://localhost:8080
+make prod-logs
+make prod-down    # with its volumes: the next start begins with an empty database
+make up
+```
+
+The database of production holds no user of the fixtures: play as a guest or create an account.
 
 ## MVP scope
 
