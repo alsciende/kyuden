@@ -35,16 +35,21 @@ services:
     build:
       context: .
       dockerfile: ./docker/dev/symfony/Dockerfile
-    volumes:
-      - .:/var/www/html
     # the Symfony cache (including the Doctrine second-level cache pool) lives in memory
     # rather than on the slow bind mount; it is emptied when the container restarts
     tmpfs:
       - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
     user: www-data
     environment:
-      # the hub as the symfony container reaches it in the Docker network (the browser uses MERCURE_PUBLIC_URL)
-      MERCURE_URL: http://mercure/.well-known/mercure
+      # the key of the tokens of the Mercure hub (Caddyfile), the MERCURE_JWT_SECRET of Symfony (.env)
+      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
+    # FrankenPHP: Symfony, the Mercure hub and the web client (sent to the node service)
+    ports:
+      - 8080:80
+    volumes:
+      - .:/var/www/html
+      # the history of the Mercure hub
+      - caddy_data:/data/caddy
     depends_on:
       database:
         condition: service_healthy
@@ -52,18 +57,7 @@ services:
         condition: service_healthy
     entrypoint: '/var/www/html/docker/dev/symfony/entrypoint.sh'
 
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./public:/var/www/html/public:ro
-      - ./docker/dev/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - 8080:80
-    depends_on:
-      - symfony
-      - node
-
-  # the web client (front/): the Vite development server, behind nginx
+  # the web client (front/): the Vite development server, behind FrankenPHP (symfony service)
   node:
     image: node:24-alpine
     working_dir: /app/front
@@ -83,23 +77,6 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
-  mercure:
-    image: dunglas/mercure:v0.24
-    restart: unless-stopped
-    environment:
-      SERVER_NAME: ':80'
-      MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      # the URLs of the Symfony project (without trailing slash!); the topics are private: no anonymous subscriber
-      MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://localhost:8080 http://127.0.0.1:8080
-    volumes:
-      - mercure_data:/data
-      - mercure_config:/config
-    ports:
-      - "10001:80"
-
 volumes:
   database_data:
-  mercure_data:
-  mercure_config:
+  caddy_data:

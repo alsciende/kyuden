@@ -399,10 +399,10 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 ## Decisions taken for the long-poll (`wait_for_update`)
 
 **Design**
-- `GET /api/games/{id}/log?since={version}&wait={seconds}`: the log endpoint is the long-poll, no new route. The response waits until the version of the game is greater than `since`, then sends the log since that version (what changed, masked for the reader, with its ETag); once `wait` seconds have passed without change, it is sent as is: no message, or a 304 with `If-None-Match`. `wait` is 0 by default (no wait), at most `ApiGamesController::MAX_WAIT` (30 s, below the usual timeouts of clients and proxies; nginx waits 60 s for PHP-FPM); anything else is a 400 `invalid_wait`. A game that has ended answers at once.
+- `GET /api/games/{id}/log?since={version}&wait={seconds}`: the log endpoint is the long-poll, no new route. The response waits until the version of the game is greater than `since`, then sends the log since that version (what changed, masked for the reader, with its ETag); once `wait` seconds have passed without change, it is sent as is: no message, or a 304 with `If-None-Match`. `wait` is 0 by default (no wait), at most `ApiGamesController::MAX_WAIT` (30 s, below the usual timeouts of clients and proxies; nginx waits 60 s for PHP-FPM in production); anything else is a 400 `invalid_wait`. A game that has ended answers at once.
 - The future MCP tool `wait_for_update` wraps this endpoint.
 - `Service/GameUpdateWaiter` reads the version from the database every 250 ms (`GameRepository::findVersion()`, a DBAL query that bypasses the identity map), without lock nor transaction, and refreshes the game once it has changed. The existence of the game and the player are checked before waiting. It sleeps through the Symfony clock: the tests mock the global clock (`ClockSensitiveTrait`), and run a message from the clock to simulate a change made during the wait.
-- The development stack serves the application with nginx and PHP-FPM (`php:8.5-fpm-alpine`, up to 20 workers, `docker/dev/symfony/php-fpm.conf`) instead of the Symfony CLI, which ran a single `php-cgi`: a request waiting blocked every other request.
+- The development stack serves the application with a server running several requests at once (FrankenPHP now, up to 20 threads; nginx and PHP-FPM before) instead of the Symfony CLI, which ran a single `php-cgi`: a request waiting blocked every other request.
 
 **Alternatives rejected**
 - PostgreSQL `LISTEN` / `NOTIFY`: no polling, but a connection blocked on the notifications and a `NOTIFY` sent after the commit; polling one indexed row every 250 ms is cheap at the expected load.
@@ -410,7 +410,7 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 - A separate endpoint: the log since a version is exactly what the waiting client needs next.
 
 **Not done**
-- Each waiting client holds a PHP-FPM worker (up to 30 s): the number of workers bounds the number of agents waiting at once. To revisit with a non-blocking runtime (FrankenPHP worker mode, or Mercure for the clients that can subscribe).
+- Each waiting client holds a PHP-FPM worker in production, a thread of FrankenPHP in development (up to 30 s): the number of workers bounds the number of agents waiting at once. To revisit with a non-blocking runtime (FrankenPHP worker mode, or Mercure for the clients that can subscribe).
 
 ## Decisions taken for the MCP server
 
@@ -460,13 +460,13 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 - The console only reads public endpoints (`/api/cards`, `/api/actions`) and those of the user: one command per public message, generated from its JSON schema (`/bow_card`, `/bow-card`) plus short aliases (`/bow`, `/bid`, `/pass`…, `MESSAGE_ALIASES`), so a new message is a new command with nothing to write. The arguments are positional in the order of the properties of the schema, named (`card_cost=2`) or the payload as JSON; a card is given by the shortest unique prefix of its id (4 characters at least, shown as `[0a19]`) or part of its name, a player by `me`, `opp` or user id, and a player property left out is the user.
 - The token is kept by the tab (`sessionStorage`), so two tabs play the two players; `/as <user>` logs in with the development token of a user of the fixtures. On `game_updated` for the current game, the console reads the view again (`If-None-Match`) and writes the log since the last version it knows.
 - The actions of the step are shown apart from the messages accepted anytime (board manipulations, interrupts, reactions: `ANYTIME_ACTIONS`), which `available_actions` always lists.
-- Mercure in development: the `symfony` container publishes to the `mercure` service (`MERCURE_URL` in `docker-compose.yaml`), the browser subscribes to `MERCURE_PUBLIC_URL`; the hub accepts subscribers with a token (the topics are private) from `http://localhost:8080` and `http://127.0.0.1:8080`.
+- Mercure in development: the hub of FrankenPHP, on the origin of the site (see the decisions taken for FrankenPHP).
 - The console follows `game_started` on the topic of the user: a user matched by the queue plays the new game (it read `GET /api/self/games` every 2 seconds before).
 
 ## Decisions taken for the web client
 
 - **Vue 3 + Vite + TypeScript** (`front/`), rather than Preact without build or Symfony UX: the board will re-render the whole state on each `game_updated` (view, available actions, log), with hovers, selections, contextual help, later drag and drop and the deck editor; a reactive framework with single-file components fits, and the JSON API is already the contract (the same as the bots). One application for the whole site, the development console stays apart.
-- **Same origin**: nginx sends `/api`, `/console`, `/assets`, `/bundles` and the profiler to Symfony, the rest to the Vite server of the `node` service (`node:24-alpine`, `npm install && npm run dev`; HMR through nginx, `clientPort: 8080`). No CORS, the token goes in `Authorization`. In production, the static build (`front/dist`) behind nginx with a fallback to `index.html` (not configured yet: the Docker stack is the development one).
+- **Same origin**: FrankenPHP sends `/api`, `/console`, `/assets`, `/bundles` and the profiler to Symfony, the rest to the Vite server of the `node` service (`node:24-alpine`, `npm install && npm run dev`; HMR through FrankenPHP, `clientPort: 8080`). No CORS, the token goes in `Authorization`. In production, the static build (`front/dist`) behind nginx with a fallback to `index.html` (not configured yet: the Docker stack is the development one).
 - **Desktop only**: designed for 1536px, at least 1280px (`min-width` of the body; 1024px before the board).
 - **Fonts** served with the site (`@fontsource/eb-garamond`, `@fontsource/shippori-mincho` for the kanji, `@fontsource/barlow`, split by unicode range), not loaded from Google Fonts.
 - **Mons**: the SVGs of fiveringsdb-ui (the official mons), used as CSS masks, painted in ink at rest and in the color of the clan once chosen; the colors of the clans are ours (muted for the paper). The ensō of the neutral cards is the logo.
@@ -593,6 +593,14 @@ The second version of `BotStrategy`, after the first one (above) which only did 
 - **Releases** (`.github/workflows/release.yml`): every git tag, on any branch (no prefix: a tag is a release), runs the linters and the tests on the development stack of `docker-compose.yaml` (the same commands as on a workstation), then builds the `php` and `nginx` images for `linux/amd64` only and pushes them to `ghcr.io` (free for a public repository) tagged with the name of the git tag, never `latest`: the production host pins its release (`KYUDEN_VERSION`), pulls the images and builds nothing. The build cache is the one of GitHub Actions, one scope per image. The tests are a reusable workflow (`test.yml`, `workflow_call`), also run on every commit pushed to any branch (not on the tags: the release runs them). Caches of GitHub Actions: `vendor/` and `assets/vendor/` (key: `composer.lock`, `importmap.php`), `front/node_modules` (key: `front/package-lock.json`), and the layers of the development image `symfony`, built with buildx and loaded under the name compose gives it (`kyuden-symfony`, `COMPOSE_PROJECT_NAME`), so that compose does not build it.
 - `app:deck:create` was removed (a Lion starter deck without owner, superseded by the starter decks).
 
+## Decisions taken for FrankenPHP
+
+- **Development first**: FrankenPHP (`dunglas/frankenphp:1-php8.5-alpine`, `docker/dev/symfony/Dockerfile` and `Caddyfile`) replaces PHP-FPM in the `symfony` service, and the `nginx` and `mercure` services: one server on port 8080 for Symfony, the hub and the Vite server of the `node` service (the HMR WebSocket goes through it). Production follows once the development stack is validated: Caddy then terminates TLS (Let's Encrypt, then HSTS), in one image instead of `php`, `nginx` and Mercure.
+- **Classic mode**, not the worker mode: the services keep no state from a request to the next one without having to be checked first (the entity manager, the house bot). Threads: 4 at start, up to 20 (`max_threads`), like the workers of PHP-FPM, for the long-polls.
+- **House bot**: FrankenPHP has `fastcgi_finish_request()`, so `Response::send()` sends the response before `kernel.terminate` and the bot plays after it, as with PHP-FPM.
+- **Mercure**: the embedded hub is Mercure 1.1, which speaks the protocol 1.0 (RFC 9068 access tokens: `iss`, `aud`, `sub`, `client_id`, `authorization_details`); Symfony still issues tokens of the protocol 0.x (`protocol_version: 0.x`), which the hub accepts in compatibility mode only (`protocol_version_compatibility 8`, with `publisher_jwt` and `subscriber_jwt`; it logs the topics as `_deprecated_topic`). History in the bolt transport (`/data/caddy/mercure.db`, volume `caddy_data`), as the former hub kept it, so that a subscriber reconnecting with `lastEventID` gets what it missed. `MERCURE_URL` is the hub inside the container (`http://localhost/.well-known/mercure`), `MERCURE_PUBLIC_URL` a relative URL (`/.well-known/mercure`): the browsers subscribe on the origin of the page (`localhost` or `127.0.0.1`), without CORS.
+- The container still runs as `www-data`: `frankenphp` gets the capability to listen on port 80, and owns `/data/caddy` and `/config/caddy`.
+
 ## Next steps
 
 ### Web client and house bot
@@ -604,10 +612,12 @@ The second version of `BotStrategy`, after the first one (above) which only did 
 - **Bot**: see the decisions taken for the strategy of the house bot (what it does not do); a bot stuck in a step waits for the next message (or `app:bot:play`).
 - **Discard piles and pointing at a card**: let a player look at the discard piles (theirs and the opponent's: they are public), and point at the cards there (pointing at a card is done: `point_at_card`, "Point at it" in the card opened, for the cards on the board); show the card pointed at to the opponent (highlighted on the board from the last log entry, by its id).
 - **Players with an account**: the list and the edition of their decks; "Leave the game" at the end of a game leads a player with an account to the queue (the home page for now).
-- **Production**: HTTPS in front of nginx (required by the `.app` domain); a first release (a git tag), then make the two packages public on GitHub if they are created private.
+- **Production**: FrankenPHP as in development, with HTTPS (required by the `.app` domain: Caddy and Let's Encrypt, then HSTS) and the trusted proxies of Symfony if a proxy remains in front; a first release (a git tag), then make the two packages public on GitHub if they are created private.
 - `npm audit`: 4 high vulnerabilities in a dependency of the lint tooling (`braces` through `@vue/eslint-config-typescript`), not shipped with the site; the fix is a breaking downgrade: wait for an update.
 
 ### API
+
+- **Mercure protocol 1.0**: leave the compatibility mode of the hub (`protocol_version_compatibility 8`): `protocol_version: 1.0` in `config/packages/mercure.yaml`, the claims RFC 9068 requires (`iss`, `sub`, `client_id`; `aud` defaults to the URL of the hub) in the tokens of `Notifier/SubscriptionFactory` and of the publisher, an `issuer` block in the `Caddyfile` instead of `publisher_jwt` / `subscriber_jwt`, the topics as matchers (`/users/{id}/games/{gameId}` is a URI template), and check the cookie name, the clients (`front/src/lib/hub.ts`, `assets/console/mercure.js`) and the tests of the private topics.
 
 - **Fate from a fate pool**: `PlaceFate` places fate from the supply only; pool → character (and spending fate from a pool for an ability) waits for `MoveFate` (see the analysis of fate in the action abilities below).
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).

@@ -99,7 +99,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         $response = $this->get($scenario->game()->getId());
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        self::assertMatchesRegularExpression('/<[^>]+\/\.well-known\/mercure>; rel="mercure"/', (string) $response->headers->get('Link'));
+        self::assertMatchesRegularExpression('/<[^>]*\/\.well-known\/mercure>; rel="mercure"/', (string) $response->headers->get('Link'));
     }
 
     public function testTheETagIsTheVersionOfTheGame(): void

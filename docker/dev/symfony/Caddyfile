@@ -1,0 +1,41 @@
+{
+	skip_install_trust
+
+	frankenphp {
+		# a long-poll on the log of a game holds a thread while it waits (up to 30 seconds): enough threads for the
+		# other requests to be handled meanwhile
+		num_threads 4
+		max_threads 20
+	}
+}
+
+:80 {
+	root public/
+
+	# the Mercure hub, on the origin of the site (MERCURE_URL for Symfony, MERCURE_PUBLIC_URL for the browsers)
+	handle /.well-known/mercure* {
+		mercure {
+			# the hub speaks the protocol 1.0, Symfony the 0.x: its tokens are accepted in compatibility mode
+			protocol_version_compatibility 8
+			transport bolt {
+				path /data/caddy/mercure.db
+			}
+			# the topics are private: no anonymous subscriber
+			publisher_jwt {env.MERCURE_JWT_SECRET}
+			subscriber_jwt {env.MERCURE_JWT_SECRET}
+		}
+	}
+
+	# Symfony: the API, the development console, its assets (AssetMapper) and the profiler; only the front controller is
+	# executed
+	@symfony path /api /api/* /console /console/* /assets/* /bundles/* /_wdt/* /_profiler /_profiler/*
+	handle @symfony {
+		php_server
+	}
+
+	# the web client (front/), served by the Vite development server of the node service (the hot module replacement
+	# goes through a WebSocket)
+	handle {
+		reverse_proxy node:5173
+	}
+}

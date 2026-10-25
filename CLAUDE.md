@@ -9,7 +9,7 @@
 
 ## Commands
 
-Everything runs in Docker (service `symfony`: PHP-FPM; service `node`: the Vite server of the web client `front/`; both behind the `nginx` service on port 8080) through the Makefile:
+Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which serves Symfony, embeds the Mercure hub and sends the rest to the service `node`, the Vite server of the web client `front/`) through the Makefile:
 
 - `make up` / `make down` / `make build` / `make sh`
 - `make db`: drop and recreate the schema, then load fixtures (packs, cards, starter decks, users)
