@@ -1,7 +1,7 @@
 # the production stack, from the images of a release (.github/workflows/release.yml: ghcr.io, KYUDEN_VERSION in .env):
 #   docker compose -f docker/production/compose.yaml --env-file docker/production/.env pull
 #   docker compose -f docker/production/compose.yaml --env-file docker/production/.env up --detach
-# the site listens on HTTP_PORT (80 by default), behind the proxy that terminates TLS
+# the site listens on HTTPS for SERVER_NAME (certificate from Let's Encrypt, HTTP redirected), or on HTTP only (":80")
 # .env holds what the services share (.env.dist), symfony.env the rest of the environment of the application (symfony.env.dist)
 name: kyuden
 
@@ -22,16 +22,24 @@ services:
       timeout: 3s
       retries: 3
 
-  php:
-    image: ghcr.io/alsciende/kyuden-php:${KYUDEN_VERSION:?}
+  app:
+    image: ghcr.io/alsciende/kyuden-app:${KYUDEN_VERSION:?}
     restart: unless-stopped
     # what the application shares with the other services; the rest of its environment is symfony.env on the host,
     # mounted as its .env (symfony.env.dist): the variables set here win over it
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-kyuden}:${POSTGRES_PASSWORD:?}@database:5432/${POSTGRES_DB:-kyuden}?serverVersion=18&charset=utf8
-      # the hub as php reaches it in the Docker network; the browsers reach it through nginx (MERCURE_PUBLIC_URL)
-      MERCURE_URL: http://mercure/.well-known/mercure
+      # the hub embedded in FrankenPHP, as Symfony publishes to it in the container (app/Caddyfile); the browsers reach
+      # it on the origin of the site (MERCURE_PUBLIC_URL)
+      MERCURE_URL: http://127.0.0.1:8000/.well-known/mercure
+      # also the key of the tokens of the hub
       MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:?}
+      SERVER_NAME: ${SERVER_NAME:-:80}
+    ports:
+      - ${HTTP_PORT:-80}:80
+      - ${HTTPS_PORT:-443}:443
+      # HTTP/3
+      - ${HTTPS_PORT:-443}:443/udp
     volumes:
       - type: bind
         source: ./symfony.env
@@ -39,32 +47,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      # the certificates and the history of Mercure
+      - caddy_data:/data/caddy
     depends_on:
       database:
         condition: service_healthy
 
-  nginx:
-    image: ghcr.io/alsciende/kyuden-nginx:${KYUDEN_VERSION:?}
-    restart: unless-stopped
-    ports:
-      - ${HTTP_PORT:-80}:80
-    depends_on:
-      - php
-      - mercure
-
-  mercure:
-    image: dunglas/mercure:v0.24
-    restart: unless-stopped
-    environment:
-      # plain HTTP behind nginx
-      SERVER_NAME: ':80'
-      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET:?}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET:?}
-    volumes:
-      - mercure_data:/data
-      - mercure_config:/config
-
 volumes:
   database_data:
-  mercure_data:
-  mercure_config:
+  caddy_data:

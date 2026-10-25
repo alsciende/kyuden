@@ -1,0 +1,73 @@
+{
+	skip_install_trust
+
+	frankenphp {
+		# a long-poll on the log of a game holds a thread while it waits (up to 30 seconds): enough threads for the
+		# other requests to be handled meanwhile
+		num_threads 4
+		max_threads 20
+	}
+}
+
+# SERVER_NAME: the domain of the site, whose certificate Caddy gets from Let's Encrypt and renews (HTTP redirected to
+# HTTPS), or ":80" for HTTP only (make prod-up)
+{$SERVER_NAME::80} {
+	root public/
+
+	# the .app domain is on the HSTS preload list of the browsers already
+	header Strict-Transport-Security "max-age=31536000"
+
+	# a compressed stream of server-sent events costs memory for each subscriber
+	@compressible not path /.well-known/mercure
+	encode @compressible zstd br gzip
+
+	# the Mercure hub, on the origin of the site (MERCURE_PUBLIC_URL)
+	handle /.well-known/mercure* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# Symfony: the API and the development console; only the front controller is executed
+	@symfony path /api /api/* /console /console/*
+	handle @symfony {
+		php_server
+	}
+
+	# the sources of PHP are not public files
+	@php path *.php
+	handle @php {
+		respond 404
+	}
+
+	# the files built by Vite and AssetMapper carry a hash in their name
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	handle /bundles/* {
+		file_server
+	}
+
+	# the web client (front/dist): an unknown path is a route of the client
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# the Mercure hub, as Symfony publishes to it (MERCURE_URL), in the container only; a configuration has a single hub, and
+# the site above is another server (another port): it proxies the browsers here
+http://:8000 {
+	bind 127.0.0.1
+
+	mercure {
+		# the hub speaks the protocol 1.0, Symfony the 0.x: its tokens are accepted in compatibility mode
+		protocol_version_compatibility 8
+		transport bolt {
+			path /data/caddy/mercure.db
+		}
+		# the topics are private: no anonymous subscriber
+		publisher_jwt {env.MERCURE_JWT_SECRET}
+		subscriber_jwt {env.MERCURE_JWT_SECRET}
+	}
+}
