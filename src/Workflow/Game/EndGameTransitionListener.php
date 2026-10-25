@@ -26,9 +26,11 @@ readonly class EndGameTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<Game> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         $victory = $this->victoryService->findVictory($game) ?? throw new \LogicException('No player has met a victory condition.');

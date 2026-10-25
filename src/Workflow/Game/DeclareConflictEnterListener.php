@@ -24,9 +24,11 @@ readonly class DeclareConflictEnterListener
     ) {
     }
 
+    /**
+     * @param EnterEvent<Game> $event
+     */
     public function __invoke(EnterEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
         $state = $this->stateManager->getState($game);
 

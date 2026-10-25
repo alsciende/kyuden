@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Workflow\Game;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\Game;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\State\Manager\CardStateManager;
@@ -47,7 +48,7 @@ class FatePhaseListenersTest extends AbstractKernelTestCase
     }
 
     /**
-     * @param callable(TransitionEvent): void $listener
+     * @param callable(TransitionEvent<Game>): void $listener
      */
     private function transition(callable $listener, Scenario $scenario): void
     {

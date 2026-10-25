@@ -21,9 +21,11 @@ readonly class HonorBidEnterListener
     ) {
     }
 
+    /**
+     * @param EnterEvent<Game> $event
+     */
     public function __invoke(EnterEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($game->getPlayers() as $player) {

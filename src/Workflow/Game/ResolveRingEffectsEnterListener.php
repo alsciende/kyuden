@@ -27,9 +27,11 @@ readonly class ResolveRingEffectsEnterListener
     ) {
     }
 
+    /**
+     * @param EnterEvent<Game> $event
+     */
     public function __invoke(EnterEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
         $conflict = $this->stateManager->getState($game)->currentConflict();
         $resolverId = $conflict->attackerWon() ? $conflict->attackingPlayerId : null;

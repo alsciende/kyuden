@@ -20,9 +20,11 @@ readonly class ImperialFavorUnclaimedGuardListener
     ) {
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         if ($this->stateManager->getState($game)->gloryCountWinnerId !== null) {

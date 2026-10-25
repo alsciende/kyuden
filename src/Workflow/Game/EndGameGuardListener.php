@@ -17,9 +17,11 @@ readonly class EndGameGuardListener
     ) {
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         if ($this->victoryService->findVictory($game) === null) {

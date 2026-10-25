@@ -24,9 +24,11 @@ readonly class AttackedProvinceRevealedGuardListener
     ) {
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($this->stateManager->getState($game)->currentConflict()->attackedProvinceIds as $provinceId) {

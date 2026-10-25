@@ -31,10 +31,11 @@ readonly class StartGameTransitionListener
 
     /**
      * Fix the player order, select first player, set the rings and create all cards and stacks.
+     *
+     * @param TransitionEvent<Game> $event
      */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         $firstPlayer = $this->selectRandomFirstPlayer($game);

@@ -17,9 +17,11 @@ readonly class HonorBidsConfirmedGuardListener
     ) {
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($game->getPlayers() as $player) {

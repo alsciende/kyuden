@@ -16,6 +16,9 @@ use Symfony\Component\Workflow\Event\GuardEvent;
 #[AsEventListener(event: 'workflow.guard')]
 readonly class BowAndReadyGuardListener
 {
+    /**
+     * @param GuardEvent<object> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
         $card = $event->getSubject();

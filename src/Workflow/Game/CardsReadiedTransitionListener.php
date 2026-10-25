@@ -21,9 +21,11 @@ readonly class CardsReadiedTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<Game> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($game->getPhysicalCards() as $card) {

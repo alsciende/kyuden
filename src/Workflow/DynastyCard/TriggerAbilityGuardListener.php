@@ -16,9 +16,11 @@ use Symfony\Component\Workflow\Event\GuardEvent;
 #[AsGuardListener(workflow: 'dynasty_card', transition: 'trigger_ability')]
 readonly class TriggerAbilityGuardListener
 {
+    /**
+     * @param GuardEvent<DynastyCard> $event
+     */
     public function __invoke(GuardEvent $event): void
     {
-        /** @var DynastyCard $card */
         $card = $event->getSubject();
 
         if ($card->getCurrentPlace() === DynastyCard::STATE_PROVINCE_FACEUP && $card->getLogicalCard()->getType() !== Type::Holding) {

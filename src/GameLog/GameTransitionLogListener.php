@@ -21,6 +21,9 @@ final readonly class GameTransitionLogListener
     ) {
     }
 
+    /**
+     * @param LeaveEvent<object> $event
+     */
     public function __invoke(LeaveEvent $event): void
     {
         $game = $event->getSubject();

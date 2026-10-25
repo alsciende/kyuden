@@ -25,9 +25,11 @@ readonly class CharactersDiscardedTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<Game> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($this->stateManager->getState($game)->playerIdsFromFirstPlayer() as $playerId) {

@@ -71,7 +71,7 @@ readonly class ApiMessageFactory
         } catch (ExtraAttributesException $exception) {
             throw new InvalidPayloadException($type, array_map(
                 fn (mixed $attribute): array => ['property_path' => (string) $attribute, 'message' => 'This field is not expected.'],
-                array_values($exception->getExtraAttributes()),
+                $exception->getExtraAttributes(),
             ));
         } catch (SerializerException $exception) {
             throw new InvalidPayloadException($type, [['property_path' => '', 'message' => $exception->getMessage()]]);
@@ -90,7 +90,7 @@ readonly class ApiMessageFactory
     private function getViolations(PartialDenormalizationException $exception): array
     {
         $violations = [];
-        foreach ($exception->getErrors() as $error) {
+        foreach ($exception->getNotNormalizableValueErrors() as $error) {
             // missing constructor arguments are reported by their name in the class, in camel case
             $violations[] = ['property_path' => u($error->getPath() ?? '')->snake()->toString(), 'message' => $error->getMessage()];
         }

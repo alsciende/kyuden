@@ -187,11 +187,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->type === UserType::Bot ? ['ROLE_USER', 'ROLE_BOT'] : ['ROLE_USER'];
     }
 
-    #[\Deprecated]
-    public function eraseCredentials(): void
-    {
-    }
-
     /**
      * @return non-empty-string
      */

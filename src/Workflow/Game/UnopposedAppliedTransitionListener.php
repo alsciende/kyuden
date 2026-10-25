@@ -28,9 +28,11 @@ readonly class UnopposedAppliedTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<Game> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
         $conflict = $this->stateManager->getState($game)->currentConflict();
 

@@ -25,9 +25,11 @@ readonly class HonorBidsConfirmedTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<Game> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         foreach ($game->getPlayers() as $player) {

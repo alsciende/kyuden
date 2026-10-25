@@ -33,6 +33,9 @@ readonly class CardTransitionListener
     ) {
     }
 
+    /**
+     * @param TransitionEvent<object> $event
+     */
     public function __invoke(TransitionEvent $event): void
     {
         $card = $event->getSubject();

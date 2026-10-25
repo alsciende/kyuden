@@ -21,6 +21,9 @@ readonly class ConflictOpportunitiesGuardListener
     ) {
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     #[AsGuardListener(workflow: 'game', transition: 'conflict_phase_actions_passed')]
     public function guardDeclareConflict(GuardEvent $event): void
     {
@@ -29,6 +32,9 @@ readonly class ConflictOpportunitiesGuardListener
         }
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     #[AsGuardListener(workflow: 'game', transition: 'conflict_opportunities_exhausted')]
     public function guardDetermineImperialFavor(GuardEvent $event): void
     {
@@ -37,9 +43,11 @@ readonly class ConflictOpportunitiesGuardListener
         }
     }
 
+    /**
+     * @param GuardEvent<Game> $event
+     */
     private function hasConflictOpportunityLeft(GuardEvent $event): bool
     {
-        /** @var Game $game */
         $game = $event->getSubject();
 
         return $game->getPlayers()->exists(

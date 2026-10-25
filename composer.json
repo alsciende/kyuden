@@ -9,7 +9,7 @@
         "ext-iconv": "*",
         "dama/doctrine-test-bundle": "^8.7",
         "doctrine/doctrine-bundle": "^3.3",
-        "doctrine/doctrine-migrations-bundle": "^3.3",
+        "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.4",
         "martin-georgiev/postgresql-for-doctrine": "^2.7",
         "mcp/sdk": "^0.9",

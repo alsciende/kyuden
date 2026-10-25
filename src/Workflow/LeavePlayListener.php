@@ -45,6 +45,9 @@ readonly class LeavePlayListener
     ) {
     }
 
+    /**
+     * @param LeaveEvent<object> $event
+     */
     public function __invoke(LeaveEvent $event): void
     {
         $card = $event->getSubject();
