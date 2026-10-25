@@ -37,7 +37,7 @@ readonly class DuelHonorBidPlacedListener
             return;
         }
 
-        $duelists = array_map(fn (string $playerId): Player => $game->getPlayer($playerId), $duel->playerIds());
+        $duelists = array_map($game->getPlayer(...), $duel->playerIds());
         foreach ($duelists as $duelist) {
             if ($this->playerStateManager->getState($duelist)->getPendingHonorBid() === null) {
                 return;

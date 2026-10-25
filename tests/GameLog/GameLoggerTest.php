@@ -134,7 +134,7 @@ class GameLoggerTest extends AbstractKernelTestCase
         self::service(GameLogger::class)->log($scenario->game(), 'Something happens');
 
         $entries = self::service(EntityManagerInterface::class)->getUnitOfWork()->getScheduledEntityInsertions();
-        $entry = array_values(array_filter($entries, fn (object $entity): bool => $entity instanceof GameLogEntry))[0] ?? null;
+        $entry = array_first(array_filter($entries, fn (object $entity): bool => $entity instanceof GameLogEntry)) ?? null;
         self::assertInstanceOf(GameLogEntry::class, $entry);
         self::assertSame(2, $entry->getVersion());
     }

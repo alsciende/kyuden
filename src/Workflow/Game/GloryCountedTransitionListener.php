@@ -39,7 +39,7 @@ readonly class GloryCountedTransitionListener
         }
         arsort($totals);
         $highest = array_slice($totals, 0, 2, true);
-        $winnerId = count($highest) === 1 || array_values($highest)[0] > array_values($highest)[1] ? (string) array_key_first($highest) : null;
+        $winnerId = count($highest) === 1 || array_first($highest) > array_values($highest)[1] ? (string) array_key_first($highest) : null;
 
         $this->stateManager->withState($game, function (GameState $state) use ($winnerId): GameState {
             $state->gloryCountWinnerId = $winnerId;

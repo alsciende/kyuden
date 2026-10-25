@@ -174,7 +174,7 @@ class ApiAccountsControllerTest extends AbstractKernelTestCase
 
         self::assertSame('validation_failed', $problem['type']);
         self::assertIsArray($problem['violations']);
-        self::assertSame([$property], array_unique(array_column($problem['violations'], 'property_path')));
+        self::assertSame([$property], array_unique(array_column($problem['violations'], 'property_path'), \SORT_REGULAR));
     }
 
     public function testAPasswordOfEightCharactersIsLongEnough(): void

@@ -380,7 +380,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
             }
 
             #[\Override]
-            public function now(): \DateTimeImmutable
+            public function now(): \Symfony\Component\Clock\DatePoint
             {
                 return $this->clock->now();
             }

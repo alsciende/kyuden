@@ -21,7 +21,6 @@ return RectorConfig::configure()
     )
     ->withSets([
         SetList::TYPE_DECLARATION,
-        PHPUnitSetList::PHPUNIT_100,
         LevelSetList::UP_TO_PHP_84,
     ])
     ->withSkip([

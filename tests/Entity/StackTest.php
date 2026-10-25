@@ -15,13 +15,13 @@ class StackTest extends TestCase
 {
     public function testMoveAround(): void
     {
-        $hand = new Stack('hand', self::createMock(Player::class), StackType::InPlay);
+        $hand = new Stack('hand', self::createStub(Player::class), StackType::InPlay);
 
-        $card1 = new DynastyCard('1', self::createMock(LogicalCard::class), $hand);
-        $card2 = new DynastyCard('2', self::createMock(LogicalCard::class), $hand);
-        $card3 = new DynastyCard('3', self::createMock(LogicalCard::class), $hand);
+        $card1 = new DynastyCard('1', self::createStub(LogicalCard::class), $hand);
+        $card2 = new DynastyCard('2', self::createStub(LogicalCard::class), $hand);
+        $card3 = new DynastyCard('3', self::createStub(LogicalCard::class), $hand);
 
-        $stack = new Stack('test', self::createMock(Player::class), StackType::InPlay);
+        $stack = new Stack('test', self::createStub(Player::class), StackType::InPlay);
 
         $stack->addCard($card1);
         $stack->addCard($card2);
@@ -46,12 +46,12 @@ class StackTest extends TestCase
 
     public function testTopCardsFollowPositionsNotCollectionOrder(): void
     {
-        $deck = new Stack('deck', self::createMock(Player::class), StackType::DynastyDrawDeck);
+        $deck = new Stack('deck', self::createStub(Player::class), StackType::DynastyDrawDeck);
         self::assertNull($deck->getTopCard());
 
-        $card1 = new DynastyCard('1', self::createMock(LogicalCard::class), $deck);
-        $card2 = new DynastyCard('2', self::createMock(LogicalCard::class), $deck);
-        $card3 = new DynastyCard('3', self::createMock(LogicalCard::class), $deck);
+        $card1 = new DynastyCard('1', self::createStub(LogicalCard::class), $deck);
+        $card2 = new DynastyCard('2', self::createStub(LogicalCard::class), $deck);
+        $card3 = new DynastyCard('3', self::createStub(LogicalCard::class), $deck);
         $deck->addCard($card1);
         $deck->addCard($card2);
         $deck->addCard($card3);

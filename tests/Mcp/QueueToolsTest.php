@@ -30,7 +30,7 @@ class QueueToolsTest extends AbstractMcpTestCase
         self::assertIsArray($decks);
         self::assertContains(AppFixtures::CRAB_STARTER_DECK, array_column($decks, 'id'));
         // the starter decks, not the decks of other users
-        self::assertSame([null], array_values(array_unique(array_column($decks, 'owner_id'))));
+        self::assertSame([null], array_values(array_unique(array_column($decks, 'owner_id'), \SORT_REGULAR)));
     }
 
     public function testTheBotJoinsAndLeavesTheQueue(): void

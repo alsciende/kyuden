@@ -281,7 +281,7 @@ class LogicalCard implements \Stringable
     public function getElements(): ?array
     {
         return $this->elements === null ? null : array_map(
-            fn (string $element): Element => Element::from($element),
+            Element::from(...),
             $this->elements,
         );
     }
@@ -457,7 +457,7 @@ class LogicalCard implements \Stringable
     public function getAbilityTimings(): array
     {
         return array_map(
-            fn (string $timing): AbilityTiming => AbilityTiming::from($timing),
+            AbilityTiming::from(...),
             $this->abilityTimings,
         );
     }

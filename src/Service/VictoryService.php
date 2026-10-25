@@ -54,7 +54,7 @@ readonly class VictoryService
 
             if (count($eliminations) === count($players) - 1 && ! isset($eliminations[$player->getId()])) {
                 // the condition that eliminated the first eliminated opponent in player order
-                return new Victory($player, array_values($eliminations)[0]);
+                return new Victory($player, array_first($eliminations) ?? throw new \LogicException('Expected an eliminated player.'));
             }
         }
 

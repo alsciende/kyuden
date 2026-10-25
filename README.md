@@ -3,7 +3,7 @@
 [![Test](https://github.com/alsciende/kyuden/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/alsciende/kyuden/actions/workflows/test.yml)
 [![codecov](https://codecov.io/github/alsciende/kyuden/graph/badge.svg)](https://codecov.io/github/alsciende/kyuden)
 
-[kyuden.app](https://kyuden.app): server-side engine to play **Legend of the Five Rings LCG** (Fantasy Flight Games). PHP 8.4 (PHP-FPM behind nginx in development), Symfony 7.4, Doctrine ORM on PostgreSQL, Symfony Messenger, Symfony Workflow, Mercure; and its web client (`front/`): Vue 3, Vite, TypeScript.
+[kyuden.app](https://kyuden.app): server-side engine to play **Legend of the Five Rings LCG** (Fantasy Flight Games). PHP 8.5 (PHP-FPM behind nginx in development), Symfony 7.4, Doctrine ORM on PostgreSQL, Symfony Messenger, Symfony Workflow, Mercure; and its web client (`front/`): Vue 3, Vite, TypeScript.
 
 ## Installation
 

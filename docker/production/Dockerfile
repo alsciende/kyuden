@@ -12,7 +12,7 @@ RUN npm ci
 COPY front/ ./
 RUN npm run build
 
-FROM php:8.4-fpm-alpine AS php
+FROM php:8.5-fpm-alpine AS php
 
 RUN apk add --no-cache icu-libs libpq \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libpq-dev linux-headers \

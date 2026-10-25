@@ -78,10 +78,11 @@ readonly class StartGameTransitionListener
 
         foreach ($player->getDeck()->getCardCodes() as $id) {
             $logicalCard = $this->cardFactory->getLogicalCard($id);
+            $stackType = $logicalCard->getInitialStackType();
             $this->cardFactory->createCard(
                 physicalCardId: $player->getGame()->generateId(),
                 logicalCard: $logicalCard,
-                stack: $stacks[$logicalCard->getInitialStackType()->value]
+                stack: $stacks[$stackType->value] ?? throw new \LogicException(sprintf('The initial stack %s of card %s is not unique.', $stackType->name, $id)),
             );
         }
     }

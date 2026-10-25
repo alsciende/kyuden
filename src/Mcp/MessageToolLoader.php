@@ -63,6 +63,7 @@ final readonly class MessageToolLoader implements LoaderInterface
     private function createInputSchema(array $schema): array
     {
         // an object, so that a message without field is encoded `{}`
+        /** @var array<string, mixed> $properties the names of the fields */
         $properties = \is_object($schema['properties'] ?? null) ? get_object_vars($schema['properties']) : [];
         $required = \is_array($schema['required'] ?? null) ? array_values(array_filter($schema['required'], \is_string(...))) : [];
 
