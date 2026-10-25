@@ -43,7 +43,7 @@ class Player implements StatefulInterface
      * When the player joined the game, to the second: players joining at once share it, see joinRank.
      */
     #[ORM\Column]
-    private \DateTimeImmutable $joinDate;
+    private \DateTime $joinDate;
 
     /**
      * Rank of arrival in the game, from 0: the order of the players of the game, from which start_game fixes the
@@ -68,7 +68,7 @@ class Player implements StatefulInterface
     public function __construct(string $id)
     {
         $this->id = $id;
-        $this->joinDate = new \DateTimeImmutable();
+        $this->joinDate = new \DateTime();
         $this->physicalCards = new ArrayCollection();
         $this->stacks = new ArrayCollection();
     }
@@ -155,7 +155,7 @@ class Player implements StatefulInterface
         return $this;
     }
 
-    public function getJoinDate(): \DateTimeImmutable
+    public function getJoinDate(): \DateTimeInterface
     {
         return $this->joinDate;
     }

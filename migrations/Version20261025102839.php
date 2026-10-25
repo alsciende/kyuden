@@ -37,7 +37,7 @@ final class Version20261025102839 extends AbstractMigration
         $this->addSql('CREATE TABLE events (id INT NOT NULL, game_id VARCHAR(255) NOT NULL, version INT NOT NULL, name VARCHAR(255) NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, payload jsonb NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_5387574AE48FD905 ON events (game_id)');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_5387574AE48FD905BF1CD3C3 ON events (game_id, version)');
-        $this->addSql('COMMENT ON COLUMN events.created_at IS \'(DC2Type:datetime_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN events.created_at IS \'(DC2Type:datetime)\'');
         $this->addSql('CREATE TABLE external_cards (id INT NOT NULL, card_id VARCHAR(50) NOT NULL, source VARCHAR(255) NOT NULL, external_id VARCHAR(100) NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_368F2B7E4ACC9A20 ON external_cards (card_id)');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_368F2B7E5F8A7F739F75D7B0 ON external_cards (source, external_id)');
@@ -56,7 +56,7 @@ final class Version20261025102839 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_264E43A6E48FD905 ON players (game_id)');
         $this->addSql('CREATE INDEX IDX_264E43A6A76ED395 ON players (user_id)');
         $this->addSql('CREATE INDEX IDX_264E43A6111948DC ON players (deck_id)');
-        $this->addSql('COMMENT ON COLUMN players.join_date IS \'(DC2Type:datetime_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN players.join_date IS \'(DC2Type:datetime)\'');
         $this->addSql('CREATE TABLE printings (id INT NOT NULL, card_id VARCHAR(50) NOT NULL, pack_id VARCHAR(255) NOT NULL, quantity INT NOT NULL, position INT NOT NULL, illustrator VARCHAR(255) DEFAULT NULL, flavor_text VARCHAR(1023) DEFAULT NULL, image_url VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_3F8AE3C04ACC9A20 ON printings (card_id)');
         $this->addSql('CREATE INDEX IDX_3F8AE3C01919B217 ON printings (pack_id)');
@@ -67,9 +67,9 @@ final class Version20261025102839 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_1483A5E97E3C61F9 ON users (owner_id)');
         $this->addSql('CREATE TABLE messenger_messages (id BIGSERIAL NOT NULL, body TEXT NOT NULL, headers TEXT NOT NULL, queue_name VARCHAR(190) NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, available_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, delivered_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_75EA56E0FB7336F0E3BD61CE16BA31DBBF396750 ON messenger_messages (queue_name, available_at, delivered_at, id)');
-        $this->addSql('COMMENT ON COLUMN messenger_messages.created_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('COMMENT ON COLUMN messenger_messages.available_at IS \'(DC2Type:datetime_immutable)\'');
-        $this->addSql('COMMENT ON COLUMN messenger_messages.delivered_at IS \'(DC2Type:datetime_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN messenger_messages.created_at IS \'(DC2Type:datetime)\'');
+        $this->addSql('COMMENT ON COLUMN messenger_messages.available_at IS \'(DC2Type:datetime)\'');
+        $this->addSql('COMMENT ON COLUMN messenger_messages.delivered_at IS \'(DC2Type:datetime)\'');
         $this->addSql('ALTER TABLE access_tokens ADD CONSTRAINT FK_58D184BCA76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE');
         $this->addSql('ALTER TABLE candidates ADD CONSTRAINT FK_6A77F80CA76ED395 FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE');
         $this->addSql('ALTER TABLE candidates ADD CONSTRAINT FK_6A77F80C111948DC FOREIGN KEY (deck_id) REFERENCES decks (id) NOT DEFERRABLE INITIALLY IMMEDIATE');

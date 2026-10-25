@@ -34,7 +34,7 @@ class Event
     private string $name;
 
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?\DateTime $createdAt = null;
 
     #[ORM\Column(type: 'jsonb')]
     private string $payload;
@@ -45,7 +45,7 @@ class Event
         $this->version = $version;
         $this->name = $name;
         $this->payload = $payload;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new \DateTime();
     }
 
     public function getId(): ?int
@@ -82,14 +82,14 @@ class Event
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(\DateTimeInterface $createdAt): static
     {
-        $this->createdAt = $createdAt;
+        $this->createdAt = \DateTime::createFromInterface($createdAt);
 
         return $this;
     }

@@ -254,7 +254,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
         self::assertIsArray($claims);
         self::assertSame(['publish' => [], 'subscribe' => ['/users/jane', '/users/jane/games/{gameId}']], $claims['mercure']);
         self::assertIsString($subscription['expires_at']);
-        self::assertSame(new \DateTimeImmutable($subscription['expires_at'])->getTimestamp(), $claims['exp']);
+        self::assertSame(new \DateTime($subscription['expires_at'])->getTimestamp(), $claims['exp']);
     }
 
     public function testTheSubscriptionRequiresAToken(): void

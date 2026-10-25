@@ -409,7 +409,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
     /**
      * Seconds the waiting request has slept since the clock was mocked.
      */
-    private function elapsed(MockClock $clock, \DateTimeImmutable $start): float
+    private function elapsed(MockClock $clock, \DateTimeInterface $start): float
     {
         return round((float) $clock->now()->format('U.u') - (float) $start->format('U.u'), 3);
     }
