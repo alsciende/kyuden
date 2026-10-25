@@ -99,7 +99,7 @@ class Pack implements \Stringable
 
     public function setReleaseDate(?\DateTimeInterface $release_date): static
     {
-        $this->release_date = \DateTime::createFromInterface($release_date);
+        $this->release_date = $release_date ? \DateTime::createFromInterface($release_date) : null;
 
         return $this;
     }

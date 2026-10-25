@@ -52,6 +52,6 @@ class DeckRepository extends ServiceEntityRepository
      */
     public function findWithoutOwner(): array
     {
-        return $this->findBy(['owner' => null], ['id' => \SortDirection::Ascending]);
+        return $this->findBy(['owner' => null], ['id' => 'ASC']);
     }
 }

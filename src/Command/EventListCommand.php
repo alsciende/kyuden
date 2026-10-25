@@ -36,7 +36,7 @@ readonly class EventListCommand
         }
         $limit = intval($lines);
         $events = $this->repository->findBy([], [
-            'id' => \SortDirection::Descending,
+            'id' => 'DESC',
         ], $limit);
         $io->table(
             ['Id', 'Name', 'Payload'],

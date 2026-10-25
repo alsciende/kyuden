@@ -23,7 +23,7 @@ readonly class FifoMatchMakingService implements MatchMakingInterface
     public function findMatches(): void
     {
         $this->candidateRepository->withQueueLock(function (): void {
-            $candidates = $this->candidateRepository->findBy([], ['id' => \SortDirection::Ascending]);
+            $candidates = $this->candidateRepository->findBy([], ['id' => 'ASC']);
             $pairs = array_chunk($candidates, 2);
 
             while (($pair = array_shift($pairs)) && (count($pair) === 2)) {
