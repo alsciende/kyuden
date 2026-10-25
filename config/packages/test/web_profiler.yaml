@@ -2,3 +2,4 @@ framework:
     profiler:
         enabled: true
         collect: true
+        collect_serializer_data: true

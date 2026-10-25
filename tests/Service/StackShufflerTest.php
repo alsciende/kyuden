@@ -65,6 +65,8 @@ class StackShufflerTest extends AbstractKernelTestCase
             self::service(StackShuffler::class)->shuffle($deck);
 
             $results[] = [$this->codes($deck->getOrderedCards()), $this->ids($deck->getOrderedCards())];
+            // the same seed gives the same ids: the second game must not share the identity map of the first
+            self::service(EntityManagerInterface::class)->clear();
         }
 
         self::assertSame($results[0], $results[1]);

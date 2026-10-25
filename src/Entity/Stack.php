@@ -23,7 +23,7 @@ class Stack
      */
     #[ORM\OneToMany(mappedBy: 'stack', targetEntity: PhysicalCard::class)]
     #[OrderBy([
-        'position' => 'ASC',
+        'position' => \SortDirection::Ascending,
     ])]
     private Collection $cards;
 

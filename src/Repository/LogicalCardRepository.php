@@ -30,7 +30,7 @@ class LogicalCardRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('card')
             ->leftJoin('card.printings', 'printing')
             ->addSelect('printing')
-            ->orderBy('card.id', 'ASC')
+            ->orderBy('card.id', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }

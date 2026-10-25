@@ -57,7 +57,7 @@ class Player implements StatefulInterface
      */
     #[ORM\OneToMany(mappedBy: 'player', targetEntity: PhysicalCard::class, fetch: 'LAZY', orphanRemoval: true)]
     #[OrderBy([
-        'position' => 'ASC',
+        'position' => \SortDirection::Ascending,
     ])]
     private Collection $physicalCards;
 

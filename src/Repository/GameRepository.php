@@ -84,35 +84,10 @@ class GameRepository extends ServiceEntityRepository
             ->join('g.players', 'mine', 'WITH', 'IDENTITY(mine.user) = :user')
             ->join('g.players', 'p')
             ->setParameter('user', $userId)
-            ->orderBy('mine.joinDate', 'DESC')
-            ->addOrderBy('g.id', 'ASC')
-            ->addOrderBy('p.joinRank', 'ASC')
+            ->orderBy('mine.joinDate', \SortDirection::Descending)
+            ->addOrderBy('g.id', \SortDirection::Ascending)
+            ->addOrderBy('p.joinRank', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }
-
-    //    /**
-    //     * @return Game[] Returns an array of Game objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('g')
-    //            ->andWhere('g.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('g.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Game
-    //    {
-    //        return $this->createQueryBuilder('g')
-    //            ->andWhere('g.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

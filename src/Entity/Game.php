@@ -61,7 +61,7 @@ class Game implements StatefulInterface
      */
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Player::class, cascade: ['persist', 'remove'], fetch: 'LAZY', orphanRemoval: true)]
     #[ORM\OrderBy([
-        'joinRank' => 'ASC',
+        'joinRank' => \SortDirection::Ascending,
     ])]
     private Collection $players;
 

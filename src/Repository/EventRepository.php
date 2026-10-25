@@ -32,7 +32,7 @@ class EventRepository extends ServiceEntityRepository
             ->andWhere('e.version > :version')
             ->setParameter('game', $game)
             ->setParameter('version', $version)
-            ->orderBy('e.version', 'ASC')
+            ->orderBy('e.version', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }

@@ -32,7 +32,7 @@ class GameLogEntryRepository extends ServiceEntityRepository
             ->andWhere('e.version > :version')
             ->setParameter('game', $game)
             ->setParameter('version', $version)
-            ->orderBy('e.id', 'ASC')
+            ->orderBy('e.id', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }

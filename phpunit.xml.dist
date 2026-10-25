@@ -13,7 +13,9 @@
          failOnPhpunitDeprecation="true"
          failOnNotice="true"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="true"
+         stopOnError="true"
+         stopOnFailure="true">
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />

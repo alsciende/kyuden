@@ -30,7 +30,7 @@ class DeckRepository extends ServiceEntityRepository
         $decks = $this->createQueryBuilder('d')
             ->where('d.owner IS NULL OR d.owner = :user')
             ->setParameter('user', $user)
-            ->orderBy('d.id', 'ASC')
+            ->orderBy('d.id', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
 
@@ -52,6 +52,6 @@ class DeckRepository extends ServiceEntityRepository
      */
     public function findWithoutOwner(): array
     {
-        return $this->findBy(['owner' => null], ['id' => 'ASC']);
+        return $this->findBy(['owner' => null], ['id' => \SortDirection::Ascending]);
     }
 }
