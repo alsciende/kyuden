@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "switch_conflict_type",
+    "description": "Switches the type of the conflict being resolved, military to political or political to military, e.g. to resolve an effect (Rally to the Cause). The conflict opportunity used by its declaration does not change.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

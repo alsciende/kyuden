@@ -369,6 +369,23 @@ export function rings(game: GameView): Ring[] {
   })
 }
 
+/**
+ * The rings the contested ring can be switched with: those of the unclaimed or claimed ring pool of the attacking
+ * player.
+ */
+export function switchableRings(game: GameView): Ring[] {
+  const attacker = game.conflict?.attacking_player_id
+  if (attacker === undefined) {
+    return []
+  }
+
+  return rings(game).filter(
+    (ring) =>
+      ring.status === 'unclaimed' ||
+      (ring.status !== 'contested' && game.rings[ring.element]?.claimed_by_id === attacker),
+  )
+}
+
 /** the conflict types a player may still declare this round */
 export function conflictsLeft(player: PlayerView): ConflictType[] {
   if (player.conflict_opportunities <= 0) {

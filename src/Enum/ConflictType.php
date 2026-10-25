@@ -12,4 +12,12 @@ enum ConflictType: string
 {
     case Military = 'military';
     case Political = 'political';
+
+    public function switched(): self
+    {
+        return match ($this) {
+            self::Military => self::Political,
+            self::Political => self::Military,
+        };
+    }
 }

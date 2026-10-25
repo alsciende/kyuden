@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import type { GameView } from '@/api/game'
+import type { Element, GameView } from '@/api/game'
 import CharacterRow from '@/components/game/CharacterRow.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
@@ -12,6 +12,7 @@ import {
   opponent,
   provinceStrength,
   sideSkill,
+  switchableRings,
   viewer,
   type Cards,
 } from '@/lib/board'
@@ -21,11 +22,12 @@ import { vTip } from '@/lib/tooltip'
 /**
  * The conflict being resolved: the contested ring, the participating characters of the opponent above those of the
  * viewer, the contested province first in the row of the defender, and the skill of each side (declared, else computed from the cards). Once its result is
- * determined: the winner, the broken province, then the effect of the ring.
+ * determined: the winner, the broken province, then the effect of the ring. A click on the icon of the type or of the
+ * contested ring opens a popup to switch it, to resolve an effect.
  */
 const props = defineProps<{ game: GameView; cards: Cards }>()
 
-defineEmits<{ open: [id: string] }>()
+const emit = defineEmits<{ open: [id: string]; switchType: []; switchRing: [element: Element] }>()
 
 const conflict = computed(() => props.game.conflict!)
 const me = computed(() => viewer(props.game))
@@ -75,6 +77,44 @@ const favor = computed(() => {
 
   return holder === me.value.id ? 'You have' : 'The opponent has'
 })
+
+const available = computed(() => new Set(props.game.available_actions))
+const otherType = computed(() => (conflict.value.type === 'military' ? 'political' : 'military'))
+const ringChoices = computed(() => (available.value.has('switch_contested_ring') ? switchableRings(props.game) : []))
+const canSwitchType = computed(() => available.value.has('switch_conflict_type'))
+
+/** the popup opened from the icon of the type or of the contested ring, to switch it */
+const popup = ref<'type' | 'ring' | null>(null)
+
+function toggle(which: 'type' | 'ring'): void {
+  popup.value = popup.value === which ? null : which
+}
+
+function switchType(): void {
+  popup.value = null
+  emit('switchType')
+}
+
+function switchRing(element: Element): void {
+  popup.value = null
+  emit('switchRing', element)
+}
+
+// closed once the action is no longer available
+watch([canSwitchType, ringChoices], () => {
+  if ((popup.value === 'type' && !canSwitchType.value) || (popup.value === 'ring' && !ringChoices.value.length)) {
+    popup.value = null
+  }
+})
+
+function onKey(event: KeyboardEvent): void {
+  if (event.key === 'Escape') {
+    popup.value = null
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 const resolved = computed(() => conflictResolved(props.game))
 
@@ -138,23 +178,44 @@ const outcome = computed(() => {
     <div class="sides">
       <div class="side">
         <span class="label"> <PlayerChip :player="top.player" :viewer-id="game.viewer_id" /> · {{ top.role }} </span>
-        <CharacterRow :characters="top.characters" :cards="cards" :mine="false" @open="$emit('open', $event)">
+        <CharacterRow :characters="top.characters" :cards="cards" :mine="false" @open="emit('open', $event)">
           <GameCard
             v-if="top.defending && province.card"
             :card="province.card"
             :cards="cards"
             :mine="false"
             tag="Contested"
-            @click="$emit('open', province.card.id)"
+            @click="emit('open', province.card.id)"
           />
         </CharacterRow>
       </div>
 
       <div class="contest">
         <h2>
-          <span class="icon type" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
+          <button
+            v-if="canSwitchType"
+            type="button"
+            class="icon type trigger"
+            :aria-expanded="popup === 'type'"
+            :aria-label="`${conflict.type} conflict: switch the type`"
+            @click="toggle('type')"
+          >
+            {{ CONFLICT_ICONS[conflict.type] }}
+          </button>
+          <span v-else class="icon type" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
           <span class="capitalize">{{ conflict.type }}</span> conflict for the
-          <span v-tip="ringTip(conflict.ring)" class="icon type ring" aria-hidden="true">{{
+          <button
+            v-if="ringChoices.length"
+            v-tip="ringTip(conflict.ring)"
+            type="button"
+            class="icon type ring trigger"
+            :aria-expanded="popup === 'ring'"
+            :aria-label="`${ELEMENT_NAMES[conflict.ring]} ring: switch the contested ring`"
+            @click="toggle('ring')"
+          >
+            {{ ELEMENT_ICONS[conflict.ring] }}
+          </button>
+          <span v-else v-tip="ringTip(conflict.ring)" class="icon type ring" aria-hidden="true">{{
             ELEMENT_ICONS[conflict.ring]
           }}</span>
           {{ ELEMENT_NAMES[conflict.ring] }} ring
@@ -164,6 +225,33 @@ const outcome = computed(() => {
           <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
           {{ conflict.type }} conflicts
         </p>
+
+        <template v-if="popup">
+          <div class="backdrop" @click="popup = null" />
+          <div class="popup" role="dialog" :aria-label="popup === 'type' ? 'Switch the type' : 'Switch the ring'">
+            <button v-if="popup === 'type'" type="button" class="btn btn-ghost switch-type" @click="switchType">
+              Switch to <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[otherType] }}</span> {{ otherType }}
+            </button>
+            <template v-else>
+              <span class="label">Switch the ring with</span>
+              <div class="switch-rings">
+                <button
+                  v-for="ring in ringChoices"
+                  :key="ring.element"
+                  v-tip="ringTip(ring.element)"
+                  type="button"
+                  class="switch-ring"
+                  :class="ring.status"
+                  :aria-label="`The ${ELEMENT_NAMES[ring.element]} ring${ring.fate ? `, ${ring.fate} fate` : ''}`"
+                  @click="switchRing(ring.element)"
+                >
+                  <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
+                  <span v-if="ring.fate" class="ring-fate">{{ ring.fate }}</span>
+                </button>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
 
       <div v-if="ringEffect" class="effect" :class="{ inactive: !ringEffect.active }">
@@ -176,14 +264,14 @@ const outcome = computed(() => {
         <span class="label">
           <PlayerChip :player="bottom.player" :viewer-id="game.viewer_id" /> · {{ bottom.role }}
         </span>
-        <CharacterRow :characters="bottom.characters" :cards="cards" :mine="true" @open="$emit('open', $event)">
+        <CharacterRow :characters="bottom.characters" :cards="cards" :mine="true" @open="emit('open', $event)">
           <GameCard
             v-if="bottom.defending && province.card"
             :card="province.card"
             :cards="cards"
             :mine="true"
             tag="Contested"
-            @click="$emit('open', province.card.id)"
+            @click="emit('open', province.card.id)"
           />
         </CharacterRow>
       </div>
@@ -243,6 +331,7 @@ const outcome = computed(() => {
 }
 
 .contest {
+  position: relative;
   padding: 16px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -256,6 +345,96 @@ const outcome = computed(() => {
 
 .ring {
   margin-left: 2px;
+}
+
+.switch-type {
+  text-transform: capitalize;
+}
+
+/* the icon stays an icon: only the pointer and a hover tell it opens something */
+.trigger {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  color: var(--seal);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.popup {
+  position: absolute;
+  top: calc(100% - 8px);
+  left: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: var(--card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
+}
+
+.switch-rings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switch-ring {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* a ring of the claimed ring pool of the attacking player */
+.switch-ring.yours,
+.switch-ring.theirs {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.switch-ring:hover {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+.ring-fate {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--seal);
+  color: var(--seal-ink);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 h2 {

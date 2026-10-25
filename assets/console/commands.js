@@ -58,6 +58,8 @@ export const MESSAGE_ALIASES = {
     'no-defenders': 'declare_no_defenders',
     move: 'move_to_conflict',
     home: 'move_home',
+    'switch-type': 'switch_conflict_type',
+    'switch-ring': 'switch_contested_ring',
     skill: 'declare_conflict_skill',
     strength: 'declare_province_strength',
     glory: 'declare_glory_count',

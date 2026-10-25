@@ -10,7 +10,7 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * The player declaring a conflict has taken the fate on the contested ring.
+ * The attacking player has taken the fate on the ring that became the contested ring (declaration, switch).
  */
 #[GameLog('{player} takes {amount} fate from {ring}')]
 final readonly class RingFateTakenEvent implements GameEventInterface

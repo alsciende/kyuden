@@ -14,6 +14,7 @@ import {
   skillOf,
   stepOf,
   strongholdFate,
+  switchableRings,
   victoryText,
   visibleCodes,
 } from '@/lib/board'
@@ -196,6 +197,13 @@ describe('the state of the game', () => {
       ['water', 'unclaimed', 1],
       ['void', 'yours', 0],
     ])
+    expect(switchableRings(view).map((ring) => ring.element)).toEqual(['air', 'water', 'void'])
+    expect(
+      switchableRings({ ...view, conflict: { ...view.conflict!, attacking_player_id: 'opp' } }).map(
+        (ring) => ring.element,
+      ),
+    ).toEqual(['air', 'earth', 'water'])
+    expect(switchableRings({ ...view, conflict: null })).toEqual([])
   })
 
   it('has no rings before the game starts', () => {

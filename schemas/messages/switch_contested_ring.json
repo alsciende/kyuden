@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "switch_contested_ring",
+    "description": "Switches the contested ring of the conflict being resolved with a ring of the unclaimed or claimed ring pool of the attacking player, e.g. to resolve an effect (Elemental Fury): the contested ring takes its place in that pool, and the attacking player takes the fate on the new contested ring.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Ring that becomes the contested ring, unclaimed or claimed by the attacking player.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        }
+    },
+    "required": [
+        "ring"
+    ],
+    "additionalProperties": false
+}

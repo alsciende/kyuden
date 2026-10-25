@@ -66,6 +66,18 @@ function reveal(id: string): void {
   }
 }
 
+function switchType(): void {
+  if (!sending.value) {
+    void send('switch_conflict_type')
+  }
+}
+
+function switchRing(element: Element): void {
+  if (!sending.value) {
+    void send('switch_contested_ring', { ring: element })
+  }
+}
+
 const ended = computed(() => game.value !== null && gameEnded(game.value))
 const result = computed(() =>
   game.value === null
@@ -133,6 +145,8 @@ const problem = computed(() => {
       @attacker="selection.attackerIds = toggle(selection.attackerIds, $event)"
       @defender="selection.defenderIds = toggle(selection.defenderIds, $event)"
       @reveal="reveal"
+      @switch-type="switchType"
+      @switch-ring="switchRing"
     />
     <GameSidebar
       :game="game"

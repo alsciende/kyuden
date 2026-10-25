@@ -39,6 +39,8 @@ const emit = defineEmits<{
   attacker: [id: string]
   defender: [id: string]
   reveal: [id: string]
+  switchType: []
+  switchRing: [element: Element]
 }>()
 
 const available = computed(() => new Set(props.game.available_actions))
@@ -332,7 +334,13 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
         </button>
       </div>
 
-      <ConflictField :game="game" :cards="cards" @open="emit('open', $event)" />
+      <ConflictField
+        :game="game"
+        :cards="cards"
+        @open="emit('open', $event)"
+        @switch-type="emit('switchType')"
+        @switch-ring="emit('switchRing', $event)"
+      />
 
       <template v-if="defending">
         <section class="zone" aria-label="Your characters">
