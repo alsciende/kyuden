@@ -36,4 +36,21 @@ class EventRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * The last events of the game, the latest first.
+     *
+     * @return list<Event>
+     */
+    public function findLatest(Game $game, int $limit): array
+    {
+        /** @var list<Event> */
+        return $this->createQueryBuilder('e')
+            ->andWhere('e.game = :game')
+            ->setParameter('game', $game)
+            ->orderBy('e.version', \SortDirection::Descending)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
