@@ -21,12 +21,41 @@ jobs:
     env:
       # make: no terminal for docker compose exec
       CI: true
+      # the name of the image of the symfony service: kyuden-symfony
+      COMPOSE_PROJECT_NAME: kyuden
     steps:
       - uses: actions/checkout@v7
 
-      # the symfony container runs as www-data and writes vendor/ and var/ in the checkout of the runner
+      # the dependencies as installed by the last run with the same lock files: composer and importmap:install only
+      # run their scripts
+      - uses: actions/cache@v6
+        with:
+          path: |
+            vendor
+            assets/vendor
+          key: php-${{ runner.os }}-${{ hashFiles('composer.lock', 'importmap.php') }}
+
+      - uses: actions/cache@v6
+        with:
+          path: front/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('front/package-lock.json') }}
+
+      # the symfony container runs as www-data and writes vendor/ and var/ in the checkout of the runner; var/ must
+      # exist beforehand, else Docker creates it as root to mount the tmpfs of var/cache
       - name: Open the checkout to the containers
-        run: chmod -R a+rwX .
+        run: mkdir -p var/log && chmod -R a+rwX .
+
+      # the image of the symfony service, built from the cache of GitHub Actions: compose uses it instead of building it
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/dev/symfony/Dockerfile
+          tags: kyuden-symfony
+          load: true
+          cache-from: type=gha,scope=dev-symfony
+          cache-to: type=gha,mode=max,scope=dev-symfony
 
       - name: Start the databases
         run: docker compose up --detach --wait database database_test
