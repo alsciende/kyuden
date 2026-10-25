@@ -58,4 +58,9 @@ class ExternalCard
     {
         return $this->card;
     }
+
+    public function setCard(LogicalCard $card): void
+    {
+        $this->card = $card;
+    }
 }

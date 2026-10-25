@@ -4,23 +4,16 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
-use App\Entity\Deck;
+use App\Service\CardDatabase\CardDatabaseImporter;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
 /**
- * The starter decks, without owner: every user can play them.
+ * The database of the cards, as in production (`app:cards:import`): packs, cards, printings, external cards and the
+ * starter decks, without owner: every user can play them.
  */
 class AppFixtures extends Fixture
 {
-    use StarterDeckLionTrait;
-    use StarterDeckCrabTrait;
-    use StarterDeckDragonTrait;
-    use StarterDeckPhoenixTrait;
-    use StarterDeckCraneTrait;
-    use StarterDeckScorpionTrait;
-    use StarterDeckUnicornTrait;
-
     public const CRAB_STARTER_DECK = 'crab-starter-deck';
     public const CRANE_STARTER_DECK = 'crane-starter-deck';
     public const DRAGON_STARTER_DECK = 'dragon-starter-deck';
@@ -29,25 +22,14 @@ class AppFixtures extends Fixture
     public const SCORPION_STARTER_DECK = 'scorpion-starter-deck';
     public const UNICORN_STARTER_DECK = 'unicorn-starter-deck';
 
+    public function __construct(
+        private readonly CardDatabaseImporter $cardDatabaseImporter,
+    ) {
+    }
+
     #[\Override]
     public function load(ObjectManager $manager): void
     {
-        $decks = [
-            self::CRAB_STARTER_DECK => $this->getCrabStarterCards(),
-            self::CRANE_STARTER_DECK => $this->getCraneStarterCards(),
-            self::DRAGON_STARTER_DECK => $this->getDragonStarterCards(),
-            self::LION_STARTER_DECK => $this->getLionStarterCards(),
-            self::PHOENIX_STARTER_DECK => $this->getPhoenixStarterCards(),
-            self::SCORPION_STARTER_DECK => $this->getScorpionStarterCards(),
-            self::UNICORN_STARTER_DECK => $this->getUnicornStarterCards(),
-        ];
-        foreach ($decks as $deckId => $cards) {
-            $deck = new Deck($deckId);
-            $manager->persist($deck);
-            $deck->setName($deckId);
-            $deck->setCards($cards);
-        }
-
-        $manager->flush();
+        $this->cardDatabaseImporter->import();
     }
 }

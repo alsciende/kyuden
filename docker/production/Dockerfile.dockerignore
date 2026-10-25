@@ -1,0 +1,16 @@
+# the build context is the root of the repository
+.git
+.idea
+.phpunit.cache
+.env.local
+.env.*.local
+proxy.env
+var
+vendor
+public/assets
+public/bundles
+assets/vendor
+front/node_modules
+front/dist
+front/coverage
+docker/production/.env

@@ -19,7 +19,7 @@ Everything runs in Docker (service `symfony`: PHP-FPM; service `node`: the Vite 
 - `make front-install` / `make front-build`: npm dependencies and production build of the web client
 - `make sql`: `psql` shell on the `database` service
 
-Console commands (`src/Command`): create decks/candidates, matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message).
+Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message).
 
 Use the custom makers to scaffold new code: `MakeAction` (message + handler) and `MakeWorkflowListener` (`src/Maker`).
 

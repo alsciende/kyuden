@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\DataFixtures;
+namespace App\Service\CardDatabase;
 
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
+/**
+ * A printing as written in fixtures/printings: the card and the pack by id.
+ */
 #[AutoconfigureTag('container.excluded')]
-class DtoPrinting
+class PrintingData
 {
     public string $cardId;
     public string $packId;
