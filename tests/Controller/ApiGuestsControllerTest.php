@@ -63,7 +63,7 @@ class ApiGuestsControllerTest extends AbstractKernelTestCase
         self::assertTrue($user->isGuest());
 
         $self = $this->request('GET', '/api/self', token: $guest['token']);
-        self::assertSame(['user_id' => $guest['user_id'], 'name' => 'Hida Takeshi', 'username' => null, 'preferred_clan' => null, 'settings' => ['card_display' => 'drawn', 'theme' => 'auto']], $this->decode($self));
+        self::assertSame(['user_id' => $guest['user_id'], 'name' => 'Hida Takeshi', 'username' => null, 'preferred_clan' => null, 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($self));
     }
 
     /**

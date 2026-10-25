@@ -33,14 +33,14 @@ describe('GameCard', () => {
     session.value = null
   })
 
-  it('draws the card by default', () => {
+  it('draws the card when the player prefers it', () => {
     const wrapper = show(card('toturi'), 'drawn')
 
     expect(wrapper.find('img').exists()).toBe(false)
     expect(wrapper.find('.name').text()).toBe('Akodo Toturi')
   })
 
-  it('shows the image of the card when the player prefers it', () => {
+  it('shows the image of the card by default', () => {
     const wrapper = show(card('toturi'), 'images')
 
     expect(wrapper.find('img').attributes('src')).toBe('/toturi.webp')

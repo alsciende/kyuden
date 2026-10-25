@@ -32,7 +32,7 @@ const CARD_DISPLAYS: { value: CardDisplay; label: string; hint: string }[] = [
   { value: 'images', label: 'Card images', hint: 'The printed cards, as on a real table.' },
 ]
 
-const cardDisplay = ref<CardDisplay>(session.value?.cardDisplay ?? 'drawn')
+const cardDisplay = ref<CardDisplay>(session.value?.cardDisplay ?? 'images')
 const displaySaved = ref(false)
 const displayError = ref<string | null>(null)
 const displaySending = ref(false)
@@ -115,7 +115,7 @@ async function changeCardDisplay(value: CardDisplay): Promise<void> {
     cardDisplay.value = (await chooseCardDisplay(value)).cardDisplay
     displaySaved.value = true
   } catch (problem) {
-    cardDisplay.value = session.value?.cardDisplay ?? 'drawn'
+    cardDisplay.value = session.value?.cardDisplay ?? 'images'
     displayError.value = formErrors(problem).form ?? 'The setting could not be saved.'
   } finally {
     displaySending.value = false

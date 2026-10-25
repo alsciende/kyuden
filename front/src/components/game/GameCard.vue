@@ -56,7 +56,7 @@ const BACKS: Partial<Record<Side, string>> = { conflict: conflictBack, dynasty: 
 
 /** the image shown instead of the drawn card, null when the card is drawn */
 const art = computed(() => {
-  if (session.value?.cardDisplay !== 'images') {
+  if (session.value?.cardDisplay === 'drawn') {
     return null
   }
 

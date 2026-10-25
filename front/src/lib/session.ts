@@ -60,7 +60,7 @@ export function loadSession(): Session | null {
       ...stored,
       username: stored.username ?? null,
       preferredClan: stored.preferredClan ?? null,
-      cardDisplay: stored.cardDisplay ?? 'drawn',
+      cardDisplay: stored.cardDisplay ?? 'images',
       theme: stored.theme ?? 'auto',
     }
   } catch {
@@ -103,7 +103,7 @@ async function guestSession(name: string): Promise<Session> {
     name: guest.name,
     username: null,
     preferredClan: null,
-    cardDisplay: 'drawn',
+    cardDisplay: 'images',
     theme: 'auto',
     token: guest.token,
   }

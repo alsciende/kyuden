@@ -64,7 +64,7 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
         self::assertSame('jane', $session['user_id']);
         self::assertSame('Jane', $session['name']);
         self::assertSame('jane', $session['username']);
-        self::assertSame(['card_display' => 'drawn', 'theme' => 'auto'], $session['settings']);
+        self::assertSame(['card_display' => 'images', 'theme' => 'auto'], $session['settings']);
         self::assertIsString($session['token']);
         self::assertSame('jane', $this->decode($this->request('GET', '/api/self', token: $session['token']), Response::HTTP_OK)['user_id']);
     }

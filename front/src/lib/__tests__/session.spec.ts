@@ -60,7 +60,7 @@ describe('startIntroductoryGame', () => {
       name: 'Hida Takeshi',
       username: null,
       preferredClan: null,
-      cardDisplay: 'drawn',
+      cardDisplay: 'images',
       theme: 'auto',
       token: 'l5r_token',
     })
@@ -229,16 +229,16 @@ describe('accounts', () => {
         name: 'Hida Takeshi',
         username: 'takeshi',
         preferred_clan: 'crab',
-        settings: { card_display: 'images', theme: 'auto' },
+        settings: { card_display: 'drawn', theme: 'auto' },
       }),
     )
 
-    expect(loadSession()?.cardDisplay).toBe('drawn')
-    await chooseCardDisplay('images')
-
-    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ settings: { card_display: 'images' } })
     expect(loadSession()?.cardDisplay).toBe('images')
-    expect(session.value?.cardDisplay).toBe('images')
+    await chooseCardDisplay('drawn')
+
+    expect(JSON.parse(fetchMock.mock.calls[0]![1]!.body as string)).toEqual({ settings: { card_display: 'drawn' } })
+    expect(loadSession()?.cardDisplay).toBe('drawn')
+    expect(session.value?.cardDisplay).toBe('drawn')
   })
 
   it('changes the theme of the site', async () => {

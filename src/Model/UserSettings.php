@@ -15,7 +15,7 @@ final readonly class UserSettings
 {
     public function __construct(
         /** how the web client draws the cards on the board */
-        public CardDisplay $cardDisplay = CardDisplay::Drawn,
+        public CardDisplay $cardDisplay = CardDisplay::Images,
         /** whether the web client is light or dark */
         public Theme $theme = Theme::Auto,
     ) {
@@ -29,7 +29,7 @@ final readonly class UserSettings
         $cardDisplay = is_string($stored['card_display'] ?? null) ? CardDisplay::tryFrom($stored['card_display']) : null;
         $theme = is_string($stored['theme'] ?? null) ? Theme::tryFrom($stored['theme']) : null;
 
-        return new self($cardDisplay ?? CardDisplay::Drawn, $theme ?? Theme::Auto);
+        return new self($cardDisplay ?? CardDisplay::Images, $theme ?? Theme::Auto);
     }
 
     public function withCardDisplay(CardDisplay $cardDisplay): self
