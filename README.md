@@ -22,11 +22,12 @@ open http://localhost:8080
 `docker/production` builds two images from the root of the repository (`Dockerfile`, targets `php` and `nginx`): PHP-FPM with the application (no development dependencies, opcache with preloading, cache warmed, assets of the console compiled), and nginx serving the web client (`front/dist`, built in the image) and the public files of Symfony, in front of PHP-FPM and of the Mercure hub, on the origin of the site (`/.well-known/mercure`). `compose.yaml` adds PostgreSQL and Mercure; the site listens on HTTP, behind the proxy that terminates TLS. On every start, the entrypoint of the `php` image brings the database up to date before PHP-FPM serves anything: the Doctrine migrations (`migrations/`), the card database (`app:cards:import`) and the house bot (`app:house-bot:create`); a failed step stops the container.
 
 ```shell
-cp docker/production/.env.dist docker/production/.env   # then set the secrets
+cp docker/production/.env.dist docker/production/.env                # what the services share
+cp docker/production/symfony.env.dist docker/production/symfony.env  # the rest of the environment of the application
 docker compose -f docker/production/compose.yaml --env-file docker/production/.env up --build --detach
 ```
 
-The configuration comes from the environment of the containers (`compose.yaml`), not from `.env.local`.
+`.env`, read by compose, holds what the services share (the database, the secret of Mercure): compose gives the application its `DATABASE_URL`, `MERCURE_URL` and `MERCURE_JWT_SECRET`. The rest of the environment of the application is `symfony.env`, on the host, mounted read-only as its `.env` in the `php` container (it replaces the `.env` of the repository; the variables set by compose and the image, `APP_ENV` and `APP_DEBUG`, win over it), so that compose does not list every variable of Symfony. Both files stay out of git.
 
 ## MVP scope
 

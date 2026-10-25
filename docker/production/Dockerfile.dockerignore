@@ -14,3 +14,4 @@ front/node_modules
 front/dist
 front/coverage
 docker/production/.env
+docker/production/symfony.env
