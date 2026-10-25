@@ -1,0 +1,3 @@
+# the paths of the report are those of the symfony container (make coverage): relative to the repository for Codecov
+fixes:
+  - "/var/www/html/::"

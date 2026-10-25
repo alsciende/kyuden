@@ -60,8 +60,22 @@ lint: check-symfony rector phpstan front-lint
 
 test: test-php front-test
 
+PHPUNIT := $(PHP) -d memory_limit=1G vendor/bin/phpunit
+
 test-php:
-	$(PHP) -d memory_limit=1G vendor/bin/phpunit
+	$(PHPUNIT)
+
+# code coverage of src/ with Xdebug: report in var/coverage/index.html (var/cache lives in memory), summary in the terminal,
+# and var/coverage/clover.xml for Codecov (CI)
+coverage:
+	$(EXEC) $(TTY) -u www-data -e XDEBUG_MODE=coverage symfony php -d memory_limit=1G vendor/bin/phpunit --coverage-html var/coverage --coverage-clover var/coverage/clover.xml --coverage-text=php://stdout --colors=never
+	@echo "Code coverage report: \033[36mfile://$(CURDIR)/var/coverage/index.html\033[0m"
+
+# every deprecation, the indirect ones included (triggered in vendor/, even when caused by src/), which
+# phpunit.xml.dist ignores
+deprecations:
+	sed 's/ignoreIndirectDeprecations="true"/ignoreIndirectDeprecations="false"/' phpunit.xml.dist > .phpunit-deprecations.xml
+	$(PHPUNIT) -c .phpunit-deprecations.xml; status=$$?; rm -f .phpunit-deprecations.xml; exit $$status
 
 # the database of the tests lives in memory: run it after starting the database_test service
 db-test:

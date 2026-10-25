@@ -11,6 +11,7 @@
 
 ###> phpunit/phpunit ###
 .phpunit.cache
+/.phpunit-deprecations.xml
 ###< phpunit/phpunit ###
 
 ###> qossmic/deptrac-shim ###

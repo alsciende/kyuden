@@ -71,4 +71,19 @@ jobs:
 
       - run: make lint
       - run: make db-test
-      - run: make test
+      # the tests of make test, those of PHP with the code coverage
+      - run: make coverage
+      - run: make front-test
+
+      # the HTML report (var/coverage/index.html), even when the tests fail
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-report
+          path: var/coverage/
+          if-no-files-found: ignore
+
+      - uses: codecov/codecov-action@v7
+        with:
+          files: var/coverage/clover.xml
+          token: ${{ secrets.CODECOV_TOKEN }}

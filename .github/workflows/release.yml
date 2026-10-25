@@ -12,6 +12,8 @@ permissions:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+    # CODECOV_TOKEN
+    secrets: inherit
 
   build:
     needs: test

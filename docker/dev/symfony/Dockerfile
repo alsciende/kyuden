@@ -8,11 +8,13 @@ RUN apk update && apk add --no-cache \
 
 RUN docker-php-ext-install pdo_pgsql gd zip
 
-# Xdebug (dev stack), used for code coverage (make coverage).
-#RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-#    && pecl install xdebug-3.5.3 \
-#    && docker-php-ext-enable xdebug \
-#    && apk del .build-deps
+# Xdebug, for the code coverage only (make coverage sets XDEBUG_MODE=coverage): off otherwise, since it slows PHP down
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install xdebug-3.5.3 \
+    && docker-php-ext-enable xdebug \
+    && apk del .build-deps
+
+ENV XDEBUG_MODE=off
 
 COPY --from=composer:2.2 /usr/bin/composer /usr/bin/composer
 
