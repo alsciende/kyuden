@@ -1,4 +1,5 @@
 import { request, toProblem } from '@/api/client'
+import type { MessagePayloads, MessageType } from '@/api/messages'
 
 /**
  * A game as its player sees it (`GET /api/games/{id}`), its log, and the messages a player sends to it. The view
@@ -161,11 +162,11 @@ export function fetchLog(token: string, gameId: string, since: number): Promise<
 /**
  * Sends a message of the player, rejected (412) if the game has changed since the version the player has seen.
  */
-export async function sendMessage(
+export async function sendMessage<T extends MessageType>(
   token: string,
   gameId: string,
-  type: string,
-  payload: Record<string, unknown>,
+  type: T,
+  payload: MessagePayloads[T],
   version: number,
 ): Promise<void> {
   const response = await fetch(`/api/games/${encodeURIComponent(gameId)}/messages`, {
@@ -182,3 +183,10 @@ export async function sendMessage(
     throw await toProblem(response)
   }
 }
+
+/** the payload of a message, which can be left out when the message has none */
+export type PayloadArgs<T extends MessageType> =
+  MessagePayloads[T] extends Record<string, never> ? [payload?: MessagePayloads[T]] : [payload: MessagePayloads[T]]
+
+/** sends a message of the player; resolves to whether it was handled */
+export type Send = <T extends MessageType>(type: T, ...payload: PayloadArgs<T>) => Promise<boolean>

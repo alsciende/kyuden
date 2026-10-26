@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { GameView, LoggedMessage } from '@/api/game'
+import type { GameView, LoggedMessage, Send } from '@/api/game'
 import ActionPanel from '@/components/game/ActionPanel.vue'
 import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
@@ -21,7 +21,7 @@ const props = defineProps<{
   selection: Selection
   sending: boolean
   error: string | null
-  send: (type: string, payload?: Record<string, unknown>) => Promise<boolean>
+  send: Send
 }>()
 
 defineEmits<{ openLog: []; openPlayer: [id: string] }>()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\State\Model;
 
+use App\Exception\Rules\HonorNotSetException;
 use App\Exception\Rules\NotEnoughFateException;
 use App\State\Model\PlayerState;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,20 @@ class PlayerStateTest extends TestCase
         $state = new PlayerState()->setHonor(3)->decrementHonor(5);
 
         self::assertSame(PlayerState::MINIMUM_HONOR, $state->getHonor());
+    }
+
+    public function testCannotLoseHonorBeforeItIsSet(): void
+    {
+        $this->expectException(HonorNotSetException::class);
+
+        new PlayerState()->decrementHonor(1);
+    }
+
+    public function testCannotGainHonorBeforeItIsSet(): void
+    {
+        $this->expectException(HonorNotSetException::class);
+
+        new PlayerState()->incrementHonor(1);
     }
 
     public function testHonorCanExceedTheMaximum(): void

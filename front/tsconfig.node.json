@@ -3,7 +3,8 @@
   "include": [
     "vite.config.*",
     "vitest.config.*",
-    "eslint.config.*"
+    "eslint.config.*",
+    "scripts/**/*"
   ],
   "compilerOptions": {
     "noEmit": true,

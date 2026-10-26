@@ -1,5 +1,6 @@
 import type { AbilityTiming, Card } from '@/api/client'
 import type { GameView } from '@/api/game'
+import type { Message, MessagePayloads, MessageType } from '@/api/messages'
 import { locate, type Cards, type Located } from '@/lib/board'
 
 /**
@@ -7,21 +8,27 @@ import { locate, type Cards, type Located } from '@/lib/board'
  * manipulations apply to the cards of every player: the engine does not know which ability is being resolved.
  */
 
-export interface SimpleAction {
-  type: string
-  label: string
-  payload: Record<string, unknown>
+export type SimpleAction = Message & { label: string }
+
+/** the messages playing a card, by the way it is played */
+interface PlayTypes {
+  from_province: 'play_character_from_province'
+  from_hand: 'play_character_from_hand'
+  attachment: 'play_attachment'
+  event: 'play_action_event' | 'play_interrupt_event' | 'play_reaction_event'
 }
 
-export type PlayKind = 'from_province' | 'from_hand' | 'attachment' | 'event'
+export type PlayKind = keyof PlayTypes
 
-export interface PlayAction {
-  type: string
-  kind: PlayKind
-  label: string
-  /** the printed cost, prefilled */
-  cost: number
-}
+export type PlayAction = {
+  [K in PlayKind]: {
+    type: PlayTypes[K]
+    kind: K
+    label: string
+    /** the printed cost, prefilled */
+    cost: number
+  }
+}[PlayKind]
 
 export interface CardMenu {
   located: Located
@@ -41,7 +48,10 @@ export interface CardMenu {
   point: SimpleAction | null
 }
 
-const ABILITY_TYPES: Record<AbilityTiming, string> = {
+const ABILITY_TYPES: Record<
+  AbilityTiming,
+  'trigger_action_ability' | 'trigger_interrupt_ability' | 'trigger_reaction_ability'
+> = {
   action: 'trigger_action_ability',
   interrupt: 'trigger_interrupt_ability',
   reaction: 'trigger_reaction_ability',
@@ -50,7 +60,7 @@ const ABILITY_TYPES: Record<AbilityTiming, string> = {
 /** the stacks whose cards some players do not see: nobody can point at them */
 const HIDDEN_STACKS = new Set(['hand', 'conflict_draw_deck', 'dynasty_draw_deck'])
 
-const EVENT_TYPES: Record<AbilityTiming, string> = {
+const EVENT_TYPES: Record<AbilityTiming, PlayTypes['event']> = {
   action: 'play_action_event',
   interrupt: 'play_interrupt_event',
   reaction: 'play_reaction_event',
@@ -80,6 +90,25 @@ export function abilityTimings(located: Located, cards: Cards): AbilityTiming[] 
   }
 
   return (['action', 'interrupt', 'reaction'] as const).filter((timing) => timings.has(timing))
+}
+
+/**
+ * A unique character in play of the player with the title of the card: the card is its duplicate, discarded to place 1
+ * fate on it (step 1.4).
+ */
+function copyInPlay(located: Located, cards: Cards, card: Card | undefined): string | undefined {
+  if (card?.type !== 'character') {
+    return undefined
+  }
+
+  return located.player.stacks
+    .filter((stack) => stack.type === 'in_play')
+    .map((stack) => (stack.cards ?? [])[0])
+    .find((character) => {
+      const printed = character === undefined ? undefined : cardOf(cards, character.code)
+
+      return printed?.uniqueness === true && printed.name === card.name
+    })?.id
 }
 
 function abilityLabel(timing: AbilityTiming, count: number): string {
@@ -112,17 +141,24 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         ? { type: 'point_at_card', label: 'Point at it', payload: { card_id: id } }
         : null,
   }
-  const add = (
+  // the payload is the card by default, for the messages whose payload is a card only
+  const add = <T extends MessageType>(
     list: SimpleAction[],
-    type: string,
+    type: T,
     label: string,
-    payload: Record<string, unknown> = { card_id: id },
+    ...[payload]: { card_id: string } extends MessagePayloads[T] ? [MessagePayloads[T]?] : [MessagePayloads[T]]
   ) => {
     if (available.has(type)) {
-      list.push({ type, label, payload })
+      list.push({ type, label, payload: payload ?? { card_id: id } } as SimpleAction)
     }
   }
   const discard = () => add(menu.removals, 'discard_card', 'Discard')
+  const discardDuplicate = () => {
+    const copyId = menu.mine ? copyInPlay(located, cards, card) : undefined
+    if (copyId !== undefined) {
+      add(menu.removals, 'discard_duplicate', 'Discard as a duplicate', { card_id: id, copy_id: copyId })
+    }
+  }
   const sacrifice = () => add(menu.removals, 'sacrifice_card', 'Sacrifice')
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
@@ -148,6 +184,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           }
         }
       }
+      discardDuplicate()
       discard()
       break
 
@@ -181,6 +218,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (card?.type === 'holding') {
           sacrifice()
         }
+        discardDuplicate()
         discard()
       }
       break

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
-import type { GameView, PlayerView } from '@/api/game'
+import type { GameView, PlayerView, PayloadArgs, Send } from '@/api/game'
+import type { Message, MessageType } from '@/api/messages'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 
 /**
@@ -13,7 +14,7 @@ const props = defineProps<{
   player: PlayerView
   sending: boolean
   error: string | null
-  send: (type: string, payload: Record<string, unknown>) => Promise<boolean>
+  send: Send
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -25,63 +26,59 @@ const other = computed(() => props.game.players.find((candidate) => candidate.id
 
 const target = computed(() => ({ target_player_id: props.player.id }))
 
-interface Effect {
-  type: string
-  label: string
-  payload: Record<string, unknown>
-}
+type Effect = Message & { label: string }
 
-const actions = computed(() =>
-  (
-    [
-      {
-        type: 'gain_honor',
-        label: `Gain ${amount.value} honor`,
-        payload: { ...target.value, honor_gain: amount.value },
-      },
-      {
-        type: 'lose_honor',
-        label: `Lose ${amount.value} honor`,
-        payload: { ...target.value, honor_loss: amount.value },
-      },
-      other.value && {
-        type: 'transfer_honor',
-        label: `Give ${amount.value} honor`,
-        payload: { giver_id: props.player.id, recipient_id: other.value.id, amount: amount.value },
-      },
-      {
-        type: 'gain_fate',
-        label: `Gain ${amount.value} fate`,
-        payload: { ...target.value, fate_gain: amount.value },
-      },
-      {
-        type: 'lose_fate',
-        label: `Lose ${amount.value} fate`,
-        payload: { ...target.value, fate_loss: amount.value },
-      },
-      {
-        type: 'draw_conflict_cards',
-        label: `Draw ${amount.value} card${amount.value === 1 ? '' : 's'}`,
-        payload: { ...target.value, quantity: amount.value },
-      },
-      props.player.honor_bid !== null && {
-        type: 'set_honor_bid',
-        label: `Set the bid to ${amount.value}`,
-        payload: { ...target.value, bid: amount.value },
-      },
-      {
-        type: 'discard_random_card_from_hand',
-        label: `Discard ${amount.value} card${amount.value === 1 ? '' : 's'} at random`,
-        payload: { ...target.value, quantity: amount.value },
-      },
-      { type: 'shuffle_conflict_deck', label: 'Shuffle the conflict deck', payload: target.value },
-      { type: 'shuffle_dynasty_deck', label: 'Shuffle the dynasty deck', payload: target.value },
-    ] as (Effect | false | undefined)[]
-  ).filter((action): action is Effect => !!action && available.value.has(action.type)),
-)
+const actions = computed(() => {
+  const effects: (Effect | false | undefined)[] = [
+    {
+      type: 'gain_honor',
+      label: `Gain ${amount.value} honor`,
+      payload: { ...target.value, honor_gain: amount.value },
+    },
+    {
+      type: 'lose_honor',
+      label: `Lose ${amount.value} honor`,
+      payload: { ...target.value, honor_loss: amount.value },
+    },
+    other.value && {
+      type: 'transfer_honor',
+      label: `Give ${amount.value} honor`,
+      payload: { giver_id: props.player.id, recipient_id: other.value.id, amount: amount.value },
+    },
+    {
+      type: 'gain_fate',
+      label: `Gain ${amount.value} fate`,
+      payload: { ...target.value, fate_gain: amount.value },
+    },
+    {
+      type: 'lose_fate',
+      label: `Lose ${amount.value} fate`,
+      payload: { ...target.value, fate_loss: amount.value },
+    },
+    {
+      type: 'draw_conflict_cards',
+      label: `Draw ${amount.value} card${amount.value === 1 ? '' : 's'}`,
+      payload: { ...target.value, quantity: amount.value },
+    },
+    props.player.honor_bid !== null && {
+      type: 'set_honor_bid',
+      label: `Set the bid to ${amount.value}`,
+      payload: { ...target.value, bid: amount.value },
+    },
+    {
+      type: 'discard_random_card_from_hand',
+      label: `Discard ${amount.value} card${amount.value === 1 ? '' : 's'} at random`,
+      payload: { ...target.value, quantity: amount.value },
+    },
+    { type: 'shuffle_conflict_deck', label: 'Shuffle the conflict deck', payload: target.value },
+    { type: 'shuffle_dynasty_deck', label: 'Shuffle the dynasty deck', payload: target.value },
+  ]
 
-async function run(type: string, payload: Record<string, unknown>): Promise<void> {
-  if (await props.send(type, payload)) {
+  return effects.filter((action): action is Effect => !!action && available.value.has(action.type))
+})
+
+async function run<T extends MessageType>(type: T, ...payload: PayloadArgs<T>): Promise<void> {
+  if (await props.send(type, ...payload)) {
     emit('close')
   }
 }

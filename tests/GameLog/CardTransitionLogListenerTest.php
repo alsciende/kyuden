@@ -18,6 +18,7 @@ class CardTransitionLogListenerTest extends AbstractKernelTestCase
         return $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->honor(10)
                 ->hand(['katana' => '01-fine-katana'])
                 ->conflictDeck(['banzai' => '01-banzai'])
                 ->dynastyDeck(['toturi' => '01-akodo-toturi'])

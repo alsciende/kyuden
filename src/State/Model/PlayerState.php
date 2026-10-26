@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\State\Model;
 
 use App\Enum\ConflictType;
+use App\Exception\Rules\HonorNotSetException;
 use App\Exception\Rules\NoConflictOpportunityException;
 use App\Exception\Rules\NotEnoughFateException;
 
@@ -105,14 +106,25 @@ class PlayerState
         return $this;
     }
 
+    /**
+     * @throws HonorNotSetException before the honor is set (setup)
+     */
     public function incrementHonor(int $gain): self
     {
-        return $this->setHonor($this->honor + $gain);
+        return $this->setHonor($this->getSetHonor() + $gain);
     }
 
+    /**
+     * @throws HonorNotSetException before the honor is set (setup)
+     */
     public function decrementHonor(int $loss): self
     {
-        return $this->setHonor($this->honor - $loss);
+        return $this->setHonor($this->getSetHonor() - $loss);
+    }
+
+    private function getSetHonor(): int
+    {
+        return $this->honor ?? throw new HonorNotSetException();
     }
 
     public function getFate(): int

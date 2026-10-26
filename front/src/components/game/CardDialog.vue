@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } from 'vue'
 
-import type { ConflictType, GameView } from '@/api/game'
+import type { ConflictType, GameView, PayloadArgs, Send } from '@/api/game'
+import type { MessageType } from '@/api/messages'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction } from '@/lib/cardActions'
@@ -16,7 +17,7 @@ const props = defineProps<{
   cards: Cards
   sending: boolean
   error: string | null
-  send: (type: string, payload: Record<string, unknown>) => Promise<boolean>
+  send: Send
 }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -74,8 +75,8 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-async function run(type: string, payload: Record<string, unknown>): Promise<void> {
-  if (await props.send(type, payload)) {
+async function run<T extends MessageType>(type: T, ...payload: PayloadArgs<T>): Promise<void> {
+  if (await props.send(type, ...payload)) {
     emit('close')
   }
 }

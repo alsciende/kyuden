@@ -33,6 +33,7 @@ export interface Card {
   side?: string | null
   type: string
   clan: string | null
+  uniqueness?: boolean | null
   cost?: number | null
   fate?: number | null
   honor?: number | null

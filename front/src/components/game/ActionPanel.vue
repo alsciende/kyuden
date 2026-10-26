@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 
-import type { ConflictType, GameView } from '@/api/game'
+import type { ConflictType, GameView, Send } from '@/api/game'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
   stepOf,
@@ -33,7 +33,7 @@ const props = defineProps<{
   selection: Selection
   sending: boolean
   error: string | null
-  send: (type: string, payload?: Record<string, unknown>) => Promise<boolean>
+  send: Send
 }>()
 
 const available = computed(() => new Set(props.game.available_actions))
@@ -143,12 +143,16 @@ const declaration = computed(() => {
 })
 
 function declareConflict(): void {
-  const selection = props.selection
+  const { ring, type, provinceId } = props.selection
+  // the button is enabled once the declaration is complete
+  if (ring === null || type === null || provinceId === null) {
+    return
+  }
   void props.send('declare_conflict', {
-    ring: selection.ring,
-    type: selection.type,
-    province_id: selection.provinceId,
-    attacker_ids: selection.attackerIds,
+    ring,
+    type,
+    province_id: provinceId,
+    attacker_ids: props.selection.attackerIds,
     evaded_ids: [],
   })
 }

@@ -52,6 +52,10 @@ front-lint:
 front-test:
 	$(NPM) test
 
+# types of the payloads of the messages (front/src/api/messages.ts), from schemas/messages
+front-messages:
+	$(NPM) run messages
+
 # production build of the web client in front/dist
 front-build:
 	$(NPM) run build

@@ -20,10 +20,11 @@ Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which ser
 - `make lint`: `lint:container` + Rector (dry run) + PHPStan, then `vue-tsc` + ESLint + Prettier (`make front-lint`); run it before considering a change done
 - `make rector-fix`: applies the changes of Rector; never run it unasked: show the diff of `make rector` to the user, who may rather disable a rule in `rector.php`
 - `make front-install` / `make front-build`: npm dependencies and production build of the web client
+- `make front-messages`: types of the payloads of the messages for the web client (`front/src/api/messages.ts`), generated from `schemas/messages`
 - `make sql`: `psql` shell on the `database` service
 - `make prod-build` / `make prod-up` / `make prod-logs` / `make prod-down`: the production stack on the workstation, from the image built locally (README, "Production"); stop the development stack first
 
-Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message).
+Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message; then `make front-messages`, which generates the types of the web client from them).
 
 Use the custom makers to scaffold new code: `MakeAction` (message + handler) and `MakeWorkflowListener` (`src/Maker`).
 

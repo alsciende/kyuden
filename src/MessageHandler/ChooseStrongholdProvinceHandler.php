@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Event\StrongholdProvinceChosenEvent;
+use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\StrongholdProvinceAlreadyChosenException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\ChooseStrongholdProvince;
 use App\Repository\CardRepository;
@@ -34,6 +36,9 @@ final readonly class ChooseStrongholdProvinceHandler implements PlayerActionHand
     public function assertAvailable(Game $game, Player $player): void
     {
         $game->assertPlace('choose_stronghold');
+        if ($this->stateManager->getState($player)->getStrongholdProvinceId() !== null) {
+            throw new StrongholdProvinceAlreadyChosenException();
+        }
     }
 
     public function __invoke(ChooseStrongholdProvince $message): void
@@ -42,6 +47,10 @@ final readonly class ChooseStrongholdProvinceHandler implements PlayerActionHand
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->assertAvailable($game, $player);
         $card = $this->cardRepository->get($message->getCardId(), $game);
+        if ($card->getPlayer() !== $player) {
+            throw new NotOwnedCardException($card, $player);
+        }
+
         $logicalCard = $card->getLogicalCard();
 
         if ($logicalCard->getType() !== Type::Province) {

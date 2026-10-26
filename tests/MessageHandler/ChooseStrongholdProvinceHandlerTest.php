@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\DataFixtures\AppFixtures;
+use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\StrongholdProvinceAlreadyChosenException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\ChooseStrongholdProvince;
 use App\MessageHandler\ChooseStrongholdProvinceHandler;
@@ -56,6 +58,26 @@ class ChooseStrongholdProvinceHandlerTest extends AbstractKernelTestCase
         $this->expectException(WrongCardTypeException::class);
 
         self::service(ChooseStrongholdProvinceHandler::class)($this->choose($scenario, 'john', 'banzai'));
+    }
+
+    public function testRejectsAProvinceOfAnotherPlayer(): void
+    {
+        $scenario = $this->scenarioAtChooseStronghold();
+
+        $this->expectException(NotOwnedCardException::class);
+
+        self::service(ChooseStrongholdProvinceHandler::class)($this->choose($scenario, 'john', 'entrenched-position'));
+    }
+
+    public function testRejectsASecondChoice(): void
+    {
+        $scenario = $this->scenarioAtChooseStronghold();
+        $handler = self::service(ChooseStrongholdProvinceHandler::class);
+        $handler($this->choose($scenario, 'john', 'ancestral-lands'));
+
+        $this->expectException(StrongholdProvinceAlreadyChosenException::class);
+
+        $handler($this->choose($scenario, 'john', 'ancestral-lands'));
     }
 
     public function testGameIsSetUpOnceTheLastPlayerHasChosen(): void

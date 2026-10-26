@@ -19,6 +19,7 @@ const EFFECTS = [
   'return_card_to_hand',
   'reveal_dynasty_card',
   'fill_province',
+  'discard_duplicate',
 ]
 
 const cards = {
@@ -30,6 +31,8 @@ const cards = {
   }),
   banzai: printed('banzai', { type: 'event', cost: 0, ability_timings: ['action'] }),
   scout: printed('scout', { cost: 1 }),
+  toturi: printed('toturi', { name: 'Akodo Toturi', uniqueness: true }),
+  'toturi-2': printed('toturi-2', { name: 'Akodo Toturi', uniqueness: true }),
   raid: printed('raid', { type: 'province', strength: 3 }),
 }
 
@@ -127,6 +130,32 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, shown.id)!.plays).toEqual([
       { type: 'play_character_from_province', kind: 'from_province', label: 'Play this character', cost: 1 },
     ])
+  })
+
+  it('discards a duplicate of a unique character in play, from hand or a province, to place fate on it', () => {
+    const inPlay = card('toturi')
+    const inHand = card('toturi-2')
+    const inProvince = card('toturi')
+    const scout = card('scout')
+    const view = game(
+      player('me', [
+        stack('in_play', [inPlay]),
+        stack('in_play', [card('scout')]),
+        stack('hand', [inHand, scout]),
+        stack('regular_province', [card('raid'), inProvince]),
+      ]),
+      player('opp'),
+      { available_actions: EFFECTS },
+    )
+    const duplicates = (cardId: string) =>
+      cardMenu(view, cards, cardId)!
+        .removals.filter((action) => action.type === 'discard_duplicate')
+        .map((action) => action.payload)
+
+    expect(duplicates(inHand.id)).toEqual([{ card_id: inHand.id, copy_id: inPlay.id }])
+    expect(duplicates(inProvince.id)).toEqual([{ card_id: inProvince.id, copy_id: inPlay.id }])
+    // not unique
+    expect(duplicates(scout.id)).toEqual([])
   })
 
   it('sacrifices a holding in a province, but not a character', () => {

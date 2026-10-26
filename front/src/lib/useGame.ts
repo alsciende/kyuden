@@ -1,7 +1,8 @@
 import { onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 
 import { ApiProblem, fetchCard } from '@/api/client'
-import { fetchGame, fetchLog, sendMessage, type GameView, type LoggedMessage } from '@/api/game'
+import { fetchGame, fetchLog, sendMessage, type GameView, type LoggedMessage, type PayloadArgs } from '@/api/game'
+import type { MessagePayloads, MessageType } from '@/api/messages'
 import { visibleCodes, type Cards } from '@/lib/board'
 import { follow } from '@/lib/hub'
 import { loadSession } from '@/lib/session'
@@ -101,14 +102,15 @@ export function useGame(gameId: string) {
   /**
    * Sends a message of the player for the version of the game they see. Returns whether it was handled.
    */
-  async function send(type: string, payload: Record<string, unknown> = {}): Promise<boolean> {
+  async function send<T extends MessageType>(type: T, ...[payload]: PayloadArgs<T>): Promise<boolean> {
     if (session === null || game.value === null) {
       return false
     }
     sending.value = true
     error.value = null
     try {
-      await sendMessage(session.token, gameId, type, payload, game.value.version)
+      // a message without payload sends an empty object
+      await sendMessage(session.token, gameId, type, payload ?? ({} as MessagePayloads[T]), game.value.version)
       await refresh()
 
       return true
