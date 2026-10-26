@@ -5,6 +5,7 @@ import { newcomer } from '@/lib/newcomer'
 import {
   chooseCardDisplay,
   chooseTheme,
+  deleteAccount,
   loadSession,
   preferClan,
   rename,
@@ -272,6 +273,33 @@ describe('accounts', () => {
     expect(fetchMock.mock.calls[0]![1]!.method).toBe('DELETE')
     expect(loadSession()).toBeNull()
     expect(session.value).toBeNull()
+  })
+
+  it('forgets the account once it is deleted', async () => {
+    localStorage.setItem(
+      'kyuden.session',
+      JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', username: 'takeshi', token: 'l5r_account' }),
+    )
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    await deleteAccount()
+
+    expect(fetchMock.mock.calls[0]![0]).toBe('/api/self')
+    expect(fetchMock.mock.calls[0]![1]!.method).toBe('DELETE')
+    expect(loadSession()).toBeNull()
+    expect(session.value).toBeNull()
+  })
+
+  it('keeps the account when it could not be deleted', async () => {
+    localStorage.setItem(
+      'kyuden.session',
+      JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', username: 'takeshi', token: 'l5r_account' }),
+    )
+    fetchMock.mockResolvedValueOnce(json(500, { type: 'internal', detail: 'Oops.' }))
+
+    await expect(deleteAccount()).rejects.toThrow()
+
+    expect(loadSession()?.token).toBe('l5r_account')
   })
 })
 

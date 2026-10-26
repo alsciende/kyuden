@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Deck;
+use App\Entity\Player;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -53,5 +54,20 @@ class DeckRepository extends ServiceEntityRepository
     public function findWithoutOwner(): array
     {
         return $this->findBy(['owner' => null], ['id' => 'ASC']);
+    }
+
+    /**
+     * Deletes the decks of a user, but those played in a game (the players keep their deck), which only lose their
+     * name. The user must have left the queue.
+     */
+    public function deleteByOwner(User $owner): void
+    {
+        $played = 'SELECT IDENTITY(p.deck) FROM ' . Player::class . ' p';
+        $this->getEntityManager()->createQuery('DELETE FROM ' . Deck::class . " d WHERE d.owner = :owner AND d.id NOT IN ({$played})")
+            ->setParameter('owner', $owner)
+            ->execute();
+        $this->getEntityManager()->createQuery('UPDATE ' . Deck::class . ' d SET d.name = NULL WHERE d.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->execute();
     }
 }

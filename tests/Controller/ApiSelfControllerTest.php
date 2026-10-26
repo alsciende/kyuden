@@ -261,4 +261,27 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self/subscription', null)->getStatusCode());
     }
+
+    public function testAHumanDeletesTheirAccount(): void
+    {
+        $response = $this->request('DELETE', '/api/self', 'jane');
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self', 'jane')->getStatusCode());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideNotAnAccount(): iterable
+    {
+        yield 'a guest' => ['harry'];
+        yield 'a bot' => ['akodo-bot'];
+    }
+
+    #[DataProvider('provideNotAnAccount')]
+    public function testOnlyAnAccountIsDeleted(string $user): void
+    {
+        self::assertSame('account_required', $this->decodeProblem($this->request('DELETE', '/api/self', $user), Response::HTTP_FORBIDDEN)['type']);
+    }
 }

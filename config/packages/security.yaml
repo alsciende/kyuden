@@ -34,6 +34,8 @@ security:
         # anyone creates an account (a guest keeps theirs by sending its token) and signs in
         - { path: ^/api/accounts$, roles: PUBLIC_ACCESS }
         - { path: ^/api/sessions$, roles: PUBLIC_ACCESS }
+        # signing in with a provider of identities (OAuth2); linking an account checks its token in the controller
+        - { path: ^/api/oauth/, roles: PUBLIC_ACCESS }
         # the MCP server is for the programs playing as a bot
         - { path: ^/api/mcp$, roles: ROLE_BOT }
         - { path: ^/api, roles: ROLE_USER }

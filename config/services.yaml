@@ -4,6 +4,11 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # a provider of identities left out of the environment is disabled (the production .env replaces this one)
+    env(OAUTH_DISCORD_CLIENT_ID): ''
+    env(OAUTH_DISCORD_CLIENT_SECRET): ''
+    env(OAUTH_GOOGLE_CLIENT_ID): ''
+    env(OAUTH_GOOGLE_CLIENT_SECRET): ''
 
 services:
     # default configuration for services in *this* file
@@ -49,4 +54,18 @@ services:
 
     App\Notifier\NotifierInterface:
         class: App\Notifier\MercureNotifier
+
+    # the credentials of the application at the providers of identities (OAuth2): a provider without a client id is
+    # disabled
+    App\Security\OAuth\OAuthProviderFactory:
+        arguments:
+            $credentials:
+                discord: { client_id: '%env(OAUTH_DISCORD_CLIENT_ID)%', client_secret: '%env(OAUTH_DISCORD_CLIENT_SECRET)%' }
+                google: { client_id: '%env(OAUTH_GOOGLE_CLIENT_ID)%', client_secret: '%env(OAUTH_GOOGLE_CLIENT_SECRET)%' }
+
+    # the requests to the providers of identities (league/oauth2-client uses Guzzle)
+    app.oauth.http_client:
+        class: GuzzleHttp\Client
+        arguments:
+            - { timeout: 10, connect_timeout: 5 }
 

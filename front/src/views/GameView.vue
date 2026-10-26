@@ -162,7 +162,7 @@ const problem = computed(() => {
 
     <div v-if="ended && result" class="ended" role="dialog" aria-labelledby="game-result">
       <div class="ended-content">
-        <ClanMon :src="enso" :size="96" color="var(--paper)" />
+        <ClanMon :src="enso" :size="96" color="var(--on-veil)" />
         <h1 id="game-result">{{ result.victory ? 'Victory' : 'Defeat' }}</h1>
         <p v-if="result.text">{{ result.text }}</p>
         <!-- a guest is invited to keep their name: the introductory game is over -->
@@ -233,8 +233,10 @@ const problem = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* the veil is dark whatever the theme: its ink stays light */
+  --on-veil: #f4eee2;
   background: rgba(31, 27, 22, 0.78);
-  color: var(--paper);
+  color: var(--on-veil);
   text-align: center;
 }
 
@@ -270,17 +272,19 @@ const problem = computed(() => {
   font-family: var(--font-display);
   font-size: 26px;
   font-weight: 700;
-  color: var(--paper);
+  color: var(--on-veil);
 }
 
 .ended p {
   line-height: 1.55;
 }
 
+/* the button on the axis of the screen, the way out below it */
 .invitation-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 6px;
   margin-top: 10px;
 }
 
@@ -289,7 +293,7 @@ const problem = computed(() => {
 }
 
 .invitation-actions .btn-link {
-  color: var(--paper);
+  color: var(--on-veil);
 }
 
 .leave {

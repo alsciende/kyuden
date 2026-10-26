@@ -22,13 +22,16 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * other players see, not unique. A human signs in with a username and a password once registered; before that, it is
  * a guest. The username is unique whatever its case (`usernameCanonical`). Their preferred clan, one of the Great Clans,
  * is chosen when they create their account and changed at any time. Their settings (UserSettings) are their preferences,
- * e.g. how the web client draws the cards.
+ * e.g. how the web client draws the cards. A deleted account stays, anonymized, with the date of its deletion.
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table('users')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const int MAX_NAME_LENGTH = 64;
+
+    /** the name at court of a deleted account, which its opponents read in the games it played */
+    public const string FORMER_PLAYER_NAME = 'A former player';
 
     public const string USERNAME_PATTERN = '/^[A-Za-z0-9_]{3,32}$/D';
 
@@ -70,6 +73,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column(type: Types::JSON)]
     private array $settings = [];
+
+    /** when the account was deleted (anonymized), null while it lives */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
 
     /**
      * @param non-empty-string $id
@@ -119,7 +126,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function isGuest(): bool
     {
-        return $this->type === UserType::Human && $this->username === null;
+        return $this->type === UserType::Human && $this->username === null && ! $this->isDeleted();
+    }
+
+    /**
+     * An account a human signs in to (not a guest nor a bot) can be linked to their identities at providers (OAuth2),
+     * to sign in with them.
+     */
+    public function canLinkAccounts(): bool
+    {
+        return $this->type === UserType::Human && $this->username !== null;
     }
 
     /**
@@ -134,6 +150,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->username = $username;
         $this->usernameCanonical = self::canonicalizeUsername($username);
         $this->password = $hashedPassword;
+    }
+
+    /**
+     * Forgets everything about the user but their id, which their games and those of their opponents keep: their name at
+     * court, their username and password, their preferred clan and their settings. The date of the deletion is kept.
+     */
+    public function anonymize(\DateTimeImmutable $deletedAt): void
+    {
+        $this->deletedAt = $deletedAt;
+        $this->name = self::FORMER_PLAYER_NAME;
+        $this->username = null;
+        $this->usernameCanonical = null;
+        $this->password = null;
+        $this->preferredClan = null;
+        $this->settings = [];
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt instanceof \DateTimeImmutable;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
     }
 
     #[\Override]

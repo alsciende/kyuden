@@ -256,6 +256,27 @@ p {
   color: var(--seal);
 }
 
+/* what went wrong away from a field (a provider of identities): a title in the seal, what to do below */
+.form-alert {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1.5px solid var(--seal);
+  border-radius: 2px;
+}
+
+.form-alert-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--seal);
+}
+
+.form-alert-text {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
 .screen {
   animation: fade 0.45s ease-out both;
 }

@@ -8,9 +8,12 @@ import GameView from '@/views/GameView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginView from '@/views/LoginView.vue'
 import NameView from '@/views/NameView.vue'
+import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
 import OpponentView from '@/views/OpponentView.vue'
+import PrivacyView from '@/views/PrivacyView.vue'
 import QueueView from '@/views/QueueView.vue'
 import SignupView from '@/views/SignupView.vue'
+import TermsView from '@/views/TermsView.vue'
 
 const hasAccount = () => session.value !== null && session.value.username !== null
 
@@ -53,6 +56,22 @@ export const router = createRouter({
       component: QueueView,
       meta: { title: 'Find an opponent · Kyūden' },
       beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
+    },
+    // its URL is given to Google and Discord, which publish it on their consent screens
+    { path: '/privacy', name: 'privacy', component: PrivacyView, meta: { title: 'Privacy · Kyūden' } },
+    // its URL is given to Google and Discord too
+    {
+      path: '/terms-and-conditions',
+      name: 'terms',
+      component: TermsView,
+      meta: { title: 'Terms and conditions · Kyūden' },
+    },
+    {
+      // the redirect URI registered at each provider
+      path: '/oauth/:provider/callback',
+      name: 'oauth-callback',
+      component: OAuthCallbackView,
+      meta: { title: 'Back to court · Kyūden' },
     },
     { path: '/games/:id', name: 'game', component: GameView, meta: { title: 'Game · Kyūden', fullscreen: true } },
     { path: '/:path(.*)*', redirect: { name: 'landing' } },

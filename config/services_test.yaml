@@ -4,3 +4,14 @@ services:
         arguments:
             - '@monolog.logger.notification'
     Symfony\Component\HttpKernel\Profiler\Profiler: '@profiler'
+    # the providers of identities answer what the tests queue (MockHandler::append())
+    GuzzleHttp\Handler\MockHandler:
+        public: true
+    app.oauth.handler_stack:
+        class: GuzzleHttp\HandlerStack
+        factory: ['GuzzleHttp\HandlerStack', 'create']
+        arguments: ['@GuzzleHttp\Handler\MockHandler']
+    app.oauth.http_client:
+        class: GuzzleHttp\Client
+        arguments:
+            - { handler: '@app.oauth.handler_stack' }

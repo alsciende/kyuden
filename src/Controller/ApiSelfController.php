@@ -12,6 +12,7 @@ use App\Enum\Theme;
 use App\Model\AccountRequest;
 use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
+use App\Security\AccountDeleter;
 use App\View\Model\SelfView;
 use App\View\Model\UserGameView;
 use App\View\UserGameViewFactory;
@@ -31,7 +32,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * The authenticated user: their identifier, their name at court, their preferred clan and their settings (which they
  * change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ..., "theme": ...}}`, any of them; a setting left out
  * is kept) and their username, and their games (in progress or ended, the last joined first), so that a user matched by
- * the queue finds the id of their game; and their subscription to the Mercure hub. Errors are problem details (RFC 9457).
+ * the queue finds the id of their game; and their subscription to the Mercure hub. A human deletes their account
+ * (`DELETE`). Errors are problem details (RFC 9457).
  */
 class ApiSelfController extends AbstractController
 {
@@ -49,6 +51,7 @@ class ApiSelfController extends AbstractController
         private readonly ValidatorInterface $validator,
         private readonly SubscriptionFactory $subscriptionFactory,
         private readonly UserGameViewFactory $userGameViewFactory,
+        private readonly AccountDeleter $accountDeleter,
     ) {
     }
 
@@ -144,6 +147,21 @@ class ApiSelfController extends AbstractController
         $this->entityManager->flush();
 
         return $this->index($user);
+    }
+
+    /**
+     * Deletes the account of the user (AccountDeleter): a human who signs in, not a guest nor a bot.
+     */
+    #[Route('/api/self', name: 'app_api_self_delete', methods: ['DELETE'])]
+    public function delete(#[CurrentUser] User $user): Response
+    {
+        if (! $user->canLinkAccounts()) {
+            return $this->problem(Response::HTTP_FORBIDDEN, 'account_required', 'Only an account signed in to with a username is deleted.');
+        }
+
+        $this->accountDeleter->delete($user);
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
     #[Route('/api/self/games', name: 'app_api_self_games', methods: ['GET'])]

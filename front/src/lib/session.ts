@@ -5,7 +5,9 @@ import {
   createAccount,
   createBotGame,
   createGuest,
+  createOAuthSession,
   createSession,
+  deleteSelf,
   deleteSession,
   fetchSelf,
   fetchSelfGames,
@@ -13,6 +15,7 @@ import {
   type Account,
   type BotGame,
   type CardDisplay,
+  type OAuthProvider,
   type Self,
   type Theme,
 } from '@/api/client'
@@ -208,6 +211,13 @@ export async function signIn(username: string, password: string): Promise<Sessio
 }
 
 /**
+ * Signs in with the identity a provider sent back, to the account linked to it.
+ */
+export async function signInWithProvider(provider: OAuthProvider, code: string, state: string): Promise<Session> {
+  return accountSession(await createOAuthSession(provider, code, state))
+}
+
+/**
  * Signs out: the token is revoked, and the browser forgets the account.
  */
 export async function signOut(): Promise<void> {
@@ -221,6 +231,19 @@ export async function signOut(): Promise<void> {
   } catch {
     // a token already revoked, or a network failure: the browser has forgotten it anyway
   }
+}
+
+/**
+ * Deletes the account (its games stay, under a name that is no longer theirs), then the browser forgets it. A failure
+ * keeps the account and the session.
+ */
+export async function deleteAccount(): Promise<void> {
+  const current = loadSession()
+  if (current === null) {
+    return
+  }
+  await deleteSelf(current.token)
+  saveSession(null)
 }
 
 /**

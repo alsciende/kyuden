@@ -90,4 +90,24 @@ class GameRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * The games a user plays that have started and not ended, as the ids of the game and of their player: no game is
+     * loaded, so that a message can then be dispatched on it (GameLockMiddleware).
+     *
+     * @return list<array{gameId: string, playerId: string}>
+     */
+    public function findInProgressPlayersOf(string $userId): array
+    {
+        /** @var list<array{gameId: string, playerId: string}> */
+        return $this->createQueryBuilder('g')
+            ->select('g.id AS gameId', 'p.id AS playerId')
+            ->join('g.players', 'p', 'WITH', 'IDENTITY(p.user) = :user')
+            ->where('g.currentPlace NOT IN (:places)')
+            ->setParameter('user', $userId)
+            ->setParameter('places', ['join_game', Game::STATE_ENDED])
+            ->orderBy('g.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getArrayResult();
+    }
 }

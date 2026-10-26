@@ -136,6 +136,29 @@ export interface Subscription {
   expires_at: string
 }
 
+/** a provider of identities an account is linked to, to sign in with it */
+export type OAuthProvider = 'google' | 'discord'
+
+/** why the visitor goes to the provider: to sign in to the account linked there, or to link it to theirs */
+export type OAuthPurpose = 'sign_in' | 'link'
+
+/**
+ * Where to send the visitor to authorize Kyūden at the provider, and the state the provider sends back.
+ */
+export interface OAuthAuthorization {
+  authorization_url: string
+  state: string
+}
+
+/**
+ * An identity at a provider linked to the account of the user.
+ */
+export interface LinkedAccount {
+  provider: OAuthProvider
+  /** RFC 3339 */
+  linked_at: string
+}
+
 interface RequestOptions {
   method?: string
   body?: unknown
@@ -233,6 +256,10 @@ export function updateSelf(
   return request<Self>('/api/self', { method: 'PATCH', body: changes, token })
 }
 
+export function deleteSelf(token: string): Promise<void> {
+  return request<void>('/api/self', { method: 'DELETE', token })
+}
+
 export function fetchSelfGames(token: string): Promise<UserGame[]> {
   return request<UserGame[]>('/api/self/games', { token })
 }
@@ -261,4 +288,58 @@ export function joinQueue(token: string, deckId: string): Promise<void> {
 
 export function leaveQueue(token: string): Promise<void> {
   return request<void>('/api/queue', { method: 'DELETE', token })
+}
+
+/**
+ * The providers the visitors can link their account to and sign in with (those configured on the server).
+ */
+export function fetchOAuthProviders(): Promise<string[]> {
+  return request<string[]>('/api/oauth/providers')
+}
+
+/**
+ * Starts a flow with a provider: to link, with the token of the account.
+ */
+export function createOAuthAuthorization(
+  provider: OAuthProvider,
+  purpose: OAuthPurpose,
+  token: string | null,
+): Promise<OAuthAuthorization> {
+  return request<OAuthAuthorization>(`/api/oauth/${provider}/authorizations`, {
+    method: 'POST',
+    body: { purpose },
+    token,
+  })
+}
+
+/**
+ * Signs in with the identity the provider sent back: a 401 (`not_linked`) when no account is linked to it.
+ */
+export function createOAuthSession(provider: OAuthProvider, code: string, state: string): Promise<Account> {
+  return request<Account>(`/api/oauth/${provider}/sessions`, { method: 'POST', body: { code, state } })
+}
+
+export function fetchLinkedAccounts(token: string): Promise<LinkedAccount[]> {
+  return request<LinkedAccount[]>('/api/self/linked-accounts', { token })
+}
+
+/**
+ * Links the account to the identity the provider sent back: a 409 (`identity_already_linked`) when it is linked to
+ * another account.
+ */
+export function linkAccount(
+  token: string,
+  provider: OAuthProvider,
+  code: string,
+  state: string,
+): Promise<LinkedAccount> {
+  return request<LinkedAccount>(`/api/self/linked-accounts/${provider}`, {
+    method: 'PUT',
+    body: { code, state },
+    token,
+  })
+}
+
+export function unlinkAccount(token: string, provider: OAuthProvider): Promise<void> {
+  return request<void>(`/api/self/linked-accounts/${provider}`, { method: 'DELETE', token })
 }
