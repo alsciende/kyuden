@@ -31,6 +31,17 @@ class Pack implements \Stringable
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $size = null;
 
+    /**
+     * Its position in its cycle.
+     */
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $position = 0;
+
+    #[ORM\ManyToOne(targetEntity: Cycle::class, inversedBy: 'packs')]
+    #[ORM\JoinColumn(name: 'cycle_id', referencedColumnName: 'id', nullable: false)]
+    #[Ignore]
+    private Cycle $cycle;
+
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTime $release_date = null;
 
@@ -88,6 +99,30 @@ class Pack implements \Stringable
     public function setSize(int $size): static
     {
         $this->size = $size;
+
+        return $this;
+    }
+
+    public function getPosition(): int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(int $position): static
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    public function getCycle(): Cycle
+    {
+        return $this->cycle;
+    }
+
+    public function setCycle(Cycle $cycle): static
+    {
+        $this->cycle = $cycle;
 
         return $this;
     }

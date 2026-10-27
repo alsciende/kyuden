@@ -13,7 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:cards:import',
-    description: 'Create or update the database of the cards (packs, cards, printings, external cards, starter decks) from fixtures/',
+    description: 'Create or update the database of the cards (cycles, packs, cards, printings, external cards, starter decks) from fixtures/',
 )]
 readonly class CardsImportCommand
 {

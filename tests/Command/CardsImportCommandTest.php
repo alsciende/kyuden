@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\DataFixtures\AppFixtures;
+use App\Entity\Cycle;
 use App\Entity\Deck;
 use App\Entity\ExternalCard;
 use App\Entity\LogicalCard;
@@ -40,12 +41,22 @@ class CardsImportCommandTest extends AbstractKernelTestCase
 
     public function testImportingAgainCreatesNothing(): void
     {
-        $counts = array_map($this->recordsOf(...), [Pack::class, LogicalCard::class, Printing::class, ExternalCard::class, Deck::class]);
+        $counts = array_map($this->recordsOf(...), [Cycle::class, Pack::class, LogicalCard::class, Printing::class, ExternalCard::class, Deck::class]);
 
         $display = $this->import()->getDisplay();
 
-        self::assertStringContainsString('Created: 0 packs, 0 cards, 0 printings, 0 external', $display);
-        self::assertSame($counts, array_map($this->recordsOf(...), [Pack::class, LogicalCard::class, Printing::class, ExternalCard::class, Deck::class]));
+        self::assertStringContainsString('Created: 0 cycles, 0 packs, 0 cards, 0 printings', $display);
+        self::assertSame($counts, array_map($this->recordsOf(...), [Cycle::class, Pack::class, LogicalCard::class, Printing::class, ExternalCard::class, Deck::class]));
+    }
+
+    public function testAPackBelongsToItsCycleAtItsPosition(): void
+    {
+        $pack = self::service(EntityManagerInterface::class)->find(Pack::class, 'a-champion-s-foresight');
+        self::assertInstanceOf(Pack::class, $pack);
+
+        self::assertSame(5, $pack->getPosition());
+        self::assertSame('inheritance', $pack->getCycle()->getId());
+        self::assertSame(6, $pack->getCycle()->getPosition());
     }
 
     public function testWhatChangedIsWrittenAgainAndWhatIsMissingIsCreated(): void
@@ -66,7 +77,7 @@ class CardsImportCommandTest extends AbstractKernelTestCase
 
         $display = $this->import()->getDisplay();
 
-        self::assertStringContainsString('Created: 0 packs, 0 cards, 1 printings', $display);
+        self::assertStringContainsString('Created: 0 cycles, 0 packs, 0 cards, 1 printings', $display);
         $entityManager->clear();
         $card = $entityManager->find(LogicalCard::class, '01-above-question');
         self::assertInstanceOf(LogicalCard::class, $card);

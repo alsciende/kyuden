@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\CardDatabase;
 
+use App\Entity\Cycle;
 use App\Entity\Deck;
 use App\Entity\ExternalCard;
 use App\Entity\LogicalCard;
@@ -17,7 +18,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
- * Writes the database of the cards from the files of fixtures/: packs, cards as printed, printings, external cards and
+ * Writes the database of the cards from the files of fixtures/: cycles, packs, cards as printed, printings, external cards and
  * the starter decks (`starter_decks/<deck id>.json`: quantity by card code, without owner). What exists is updated,
  * what is missing is created, nothing is deleted (games and decks use the cards): it can run again on a database in use.
  */
@@ -36,6 +37,7 @@ readonly class CardDatabaseImporter
     public function import(): array
     {
         $created = [
+            'cycles' => $this->importCycles(),
             'packs' => $this->importPacks(),
             'cards' => $this->importCards(),
             'printings' => $this->importPrintings(),
@@ -47,9 +49,30 @@ readonly class CardDatabaseImporter
         return $created;
     }
 
+    private function importCycles(): int
+    {
+        $created = 0;
+        $cycles = $this->cycles();
+        foreach ($this->files('cycles') as $contents) {
+            $id = $this->readId($contents);
+            $cycle = $cycles[$id] ?? null;
+            if (! $cycle instanceof Cycle) {
+                ++$created;
+            }
+            $cycle = $this->serializer->deserialize($contents, Cycle::class, 'json', [AbstractNormalizer::OBJECT_TO_POPULATE => $cycle]);
+            $this->entityManager->persist($cycle);
+        }
+
+        return $created;
+    }
+
+    /**
+     * A pack names its cycle (`cycle_id`).
+     */
     private function importPacks(): int
     {
         $created = 0;
+        $cycles = $this->cycles();
         $packs = $this->packs();
         foreach ($this->files('packs') as $contents) {
             $id = $this->readId($contents);
@@ -61,6 +84,8 @@ readonly class CardDatabaseImporter
                 AbstractNormalizer::OBJECT_TO_POPULATE => $pack,
                 'datetime_format' => 'Y-m-d',
             ]);
+            $cycleId = $this->readCycleId($contents);
+            $pack->setCycle($cycles[$cycleId] ?? throw new \RuntimeException("Pack {$id} in the unknown cycle {$cycleId}."));
             $this->entityManager->persist($pack);
         }
 
@@ -189,6 +214,24 @@ readonly class CardDatabaseImporter
         return $data['id'];
     }
 
+    private function readCycleId(string $contents): string
+    {
+        $data = json_decode($contents, true, flags: JSON_THROW_ON_ERROR);
+        if (! \is_array($data) || ! \is_string($data['cycle_id'] ?? null)) {
+            throw new \RuntimeException('A pack of the card database has no cycle.');
+        }
+
+        return $data['cycle_id'];
+    }
+
+    /**
+     * @return array<string, Cycle> by id, those persisted since the last flush included
+     */
+    private function cycles(): array
+    {
+        return $this->indexById(Cycle::class);
+    }
+
     /**
      * @return array<string, Pack> by id, those persisted since the last flush included
      */
@@ -206,7 +249,7 @@ readonly class CardDatabaseImporter
     }
 
     /**
-     * @template T of Pack|LogicalCard
+     * @template T of Cycle|Pack|LogicalCard
      *
      * @param class-string<T> $class
      *

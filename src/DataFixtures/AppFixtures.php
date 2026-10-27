@@ -9,7 +9,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
 /**
- * The database of the cards, as in production (`app:cards:import`): packs, cards, printings, external cards and the
+ * The database of the cards, as in production (`app:cards:import`): cycles, packs, cards, printings, external cards and the
  * starter decks, without owner: every user can play them.
  */
 class AppFixtures extends Fixture
