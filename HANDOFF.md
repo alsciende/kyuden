@@ -417,13 +417,12 @@ The stored `Event`s cannot be shown to the players: their payloads hold secret i
 **Design**
 - A single server `l5r` (`config/packages/mcp.yaml`), HTTP transport only, at `/api/mcp`: under the firewall of the API, so the agents authenticate like any client (`Authorization: Bearer <API key>`), and `access_control` restricts it to the bots (`ROLE_BOT`): a human gets a 403. The tool reads the user through `Security`.
 - `wait_for_update(game_id, since = 0, timeout = 30)` (`Mcp/WaitForUpdateTool`): the same waiter and the same masked log as `GET /api/games/{id}/log?since=…&wait=…`, called in process rather than through HTTP. The log is returned as structured content (snake case, as the API). An unknown game or a game the bot does not play is a tool error (`isError`), the bounds of the arguments are checked by the server against the schema (JSON-RPC error).
-- Tools are registered from `src/Mcp` (`registry.tools`), described by their doc comments (read by the agents).
+- Tools, prompts and resources are registered from `src/Mcp` (`registry`), described by their doc comments (read by the agents).
 - Sessions: the default file store of the bundle, in `var/cache` (a tmpfs in development): they are lost when the container restarts, the clients initialize again.
 - `nyholm/psr7`: the bundle converts the request to PSR-7 and needs a PSR-17 factory.
 
 **Not done**
 - `http.allowed_hosts`: the default of the SDK (localhost only) is kept for development; a public server must list its hosts.
-- The rules as resources: an agent with a file system reads them from `doc/` (see the tools to play).
 
 ## Decisions taken for the tools of the messages
 
@@ -447,10 +446,15 @@ Playing a first game with Claude Code through the HTTP API failed: its permissio
 - What the HTTP API gives a player, as tools: `get_game` (`GameViewFactory`, the view masked for the bot: unknown game or not a player is a tool error), `list_my_games` (`View/UserGameViewFactory`, shared with `GET /api/self/games`), `list_decks` (`View/DeckViewFactory`, shared with `/api/decks`), `join_queue` / `leave_queue` (`Service/MatchMaking/MatchMakingQueue`, the logic of `ApiQueueController` moved to a service: `DeckNotFoundException`, `AlreadyQueuedException`, `NotQueuedException`), `get_cards` (several codes at once, at most 50: an agent reads a hand or a deck in one call; an unknown code is a tool error).
 - `wait_for_game(timeout = 30)`: the long-poll of an agent waiting in the queue, so that it does not loop on `list_my_games` (`Service/GameStartWaiter`: the games of the user read every second through the Symfony clock, returns the games in progress, at once when there are some, none once the time is up).
 - A list is returned inside an object (`{"games": [...]}`, `{"decks": [...]}`, `{"cards": [...]}`): the structured content of a tool is an object.
-- `agent/`: `PLAYER.md` (the prompt: tools, finding the game, the loop on `wait_for_update` / `get_game` / one action with `expected_version`, reading the view, the engine as a board, fair play; any error but `stale_version`, or a blocking situation, ends the game: the agent concedes with the reason, the game being a test of the engine), `mcp.json` (the server, `KYUDEN_URL`, `KYUDEN_API_KEY`), `play.sh <API key> [deck]` (copies the prompt as `CLAUDE.md` and `doc/` as `rules/` into a temporary directory, so that the agent loads neither the instructions of the repository nor its code, and allows only the tools of `l5r`, `Read` and `Grep`).
+- **What the bot is told comes from the server**, so that any MCP client plays with a prompt of one line and nothing else (the screen of the invitation, `agent/play.sh`):
+  - the `instructions` of the server (`config/packages/mcp.yaml`, sent on `initialize`; formerly `agent/PLAYER.md`): the tools, finding the game, the loop on `wait_for_update` / `get_game` / one action with `expected_version`, reading the view, the engine as a board, the rules, fair play; any error but `stale_version`, or a blocking situation, ends the game: the agent concedes with the reason, the game being a test of the engine. Written in the YAML, in plain text (the names of the tools without backquotes): about 9 kB.
+  - the rules as resources (`Mcp/RulesResources`, `kyuden://rules/<name>`, `text/markdown`, read from `doc/` on each read): `learn_to_play`, `timing_and_gameplay`, `card_clarifications`. Not `game.md` (the queue seen from the app) nor `symbols.md` (the glyphs of the icon font).
+  - the glossary entry by entry, like the cards card by card: 120 kB whole, 145 entries (`## <title>`) of 2.6 kB at most. `Service/Rules/Glossary` splits `doc/glossary.md`; `list_glossary_entries` gives the titles, `get_glossary_entries(terms)` (20 at most) the entries, by their title or one of the terms it names (`bowed` reads `Bow, Bowed`), whatever the case; an unknown term is a tool error. Tools rather than a resource template: a tool is called by every client, a template is not listed by all of them, and its entries could not be listed.
+  - a prompt `play` (`Mcp/PlayPrompt`, with an optional `deck`): the prompt of one line, the same as the screen of the invitation (`front/src/lib/invitation.ts`) and `agent/play.sh`.
+- `agent/`: `mcp.json` (the server, `KYUDEN_URL`, `KYUDEN_API_KEY`), `play.sh <API key> [deck]` (runs Claude Code in an empty temporary directory, so that the agent loads neither the instructions of the repository nor its code, and allows only the tools of `l5r` and the reading of its resources, `ListMcpResourcesTool` and `ReadMcpResourceTool`).
 
 **Not done**
-- No game played by the agent yet.
+- No game played by the agent yet; that an agent reads the rules served as resources is not checked either.
 - The view is sent whole on each `get_game`: a long game may fill the context of the agent; a compact view to consider once seen in play.
 - An agent that stops without conceding blocks the game: no timeout.
 
@@ -683,7 +687,7 @@ A player plays against their own bot (a program playing through the MCP server) 
 
 ### Friendly games
 
-- **What the bot is told comes from the server**: the prompt of the player is one line (shown by the screen of the invitation), the rest is to be served by the MCP server, so that any MCP client plays with nothing else: the `instructions` of the server (`config/packages/mcp.yaml`, five lines today) take what `agent/PLAYER.md` says, the rules of `doc/` become resources (`McpResource` of `mcp/sdk`), and a prompt `play` (`McpPrompt`) gives the minimal prompt. `agent/play.sh` then only keeps the configuration of the client (no copy of `PLAYER.md` nor `doc/`). Check that an agent reads the rules served as resources.
+- **What the bot is told**: done (see the decisions taken for the tools to play); check with a game that an agent follows the instructions of the server and reads the rules served as resources and the glossary, and that its client does not cut the instructions (about 9 kB).
 - **Ranking**: friendly games are marked (`Game::friendly`), the ranking is to come.
 
 ### API
@@ -692,7 +696,7 @@ A player plays against their own bot (a program playing through the MCP server) 
 
 - **Fate from a fate pool**: `PlaceFate` places fate from the supply only; pool → character (and spending fate from a pool for an ability) waits for `MoveFate` (see the analysis of fate in the action abilities below).
 - **Reading API**: `SeeCard` (see the decisions taken for the reading API).
-- **AI agents**: play a game against the agent (`agent/play.sh`) and fix what it reports; a compact view of the game if the context fills; a timeout for an agent that stops; the rules as MCP resources for agents without a file system.
+- **AI agents**: play a game against the agent (`agent/play.sh`) and fix what it reports; a compact view of the game if the context fills; a timeout for an agent that stops.
 - **`SeeCard`**: it can write a log entry whose card is visible to the player only (`#[VisibleTo]`): the log delivers the card, without a private Mercure topic, and the opponent sees the action.
 - **Feedback of the players**: read the reasons of the concessions (payload of the `ConcedeGame` events), e.g. a console command or a listener of `GameConcededEvent`.
 - **Decks**: deleting a deck; the text export of EmeraldDB; the banned and restricted lists of a card pool.

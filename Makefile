@@ -62,7 +62,10 @@ front-build:
 
 lint: check-symfony rector phpstan front-lint
 
-test: test-php front-test
+clear-test-cache:
+	$(PHP) bin/console cache:clear --env=test
+
+test: clear-test-cache test-php front-test
 
 PHPUNIT := $(PHP) -d memory_limit=1G vendor/bin/phpunit
 
