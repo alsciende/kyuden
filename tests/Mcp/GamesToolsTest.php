@@ -49,6 +49,7 @@ class GamesToolsTest extends AbstractMcpTestCase
             'player_id' => $scenario->player('akodo-bot')->getId(),
             'version' => 0,
             'ended' => false,
+            'friendly' => false,
             'players' => ['hida-bot', 'akodo-bot'],
         ]], $games);
     }

@@ -57,6 +57,12 @@ class Game implements StatefulInterface
     private ?Randomizer $randomizer = null;
 
     /**
+     * A friendly game (an invitation to it): not ranked.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $friendly;
+
+    /**
      * @var ArrayCollection<int, Player>
      */
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Player::class, cascade: ['persist', 'remove'], fetch: 'LAZY', orphanRemoval: true)]
@@ -74,9 +80,10 @@ class Game implements StatefulInterface
     /**
      * @param string $seed 32 random bytes
      */
-    public function __construct(string $id, string $seed)
+    public function __construct(string $id, string $seed, bool $friendly = false)
     {
         $this->id = $id;
+        $this->friendly = $friendly;
         $this->randomEngine = serialize(new Xoshiro256StarStar($seed));
         $this->players = new ArrayCollection();
         $this->physicalCards = new ArrayCollection();
@@ -85,6 +92,11 @@ class Game implements StatefulInterface
     public function getId(): string
     {
         return $this->id;
+    }
+
+    public function isFriendly(): bool
+    {
+        return $this->friendly;
     }
 
     public function getCurrentPlace(): ?string

@@ -100,6 +100,8 @@ export interface UserGame {
   player_id: string
   version: number
   ended: boolean
+  /** a game of an invitation, not ranked */
+  friendly: boolean
   /** the user ids, in player order */
   players: string[]
 }
@@ -113,6 +115,35 @@ export interface BotGame {
     deck_id: string
   }
 }
+
+/** whom an invitation to a friendly game is for */
+export type InvitationKind = 'bot' | 'friend'
+
+/**
+ * An invitation of the user to a friendly game.
+ */
+export interface Invitation {
+  id: string
+  kind: InvitationKind
+  /** the code a friend uses (`KX7-QM4-T9P`) */
+  code: string | null
+  /** the bot of the user, for an invitation of their bot */
+  bot: { user_id: string; name: string } | null
+  /** the API key of the bot, limited to the invitation: only when it is created */
+  token: string | null
+  expires_at: string
+}
+
+/**
+ * An invitation of a friend as anyone with its code sees it.
+ */
+export interface InvitationStatus {
+  host_name: string
+  state: 'pending' | 'expired' | 'used'
+}
+
+/** how the user joins the queue with an invitation: its id for its host, its code for a friend */
+export type QueueInvitation = { invitation_id: string } | { invitation_code: string }
 
 /**
  * A deck the user can play: their own, or a deck without owner (the starter decks).
@@ -283,12 +314,38 @@ export function fetchQueue(token: string): Promise<{ deck_id: string }> {
 /**
  * Joins the queue: the user is matched at once when another player waits, and told on their topic once the game has started (`game_started`).
  */
-export function joinQueue(token: string, deckId: string): Promise<void> {
-  return request<void>('/api/queue', { method: 'POST', body: { deck_id: deckId }, token })
+export function joinQueue(token: string, deckId: string, invitation?: QueueInvitation): Promise<void> {
+  return request<void>('/api/queue', { method: 'POST', body: { deck_id: deckId, ...invitation }, token })
 }
 
 export function leaveQueue(token: string): Promise<void> {
   return request<void>('/api/queue', { method: 'DELETE', token })
+}
+
+/**
+ * Invites the bot of the user or a friend to a friendly game: a previous invitation is cancelled.
+ */
+export function createInvitation(token: string, kind: InvitationKind): Promise<Invitation> {
+  return request<Invitation>('/api/invitations', { method: 'POST', body: { kind }, token })
+}
+
+/**
+ * The invitation of the user waiting for its guest (without the key of the bot); a 404 (`invitation_not_found`) when
+ * there is none.
+ */
+export function fetchSelfInvitation(token: string): Promise<Invitation> {
+  return request<Invitation>('/api/self/invitation', { token })
+}
+
+export function cancelInvitation(token: string): Promise<void> {
+  return request<void>('/api/self/invitation', { method: 'DELETE', token })
+}
+
+/**
+ * Who invites with a code, and whether it can be used; a 404 (`invitation_not_found`) once cancelled.
+ */
+export function fetchInvitationStatus(code: string): Promise<InvitationStatus> {
+  return request<InvitationStatus>(`/api/invitations/${encodeURIComponent(code)}`)
 }
 
 /**

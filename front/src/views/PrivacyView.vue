@@ -7,7 +7,7 @@
         Kyūden asks for no personal data: no email address, no real name, no birth date. It keeps what you play with,
         and nothing more. Nothing is sold, shared or used for advertising.
       </p>
-      <p class="updated">Last updated on 26 October 2026.</p>
+      <p class="updated">Last updated on 27 October 2026.</p>
     </header>
 
     <section>
@@ -22,6 +22,11 @@
         </li>
         <li>Your <strong>preferred clan</strong> and your <strong>website settings</strong>.</li>
         <li>The <strong>decks</strong> you import, which only you see.</li>
+        <li>
+          Your <strong>invitation</strong> to a friendly game: whom it is for (your bot or a friend), its code and until
+          when it waits. Your bot plays under your name at court (“Hida Takeshi's bot”), and its key is kept as a
+          fingerprint only, like yours.
+        </li>
         <li>
           The <strong>games</strong> you play: every move, so that a game can be followed and resumed. Your opponent
           sees your name at court, your clan and your moves, never your hand nor your secret choices.
@@ -63,7 +68,8 @@
       <p>
         Kyūden sets no cookie and uses no analytics, advertising nor tracking of any kind. Your browser keeps your
         session, so that you stay signed in (until you sign out), and, for the time of a tab, the clan and name chosen
-        before your first game and the state of a sign-in with a provider.
+        before your first game, the state of a sign-in with a provider and the key of your bot, so that the page of your
+        invitation shows it again.
       </p>
     </section>
 

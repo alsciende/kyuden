@@ -93,7 +93,11 @@ export function isGuest(current: Session | null): boolean {
   return current !== null && current.username === null
 }
 
-async function guestSession(name: string): Promise<Session> {
+/**
+ * The session of a visitor playing under a name at court: theirs if they have an account or are the guest of that
+ * name, else a new guest.
+ */
+export async function guestSession(name: string): Promise<Session> {
   const current = loadSession()
   // an account plays under its own name; a guest cannot be renamed: another name is another guest
   if (current !== null && (current.username !== null || current.name === name)) {

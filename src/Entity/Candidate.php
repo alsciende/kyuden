@@ -8,7 +8,8 @@ use App\Repository\CandidateRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * A user waiting to be matched in a game.
+ * A user waiting to be matched in a game. A candidate with an invitation (the host of the invitation or its guest) is
+ * only matched with the other candidate of the invitation.
  */
 #[ORM\Entity(repositoryClass: CandidateRepository::class)]
 #[ORM\Table('candidates')]
@@ -26,6 +27,10 @@ class Candidate
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private Deck $deck;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?Invitation $invitation = null;
 
     public function getId(): ?int
     {
@@ -52,6 +57,18 @@ class Candidate
     public function setDeck(Deck $deck): static
     {
         $this->deck = $deck;
+
+        return $this;
+    }
+
+    public function getInvitation(): ?Invitation
+    {
+        return $this->invitation;
+    }
+
+    public function setInvitation(?Invitation $invitation): static
+    {
+        $this->invitation = $invitation;
 
         return $this;
     }

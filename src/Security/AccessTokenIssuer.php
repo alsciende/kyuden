@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\AccessToken;
+use App\Entity\Invitation;
 use App\Entity\User;
 use App\Enum\AccessTokenType;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,10 +23,10 @@ readonly class AccessTokenIssuer
     ) {
     }
 
-    public function issue(User $user, AccessTokenType $type): string
+    public function issue(User $user, AccessTokenType $type, ?Invitation $invitation = null): string
     {
         $token = self::PREFIX . bin2hex(random_bytes(32));
-        $this->entityManager->persist(new AccessToken($user, $token, $type));
+        $this->entityManager->persist(new AccessToken($user, $token, $type, $invitation));
 
         return $token;
     }

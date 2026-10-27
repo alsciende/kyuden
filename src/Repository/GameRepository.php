@@ -72,6 +72,18 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * Whether a game has ended, read from the database without loading the game (GameLockMiddleware loads it when a
+     * message is dispatched); null for an unknown game.
+     */
+    public function hasEnded(string $gameId): ?bool
+    {
+        $place = $this->getEntityManager()->getConnection()
+            ->fetchOne('SELECT current_place FROM games WHERE id = :id', ['id' => $gameId]);
+
+        return $place === false ? null : $place === Game::STATE_ENDED;
+    }
+
+    /**
      * The games a user plays or has played, with their players, the last joined first (a single query).
      *
      * @return list<Game>

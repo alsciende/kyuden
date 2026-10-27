@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
   ApiProblem,
   fetchCard,
   fetchDecks,
+  fetchInvitationStatus,
   fetchQueue,
   fetchSelfGames,
+  fetchSelfInvitation,
   joinQueue,
   leaveQueue,
   type Card,
+  type Invitation,
+  type QueueInvitation,
 } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import { CLANS } from '@/data/clans'
 import { follow } from '@/lib/hub'
+import { timeLeft } from '@/lib/invitation'
+import { newcomer } from '@/lib/newcomer'
 import { inverted } from '@/lib/page'
 import { deckChoices, waitingTime, type DeckChoice, type DeckChoices } from '@/lib/queue'
 import { session } from '@/lib/session'
@@ -23,8 +29,17 @@ import { session } from '@/lib/session'
 /**
  * The matchmaking queue of the players who have an account: they choose a deck and join the queue, then wait (the
  * page in reverse) until the hub tells them a game of theirs has started (`game_started` on their topic), which opens.
+ *
+ * A friendly game: the host of an invitation comes with its id (`?invitation=`), its guest with its code (`?code=`,
+ * a guest account too); they are matched together only. The host leaving the queue cancels the invitation.
  */
 const router = useRouter()
+const route = useRoute()
+
+/** the invitation of the host, or the code of the guest and who invites */
+const friendly = ref<{ host: Invitation } | { code: string; hostName: string } | null>(null)
+const invitationQuery = typeof route.query.invitation === 'string' ? route.query.invitation : null
+const codeQuery = typeof route.query.code === 'string' ? route.query.code : null
 
 /** null while the queue is read */
 const state = ref<'choosing' | 'waiting' | null>(null)
@@ -45,6 +60,35 @@ let ticking: ReturnType<typeof setInterval> | null = null
 const allChoices = computed(() => [...choices.value.mine, ...choices.value.starters])
 const chosenDeck = computed(() => allChoices.value.find((choice) => choice.deck.id === chosen.value))
 const waitingDeck = computed(() => allChoices.value.find((choice) => choice.deck.id === waitingWith.value))
+
+const hostInvitation = computed(() =>
+  friendly.value !== null && 'host' in friendly.value ? friendly.value.host : null,
+)
+const invitedBy = computed(() =>
+  friendly.value !== null && 'hostName' in friendly.value ? friendly.value.hostName : null,
+)
+/** who the user faces in a friendly game */
+const opponent = computed(() => {
+  if (hostInvitation.value !== null) {
+    return hostInvitation.value.kind === 'bot' ? (hostInvitation.value.bot?.name ?? 'your bot') : 'your friend'
+  }
+
+  return invitedBy.value
+})
+const eyebrow = computed(() => {
+  if (hostInvitation.value !== null) {
+    return `A friendly game · ${hostInvitation.value.kind === 'bot' ? 'Your bot' : 'A friend'}`
+  }
+
+  return invitedBy.value !== null ? 'A friendly game' : 'Play a game'
+})
+const waitingFor = computed(() => {
+  if (hostInvitation.value !== null) {
+    return hostInvitation.value.kind === 'bot' ? 'Waiting for your bot' : 'Waiting for your friend'
+  }
+
+  return invitedBy.value !== null ? `Waiting for ${invitedBy.value}` : 'Waiting for an opponent'
+})
 
 watch(state, (current) => (inverted.value = current === 'waiting'))
 
@@ -72,8 +116,12 @@ onMounted(async () => {
   ticking = setInterval(() => (now.value = Date.now()), 1000)
 
   try {
+    if (!(await readInvitation(token))) {
+      return
+    }
     const decks = await fetchDecks(token)
-    choices.value = deckChoices(decks, session.value?.preferredClan ?? null)
+    // a guest invited plays their clan of the way, if any
+    choices.value = deckChoices(decks, session.value?.preferredClan ?? newcomer.clanId)
     chosen.value = choices.value.preselected
     await readQueue(token)
   } catch (problem) {
@@ -92,6 +140,50 @@ onBeforeUnmount(() => {
   }
   inverted.value = false
 })
+
+/**
+ * The invitation of the page: the one of the host, or who invites with the code. False when it cannot be used: the
+ * host goes back to their invitations, a guest to the page of the code, which tells why.
+ */
+async function readInvitation(token: string): Promise<boolean> {
+  try {
+    if (invitationQuery !== null) {
+      const invitation = await fetchSelfInvitation(token)
+      if (invitation.id !== invitationQuery) {
+        throw new ApiProblem(404, 'invitation_not_found', 'This invitation was replaced.')
+      }
+      friendly.value = { host: invitation }
+    } else if (codeQuery !== null) {
+      const status = await fetchInvitationStatus(codeQuery)
+      if (status.state !== 'pending') {
+        throw new ApiProblem(422, 'invalid_invitation', 'This invitation can no longer be used.')
+      }
+      friendly.value = { code: codeQuery, hostName: status.host_name }
+    }
+  } catch (problem) {
+    if (!(problem instanceof ApiProblem)) {
+      throw problem
+    }
+    // waiting with it already (the invitation of the host is used once matched): the queue tells
+    if (codeQuery !== null) {
+      await router.replace({ name: 'join', params: { code: codeQuery } })
+    } else {
+      await router.replace({ name: 'invite' })
+    }
+
+    return false
+  }
+
+  return true
+}
+
+function queueInvitation(): QueueInvitation | undefined {
+  if (hostInvitation.value !== null) {
+    return { invitation_id: hostInvitation.value.id }
+  }
+
+  return codeQuery !== null ? { invitation_code: codeQuery } : undefined
+}
 
 /**
  * Whether the user waits in the queue; once they have joined (`joined`), not waiting means the queue has matched
@@ -128,7 +220,7 @@ async function join(): Promise<void> {
   sending.value = true
   error.value = null
   try {
-    await joinQueue(token, chosen.value)
+    await joinQueue(token, chosen.value, queueInvitation())
   } catch (problem) {
     // already in the queue (another tab): wait with that deck
     if (!(problem instanceof ApiProblem) || problem.type !== 'already_queued') {
@@ -158,6 +250,10 @@ async function leave(): Promise<void> {
   try {
     await leaveQueue(token)
     state.value = 'choosing'
+    // leaving cancelled the invitation
+    if (hostInvitation.value !== null) {
+      await router.push({ name: 'invite' })
+    }
   } catch (problem) {
     if (problem instanceof ApiProblem && problem.status === 404) {
       // matched meanwhile: the game opens, or it is the last one
@@ -183,9 +279,13 @@ function stronghold(choice: DeckChoice): string | undefined {
 <template>
   <div v-if="state === 'choosing'" class="queue screen">
     <div class="heading">
-      <div class="eyebrow">Play a game</div>
+      <div class="eyebrow">{{ eyebrow }}</div>
       <h1>Choose your deck</h1>
-      <p class="lead">You face the next player who joins the queue.</p>
+      <p v-if="opponent !== null" class="lead">
+        You face <strong>{{ opponent }}</strong
+        >, and nobody else. Not ranked.
+      </p>
+      <p v-else class="lead">You face the next player who joins the queue.</p>
     </div>
 
     <section v-if="choices.mine.length > 0" class="decks mine" aria-labelledby="mine">
@@ -226,29 +326,50 @@ function stronghold(choice: DeckChoice): string | undefined {
 
     <div class="actions">
       <button type="button" class="btn btn-primary btn-large" :disabled="!chosenDeck || sending" @click="join">
-        Join the queue
+        {{ friendly === null ? 'Join the queue' : 'Enter the queue' }}
       </button>
       <span v-if="chosenDeck" class="with">
         with <strong>{{ chosenDeck.name }}</strong>
       </span>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+      <RouterLink v-if="hostInvitation !== null" :to="{ name: 'invite' }" class="btn-link aside">
+        Back to the invitation
+      </RouterLink>
+      <RouterLink v-else-if="friendly === null" :to="{ name: 'invite' }" class="btn-link aside">
+        Play a friendly game
+      </RouterLink>
     </div>
   </div>
 
   <div v-else-if="state === 'waiting'" class="waiting screen">
     <ClanMon :src="enso" :size="168" class="enso" />
     <div class="status" role="status">
-      <div class="eyebrow">In the queue · {{ waitingTime((now - since) / 1000) }}</div>
-      <h1>Waiting for an opponent</h1>
+      <div class="eyebrow">
+        <template v-if="friendly !== null">A friendly game · </template>In the queue ·
+        {{ waitingTime((now - since) / 1000) }}
+      </div>
+      <h1>{{ waitingFor }}</h1>
       <p class="lead">
         <template v-if="waitingDeck">
           You play the <strong>{{ waitingDeck.name }}</strong
           >{{ waitingDeck.deck.owner_id === null ? ' starter deck' : '' }}.
         </template>
-        The game opens as soon as another player joins.
+        <template v-if="hostInvitation?.kind === 'bot'">
+          The game opens as soon as your bot enters the queue with its key.
+        </template>
+        <template v-else-if="hostInvitation !== null">
+          The game opens as soon as your friend enters the queue with the link.
+        </template>
+        <template v-else-if="invitedBy !== null">The game opens as soon as {{ invitedBy }} enters the queue.</template>
+        <template v-else>The game opens as soon as another player joins.</template>
       </p>
     </div>
-    <button type="button" class="btn btn-ghost" :disabled="sending" @click="leave">Leave the queue</button>
+    <p v-if="hostInvitation !== null" class="expiry">
+      The invitation expires in {{ timeLeft(hostInvitation.expires_at, now) }} if nobody comes.
+    </p>
+    <button type="button" class="btn btn-ghost" :disabled="sending" @click="leave">
+      {{ hostInvitation !== null ? 'Leave the queue and cancel the invitation' : 'Leave the queue' }}
+    </button>
     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
   </div>
 </template>
@@ -362,6 +483,15 @@ h2.form-label {
 .with {
   font-size: 15px;
   color: var(--ink-2);
+}
+
+.aside {
+  margin-left: auto;
+}
+
+.expiry {
+  font-size: 14px;
+  color: var(--ink-3);
 }
 
 .waiting {

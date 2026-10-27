@@ -24,6 +24,7 @@ final readonly class UserGameViewFactory
             playerId: $player->getId(),
             version: $game->getVersion(),
             ended: $game->getCurrentPlace() === Game::STATE_ENDED,
+            friendly: $game->isFriendly(),
             players: array_map(fn (Player $player): string => $player->getUserId(), $players),
         );
     }

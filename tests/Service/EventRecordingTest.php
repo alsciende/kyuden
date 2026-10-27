@@ -40,7 +40,7 @@ class EventRecordingTest extends KernelTestCase
         $this->assertInstanceOf(Event::class, $event);
         $this->assertSame(CreateGame::class, $event->getName());
         $this->assertSame(
-            sprintf('{"game_id":"%s","seed":"%s"}', $gameId, $seed),
+            sprintf('{"game_id":"%s","seed":"%s","friendly":false}', $gameId, $seed),
             $event->getPayload()
         );
     }

@@ -12,15 +12,16 @@ final readonly class CreateGame implements ActionInterface
     public function __construct(
         private string $gameId,
         private string $seed,
+        private bool $friendly = false,
     ) {
     }
 
     /**
      * Creates a game whose random generator is seeded with fresh random bytes.
      */
-    public static function withRandomSeed(string $gameId): self
+    public static function withRandomSeed(string $gameId, bool $friendly = false): self
     {
-        return new self($gameId, bin2hex(random_bytes(32)));
+        return new self($gameId, bin2hex(random_bytes(32)), $friendly);
     }
 
     #[\Override]
@@ -35,5 +36,13 @@ final readonly class CreateGame implements ActionInterface
     public function getSeed(): string
     {
         return $this->seed;
+    }
+
+    /**
+     * A friendly game (an invitation to it): not ranked.
+     */
+    public function isFriendly(): bool
+    {
+        return $this->friendly;
     }
 }

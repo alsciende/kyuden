@@ -33,6 +33,15 @@ function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
+const invitation = {
+  id: 'invitation-1',
+  kind: 'bot',
+  code: null,
+  bot: { user_id: 'bot-1', name: "Hida Takeshi's bot" },
+  token: null,
+  expires_at: '2099-01-01T00:00:00+00:00',
+}
+
 const notQueued = () => json(404, { type: 'not_queued', detail: 'The user is not in the queue.' })
 
 const decks = [
@@ -41,15 +50,17 @@ const decks = [
   { id: 'crane-starter-deck', name: 'crane-starter-deck', owner_id: null, cards: { '01-shizuka-toshi': 1 } },
 ]
 
-async function mountQueue() {
+async function mountQueue(path = '/queue') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/queue', name: 'queue', component: QueueView },
+      { path: '/invite', name: 'invite', component: { template: '<div />' } },
+      { path: '/join/:code', name: 'join', component: { template: '<div />' } },
       { path: '/games/:id', name: 'game', component: { template: '<div />' } },
     ],
   })
-  await router.push('/queue')
+  await router.push(path)
   const wrapper = mount(QueueView, { global: { plugins: [router] } })
   await flushPromises()
 
@@ -93,6 +104,12 @@ describe('QueueView', () => {
         return init?.method === 'POST' || init?.method === 'DELETE'
           ? new Response(null, { status: 204 })
           : (queue.shift() ?? notQueued)()
+      }
+      if (path === '/api/self/invitation') {
+        return init?.method === 'DELETE' ? new Response(null, { status: 204 }) : json(200, invitation)
+      }
+      if (path === '/api/invitations/KX7-QM4-T9P') {
+        return json(200, { host_name: 'Doji Hayaku', state: 'pending' })
       }
       if (path.startsWith('/api/cards/')) {
         return json(200, { code: path.slice(11), name: 'Shiro Nishiyama', type: 'stronghold', image_url: null })
@@ -170,5 +187,47 @@ describe('QueueView', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true)
     expect(wrapper.find('.queue').exists()).toBe(true)
     expect(inverted.value).toBe(false)
+  })
+
+  it('enters the queue with the invitation of the host, then waits for their bot', async () => {
+    queue = [() => notQueued(), () => json(200, { deck_id: 'deck-1' })]
+    const { wrapper } = await mountQueue('/queue?invitation=invitation-1')
+
+    expect(wrapper.find('.queue').text()).toContain("You face Hida Takeshi's bot, and nobody else.")
+    await wrapper.find('.actions .btn-primary').trigger('click')
+    await flushPromises()
+
+    const post = fetchMock.mock.calls.find(([path, init]) => path === '/api/queue' && init?.method === 'POST')!
+    expect(post[1]!.body).toBe(JSON.stringify({ deck_id: 'deck-1', invitation_id: 'invitation-1' }))
+    expect(wrapper.find('.waiting').text()).toContain('Waiting for your bot')
+    expect(wrapper.find('.waiting .btn-ghost').text()).toBe('Leave the queue and cancel the invitation')
+  })
+
+  it('goes back to the invitations when leaving the queue cancels the invitation', async () => {
+    queue = [() => json(200, { deck_id: 'deck-1' })]
+    const { wrapper, router } = await mountQueue('/queue?invitation=invitation-1')
+
+    await wrapper.find('.waiting .btn-ghost').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/invite')
+  })
+
+  it('enters the queue with the code of a friend', async () => {
+    queue = [() => notQueued(), () => json(200, { deck_id: 'deck-1' })]
+    const { wrapper } = await mountQueue('/queue?code=KX7-QM4-T9P')
+
+    await wrapper.find('.actions .btn-primary').trigger('click')
+    await flushPromises()
+
+    const post = fetchMock.mock.calls.find(([path, init]) => path === '/api/queue' && init?.method === 'POST')!
+    expect(post[1]!.body).toBe(JSON.stringify({ deck_id: 'deck-1', invitation_code: 'KX7-QM4-T9P' }))
+    expect(wrapper.find('.waiting').text()).toContain('Waiting for Doji Hayaku')
+  })
+
+  it('sends the host of another invitation back to their invitations', async () => {
+    const { router } = await mountQueue('/queue?invitation=invitation-0')
+
+    expect(router.currentRoute.value.fullPath).toBe('/invite')
   })
 })

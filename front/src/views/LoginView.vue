@@ -64,6 +64,12 @@ const password = ref('')
 const error = ref<string | null>(null)
 const sending = ref(false)
 
+/** where the visitor goes once signed in: a page of the site they came from (an invitation), else their account */
+const next =
+  typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//')
+    ? route.query.next
+    : null
+
 async function submit(): Promise<void> {
   if (sending.value) {
     return
@@ -72,7 +78,7 @@ async function submit(): Promise<void> {
   error.value = null
   try {
     await signIn(username.value.trim(), password.value)
-    await router.push({ name: 'account' })
+    await router.push(next ?? { name: 'account' })
   } catch (problem) {
     if (problem instanceof ApiProblem && problem.status === 401) {
       // the same message whether the username exists or not

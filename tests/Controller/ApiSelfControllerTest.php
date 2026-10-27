@@ -206,6 +206,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
             'player_id' => $scenario->player('jane')->getId(),
             'version' => $scenario->game()->getVersion(),
             'ended' => false,
+            'friendly' => false,
             'players' => ['john', 'jane'],
         ]], $games);
     }

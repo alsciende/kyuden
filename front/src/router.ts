@@ -5,6 +5,8 @@ import { newcomer } from '@/lib/newcomer'
 import { session } from '@/lib/session'
 import AccountView from '@/views/AccountView.vue'
 import GameView from '@/views/GameView.vue'
+import InviteView from '@/views/InviteView.vue'
+import JoinView from '@/views/JoinView.vue'
 import LandingView from '@/views/LandingView.vue'
 import LoginView from '@/views/LoginView.vue'
 import NameView from '@/views/NameView.vue'
@@ -55,8 +57,19 @@ export const router = createRouter({
       name: 'queue',
       component: QueueView,
       meta: { title: 'Find an opponent · Kyūden' },
+      // the guest of an invitation enters it with its code
+      beforeEnter: (to) =>
+        hasAccount() || (session.value !== null && typeof to.query.code === 'string') ? true : { name: 'login' },
+    },
+    {
+      path: '/invite',
+      name: 'invite',
+      component: InviteView,
+      meta: { title: 'A friendly game · Kyūden' },
       beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
     },
+    // its URL is shared by the host of an invitation
+    { path: '/join/:code', name: 'join', component: JoinView, meta: { title: 'An invitation · Kyūden' } },
     // its URL is given to Google and Discord, which publish it on their consent screens
     { path: '/privacy', name: 'privacy', component: PrivacyView, meta: { title: 'Privacy · Kyūden' } },
     // its URL is given to Google and Discord too

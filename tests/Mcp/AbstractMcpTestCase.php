@@ -18,6 +18,7 @@ abstract class AbstractMcpTestCase extends AbstractKernelTestCase
 
     /**
      * @param array<string, mixed> $message JSON-RPC message, without its version
+     * @param string               $user    a user of the fixtures, or an API key (`l5r_…`)
      */
     protected function post(array $message, string $user = 'akodo-bot'): Response
     {
@@ -26,7 +27,7 @@ abstract class AbstractMcpTestCase extends AbstractKernelTestCase
         $client->disableReboot();
 
         $client->request('POST', '/api/mcp', server: array_filter([
-            'HTTP_AUTHORIZATION' => 'Bearer ' . UserFixtures::TOKENS[$user],
+            'HTTP_AUTHORIZATION' => 'Bearer ' . (UserFixtures::TOKENS[$user] ?? $user),
             'CONTENT_TYPE' => 'application/json',
             'HTTP_ACCEPT' => 'application/json, text/event-stream',
             'HTTP_MCP_SESSION_ID' => $this->sessionId,

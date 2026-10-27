@@ -11,6 +11,7 @@ use App\Repository\AccessTokenRepository;
 use App\Repository\CandidateRepository;
 use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
+use App\Repository\InvitationRepository;
 use App\Repository\LinkedAccountRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,8 +21,8 @@ use Symfony\Component\Messenger\MessageBusInterface;
 /**
  * Deletes an account, and the bots it owns: the user stays, anonymized with the date of the deletion (User::anonymize()),
  * so that the games keep their players and their opponents their history. It leaves the queue, concedes the games it
- * plays (its opponents win), then its tokens, its linked identities and its decks are deleted (those played in a game
- * only lose their name).
+ * plays (its opponents win), then its invitations, its tokens, its linked identities and its decks are deleted (those
+ * played in a game only lose their name).
  */
 readonly class AccountDeleter
 {
@@ -33,6 +34,7 @@ readonly class AccountDeleter
         private GameRepository $gameRepository,
         private AccessTokenRepository $accessTokenRepository,
         private LinkedAccountRepository $linkedAccountRepository,
+        private InvitationRepository $invitationRepository,
         private DeckRepository $deckRepository,
         private EntityManagerInterface $entityManager,
         private MessageBusInterface $bus,
@@ -64,6 +66,7 @@ readonly class AccountDeleter
         $deletedAt = $this->clock->now();
         $this->entityManager->wrapInTransaction(function () use ($users, $deletedAt): void {
             foreach ($users as $user) {
+                $this->invitationRepository->deleteByHost($user);
                 $this->accessTokenRepository->deleteByUser($user);
                 $this->linkedAccountRepository->deleteByUser($user);
                 $this->deckRepository->deleteByOwner($user);

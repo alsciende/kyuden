@@ -19,6 +19,8 @@ final readonly class UserGameView
         /** the number of messages handled on the game, the ETag of its view */
         public int $version,
         public bool $ended,
+        /** a game of an invitation, not ranked */
+        public bool $friendly,
         public array $players,
     ) {
     }
