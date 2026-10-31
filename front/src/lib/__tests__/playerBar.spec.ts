@@ -36,6 +36,29 @@ describe('playerBar', () => {
     expect(bar.provinces).toBe(3)
   })
 
+  it('tells how many provinces must be broken before the stronghold can be attacked', () => {
+    const broken = () => stack('regular_province', [card('garden', { orientation: 'upside_down' })])
+    const intact = () => stack('regular_province', [card('raid')])
+    const me = player('me', [broken(), intact(), intact(), intact(), stack('stronghold_province', [card('s')])])
+    const opp = player('opp', [broken(), broken(), intact(), intact()])
+    const view = game(me, opp)
+
+    expect(playerBar(view, me).strongholdTip).toBe('Opp. must break 2 more provinces before attacking your stronghold.')
+    expect(playerBar(view, opp).strongholdTip).toBe(
+      "You must break 1 more province before attacking Opp.'s stronghold.",
+    )
+  })
+
+  it('tells when the stronghold can be attacked', () => {
+    const broken = () => stack('regular_province', [card('garden', { orientation: 'upside_down' })])
+    const me = player('me', [broken(), broken(), broken()])
+    const opp = player('opp', [broken(), broken(), broken(), broken()])
+    const view = game(me, opp)
+
+    expect(playerBar(view, me).strongholdTip).toBe('Opp. can attack your stronghold.')
+    expect(playerBar(view, opp).strongholdTip).toBe("You can attack Opp.'s stronghold.")
+  })
+
   it('reads the conflicts left, the claimed rings and the Imperial Favor', () => {
     const me = player('me', [], { declared_conflict_types: ['military'] })
     const opp = player('opp')

@@ -3,10 +3,13 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } f
 
 import type { ConflictType, GameView, PayloadArgs, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
+import ActionIcon from '@/components/ActionIcon.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
+import { actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
-import type { CardMenu, PlayAction } from '@/lib/cardActions'
+import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
 import { CONFLICT_ICONS } from '@/lib/icons'
+import { vTip } from '@/lib/tooltip'
 
 /**
  * A card opened: its image in the middle of the darkened screen, and what the player can do with it beside it.
@@ -73,6 +76,19 @@ const tags = computed(() => {
 
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** pointing at the card, then the ways it leaves where it is: a row of icons, their label on hover */
+const iconActions = computed(() =>
+  [...(props.menu.point ? [props.menu.point] : []), ...props.menu.removals].map((action) => ({
+    action,
+    icon: actionIcon(action),
+    tip: action.type === 'point_at_card' ? `${action.label}: shows it to your opponent in the log` : action.label,
+  })),
+)
+
+function runAction(action: SimpleAction): void {
+  void run(action.type, action.payload as never)
 }
 
 async function run<T extends MessageType>(type: T, ...payload: PayloadArgs<T>): Promise<void> {
@@ -365,30 +381,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <button type="submit" class="btn btn-ghost" :disabled="sending || duel.challenged === null">Challenge</button>
       </form>
 
-      <div v-if="menu.point" class="group">
-        <button
-          type="button"
-          class="btn btn-ghost"
-          :disabled="sending"
-          @click="run(menu.point.type, menu.point.payload)"
-        >
-          {{ menu.point.label }}
-        </button>
-        <span class="hint">Shows it to your opponent in the log.</span>
-      </div>
-
       <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-      <div v-if="menu.removals.length > 0" class="removals">
+      <div v-if="iconActions.length > 0" class="removals">
         <button
-          v-for="action in menu.removals"
-          :key="action.type"
+          v-for="{ action, icon, tip } in iconActions"
+          :key="action.label"
+          v-tip="tip"
           type="button"
-          class="btn danger"
+          class="btn"
+          :class="[icon ? 'icon-action' : 'text-action', { point: action.type === 'point_at_card' }]"
+          :aria-label="action.label"
           :disabled="sending"
-          @click="run(action.type, action.payload)"
+          @click="runAction(action)"
         >
-          {{ action.label }}
+          <ActionIcon v-if="icon" :name="icon" />
+          <template v-else>{{ action.label }}</template>
         </button>
       </div>
     </section>
@@ -626,19 +634,48 @@ h2 {
   color: var(--seal);
 }
 
+/* pointing at the card on the left, the ways it leaves on the right */
 .removals {
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
 
-.danger {
-  flex: 1;
+.removals .btn {
   min-height: 44px;
-  font-size: 15px;
   background: transparent;
   border-color: var(--seal);
   color: var(--seal);
+}
+
+.removals .btn:hover {
+  background: var(--paper-2);
+}
+
+.removals .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-action {
+  flex: 0 1 44px;
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-action {
+  flex: 1;
+  font-size: 15px;
+}
+
+.removals .point {
+  margin-right: auto;
+  border-color: var(--ink);
+  color: var(--ink);
 }
 </style>

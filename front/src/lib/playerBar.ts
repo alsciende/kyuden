@@ -16,6 +16,8 @@ export interface PlayerBar {
   rings: Element[]
   intactProvinces: number
   provinces: number
+  /** how far the stronghold is from being attacked, from the point of view of the viewer */
+  strongholdTip: string
   dynastyDeck: number
   /** from the top: the last card discarded first */
   dynastyDiscard: CardView[]
@@ -41,6 +43,11 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
     rings: ELEMENTS.filter((element) => game.rings[element]?.claimed_by_id === player.id),
     intactProvinces: all.filter((province) => !province.broken).length,
     provinces: all.length,
+    strongholdTip: strongholdTip(
+      game,
+      player,
+      all.filter((province) => !province.stronghold && province.broken).length,
+    ),
     dynastyDeck: stackOf(player, 'dynasty_draw_deck')?.count ?? 0,
     dynastyDiscard: [...cardsOf(stackOf(player, 'dynasty_discard_pile'))].reverse(),
     hand: stackOf(player, 'hand')?.count ?? 0,
@@ -55,6 +62,22 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
       player.glory_count !== null ? `Glory ${player.glory_count}` : null,
     ].filter((note): note is string => note !== null),
   }
+}
+
+/** the stronghold province can be attacked once three of the other provinces of its player are broken */
+const BROKEN_FOR_STRONGHOLD = 3
+
+function strongholdTip(game: GameView, player: PlayerView, broken: number): string {
+  const left = Math.max(BROKEN_FOR_STRONGHOLD - broken, 0)
+  const mine = player.id === game.viewer_id
+  if (left === 0) {
+    return mine ? 'Opp. can attack your stronghold.' : "You can attack Opp.'s stronghold."
+  }
+  const count = `${left} more province${left === 1 ? '' : 's'}`
+
+  return mine
+    ? `Opp. must break ${count} before attacking your stronghold.`
+    : `You must break ${count} before attacking Opp.'s stronghold.`
 }
 
 /** the values of the bar a click opens, with the effects on them or the cards of a discard pile */

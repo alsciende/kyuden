@@ -36,6 +36,7 @@ interface Stat {
   value: number | string
   /** after the value, smaller: the total of the provinces */
   of?: number
+  tip?: string
 }
 
 const TITLES: Record<BarStat, string> = {
@@ -57,7 +58,13 @@ const general = computed((): Stat[] => [
   { key: 'fate', label: 'Fate', value: bar.value.fate },
 ])
 const dynasty = computed((): Stat[] => [
-  { key: null, label: 'Provinces', value: bar.value.intactProvinces, of: bar.value.provinces },
+  {
+    key: null,
+    label: 'Provinces',
+    value: bar.value.intactProvinces,
+    of: bar.value.provinces,
+    tip: bar.value.strongholdTip,
+  },
   { key: 'dynasty_deck', label: 'Deck', value: bar.value.dynastyDeck },
   { key: 'dynasty_discard', label: 'Discard', value: bar.value.dynastyDiscard.length },
 ])
@@ -244,7 +251,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <b>{{ stat.value }}</b
           ><span>{{ stat.label }}</span>
         </button>
-        <div v-else class="stat fixed">
+        <div v-else v-tip="stat.tip ?? ''" class="stat fixed" :tabindex="stat.tip ? 0 : undefined">
           <b
             >{{ stat.value }}<small v-if="stat.of !== undefined">/{{ stat.of }}</small></b
           ><span>{{ stat.label }}</span>
