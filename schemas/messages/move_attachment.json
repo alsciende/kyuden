@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_attachment",
+    "description": "Moves an attachment in play to another character in play or to a province, e.g. to resolve an effect (Giver of Gifts, Calling in Favors). It keeps its owner.\n\nThe cards can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Attachment in play.",
+            "type": "string"
+        },
+        "target_card_id": {
+            "description": "Character in play or province the attachment is moved to.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id",
+        "target_card_id"
+    ],
+    "additionalProperties": false
+}

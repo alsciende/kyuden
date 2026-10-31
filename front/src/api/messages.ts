@@ -37,6 +37,18 @@ export interface BowCard {
 }
 
 /**
+ * Breaks a face-up province outside of the resolution of a conflict, e.g. to resolve an effect (Endless Plains). A broken stronghold province eliminates its player.
+ *
+ * The province can belong to any player: the engine does not apply card effects.
+ */
+export interface BreakProvince {
+  /**
+   * Face-up unbroken province.
+   */
+  province_id: string
+}
+
+/**
  * The player chooses, during setup, the province put under their stronghold.
  */
 export interface ChooseStrongholdProvince {
@@ -383,6 +395,22 @@ export interface LoseHonor {
    * Honor lost.
    */
   honor_loss: number
+}
+
+/**
+ * Moves an attachment in play to another character in play or to a province, e.g. to resolve an effect (Giver of Gifts, Calling in Favors). It keeps its owner.
+ *
+ * The cards can belong to any player: the engine does not apply card effects.
+ */
+export interface MoveAttachment {
+  /**
+   * Attachment in play.
+   */
+  card_id: string
+  /**
+   * Character in play or province the attachment is moved to.
+   */
+  target_card_id: string
 }
 
 /**
@@ -815,6 +843,22 @@ export interface ShuffleIntoDeck {
 export type SwitchConflictType = Record<string, never>
 
 /**
+ * Switches two dynasty cards in different provinces of the same player, each keeping its orientation, e.g. to resolve an effect (Borderlands Fortifications).
+ *
+ * The cards can belong to any player: the engine does not apply card effects.
+ */
+export interface SwitchProvinceCards {
+  /**
+   * Dynasty card in a province.
+   */
+  card_id: string
+  /**
+   * Dynasty card in another province of the same player.
+   */
+  other_card_id: string
+}
+
+/**
  * Switches the places of two rings, among the contested ring, the unclaimed ring pool and the claimed ring pools, e.g. to resolve an effect (Elemental Fury, Know the World). A ring that becomes the contested ring keeps the type of the conflict, and the attacking player takes the fate on it; a ring that goes to a claimed ring pool takes the conflict type of the ring it replaces. During a conflict, the contested ring is only switched with a ring of the unclaimed or claimed ring pool of the attacking player. The fate on the other rings stays on them.
  */
 export interface SwitchRing {
@@ -826,6 +870,16 @@ export interface SwitchRing {
    * Ring it is switched with, from another place.
    */
   other_ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
+}
+
+/**
+ * Gives the first player token to a player, e.g. to resolve an effect (Way of the Unicorn: keeping the token when it would be passed).
+ */
+export interface TakeFirstPlayerToken {
+  /**
+   * Player who takes the first player token.
+   */
+  target_player_id: string
 }
 
 /**
@@ -887,6 +941,7 @@ export interface MessagePayloads {
   add_card_to_hand: AddCardToHand
   bid_honor: BidHonor
   bow_card: BowCard
+  break_province: BreakProvince
   choose_stronghold_province: ChooseStrongholdProvince
   claim_imperial_favor: ClaimImperialFavor
   claim_ring: ClaimRing
@@ -915,6 +970,7 @@ export interface MessagePayloads {
   look_at_cards: LookAtCards
   lose_fate: LoseFate
   lose_honor: LoseHonor
+  move_attachment: MoveAttachment
   move_fate: MoveFate
   move_home: MoveHome
   move_to_conflict: MoveToConflict
@@ -946,7 +1002,9 @@ export interface MessagePayloads {
   shuffle_dynasty_deck: ShuffleDynastyDeck
   shuffle_into_deck: ShuffleIntoDeck
   switch_conflict_type: SwitchConflictType
+  switch_province_cards: SwitchProvinceCards
   switch_ring: SwitchRing
+  take_first_player_token: TakeFirstPlayerToken
   transfer_honor: TransferHonor
   trigger_action_ability: TriggerActionAbility
   trigger_interrupt_ability: TriggerInterruptAbility

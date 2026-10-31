@@ -228,6 +228,13 @@ return App::config([
                         'stack' => StackType::Hand,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    // an attachment moved to another character or a province (MoveAttachment): the target is the `stack` of
+                    // the context
+                    WorkflowConfig::transition('move_attachment', ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_IN_PLAY, [
+                        'log' => '{card} is moved from {from} to {to}',
+                        'stack' => StackType::InPlay,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
                     ...WorkflowConfig::putOnDeck(
                         [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE],
                         ConflictCard::STATE_DRAW_DECK,
@@ -271,6 +278,18 @@ return App::config([
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a card switched with a card of another province (SwitchProvinceCards), keeping its orientation: the
+                    // province is the `stack` of the context
+                    WorkflowConfig::transition('switch_province_faceup', DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_PROVINCE_FACEUP, [
+                        'log' => '{card} is moved from {from} to {to}',
+                        'stack' => StackType::RegularProvince,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    WorkflowConfig::transition('switch_province_facedown', DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEDOWN, [
+                        'log' => '{card} is moved from {from} to {to}',
+                        'stack' => StackType::RegularProvince,
+                        'orientation' => Orientation::FaceDown,
                     ]),
                     // from a province: a card discarded from a broken province, or during the fate phase
                     WorkflowConfig::transition('discard_card', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY], DynastyCard::STATE_DISCARD_PILE, [

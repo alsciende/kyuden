@@ -87,6 +87,25 @@ const iconActions = computed(() =>
   })),
 )
 
+// an attachment moved to another character
+const hostId = ref<string | null>(null)
+const hosts = computed(() => targets.value.filter((target) => target.id !== props.menu.located.under?.id))
+
+function moveAttachment(): void {
+  if (hostId.value !== null) {
+    void run('move_attachment', { card_id: view.value.id, target_card_id: hostId.value })
+  }
+}
+
+// a dynasty card switched with a card of another province
+const switchId = ref<string | null>(null)
+
+function switchCards(): void {
+  if (switchId.value !== null) {
+    void run('switch_province_cards', { card_id: view.value.id, other_card_id: switchId.value })
+  }
+}
+
 // a holding put into one of the provinces of its owner
 const provinceId = ref<string | null>(null)
 
@@ -416,6 +435,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           Put it into play there
         </button>
         <span class="hint">The cards of the province stay there, and it is no longer refilled.</span>
+      </form>
+
+      <form v-if="menu.moveAttachment && hosts.length" class="group" @submit.prevent="moveAttachment">
+        <fieldset class="choices">
+          <legend class="label">Move it to</legend>
+          <label v-for="host in hosts" :key="host.id" class="choice">
+            <input v-model="hostId" type="radio" name="host" :value="host.id" />
+            {{ host.name }} <span class="whose">{{ host.mine ? 'yours' : "opponent's" }}</span>
+          </label>
+        </fieldset>
+        <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
+      </form>
+
+      <form v-if="menu.switchWith.length" class="group" @submit.prevent="switchCards">
+        <fieldset class="choices">
+          <legend class="label">Switch it with</legend>
+          <label v-for="other in menu.switchWith" :key="other.id" class="choice">
+            <input v-model="switchId" type="radio" name="switch" :value="other.id" /> {{ other.name }}
+          </label>
+        </fieldset>
+        <button type="submit" class="btn btn-ghost" :disabled="sending || switchId === null">Switch them</button>
       </form>
 
       <p v-if="error" class="error" role="alert">{{ error }}</p>

@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "switch_province_cards",
+    "description": "Switches two dynasty cards in different provinces of the same player, each keeping its orientation, e.g. to resolve an effect (Borderlands Fortifications).\n\nThe cards can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Dynasty card in a province.",
+            "type": "string"
+        },
+        "other_card_id": {
+            "description": "Dynasty card in another province of the same player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id",
+        "other_card_id"
+    ],
+    "additionalProperties": false
+}

@@ -9,7 +9,8 @@ use App\Entity\Player;
 use App\GameLog\GameLog;
 
 /**
- * A player has become the first player: drawn at random when the game starts, then the next player in player order at the end of each round.
+ * A player has become the first player: drawn at random when the game starts, then the next player in player order at the
+ * end of each round, or by an effect (TakeFirstPlayerToken).
  */
 #[GameLog('{player} is the first player')]
 final readonly class FirstPlayerChangedEvent implements GameEventInterface

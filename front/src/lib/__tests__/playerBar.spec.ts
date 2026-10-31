@@ -172,3 +172,18 @@ describe('playerEffects', () => {
     expect(playerEffects(game(me, opp, { available_actions: ['gain_fate'] }), me, 'fate', 1)).toHaveLength(1)
   })
 })
+
+describe('playerEffects of the first player token', () => {
+  it('gives the token to the other player', () => {
+    const me = player('me')
+    const opp = player('opp')
+    const view = game(me, opp, { available_actions: ['take_first_player_token'], first_player_id: 'me' })
+
+    expect(playerEffects(view, me, 'first_player', 1)).toEqual([
+      { type: 'take_first_player_token', label: 'Give it to Opp.', payload: { target_player_id: 'opp' } },
+    ])
+    expect(playerEffects(view, opp, 'first_player', 1)).toEqual([
+      { type: 'take_first_player_token', label: 'Take it', payload: { target_player_id: 'me' } },
+    ])
+  })
+})

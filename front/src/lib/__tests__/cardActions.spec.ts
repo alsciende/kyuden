@@ -347,6 +347,53 @@ describe('cardMenu', () => {
     ])
   })
 
+  it('breaks a face-up province that is not broken', () => {
+    const raid = card('raid', { side: 'province' })
+    const broken = card('raid', { side: 'province', orientation: 'upside_down' })
+    const view = game(
+      player('me', [stack('regular_province', [raid]), stack('regular_province', [broken])]),
+      player('opp'),
+      { available_actions: ['break_province'] },
+    )
+
+    expect(cardMenu(view, cards, raid.id)!.state).toEqual([
+      { type: 'break_province', label: 'Break it', payload: { province_id: raid.id } },
+    ])
+    expect(cardMenu(view, cards, broken.id)!.state).toEqual([])
+  })
+
+  it('moves an attachment in play', () => {
+    const kaezin = card('kaezin')
+    const katana = card('katana')
+    const view = game(player('me', [stack('in_play', [kaezin, katana])]), player('opp'), {
+      available_actions: ['move_attachment'],
+    })
+    const withKatana = { ...cards, katana: printed('katana', { type: 'attachment' }) }
+
+    expect(cardMenu(view, withKatana, katana.id)!.moveAttachment).toBe(true)
+    expect(cardMenu(view, withKatana, kaezin.id)!.moveAttachment).toBe(false)
+  })
+
+  it('switches a dynasty card with the dynasty cards of the other provinces of its owner', () => {
+    const scout = card('scout', { side: 'dynasty' })
+    const hidden = card(null, { side: 'dynasty', orientation: 'face_down' })
+    const kaezin = card('kaezin', { side: 'dynasty' })
+    const view = game(
+      player('me', [
+        stack('regular_province', [card('raid', { side: 'province' }), scout]),
+        stack('regular_province', [card('raid', { side: 'province' }), hidden]),
+        stack('regular_province', [card(null, { side: 'province', orientation: 'face_down' }), kaezin]),
+      ]),
+      player('opp'),
+      { available_actions: ['switch_province_cards'] },
+    )
+
+    expect(cardMenu(view, cards, scout.id)!.switchWith).toEqual([
+      { id: hidden.id, name: 'Facedown card (raid)' },
+      { id: kaezin.id, name: 'kaezin (province 3)' },
+    ])
+  })
+
   it('does not point at a card when the action is not available', () => {
     const kaezin = card('kaezin')
     const view = game(player('me', [stack('in_play', [kaezin])]), player('opp'), { available_actions: EFFECTS })

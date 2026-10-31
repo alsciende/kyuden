@@ -50,10 +50,14 @@ export interface CardMenu {
   intoPlay: SimpleAction[]
   /** the provinces of its owner a holding of the discard pile can be put into, by an effect (Rebuild) */
   intoProvince: ProvinceChoice[]
+  /** an attachment in play can be moved to another character, by an effect */
+  moveAttachment: boolean
+  /** the dynasty cards of the other provinces of its owner a dynasty card can be switched with, by an effect */
+  switchWith: ProvinceChoice[]
 }
 
 export interface ProvinceChoice {
-  /** the province card */
+  /** the province card, or the card in the province */
   id: string
   name: string
 }
@@ -152,6 +156,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         : null,
     intoPlay: [],
     intoProvince: [],
+    moveAttachment: false,
+    switchWith: [],
   }
   // the payload is the card by default, for the messages whose payload is a card only
   const add = <T extends MessageType>(
@@ -198,6 +204,34 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       })
     }
   }
+  const moveAttachment = () => {
+    menu.moveAttachment = card?.type === 'attachment' && available.has('move_attachment')
+  }
+  // a face-up province that is not broken yet, by an effect (Endless Plains)
+  const breakProvince = () => {
+    if (view.orientation === 'face_up') {
+      add(menu.state, 'break_province', 'Break it', { province_id: id })
+    }
+  }
+  // the dynasty cards of the other provinces of its owner (Borderlands Fortifications)
+  const switchWith = () => {
+    if (!available.has('switch_province_cards')) {
+      return
+    }
+    menu.switchWith = stacksOf(located.player, 'regular_province').flatMap((province, index) => {
+      const [provinceCard, ...others] = province.cards ?? []
+      const where = cardOf(cards, provinceCard?.code ?? null)?.name ?? `province ${index + 1}`
+
+      return province.id === stack.id
+        ? []
+        : others
+            .filter((other) => other.side === 'dynasty')
+            .map((other) => ({
+              id: other.id,
+              name: `${(other.orientation !== 'face_down' && cardOf(cards, other.code)?.name) || 'Facedown card'} (${where})`,
+            }))
+    })
+  }
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -236,6 +270,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         // the province itself
         if (faceUp) {
           abilities()
+          breakProvince()
         } else {
           add(menu.state, 'reveal_province', 'Reveal it')
           lookAt()
@@ -246,6 +281,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       } else if (!faceUp) {
         add(menu.state, 'reveal_dynasty_card', 'Turn it face up')
         lookAt()
+        switchWith()
         toDeck()
         discard()
       } else {
@@ -262,6 +298,12 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           abilities()
         }
         putIntoPlay()
+        if (view.side === 'dynasty') {
+          switchWith()
+        } else {
+          // an attachment on the province
+          moveAttachment()
+        }
         if (card?.type === 'holding') {
           sacrifice()
         }
@@ -280,6 +322,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         add(menu.state, 'choose_stronghold_province', 'Put it under your stronghold')
       } else if (faceUp) {
         abilities()
+        breakProvince()
       } else {
         add(menu.state, 'reveal_province', 'Reveal it')
         lookAt()
@@ -321,6 +364,9 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           menu.duel = participating && available.has('initiate_duel')
         }
         menu.skill = available.has('set_character_skill')
+      }
+      if (under !== null) {
+        moveAttachment()
       }
       add(menu.removals, 'return_card_to_hand', 'Return to hand')
       sacrifice()

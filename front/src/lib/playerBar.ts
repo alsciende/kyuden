@@ -82,7 +82,10 @@ function strongholdTip(game: GameView, player: PlayerView, broken: number): stri
 
 /** the values of the bar a click opens, with the effects on them or the cards of a discard pile */
 export type BarStat =
-  'honor' | 'fate' | 'hand' | 'dynasty_deck' | 'conflict_deck' | 'dynasty_discard' | 'conflict_discard'
+  'honor' | 'fate' | 'hand' | 'dynasty_deck' | 'conflict_deck' | 'dynasty_discard' | 'conflict_discard' | 'first_player'
+
+/** the values whose effects take no amount */
+export const WITHOUT_AMOUNT: BarStat[] = ['first_player']
 
 export type Effect = Message & { label: string }
 
@@ -155,6 +158,16 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
       break
     case 'dynasty_deck':
       effects = [{ type: 'shuffle_dynasty_deck', label: 'Shuffle', payload: target }, ...inspect('dynasty_deck')]
+      break
+    // the token of the first player goes to the other player, e.g. kept by an effect when it would be passed
+    case 'first_player':
+      effects = [
+        other && {
+          type: 'take_first_player_token',
+          label: other.id === game.viewer_id ? 'Take it' : 'Give it to Opp.',
+          payload: { target_player_id: other.id },
+        },
+      ]
       break
   }
   const available = new Set(game.available_actions)

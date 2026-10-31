@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "take_first_player_token",
+    "description": "Gives the first player token to a player, e.g. to resolve an effect (Way of the Unicorn: keeping the token when it would be passed).",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who takes the first player token.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

@@ -7,7 +7,7 @@ import RingPopover from '@/components/game/RingPopover.vue'
 import type { Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
-import { playerBar, playerEffects, type BarStat } from '@/lib/playerBar'
+import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat } from '@/lib/playerBar'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { vTip } from '@/lib/tooltip'
 
@@ -47,6 +47,7 @@ const TITLES: Record<BarStat, string> = {
   conflict_deck: 'Conflict deck',
   dynasty_discard: 'Dynasty discard pile',
   conflict_discard: 'Conflict discard pile',
+  first_player: 'First player token',
 }
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
@@ -267,7 +268,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         }}</span>
         Imperial Favor
       </span>
-      <span v-if="bar.firstPlayer" class="badge first">First player</span>
+      <button
+        v-if="bar.firstPlayer"
+        type="button"
+        class="badge first"
+        :class="{ on: open === 'first_player' }"
+        :aria-expanded="open === 'first_player'"
+        @click="toggle('first_player', $event)"
+      >
+        First player
+      </button>
     </div>
 
     <RingPopover
@@ -321,7 +331,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </template>
 
         <template v-else>
-          <div class="amount">
+          <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
             <span>Amount</span>
             <button type="button" class="step" aria-label="Less" :disabled="amount <= 0" @click="amount--">−</button>
             <b aria-live="polite">{{ amount }}</b>
@@ -543,6 +553,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .badge.first {
   border-color: var(--seal);
   color: var(--seal);
+}
+
+/* the token opens the effects on it */
+button.badge {
+  font-family: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+button.badge:hover,
+button.badge.on {
+  background: var(--paper-2);
 }
 
 .backdrop {
