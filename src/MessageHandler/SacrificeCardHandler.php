@@ -19,7 +19,7 @@ use Symfony\Component\Workflow\Registry;
  * Accepted in any game place and from any player of the game, on any card: the engine does not apply card effects,
  * which decide what is sacrificed. The `sacrifice` transition of the card workflow fails for cards that are not in play
  * (in hand, a character in a province) or cannot be sacrificed (provinces, strongholds, roles). A province a holding
- * is sacrificed from is then refilled (ProvinceRefiller).
+ * is sacrificed from is refilled once the effect is resolved, if it is still empty (ProvinceRefiller).
  */
 #[AsMessageHandler]
 final readonly class SacrificeCardHandler implements PlayerActionHandlerInterface
@@ -49,7 +49,7 @@ final readonly class SacrificeCardHandler implements PlayerActionHandlerInterfac
         $stack = $card->getStack();
         $this->workflowRegistry->get($card)->apply($card, 'sacrifice');
         if ($card instanceof DynastyCard) {
-            $this->provinceRefiller->refillIfEmpty($stack);
+            $this->provinceRefiller->schedule($stack);
         }
     }
 }

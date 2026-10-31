@@ -194,7 +194,7 @@ export interface DiscardCard {
 }
 
 /**
- * The active player discards, during the play cards from provinces step, a duplicate of a unique character they have in play (a copy with the same title, from their hand or face up in one of their provinces) to place 1 fate on the character in play. The province is then refilled; ending the action (`end_resolution`), which ends the opportunity to act, is a separate action of the player.
+ * The active player discards, during the play cards from provinces step, a duplicate of a unique character they have in play (a copy with the same title, from their hand or face up in one of their provinces) to place 1 fate on the character in play. Ending the action (`end_resolution`), which ends the opportunity to act, is a separate action of the player; the province is refilled by the engine once the action is ended.
  */
 export interface DiscardDuplicate {
   /**
@@ -522,7 +522,7 @@ export interface PlayCharacterFromHand {
 /**
  * The active player plays a character from one of their provinces during the play cards from provinces step.
  *
- * The player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. Refilling the province and ending the action (`end_resolution`), which ends the opportunity to act, are separate actions of the player.
+ * The player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. Ending the action (`end_resolution`), which ends the opportunity to act, is a separate action of the player; the province is refilled by the engine once the action is ended.
  */
 export interface PlayCharacterFromProvince {
   /**
@@ -597,6 +597,38 @@ export interface PutCardOnDeck {
    * Where the card goes in the deck.
    */
   position: 'top' | 'bottom'
+}
+
+/**
+ * Puts a character into play without playing it, e.g. to resolve an effect (Ambush, Charge!, Cavalry Reserves, Keeper Initiate): no cost is paid and no opportunity to act is used. The character comes from the hand of its owner, a province (face up) or a discard pile, and enters play ready, at home or participating in the conflict on the side of its owner. Fate placed on it is a separate action (`place_fate`); a province it leaves is refilled by the engine.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PutCharacterIntoPlay {
+  /**
+   * Character in a hand, face up in a province, or in a discard pile.
+   */
+  card_id: string
+  /**
+   * Whether the character enters play into the conflict, on the side of its owner.
+   */
+  into_conflict: boolean
+}
+
+/**
+ * Puts a holding of the dynasty discard pile of its owner into play in one of their provinces, face up, e.g. to resolve an effect (Rebuild). The cards already in the province stay there. While the holding remains, the province is not refilled: a card that has left it during the same effect (`shuffle_into_deck`) is not replaced.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PutHoldingIntoProvince {
+  /**
+   * Holding in a dynasty discard pile.
+   */
+  card_id: string
+  /**
+   * Province of the owner of the holding (not the stronghold province) the holding is put into.
+   */
+  province_id: string
 }
 
 /**
@@ -897,6 +929,8 @@ export interface MessagePayloads {
   play_reaction_event: PlayReactionEvent
   point_at_card: PointAtCard
   put_card_on_deck: PutCardOnDeck
+  put_character_into_play: PutCharacterIntoPlay
+  put_holding_into_province: PutHoldingIntoProvince
   ready_card: ReadyCard
   remove_fate: RemoveFate
   reset_character_skill: ResetCharacterSkill

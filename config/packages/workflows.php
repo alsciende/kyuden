@@ -196,6 +196,12 @@ return App::config([
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    // a character put into play by an effect, without being played (PutCharacterIntoPlay)
+                    WorkflowConfig::transition('put_into_play', [ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_IN_PLAY, [
+                        'log' => '{card} is put into play from {from}',
+                        'stack' => StackType::InPlay,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
                     WorkflowConfig::transition('discard_card', [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY], ConflictCard::STATE_DISCARD_PILE, [
                         'log' => '{card} is discarded from {from}',
                         'stack' => StackType::ConflictDiscardPile,
@@ -251,6 +257,19 @@ return App::config([
                     WorkflowConfig::transition('play', DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, [
                         'log' => '{owner} plays {card} from {from} into {to}',
                         'stack' => StackType::InPlay,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a character put into play by an effect, without being played (PutCharacterIntoPlay)
+                    WorkflowConfig::transition('put_into_play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_IN_PLAY, [
+                        'log' => '{card} is put into play from {from}',
+                        'stack' => StackType::InPlay,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a holding put into play in a province by an effect (PutHoldingIntoProvince): the province is the
+                    // `stack` of the context
+                    WorkflowConfig::transition('put_into_province', DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_PROVINCE_FACEUP, [
+                        'log' => '{card} is put from {from} into {to}',
+                        'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // from a province: a card discarded from a broken province, or during the fate phase

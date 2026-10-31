@@ -87,6 +87,15 @@ const iconActions = computed(() =>
   })),
 )
 
+// a holding put into one of the provinces of its owner
+const provinceId = ref<string | null>(null)
+
+function putIntoProvince(): void {
+  if (provinceId.value !== null) {
+    void run('put_holding_into_province', { card_id: view.value.id, province_id: provinceId.value })
+  }
+}
+
 function runAction(action: SimpleAction): void {
   void run(action.type, action.payload as never)
 }
@@ -379,6 +388,34 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <input v-model="duel.challenged" type="radio" name="challenged" :value="target.id" /> {{ target.name }}
         </label>
         <button type="submit" class="btn btn-ghost" :disabled="sending || duel.challenged === null">Challenge</button>
+      </form>
+
+      <div v-if="menu.intoPlay.length" class="group">
+        <span class="label">By an effect</span>
+        <button
+          v-for="action in menu.intoPlay"
+          :key="action.label"
+          type="button"
+          class="btn btn-ghost"
+          :disabled="sending"
+          @click="runAction(action)"
+        >
+          {{ action.label }}
+        </button>
+        <span class="hint">Without paying its cost nor using an opportunity to act.</span>
+      </div>
+
+      <form v-if="menu.intoProvince.length" class="group" @submit.prevent="putIntoProvince">
+        <fieldset class="choices">
+          <legend class="label">Put it into a province</legend>
+          <label v-for="province in menu.intoProvince" :key="province.id" class="choice">
+            <input v-model="provinceId" type="radio" name="province" :value="province.id" /> {{ province.name }}
+          </label>
+        </fieldset>
+        <button type="submit" class="btn btn-ghost" :disabled="sending || provinceId === null">
+          Put it into play there
+        </button>
+        <span class="hint">The cards of the province stay there, and it is no longer refilled.</span>
       </form>
 
       <p v-if="error" class="error" role="alert">{{ error }}</p>

@@ -285,6 +285,68 @@ describe('cardMenu', () => {
     ])
   })
 
+  it('puts a character into play, at home or into the conflict of its owner', () => {
+    const scout = card('scout')
+    const kaezin = card('kaezin')
+    const raid = card('raid')
+    const view = game(
+      player('me', [stack('regular_province', [raid, scout]), stack('dynasty_discard_pile', [kaezin])]),
+      player('opp'),
+      { available_actions: ['put_character_into_play'] },
+    )
+    const conflict = {
+      ...view,
+      conflict: {
+        attacking_player_id: 'opp',
+        defending_player_id: 'me',
+        ring: 'air' as const,
+        type: 'military' as const,
+        province_id: raid.id,
+        attacked_province_ids: [raid.id],
+        attacker_ids: [],
+        defender_ids: [],
+        evaded_ids: [],
+        attacker_skill: null,
+        defender_skill: null,
+        province_strengths: {},
+        declared_strength_province_ids: [],
+        winner_id: null,
+        broken_province_ids: [],
+      },
+    }
+
+    expect(cardMenu(view, cards, scout.id)!.intoPlay).toEqual([
+      { type: 'put_character_into_play', label: 'Put into play', payload: { card_id: scout.id, into_conflict: false } },
+    ])
+    expect(cardMenu(conflict, cards, kaezin.id)!.intoPlay.map((action) => action.label)).toEqual([
+      'Put into play',
+      'Put into play in the conflict',
+    ])
+    expect(cardMenu(view, cards, raid.id)!.intoPlay).toEqual([])
+  })
+
+  it('puts a holding of the dynasty discard pile into a province of its owner', () => {
+    const academy = card('academy')
+    const raid = card('raid')
+    const hidden = card(null, { orientation: 'face_down', side: 'province' })
+    const view = game(
+      player('me', [
+        stack('regular_province', [raid]),
+        stack('regular_province', [hidden]),
+        stack('dynasty_discard_pile', [academy]),
+      ]),
+      player('opp'),
+      { available_actions: ['put_holding_into_province'] },
+    )
+
+    expect(
+      cardMenu(view, { ...cards, academy: printed('academy', { type: 'holding' }) }, academy.id)!.intoProvince,
+    ).toEqual([
+      { id: raid.id, name: 'raid' },
+      { id: hidden.id, name: 'Province 2' },
+    ])
+  })
+
   it('does not point at a card when the action is not available', () => {
     const kaezin = card('kaezin')
     const view = game(player('me', [stack('in_play', [kaezin])]), player('opp'), { available_actions: EFFECTS })

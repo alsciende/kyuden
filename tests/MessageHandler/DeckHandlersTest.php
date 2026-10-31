@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
-use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Enum\DeckPosition;
 use App\Enum\Orientation;
@@ -138,17 +137,14 @@ class DeckHandlersTest extends AbstractKernelTestCase
         self::assertSame(StackType::DynastyDrawDeck, $scenario->card('toturi')->getStack()->getType());
     }
 
-    public function testRefillsTheProvinceACardIsPutOnTheDeckFrom(): void
+    public function testTheProvinceACardIsPutOnTheDeckFromIsRefilledOnceTheEffectIsResolved(): void
     {
         $scenario = $this->scenarioWithDecks();
-        $province = $scenario->card('province')->getStack();
 
         self::service(PutCardOnDeckHandler::class)(new PutCardOnDeck($scenario->game()->getId(), $this->sender($scenario), $scenario->card('samurai')->getId(), DeckPosition::Bottom));
 
-        self::assertSame(['Brash Samurai', 'Doji Whisperer'], $this->names($scenario, StackType::DynastyDrawDeck));
-        $refill = $province->getTopCard();
-        self::assertInstanceOf(DynastyCard::class, $refill);
-        self::assertSame('Eager Scout', $refill->getLogicalCard()->getName());
+        self::assertSame(['Brash Samurai', 'Doji Whisperer', 'Eager Scout'], $this->names($scenario, StackType::DynastyDrawDeck));
+        $this->assertRefillScheduled($scenario->card('province'));
     }
 
     public function testShufflesACardIntoTheDeck(): void

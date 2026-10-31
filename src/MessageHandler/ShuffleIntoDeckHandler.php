@@ -19,8 +19,8 @@ use Symfony\Component\Workflow\Registry;
 /**
  * Accepted in any game place and from any player of the game, on any card: the engine does not apply card effects,
  * which decide what goes into a deck. The `shuffle_into_deck` transition of the conflict and dynasty card workflows
- * fails for the other cards (provinces, strongholds, roles). The deck is shuffled, then a province the dynasty card
- * has left is refilled from it (ProvinceRefiller).
+ * fails for the other cards (provinces, strongholds, roles). The deck is shuffled; a province the dynasty card has
+ * left is refilled from it once the effect is resolved, if it is still empty (ProvinceRefiller).
  */
 #[AsMessageHandler]
 final readonly class ShuffleIntoDeckHandler implements PlayerActionHandlerInterface
@@ -53,7 +53,7 @@ final readonly class ShuffleIntoDeckHandler implements PlayerActionHandlerInterf
         // the card is created again with a new id: only its deck is kept
         $this->stackShuffler->shuffle($card->getStack());
         if ($card instanceof DynastyCard) {
-            $this->provinceRefiller->refillIfEmpty($stack);
+            $this->provinceRefiller->schedule($stack);
         }
     }
 }

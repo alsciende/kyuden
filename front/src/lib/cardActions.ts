@@ -1,7 +1,7 @@
 import type { AbilityTiming, Card } from '@/api/client'
 import type { GameView } from '@/api/game'
 import type { Message, MessagePayloads, MessageType } from '@/api/messages'
-import { locate, type Cards, type Located } from '@/lib/board'
+import { locate, stacksOf, type Cards, type Located } from '@/lib/board'
 
 /**
  * What a player can do with a card, from where it is and from the actions the engine makes available now. Board
@@ -46,6 +46,16 @@ export interface CardMenu {
   removals: SimpleAction[]
   /** pointing at it to show it to the opponent: a card every player sees (not in a hand nor a deck) */
   point: SimpleAction | null
+  /** putting a character into play without playing it, by an effect: at home or into the conflict */
+  intoPlay: SimpleAction[]
+  /** the provinces of its owner a holding of the discard pile can be put into, by an effect (Rebuild) */
+  intoProvince: ProvinceChoice[]
+}
+
+export interface ProvinceChoice {
+  /** the province card */
+  id: string
+  name: string
 }
 
 const ABILITY_TYPES: Record<
@@ -140,6 +150,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       available.has('point_at_card') && !HIDDEN_STACKS.has(stack.type)
         ? { type: 'point_at_card', label: 'Point at it', payload: { card_id: id } }
         : null,
+    intoPlay: [],
+    intoProvince: [],
   }
   // the payload is the card by default, for the messages whose payload is a card only
   const add = <T extends MessageType>(
@@ -172,6 +184,20 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       add(menu.state, 'look_at_card', 'Look at it')
     }
   }
+  // a character put into play by an effect, at home or into the conflict on the side of its owner
+  const putIntoPlay = () => {
+    if (card?.type !== 'character') {
+      return
+    }
+    add(menu.intoPlay, 'put_character_into_play', 'Put into play', { card_id: id, into_conflict: false })
+    const conflict = game.conflict
+    if (conflict !== null && [conflict.attacking_player_id, conflict.defending_player_id].includes(located.player.id)) {
+      add(menu.intoPlay, 'put_character_into_play', 'Put into play in the conflict', {
+        card_id: id,
+        into_conflict: true,
+      })
+    }
+  }
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -199,6 +225,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       if (menu.mine) {
         add(menu.state, 'reveal_card', 'Reveal it')
       }
+      putIntoPlay()
       discardDuplicate()
       toDeck()
       discard()
@@ -234,6 +261,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (card?.type !== 'character') {
           abilities()
         }
+        putIntoPlay()
         if (card?.type === 'holding') {
           sacrifice()
         }
@@ -301,11 +329,22 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       break
 
     case 'conflict_discard_pile':
+      putIntoPlay()
       add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
       toDeck()
       break
 
     case 'dynasty_discard_pile':
+      putIntoPlay()
+      if (card?.type === 'holding' && available.has('put_holding_into_province')) {
+        menu.intoProvince = stacksOf(located.player, 'regular_province').flatMap((province, index) => {
+          const provinceCard = (province.cards ?? [])[0]
+
+          return provinceCard === undefined
+            ? []
+            : [{ id: provinceCard.id, name: cardOf(cards, provinceCard.code)?.name ?? `Province ${index + 1}` }]
+        })
+      }
       toDeck()
       break
 

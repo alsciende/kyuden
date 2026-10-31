@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "discard_duplicate",
-    "description": "The active player discards, during the play cards from provinces step, a duplicate of a unique character they have in play (a copy with the same title, from their hand or face up in one of their provinces) to place 1 fate on the character in play. The province is then refilled; ending the action (`end_resolution`), which ends the opportunity to act, is a separate action of the player.",
+    "description": "The active player discards, during the play cards from provinces step, a duplicate of a unique character they have in play (a copy with the same title, from their hand or face up in one of their provinces) to place 1 fate on the character in play. Ending the action (`end_resolution`), which ends the opportunity to act, is a separate action of the player; the province is refilled by the engine once the action is ended.",
     "type": "object",
     "properties": {
         "card_id": {

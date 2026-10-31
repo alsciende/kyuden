@@ -19,7 +19,7 @@ use Symfony\Component\Workflow\Registry;
  * Accepted in any game place and from any player of the game, on any card: the engine does not apply card effects,
  * which decide what is discarded. The `discard_card` transition of the card workflow fails for cards that cannot be
  * discarded (provinces, strongholds, roles) or are already in a discard pile. A province a dynasty card is discarded
- * from is then refilled (ProvinceRefiller).
+ * from is refilled once the effect is resolved, if it is still empty (ProvinceRefiller).
  */
 #[AsMessageHandler]
 final readonly class DiscardCardHandler implements PlayerActionHandlerInterface
@@ -49,7 +49,7 @@ final readonly class DiscardCardHandler implements PlayerActionHandlerInterface
         $stack = $card->getStack();
         $this->workflowRegistry->get($card)->apply($card, 'discard_card');
         if ($card instanceof DynastyCard) {
-            $this->provinceRefiller->refillIfEmpty($stack);
+            $this->provinceRefiller->schedule($stack);
         }
     }
 }

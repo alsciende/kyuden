@@ -70,6 +70,13 @@ class GameState
 
     public ?VictoryCondition $victoryCondition = null;
 
+    /**
+     * Ids of the regular provinces a dynasty card has left, refilled once nothing is being resolved (ProvinceRefiller).
+     *
+     * @var list<string>
+     */
+    public array $provincesToRefill = [];
+
     public function setPlayerOrder(Player ...$players): self
     {
         $this->playerIds = array_values(array_map(fn (Player $player): string => $player->getId(), $players));

@@ -31,8 +31,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\Registry;
 
 /**
- * Step 1.4: the duplicate is discarded, 1 fate is placed on the copy in play, then the province is refilled
- * (ProvinceRefiller). Like playing a character from a province, the player keeps the opportunity to act and ends their
+ * Step 1.4: the duplicate is discarded, 1 fate is placed on the copy in play; the province is refilled
+ * once the action is ended, if it is still empty (ProvinceRefiller). Like playing a character from a province, the player keeps the opportunity to act and ends their
  * action (EndResolution) themselves, possibly after reactions to the fate placed.
  */
 #[AsMessageHandler]
@@ -82,7 +82,7 @@ final readonly class DiscardDuplicateHandler implements PlayerActionHandlerInter
         );
         $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $copy, self::FATE_PLACED));
         if ($card instanceof DynastyCard) {
-            $this->provinceRefiller->refillIfEmpty($stack);
+            $this->provinceRefiller->schedule($stack);
         }
 
         $this->opportunityService->takeAction($player);

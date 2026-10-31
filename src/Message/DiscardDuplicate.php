@@ -11,8 +11,8 @@ use App\Attribute\Description;
  * The active player discards, during the play cards from provinces step, a duplicate of a unique character they have
  * in play (a copy with the same title, from their hand or face up in one of their provinces) to place 1 fate on the
  * character in play.
- * The province is then refilled; ending the action (`EndResolution`), which ends the opportunity to act, is a separate
- * action of the player.
+ * Ending the action (`EndResolution`), which ends the opportunity to act, is a separate action of the player; the
+ * province is refilled by the engine once the action is ended.
  */
 #[AppAction]
 final readonly class DiscardDuplicate implements PlayerActionInterface

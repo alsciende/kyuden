@@ -24,7 +24,7 @@ import { useGame } from '@/lib/useGame'
 
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
- * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result.
+ * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result, in a thin light frame.
  * The cards the player looks at or reveals open a window over everything else, until the player closes it.
  */
 const route = useRoute()
@@ -332,6 +332,11 @@ const problem = computed(() => {
 }
 
 .ended-content {
+  /* a thin light frame: the veil is dark on a dark board at night */
+  padding: 40px 64px;
+  border: 1px solid rgba(244, 238, 226, 0.45);
+  border-radius: 4px;
+  background: rgba(18, 15, 11, 0.92);
   display: flex;
   flex-direction: column;
   align-items: center;

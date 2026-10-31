@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "put_holding_into_province",
+    "description": "Puts a holding of the dynasty discard pile of its owner into play in one of their provinces, face up, e.g. to resolve an effect (Rebuild). The cards already in the province stay there. While the holding remains, the province is not refilled: a card that has left it during the same effect (`shuffle_into_deck`) is not replaced.\n\nThe card can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Holding in a dynasty discard pile.",
+            "type": "string"
+        },
+        "province_id": {
+            "description": "Province of the owner of the holding (not the stronghold province) the holding is put into.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id",
+        "province_id"
+    ],
+    "additionalProperties": false
+}

@@ -83,14 +83,13 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
-    public function testTheProvinceIsRefilledFacedown(): void
+    public function testTheProvinceIsRefilledOnceTheActionIsEnded(): void
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces();
 
         $this->play($scenario, 'toturi');
 
-        self::assertSame($scenario->card('province')->getStack(), $scenario->card('refill')->getStack());
-        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('refill')->getCurrentPlace());
+        $this->assertRefillScheduled($scenario->card('province'));
     }
 
     public function testRejectsAPlayerWhoCannotPay(): void

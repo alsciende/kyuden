@@ -69,6 +69,8 @@ export const MESSAGE_ALIASES = {
     'to-hand': 'add_card_to_hand',
     'to-deck': 'put_card_on_deck',
     'shuffle-in': 'shuffle_into_deck',
+    'into-play': 'put_character_into_play',
+    'holding-in': 'put_holding_into_province',
     'move-fate': 'move_fate',
     skill: 'declare_conflict_skill',
     strength: 'declare_province_strength',

@@ -62,14 +62,14 @@ class SacrificeCardHandlerTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('katana')->getCurrentPlace());
     }
 
-    public function testSacrificesAHoldingInAProvinceAndRefillsIt(): void
+    public function testSacrificesAHoldingInAProvince(): void
     {
         $scenario = $this->scenarioWithCards();
 
         $this->sacrifice($scenario, 'academy');
 
         self::assertSame(DynastyCard::STATE_DISCARD_PILE, $scenario->card('academy')->getCurrentPlace());
-        self::assertSame($scenario->card('province')->getStack(), $scenario->card('refill')->getStack());
+        $this->assertRefillScheduled($scenario->card('province'));
     }
 
     public function testRejectsACharacterInAProvince(): void

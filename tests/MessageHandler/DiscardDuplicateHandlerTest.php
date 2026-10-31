@@ -6,7 +6,6 @@ namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
-use App\Enum\Orientation;
 use App\Exception\Data\WorkflowException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotADuplicateException;
@@ -29,7 +28,7 @@ class DiscardDuplicateHandlerTest extends AbstractKernelTestCase
                 ->inPlay(['toturi' => '01-akodo-toturi'], fate: 1)
                 ->inPlay(['kazue' => '38-togashi-kazue'])
                 ->inPlay(['berserker' => '01-matsu-berserker'])
-                ->province('01-entrenched-position', dynasty: '16-akodo-toturi', dynastyAs: 'toturi-duplicate', dynastyFaceup: true)
+                ->province('01-entrenched-position', as: 'province', dynasty: '16-akodo-toturi', dynastyAs: 'toturi-duplicate', dynastyFaceup: true)
                 ->province('01-entrenched-position', dynasty: '01-akodo-toturi', dynastyAs: 'facedown-toturi')
                 ->province('01-entrenched-position', dynasty: '01-matsu-berserker', dynastyAs: 'berserker-duplicate', dynastyFaceup: true)
                 ->hand(['kazue-duplicate' => '01-togashi-kazue'])
@@ -60,15 +59,13 @@ class DiscardDuplicateHandlerTest extends AbstractKernelTestCase
         self::assertSame(2, self::service(CardStateManager::class)->getState($scenario->card('toturi'))->getFate());
     }
 
-    public function testTheProvinceIsRefilled(): void
+    public function testTheProvinceIsRefilledOnceTheActionIsEnded(): void
     {
         $scenario = $this->scenarioWithDuplicates();
-        $province = $scenario->card('toturi-duplicate')->getStack();
 
         $this->discard($scenario, 'toturi-duplicate', 'toturi');
 
-        self::assertSame($province, $scenario->card('refill')->getStack());
-        self::assertSame(Orientation::FaceDown, $scenario->card('refill')->getOrientation());
+        $this->assertRefillScheduled($scenario->card('province'));
     }
 
     public function testADuplicateCanBeDiscardedFromHand(): void

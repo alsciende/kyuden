@@ -29,8 +29,8 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * The player pays the cost of the character, which enters play ready, then places fate on it; the province is then
- * refilled (ProvinceRefiller). The player keeps the opportunity to act: they end their action (EndResolution)
+ * The player pays the cost of the character, which enters play ready, then places fate on it; the province is
+ * refilled once the action is ended, if it is still empty (ProvinceRefiller). The player keeps the opportunity to act: they end their action (EndResolution)
  * themselves, possibly after other actions triggered by the character entering play.
  */
 #[AsMessageHandler]
@@ -92,7 +92,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         if ($message->getFate() > 0) {
             $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $card, $message->getFate()));
         }
-        $this->provinceRefiller->refillIfEmpty($province);
+        $this->provinceRefiller->schedule($province);
 
         $this->opportunityService->takeAction($player);
     }

@@ -12,7 +12,6 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 use Symfony\Component\Workflow\Exception\NotEnabledTransitionException;
-use Symfony\Component\Workflow\Registry;
 
 class DiscardCardHandlerTest extends AbstractKernelTestCase
 {
@@ -47,27 +46,13 @@ class DiscardCardHandlerTest extends AbstractKernelTestCase
         self::assertSame(DynastyCard::STATE_DISCARD_PILE, $scenario->card('toturi')->getCurrentPlace());
     }
 
-    public function testAProvinceADynastyCardIsDiscardedFromIsRefilledFacedown(): void
+    public function testAProvinceADynastyCardIsDiscardedFromIsRefilledOnceTheEffectIsResolved(): void
     {
         $scenario = $this->scenarioWithCards();
 
         $this->discard($scenario, 'toturi');
 
-        self::assertSame($scenario->card('province')->getStack(), $scenario->card('refill')->getStack());
-        self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('refill')->getCurrentPlace());
-    }
-
-    public function testAProvinceIsNotRefilledWhileADynastyCardRemainsOnIt(): void
-    {
-        $scenario = $this->scenarioWithCards();
-        // a second card on the province, as a holding can be
-        self::service(Registry::class)->get($scenario->card('refill'))->apply($scenario->card('refill'), 'draw_card', [
-            'stack' => $scenario->card('province')->getStack(),
-        ]);
-
-        $this->discard($scenario, 'toturi');
-
-        self::assertCount(2, $scenario->card('province')->getStack()->getCards());
+        $this->assertRefillScheduled($scenario->card('province'));
     }
 
     public function testAnyPlayerDiscardsACardFromHand(): void

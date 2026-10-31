@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use App\Entity\Game;
 use App\Entity\GameLogEntry;
+use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Exception\Data\DeckNotFoundException;
 use App\GameLog\GameLogRenderer;
@@ -84,6 +85,16 @@ abstract class AbstractKernelTestCase extends KernelTestCase
         self::assertInstanceOf($id, $service);
 
         return $service;
+    }
+
+    /**
+     * The province (its card) is to be refilled once nothing is being resolved (ProvinceRefiller), and not refilled yet.
+     */
+    protected function assertRefillScheduled(PhysicalCard $province): void
+    {
+        $state = self::service(GameStateManager::class)->getState($province->getPlayer()->getGame());
+        self::assertContains($province->getStack()->getId(), $state->provincesToRefill);
+        self::assertCount(1, $province->getStack()->getCards());
     }
 
     /**

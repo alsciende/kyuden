@@ -18,8 +18,8 @@ use Symfony\Component\Workflow\Registry;
 /**
  * Accepted in any game place and from any player of the game, on any card: the engine does not apply card effects,
  * which decide what goes into a deck. The `put_on_top` and `put_at_bottom` transitions of the conflict and dynasty card
- * workflows fail for the other cards (provinces, strongholds, roles). A province a dynasty card leaves is then refilled
- * (ProvinceRefiller).
+ * workflows fail for the other cards (provinces, strongholds, roles). A province a dynasty card leaves is refilled
+ * once the effect is resolved, if it is still empty (ProvinceRefiller).
  */
 #[AsMessageHandler]
 final readonly class PutCardOnDeckHandler implements PlayerActionHandlerInterface
@@ -49,7 +49,7 @@ final readonly class PutCardOnDeckHandler implements PlayerActionHandlerInterfac
         $stack = $card->getStack();
         $this->workflowRegistry->get($card)->apply($card, $message->getPosition()->transition());
         if ($card instanceof DynastyCard) {
-            $this->provinceRefiller->refillIfEmpty($stack);
+            $this->provinceRefiller->schedule($stack);
         }
     }
 }
