@@ -42,6 +42,7 @@ const TITLES: Record<BarStat, string> = {
   honor: 'Honor',
   fate: 'Fate',
   hand: 'Hand',
+  dynasty_deck: 'Dynasty deck',
   conflict_deck: 'Conflict deck',
   dynasty_discard: 'Dynasty discard pile',
   conflict_discard: 'Conflict discard pile',
@@ -57,7 +58,7 @@ const general = computed((): Stat[] => [
 ])
 const dynasty = computed((): Stat[] => [
   { key: null, label: 'Provinces', value: bar.value.intactProvinces, of: bar.value.provinces },
-  { key: null, label: 'Deck', value: bar.value.dynastyDeck },
+  { key: 'dynasty_deck', label: 'Deck', value: bar.value.dynastyDeck },
   { key: 'dynasty_discard', label: 'Discard', value: bar.value.dynastyDiscard.length },
 ])
 const conflict = computed((): Stat[] => [

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "look_at_card",
+    "description": "The sender looks at a card, e.g. a facedown province or a facedown card in a province (Iuchi Wayfinder). The log gives the card to the sender only; nothing is recorded: the card is out of sight again afterwards.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card to look at, of any player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

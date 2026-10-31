@@ -6,6 +6,7 @@ namespace App\Workflow;
 
 use App\Entity\PhysicalCard;
 use App\Enum\Orientation;
+use App\Enum\StackType;
 
 /**
  * Helpers to write the workflow definitions of config/packages/workflows.php.
@@ -108,6 +109,26 @@ final class WorkflowConfig
                 'log' => '{card} is readied',
                 'orientation' => Orientation::FaceUp,
             ]),
+        ];
+    }
+
+    /**
+     * A card put into its deck, face down, from the places given (the deck too, to move a card within it): on top of it
+     * (`put_on_top`), at its bottom (`put_at_bottom`, metadata `position`: `bottom`, read by CardTransitionListener), or
+     * shuffled into it (`shuffle_into_deck`: the deck is shuffled afterwards by its handler).
+     *
+     * @param list<string> $from
+     *
+     * @return list<TransitionConfig>
+     */
+    public static function putOnDeck(array $from, string $deck, StackType $deckType): array
+    {
+        $move = ['stack' => $deckType, 'orientation' => Orientation::FaceDown];
+
+        return [
+            self::transition('put_on_top', $from, $deck, ['log' => '{card} is put from {from} on top of {to}', ...$move]),
+            self::transition('put_at_bottom', $from, $deck, ['log' => '{card} is put from {from} at the bottom of {to}', 'position' => 'bottom', ...$move]),
+            self::transition('shuffle_into_deck', $from, $deck, ['log' => '{card} is shuffled from {from} into {to}', ...$move]),
         ];
     }
 

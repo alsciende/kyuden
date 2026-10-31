@@ -80,7 +80,8 @@ export const ANYTIME_ACTIONS = new Set([
     'bow_card', 'ready_card', 'discard_card', 'discard_random_card_from_hand', 'honor_character', 'dishonor_character',
     'draw_conflict_cards', 'fill_province', 'reveal_dynasty_card', 'reveal_province', 'gain_honor', 'lose_honor', 'gain_fate',
     'lose_fate', 'set_honor_bid', 'transfer_honor', 'place_fate', 'remove_fate', 'shuffle_conflict_deck', 'shuffle_dynasty_deck', 'move_to_conflict',
-    'move_home', 'switch_conflict_type', 'switch_ring', 'claim_ring', 'move_fate', 'play_interrupt_event', 'play_reaction_event', 'trigger_interrupt_ability', 'trigger_reaction_ability',
+    'move_home', 'switch_conflict_type', 'switch_ring', 'claim_ring', 'move_fate', 'look_at_cards', 'look_at_card', 'reveal_cards', 'reveal_card',
+    'add_card_to_hand', 'put_card_on_deck', 'shuffle_into_deck', 'play_interrupt_event', 'play_reaction_event', 'trigger_interrupt_ability', 'trigger_reaction_ability',
     'initiate_duel', 'concede_game', 'point_at_card',
 ]);
 

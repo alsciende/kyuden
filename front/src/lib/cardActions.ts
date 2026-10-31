@@ -160,6 +160,18 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     }
   }
   const sacrifice = () => add(menu.removals, 'sacrifice_card', 'Sacrifice')
+  // into the deck of its side, e.g. an effect putting a character back on top of its owner's deck
+  const toDeck = () => {
+    add(menu.removals, 'put_card_on_deck', 'Put on top of its deck', { card_id: id, position: 'top' })
+    add(menu.removals, 'put_card_on_deck', 'Put at the bottom of its deck', { card_id: id, position: 'bottom' })
+    add(menu.removals, 'shuffle_into_deck', 'Shuffle into its deck')
+  }
+  // a card the viewer does not know: a facedown province of the opponent, a facedown card in a province
+  const lookAt = () => {
+    if (view.code === null) {
+      add(menu.state, 'look_at_card', 'Look at it')
+    }
+  }
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -184,7 +196,11 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           }
         }
       }
+      if (menu.mine) {
+        add(menu.state, 'reveal_card', 'Reveal it')
+      }
       discardDuplicate()
+      toDeck()
       discard()
       break
 
@@ -195,12 +211,15 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           abilities()
         } else {
           add(menu.state, 'reveal_province', 'Reveal it')
+          lookAt()
         }
         if ((stack.cards?.length ?? 0) <= 1) {
           add(menu.state, 'fill_province', 'Fill this province', { province_id: id })
         }
       } else if (!faceUp) {
         add(menu.state, 'reveal_dynasty_card', 'Turn it face up')
+        lookAt()
+        toDeck()
         discard()
       } else {
         if (card?.type === 'character' && available.has('play_character_from_province')) {
@@ -219,6 +238,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           sacrifice()
         }
         discardDuplicate()
+        toDeck()
         discard()
       }
       break
@@ -234,6 +254,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         abilities()
       } else {
         add(menu.state, 'reveal_province', 'Reveal it')
+        lookAt()
       }
       break
 
@@ -275,7 +296,17 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       }
       add(menu.removals, 'return_card_to_hand', 'Return to hand')
       sacrifice()
+      toDeck()
       discard()
+      break
+
+    case 'conflict_discard_pile':
+      add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
+      toDeck()
+      break
+
+    case 'dynasty_discard_pile':
+      toDeck()
       break
 
     default:

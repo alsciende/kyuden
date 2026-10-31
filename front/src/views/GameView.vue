@@ -9,11 +9,13 @@ import CardDialog from '@/components/game/CardDialog.vue'
 import CardPreview from '@/components/game/CardPreview.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
 import GameSidebar from '@/components/game/GameSidebar.vue'
+import InspectionWindow from '@/components/game/InspectionWindow.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { gameEnded, opponent, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
+import { inspectionsOf } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
 import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
@@ -23,6 +25,7 @@ import { useGame } from '@/lib/useGame'
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
  * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result.
+ * The cards the player looks at or reveals open a window over everything else, until the player closes it.
  */
 const route = useRoute()
 const { game, log, cards, loadError, error, sending, send, refresh } = useGame(String(route.params.id))
@@ -52,6 +55,41 @@ watch(menu, (current) => {
     openCardId.value = null
   }
 })
+
+/**
+ * The cards looked at or revealed by the viewer since the page was opened, until they close their window: the log of
+ * the messages read when the page opens only gives the version they start after.
+ */
+const inspectedUpTo = ref<number | null>(null)
+watch(log, (messages, previous) => {
+  if (inspectedUpTo.value === null && previous.length === 0 && messages.length > 0) {
+    inspectedUpTo.value = messages.at(-1)!.version
+  }
+})
+const inspection = computed(() => {
+  const since = inspectedUpTo.value
+  if (game.value === null || since === null) {
+    return null
+  }
+
+  return inspectionsOf(log.value, game.value.viewer_id).find((candidate) => candidate.version > since) ?? null
+})
+
+// nothing else is open over the window
+watch(inspection, (current) => {
+  if (current !== null) {
+    openCardId.value = null
+    logOpen.value = false
+    error.value = null
+  }
+})
+
+function closeInspection(): void {
+  if (inspection.value !== null) {
+    inspectedUpTo.value = inspection.value.version
+  }
+  error.value = null
+}
 
 const me = computed(() => (game.value === null ? undefined : viewer(game.value)))
 const opp = computed(() => (game.value === null ? undefined : opponent(game.value)))
@@ -179,7 +217,7 @@ const problem = computed(() => {
       :log="log"
       :selection="selection"
       :sending="sending"
-      :error="openCardId || barOpen ? null : error"
+      :error="openCardId || barOpen || inspection ? null : error"
       :send="send"
       @open-log="logOpen = true"
     />
@@ -230,6 +268,17 @@ const problem = computed(() => {
       @close="openCardId = null"
     />
     <LogDrawer v-if="logOpen" :game="game" :cards="cards" :log="log" @close="logOpen = false" />
+    <InspectionWindow
+      v-if="inspection"
+      :key="inspection.version"
+      :game="game"
+      :cards="cards"
+      :inspection="inspection"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      @close="closeInspection"
+    />
   </div>
 
   <div v-else class="waiting screen">

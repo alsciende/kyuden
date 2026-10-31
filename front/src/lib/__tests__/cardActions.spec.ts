@@ -242,6 +242,49 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, banzai.id)!.point).toBeNull()
   })
 
+  it('looks at a card the viewer does not know, and reveals a card of their hand', () => {
+    const theirs = card(null, { side: 'province', orientation: 'face_down' })
+    const known = card('raid', { orientation: 'face_down' })
+    const banzai = card('banzai')
+    const view = game(
+      player('me', [stack('regular_province', [known]), stack('hand', [banzai])]),
+      player('opp', [stack('regular_province', [theirs])]),
+      { available_actions: ['look_at_card', 'reveal_card'] },
+    )
+
+    expect(cardMenu(view, cards, theirs.id)!.state).toEqual([
+      { type: 'look_at_card', label: 'Look at it', payload: { card_id: theirs.id } },
+    ])
+    expect(cardMenu(view, cards, known.id)!.state).toEqual([])
+    expect(cardMenu(view, cards, banzai.id)!.state).toEqual([
+      { type: 'reveal_card', label: 'Reveal it', payload: { card_id: banzai.id } },
+    ])
+  })
+
+  it('puts a card into its deck, and takes a card of the conflict discard pile back into hand', () => {
+    const kaezin = card('kaezin')
+    const banzai = card('banzai')
+    const view = game(
+      player('me', [stack('in_play', [kaezin]), stack('conflict_discard_pile', [banzai])]),
+      player('opp'),
+      {
+        available_actions: ['put_card_on_deck', 'shuffle_into_deck', 'add_card_to_hand'],
+      },
+    )
+
+    expect(cardMenu(view, cards, kaezin.id)!.removals.map((action) => [action.label, action.payload])).toEqual([
+      ['Put on top of its deck', { card_id: kaezin.id, position: 'top' }],
+      ['Put at the bottom of its deck', { card_id: kaezin.id, position: 'bottom' }],
+      ['Shuffle into its deck', { card_id: kaezin.id }],
+    ])
+    expect(cardMenu(view, cards, banzai.id)!.removals.map((action) => action.label)).toEqual([
+      'Take it back into your hand',
+      'Put on top of its deck',
+      'Put at the bottom of its deck',
+      'Shuffle into its deck',
+    ])
+  })
+
   it('does not point at a card when the action is not available', () => {
     const kaezin = card('kaezin')
     const view = game(player('me', [stack('in_play', [kaezin])]), player('opp'), { available_actions: EFFECTS })

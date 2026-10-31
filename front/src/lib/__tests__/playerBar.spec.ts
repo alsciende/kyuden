@@ -95,6 +95,31 @@ describe('playerEffects', () => {
     ])
   })
 
+  it('looks at and reveals the top cards of the decks, and the hand of the opponent', () => {
+    const inspecting = game(me, opp, {
+      available_actions: ['look_at_cards', 'reveal_cards', 'shuffle_dynasty_deck'],
+    })
+
+    expect(playerEffects(inspecting, me, 'dynasty_deck', 3)).toEqual([
+      { type: 'shuffle_dynasty_deck', label: 'Shuffle', payload: { target_player_id: 'me' } },
+      {
+        type: 'look_at_cards',
+        label: 'Look at the top 3',
+        payload: { target_player_id: 'me', stack: 'dynasty_deck', quantity: 3 },
+      },
+      {
+        type: 'reveal_cards',
+        label: 'Reveal the top 3',
+        payload: { target_player_id: 'me', stack: 'dynasty_deck', quantity: 3 },
+      },
+    ])
+    expect(playerEffects(inspecting, me, 'hand', 1).map((effect) => effect.label)).toEqual(['Reveal the hand'])
+    expect(playerEffects(inspecting, opp, 'hand', 1).map((effect) => effect.label)).toEqual([
+      'Look at the hand',
+      'Reveal the hand',
+    ])
+  })
+
   it('gives honor to the other player', () => {
     expect(playerEffects(everything, me, 'honor', 1).map((effect) => effect.label)).toEqual([
       'Gain 1 honor',

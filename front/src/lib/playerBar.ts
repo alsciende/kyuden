@@ -58,17 +58,24 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
 }
 
 /** the values of the bar a click opens, with the effects on them or the cards of a discard pile */
-export type BarStat = 'honor' | 'fate' | 'hand' | 'conflict_deck' | 'dynasty_discard' | 'conflict_discard'
+export type BarStat =
+  'honor' | 'fate' | 'hand' | 'dynasty_deck' | 'conflict_deck' | 'dynasty_discard' | 'conflict_discard'
 
 export type Effect = Message & { label: string }
 
 /**
  * The effects on a value of the bar of a player, applied with an amount; only those the engine makes available now.
+ * Looking at cards or revealing them opens the window of those cards (`lib/inspection.ts`).
  */
 export function playerEffects(game: GameView, player: PlayerView, stat: BarStat, amount: number): Effect[] {
   const target = { target_player_id: player.id }
   const cards = `${amount} card${amount === 1 ? '' : 's'}`
   const other = game.players.find((candidate) => candidate.id !== player.id)
+  const top = amount === 1 ? 'the top card' : `the top ${amount}`
+  const inspect = (stack: 'conflict_deck' | 'dynasty_deck'): Effect[] => [
+    { type: 'look_at_cards', label: `Look at ${top}`, payload: { ...target, stack, quantity: amount } },
+    { type: 'reveal_cards', label: `Reveal ${top}`, payload: { ...target, stack, quantity: amount } },
+  ]
   let effects: (Effect | false | undefined)[] = []
 
   switch (stat) {
@@ -107,13 +114,24 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
           label: `Discard ${amount} at random`,
           payload: { ...target, quantity: amount },
         },
+        // the viewer sees their own hand
+        player.id !== game.viewer_id && {
+          type: 'look_at_cards',
+          label: 'Look at the hand',
+          payload: { ...target, stack: 'hand' },
+        },
+        { type: 'reveal_cards', label: 'Reveal the hand', payload: { ...target, stack: 'hand' } },
       ]
       break
     case 'conflict_deck':
       effects = [
         { type: 'draw_conflict_cards', label: `Draw ${cards}`, payload: { ...target, quantity: amount } },
         { type: 'shuffle_conflict_deck', label: 'Shuffle', payload: target },
+        ...inspect('conflict_deck'),
       ]
+      break
+    case 'dynasty_deck':
+      effects = [{ type: 'shuffle_dynasty_deck', label: 'Shuffle', payload: target }, ...inspect('dynasty_deck')]
       break
   }
   const available = new Set(game.available_actions)

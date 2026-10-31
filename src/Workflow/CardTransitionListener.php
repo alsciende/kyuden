@@ -22,6 +22,7 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
  *   Whether the card can be in the target stack is checked by CardMarkingStore.
  * - `orientation`: the Orientation the card takes. Required when the card moves; without it, the card keeps
  *   its orientation.
+ * - `position`: `bottom` puts the card at the bottom of the target stack; on top of it otherwise.
  *
  * The workflows are defined in config/packages/workflows.php.
  */
@@ -51,7 +52,14 @@ readonly class CardTransitionListener
                 throw new \LogicException(sprintf("Transition %s moves the card: it must give its 'orientation' metadata.", $event->getTransition()?->getName()));
             }
 
-            $this->getTargetStack($card, $stackType, $event->getContext())->addCard($card);
+            // on top of the stack, unless the transition puts it at the bottom (a card can move within its stack)
+            $above = $event->getMetadata('position', $event->getTransition()) !== 'bottom';
+            $stack = $this->getTargetStack($card, $stackType, $event->getContext());
+            if ($card->getStack() === $stack) {
+                $stack->moveCard($card, $above);
+            } else {
+                $stack->addCard($card, $above);
+            }
         }
 
         if ($orientation instanceof Orientation) {

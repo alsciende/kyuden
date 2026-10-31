@@ -3,6 +3,18 @@
  */
 
 /**
+ * Adds a conflict card to the hand of its owner from their conflict deck (a card searched for: Agasha Swordsmith, Shrewd Yasuki) or their conflict discard pile (an ancestral attachment, a card taken back), e.g. to resolve an effect. A card of the deck is known by its id once a player has looked at it (`look_at_cards`).
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface AddCardToHand {
+  /**
+   * Conflict card in a conflict deck or a conflict discard pile.
+   */
+  card_id: string
+}
+
+/**
  * The player secretly selects a number on their honor dial (honor bid of the draw phase or of a duel).
  */
 export interface BidHonor {
@@ -318,6 +330,34 @@ export interface InitiateDuel {
 }
 
 /**
+ * The sender looks at a card, e.g. a facedown province or a facedown card in a province (Iuchi Wayfinder). The log gives the card to the sender only; nothing is recorded: the card is out of sight again afterwards.
+ */
+export interface LookAtCard {
+  /**
+   * Card to look at, of any player.
+   */
+  card_id: string
+}
+
+/**
+ * The sender looks at cards some players do not see: the top cards of a deck (`quantity`, the whole deck by default) or a hand, of any player, e.g. to resolve an effect (Shrewd Yasuki, Agasha Swordsmith, Kitsuki Investigator). The log gives the cards to the sender only (the others read how many cards and where): the sender then resolves the effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`, `reveal_card`). Nothing is recorded: the cards are out of sight again afterwards.
+ */
+export interface LookAtCards {
+  /**
+   * Player whose deck or hand it is.
+   */
+  target_player_id: string
+  /**
+   * Deck or hand.
+   */
+  stack: 'conflict_deck' | 'dynasty_deck' | 'hand'
+  /**
+   * Number of cards from the top of a deck; the whole stack by default.
+   */
+  quantity?: number | null
+}
+
+/**
  * The target player loses fate from their fate pool, which returns to the general token pool, e.g. to pay a cost or resolve an effect. Rejected when their fate pool does not hold that much fate.
  */
 export interface LoseFate {
@@ -544,6 +584,22 @@ export interface PointAtCard {
 }
 
 /**
+ * Puts a card face down on top of the deck of its side or at its bottom, from the deck itself, a hand, play, a province or a discard pile, e.g. to resolve an effect (Hida Tomonatsu, Shrewd Yasuki). A card leaving play leaves its attachments, tokens and the conflict; a province left without dynasty card is refilled.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PutCardOnDeck {
+  /**
+   * Conflict or dynasty card to put into the deck of its owner.
+   */
+  card_id: string
+  /**
+   * Where the card goes in the deck.
+   */
+  position: 'top' | 'bottom'
+}
+
+/**
  * Readies a bowed card in play (character, attachment or stronghold), e.g. to resolve an effect.
  *
  * The card can belong to any player: effects often target an opponent's card.
@@ -593,6 +649,34 @@ export interface ReturnCardToHand {
    * Card in play to return to its owner's hand.
    */
   card_id: string
+}
+
+/**
+ * The sender reveals a card to every player, e.g. a card of their hand, or a card found in a deck they have looked at (Agasha Swordsmith: "reveal it"). The log gives the card to every player; nothing is recorded. A facedown province is turned face up with `reveal_province`, a facedown dynasty card with `reveal_dynasty_card`.
+ */
+export interface RevealCard {
+  /**
+   * Card to reveal, of any player.
+   */
+  card_id: string
+}
+
+/**
+ * The sender reveals cards some players do not see to every player: the top cards of a deck (`quantity`, the whole deck by default) or a hand, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy). The log gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
+ */
+export interface RevealCards {
+  /**
+   * Player whose deck or hand it is.
+   */
+  target_player_id: string
+  /**
+   * Deck or hand.
+   */
+  stack: 'conflict_deck' | 'dynasty_deck' | 'hand'
+  /**
+   * Number of cards from the top of a deck; the whole stack by default.
+   */
+  quantity?: number | null
 }
 
 /**
@@ -682,6 +766,18 @@ export interface ShuffleDynastyDeck {
 }
 
 /**
+ * Shuffles a card into the deck of its side, from the deck itself, a hand, play, a province or a discard pile, e.g. to resolve an effect (Rebuild): the card is put into the deck, then the deck is shuffled. Every card of the deck gets a new id. A card leaving play leaves its attachments, tokens and the conflict; a province left without dynasty card is refilled.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface ShuffleIntoDeck {
+  /**
+   * Conflict or dynasty card to shuffle into the deck of its owner.
+   */
+  card_id: string
+}
+
+/**
  * Switches the type of the conflict being resolved, military to political or political to military, e.g. to resolve an effect (Rally to the Cause). The conflict opportunity used by its declaration does not change.
  */
 export type SwitchConflictType = Record<string, never>
@@ -756,6 +852,7 @@ export interface TriggerReactionAbility {
 
 /** the payload of each type of message */
 export interface MessagePayloads {
+  add_card_to_hand: AddCardToHand
   bid_honor: BidHonor
   bow_card: BowCard
   choose_stronghold_province: ChooseStrongholdProvince
@@ -782,6 +879,8 @@ export interface MessagePayloads {
   gain_honor: GainHonor
   honor_character: HonorCharacter
   initiate_duel: InitiateDuel
+  look_at_card: LookAtCard
+  look_at_cards: LookAtCards
   lose_fate: LoseFate
   lose_honor: LoseHonor
   move_fate: MoveFate
@@ -797,10 +896,13 @@ export interface MessagePayloads {
   play_interrupt_event: PlayInterruptEvent
   play_reaction_event: PlayReactionEvent
   point_at_card: PointAtCard
+  put_card_on_deck: PutCardOnDeck
   ready_card: ReadyCard
   remove_fate: RemoveFate
   reset_character_skill: ResetCharacterSkill
   return_card_to_hand: ReturnCardToHand
+  reveal_card: RevealCard
+  reveal_cards: RevealCards
   reveal_dynasty_card: RevealDynastyCard
   reveal_province: RevealProvince
   sacrifice_card: SacrificeCard
@@ -808,6 +910,7 @@ export interface MessagePayloads {
   set_honor_bid: SetHonorBid
   shuffle_conflict_deck: ShuffleConflictDeck
   shuffle_dynasty_deck: ShuffleDynastyDeck
+  shuffle_into_deck: ShuffleIntoDeck
   switch_conflict_type: SwitchConflictType
   switch_ring: SwitchRing
   transfer_honor: TransferHonor

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "reveal_card",
+    "description": "The sender reveals a card to every player, e.g. a card of their hand, or a card found in a deck they have looked at (Agasha Swordsmith: \"reveal it\"). The log gives the card to every player; nothing is recorded. A facedown province is turned face up with `reveal_province`, a facedown dynasty card with `reveal_dynasty_card`.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Card to reveal, of any player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

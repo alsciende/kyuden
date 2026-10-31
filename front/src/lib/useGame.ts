@@ -1,11 +1,28 @@
 import { onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 
 import { ApiProblem, fetchCard } from '@/api/client'
-import { fetchGame, fetchLog, sendMessage, type GameView, type LoggedMessage, type PayloadArgs } from '@/api/game'
+import {
+  fetchGame,
+  fetchLog,
+  sendMessage,
+  type GameView,
+  type LoggedMessage,
+  type LogParam,
+  type PayloadArgs,
+} from '@/api/game'
 import type { MessagePayloads, MessageType } from '@/api/messages'
 import { visibleCodes, type Cards } from '@/lib/board'
 import { follow } from '@/lib/hub'
 import { loadSession } from '@/lib/session'
+
+/** the codes of the cards a param of the log names, those of a list included (the cards looked at) */
+function codesOf(param: LogParam): string[] {
+  if (param.type === 'list') {
+    return param.items.flatMap(codesOf)
+  }
+
+  return param.type === 'card' && param.code ? [param.code] : []
+}
 
 /**
  * A game followed by its player: its view and its log, read again whenever the Mercure hub announces a change, the
@@ -74,9 +91,7 @@ export function useGame(gameId: string) {
     log.value = [...log.value, ...read.messages.filter((message) => message.version > since)]
     readCards(
       read.messages.flatMap((message) =>
-        message.entries.flatMap((entry) =>
-          Object.values(entry.params).flatMap((param) => (param.type === 'card' && param.code ? [param.code] : [])),
-        ),
+        message.entries.flatMap((entry) => Object.values(entry.params).flatMap(codesOf)),
       ),
     )
   }
