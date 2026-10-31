@@ -10,9 +10,9 @@ import CardPreview from '@/components/game/CardPreview.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
 import GameSidebar from '@/components/game/GameSidebar.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
-import PlayerDialog from '@/components/game/PlayerDialog.vue'
+import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
-import { gameEnded, victoryText } from '@/lib/board'
+import { gameEnded, opponent, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { hidePreview } from '@/lib/preview'
 import { isGuest, session } from '@/lib/session'
@@ -22,7 +22,7 @@ import { useGame } from '@/lib/useGame'
 
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
- * right. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result.
+ * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result.
  */
 const route = useRoute()
 const { game, log, cards, loadError, error, sending, send, refresh } = useGame(String(route.params.id))
@@ -31,7 +31,8 @@ const SIDEBAR_WIDTH = 340
 
 const selection = reactive(emptySelection())
 const openCardId = ref<string | null>(null)
-const openPlayerId = ref<string | null>(null)
+/** a popover of a bar of a player is open: it shows the errors */
+const barOpen = ref(false)
 const logOpen = ref(false)
 const boardRight = ref(window.innerWidth - SIDEBAR_WIDTH)
 
@@ -52,7 +53,15 @@ watch(menu, (current) => {
   }
 })
 
-const openPlayer = computed(() => game.value?.players.find((player) => player.id === openPlayerId.value))
+const me = computed(() => (game.value === null ? undefined : viewer(game.value)))
+const opp = computed(() => (game.value === null ? undefined : opponent(game.value)))
+
+function onPopover(open: boolean): void {
+  barOpen.value = open
+  if (open) {
+    error.value = null
+  }
+}
 
 function open(id: string): void {
   hidePreview()
@@ -134,7 +143,21 @@ const problem = computed(() => {
 
 <template>
   <div v-if="game" class="table">
+    <PlayerBar
+      v-if="opp"
+      :game="game"
+      :player="opp"
+      :cards="cards"
+      position="top"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      class="top-bar"
+      @open="open"
+      @popover="onPopover"
+    />
     <GameBoard
+      class="middle"
       :game="game"
       :cards="cards"
       :selection="selection"
@@ -149,15 +172,28 @@ const problem = computed(() => {
       @switch-ring="switchRing"
     />
     <GameSidebar
+      class="middle"
       :game="game"
       :cards="cards"
       :log="log"
       :selection="selection"
       :sending="sending"
-      :error="openCardId || openPlayerId ? null : error"
+      :error="openCardId || barOpen ? null : error"
       :send="send"
       @open-log="logOpen = true"
-      @open-player="openPlayerId = $event"
+    />
+    <PlayerBar
+      v-if="me"
+      :game="game"
+      :player="me"
+      :cards="cards"
+      position="bottom"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      class="bottom-bar"
+      @open="open"
+      @popover="onPopover"
     />
 
     <div v-if="ended && result" class="ended" role="dialog" aria-labelledby="game-result">
@@ -192,15 +228,6 @@ const problem = computed(() => {
       :send="send"
       @close="openCardId = null"
     />
-    <PlayerDialog
-      v-if="openPlayer"
-      :game="game"
-      :player="openPlayer"
-      :sending="sending"
-      :error="error"
-      :send="send"
-      @close="openPlayerId = null"
-    />
     <LogDrawer v-if="logOpen" :game="game" :cards="cards" :log="log" @close="logOpen = false" />
   </div>
 
@@ -218,9 +245,23 @@ const problem = computed(() => {
 .table {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
   overflow: hidden;
   background: var(--board);
+}
+
+.top-bar {
+  grid-row: 1;
+}
+
+.middle {
+  grid-row: 2;
+  min-height: 0;
+}
+
+.bottom-bar {
+  grid-row: 3;
 }
 
 .ended {

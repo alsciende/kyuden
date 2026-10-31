@@ -11,12 +11,8 @@ import './styles/base.css'
 import { createApp } from 'vue'
 
 import App from './App.vue'
-import { showDebugToolbar } from './lib/debugToolbar'
 import { followTheme } from './lib/theme'
 import { router } from './router'
 
-if (import.meta.env.DEV) {
-  showDebugToolbar()
-}
 followTheme()
 createApp(App).use(router).mount('#app')

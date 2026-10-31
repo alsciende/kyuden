@@ -1,4 +1,0 @@
-framework:
-    profiler:
-        enabled: true
-        collect: true

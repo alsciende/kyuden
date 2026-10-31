@@ -1,0 +1,5 @@
+# the profiler of the tests only: a test counts the queries of a request (KernelBrowser::enableProfiler())
+framework:
+    profiler:
+        enabled: true
+        collect: false

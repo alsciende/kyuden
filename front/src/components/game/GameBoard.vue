@@ -418,12 +418,6 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
     <!-- the whole board -->
     <template v-else>
       <section v-if="opp" class="zone opponent" aria-label="Opponent provinces">
-        <div class="identity">
-          <PlayerChip :player="opp" :viewer-id="game.viewer_id" class="big-chip" />
-          <span class="identity-name"
-            >{{ opp.name }}<template v-if="opp.clan"> · {{ opp.clan }}</template></span
-          >
-        </div>
         <ProvinceRow :game="game" :player="opp" :cards="cards" size="small" @open="emit('open', $event)" />
       </section>
 
@@ -467,7 +461,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
 <style scoped>
 .board {
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
   padding: 20px 36px 24px;
@@ -513,30 +507,6 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   flex-direction: row;
   align-items: flex-end;
   gap: 28px;
-}
-
-.identity {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 170px;
-  min-width: 0;
-  align-self: center;
-}
-
-.big-chip {
-  align-self: flex-start;
-  font-family: var(--font-display);
-  font-size: 20px;
-}
-
-.identity-name {
-  font-size: 13px;
-  color: var(--ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: capitalize;
 }
 
 .rule {

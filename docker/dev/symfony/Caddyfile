@@ -26,9 +26,9 @@
 		}
 	}
 
-	# Symfony: the API, the development console, its assets (AssetMapper) and the profiler; only the front controller is
+	# Symfony: the API, the development console and its assets (AssetMapper); only the front controller is
 	# executed
-	@symfony path /api /api/* /console /console/* /assets/* /bundles/* /_wdt/* /_profiler /_profiler/*
+	@symfony path /api /api/* /console /console/* /assets/* /bundles/*
 	handle @symfony {
 		php_server
 	}

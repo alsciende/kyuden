@@ -12,7 +12,7 @@ security:
 
     firewalls:
         dev:
-            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            pattern: ^/(css|images|js)/
             security: false
         main:
             # the users authenticate with an access token (App\Entity\AccessToken); the password only gets a token
