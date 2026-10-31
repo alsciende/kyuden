@@ -1,0 +1,41 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "claim_ring",
+    "description": "The target player claims a ring that nobody has claimed, unclaimed or contested, e.g. to resolve an effect (Display of Power): it goes to their claimed ring pool, with the fate on it. The ring is claimed in `conflict_type`, by default the type of the conflict being resolved; outside of a conflict, `conflict_type` is required. A contested ring claimed this way is not claimed again by the winner of the conflict.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Ring to claim, unclaimed or contested.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        },
+        "target_player_id": {
+            "description": "Player who claims the ring.",
+            "type": "string"
+        },
+        "conflict_type": {
+            "description": "Type of the conflict the ring is claimed in; by default, the type of the conflict being resolved.",
+            "type": [
+                "string",
+                "null"
+            ],
+            "enum": [
+                "military",
+                "political",
+                null
+            ],
+            "default": null
+        }
+    },
+    "required": [
+        "ring",
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

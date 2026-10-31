@@ -11,6 +11,7 @@ const EFFECTS = [
   'dishonor_character',
   'place_fate',
   'remove_fate',
+  'move_fate',
   'move_home',
   'move_to_conflict',
   'set_character_skill',
@@ -55,7 +56,15 @@ describe('cardMenu', () => {
       'dishonor_character',
       'place_fate',
       'remove_fate',
+      'move_fate',
     ])
+    expect(menu.state.at(-1)?.payload).toEqual({
+      source: 'card',
+      source_id: kaezin.id,
+      target: 'player',
+      target_id: 'me',
+      amount: 1,
+    })
     expect(menu.skill).toBe(true)
     expect(menu.removals.map((action) => [action.type, action.payload])).toEqual([
       ['return_card_to_hand', { card_id: kaezin.id }],

@@ -149,6 +149,11 @@ readonly class MessageSchemaFactory
             $type instanceof NullableType && $type->getWrappedType() instanceof BuiltinType => [
                 'type' => [$this->createType($type->getWrappedType(), $where)['type'], 'null'],
             ],
+            // a nullable backed enum, e.g. ?ConflictType: its values and null
+            $type instanceof NullableType && $type->getWrappedType() instanceof BackedEnumType => [
+                'type' => [$this->createType($type->getWrappedType(), $where)['type'], 'null'],
+                'enum' => [...$this->getEnumValues($type->getWrappedType()->getClassName()), null],
+            ],
             $type instanceof BackedEnumType => [
                 'type' => $type->getBackingType()->getTypeIdentifier() === TypeIdentifier::INT ? 'integer' : 'string',
                 'enum' => $this->getEnumValues($type->getClassName()),

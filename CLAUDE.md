@@ -39,7 +39,6 @@ After changing a workflow, compare `bin/console workflow:dump <name>` before and
 - `glossary.md`: rules glossary
 - `card-clarifications.md`: per-card rulings
 - `symbols.md`: card symbols
-- `game.md`: queue and game creation from the app's point of view
 
 ## Tests
 

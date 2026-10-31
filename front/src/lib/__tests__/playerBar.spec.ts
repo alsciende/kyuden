@@ -39,9 +39,15 @@ describe('playerBar', () => {
   it('reads the conflicts left, the claimed rings and the Imperial Favor', () => {
     const me = player('me', [], { declared_conflict_types: ['military'] })
     const opp = player('opp')
-    const ring = { fate: 0, claimed_by_id: null }
+    const ring = { fate: 0, claimed_by_id: null, claimed_conflict_type: null }
     const view = game(me, opp, {
-      rings: { air: ring, earth: ring, fire: { fate: 0, claimed_by_id: 'me' }, void: ring, water: ring },
+      rings: {
+        air: ring,
+        earth: ring,
+        fire: { fate: 0, claimed_by_id: 'me', claimed_conflict_type: 'military' },
+        void: ring,
+        water: ring,
+      },
       imperial_favor_holder_id: 'opp',
       imperial_favor_side: 'political',
     })
@@ -69,6 +75,7 @@ describe('playerEffects', () => {
       'transfer_honor',
       'gain_fate',
       'lose_fate',
+      'move_fate',
       'draw_conflict_cards',
       'discard_random_card_from_hand',
       'shuffle_conflict_deck',
@@ -80,6 +87,11 @@ describe('playerEffects', () => {
     expect(playerEffects(everything, opp, 'fate', 2)).toEqual([
       { type: 'gain_fate', label: 'Gain 2 fate', payload: { target_player_id: 'opp', fate_gain: 2 } },
       { type: 'lose_fate', label: 'Lose 2 fate', payload: { target_player_id: 'opp', fate_loss: 2 } },
+      {
+        type: 'move_fate',
+        label: 'Give 2 to you',
+        payload: { source: 'player', source_id: 'opp', target: 'player', target_id: 'me', amount: 2 },
+      },
     ])
   })
 

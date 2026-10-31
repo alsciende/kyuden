@@ -30,7 +30,7 @@ readonly class RingsReturnedTransitionListener
 
         $this->stateManager->withState($game, function (GameState $state): GameState {
             foreach ($state->rings as $ring) {
-                $ring->claimedById = null;
+                $ring->unclaim();
             }
 
             return $state;

@@ -127,6 +127,7 @@ class FatePhaseListenersTest extends AbstractKernelTestCase
         $this->transition(self::service(RingsReturnedTransitionListener::class), $scenario);
 
         self::assertTrue($this->gameState($scenario)->isRingUnclaimed(Element::Fire));
+        self::assertNull($this->gameState($scenario)->getRing(Element::Fire)->claimedConflictType);
     }
 
     public function testTheNextPlayerBecomesTheFirstPlayer(): void

@@ -150,11 +150,11 @@ describe('the values prefilled for the players', () => {
     ])
     const view = game(me, player('opp'), {
       rings: {
-        air: { fate: 0, claimed_by_id: 'me' },
-        earth: { fate: 0, claimed_by_id: 'opp' },
-        fire: { fate: 0, claimed_by_id: null },
-        void: { fate: 0, claimed_by_id: 'me' },
-        water: { fate: 0, claimed_by_id: null },
+        air: { fate: 0, claimed_by_id: 'me', claimed_conflict_type: 'military' },
+        earth: { fate: 0, claimed_by_id: 'opp', claimed_conflict_type: 'political' },
+        fire: { fate: 0, claimed_by_id: null, claimed_conflict_type: null },
+        void: { fate: 0, claimed_by_id: 'me', claimed_conflict_type: 'military' },
+        water: { fate: 0, claimed_by_id: null, claimed_conflict_type: null },
       },
     })
 
@@ -166,11 +166,11 @@ describe('the state of the game', () => {
   it('tells the rings unclaimed, contested and claimed', () => {
     const view = game(player('me'), player('opp'), {
       rings: {
-        air: { fate: 2, claimed_by_id: null },
-        earth: { fate: 0, claimed_by_id: 'opp' },
-        fire: { fate: 0, claimed_by_id: null },
-        void: { fate: 0, claimed_by_id: 'me' },
-        water: { fate: 1, claimed_by_id: null },
+        air: { fate: 2, claimed_by_id: null, claimed_conflict_type: null },
+        earth: { fate: 0, claimed_by_id: 'opp', claimed_conflict_type: 'political' },
+        fire: { fate: 0, claimed_by_id: null, claimed_conflict_type: null },
+        void: { fate: 0, claimed_by_id: 'me', claimed_conflict_type: 'military' },
+        water: { fate: 1, claimed_by_id: null, claimed_conflict_type: null },
       },
       conflict: {
         attacking_player_id: 'me',

@@ -371,6 +371,8 @@ export interface Ring {
   element: Element
   fate: number
   status: RingStatus
+  /** the type of the conflict a claimed ring was claimed in */
+  conflictType: ConflictType | null
 }
 
 export function rings(game: GameView): Ring[] {
@@ -386,7 +388,7 @@ export function rings(game: GameView): Ring[] {
       status = ring.claimed_by_id === game.viewer_id ? 'yours' : 'theirs'
     }
 
-    return [{ element, fate: ring.fate, status }]
+    return [{ element, fate: ring.fate, status, conflictType: ring.claimed_conflict_type }]
   })
 }
 

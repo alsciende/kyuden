@@ -1,0 +1,47 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_fate",
+    "description": "Moves fate from a holder to another, e.g. to resolve an effect: from a fate pool to a ring (\"spend 1 fate to an unclaimed ring\"), from a character to its owner's fate pool (Jade Tetsubō), from a character to another, from a fate pool to another (\"give your opponent 1 fate\"), from a ring to a fate pool (Know the World).\n\nA holder is a `player` (their fate pool, by player id), a `card` (a character in play, by card id) or a `ring` (by element). The fate from or to the general token pool is gained, lost, placed or removed with the other messages.",
+    "type": "object",
+    "properties": {
+        "source": {
+            "description": "Kind of holder the fate comes from.",
+            "type": "string",
+            "enum": [
+                "player",
+                "card",
+                "ring"
+            ]
+        },
+        "source_id": {
+            "description": "Holder the fate comes from: a player id, a card id or a ring element.",
+            "type": "string"
+        },
+        "target": {
+            "description": "Kind of holder the fate goes to.",
+            "type": "string",
+            "enum": [
+                "player",
+                "card",
+                "ring"
+            ]
+        },
+        "target_id": {
+            "description": "Holder the fate goes to: a player id, a card id or a ring element.",
+            "type": "string"
+        },
+        "amount": {
+            "description": "Fate moved.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+        }
+    },
+    "required": [
+        "source",
+        "source_id",
+        "target",
+        "target_id",
+        "amount"
+    ],
+    "additionalProperties": false
+}

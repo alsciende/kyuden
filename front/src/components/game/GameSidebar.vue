@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import type { GameView, LoggedMessage, Send } from '@/api/game'
+import type { Element, GameView, LoggedMessage, Send } from '@/api/game'
 import ActionPanel from '@/components/game/ActionPanel.vue'
 import LogLine from '@/components/game/LogLine.vue'
+import RingPopover from '@/components/game/RingPopover.vue'
 import { PHASES, rings, stepOf, type Cards } from '@/lib/board'
-import { ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import type { Selection } from '@/lib/selection'
 import { vTip } from '@/lib/tooltip'
 
 /**
- * The bar on the right of the board: the step of the round, what the player does in it, then the rings and the last
- * lines of the log (the players are in their bars, above and below the board).
+ * The bar on the right of the board: the step of the round, what the player does in it, then the rings (a click on one
+ * opens its window) and the last lines of the log (the players are in their bars, above and below the board).
  */
 const props = defineProps<{
   game: GameView
@@ -33,6 +34,9 @@ const unclaimedFate = computed(() =>
 )
 
 const RING_STATUS = { unclaimed: '', contested: 'Contested', yours: 'You', theirs: 'Opp.' }
+
+/** the ring whose window is open */
+const openRing = ref<Element | null>(null)
 
 /** the last lines of the log */
 const tail = computed(() => props.log.flatMap((message) => message.entries).slice(-3))
@@ -65,22 +69,39 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       </div>
       <div class="ring-list">
         <div v-for="ring in ringList" :key="ring.element" class="ring-cell">
-          <div
+          <button
             v-tip="ringTip(ring.element)"
+            type="button"
             class="ring"
-            :class="ring.status"
-            role="img"
-            tabindex="0"
+            :class="[ring.status, { on: openRing === ring.element }]"
+            :aria-expanded="openRing === ring.element"
             :aria-label="`${ELEMENT_NAMES[ring.element]} ring, ${ring.status === 'unclaimed' ? `unclaimed, ${ring.fate} fate` : ring.status === 'contested' ? 'contested' : ring.status === 'yours' ? 'claimed by you' : 'claimed by the opponent'}`"
+            @click="openRing = openRing === ring.element ? null : ring.element"
           >
             <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
-            <span v-if="ring.status === 'unclaimed' && ring.fate > 0" class="ring-fate">{{ ring.fate }}</span>
-          </div>
+            <span v-if="ring.fate > 0" class="ring-fate">{{ ring.fate }}</span>
+          </button>
           <span class="ring-status" :class="ring.status">
             {{ ring.status === 'unclaimed' ? (ring.fate ? `${ring.fate} fate` : 'No fate') : RING_STATUS[ring.status] }}
+            <span
+              v-if="ring.status !== 'contested' && ring.conflictType"
+              class="icon"
+              role="img"
+              :aria-label="`claimed in a ${ring.conflictType} conflict`"
+              >{{ CONFLICT_ICONS[ring.conflictType] }}</span
+            >
           </span>
         </div>
       </div>
+      <RingPopover
+        v-if="openRing"
+        :game="game"
+        :element="openRing"
+        :sending="sending"
+        :error="error"
+        :send="send"
+        @close="openRing = null"
+      />
     </section>
 
     <section class="log" aria-label="Last lines of the log">
@@ -179,12 +200,20 @@ h1 {
   gap: 7px;
 }
 
+.rings {
+  position: relative;
+}
+
 .ring {
+  font: inherit;
   width: 44px;
   height: 44px;
   box-sizing: border-box;
   border-radius: 50%;
   border: 1.5px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -206,6 +235,12 @@ h1 {
   background: var(--paper-3);
   color: var(--ink-2);
   border: 1.5px dashed var(--ink-3);
+}
+
+.ring:hover,
+.ring.on {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
 }
 
 .ring-fate {

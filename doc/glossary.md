@@ -99,9 +99,9 @@ If the attacking player wins a conflict with a total skill difference (between t
 
 - Dynasty cards may still be played from broken provinces, and broken provinces still refill following the standard game rules.
 - If three of a player's non-stronghold provinces are broken, that player's stronghold becomes an eligible province against which attacks may be made. If a player's stronghold province is broken, that player loses the game.
-- h If a player does not have a stronghold province, they lose the game when all of their provinces are broken.
+  - If a player does not have a stronghold province, they lose the game when all of their provinces are broken.
 - If a province breaks for any reason other than through standard conflict resolution, the opponent of the player who controls that province is considered to have broken the province.
-- h If a player has multiple opponents, each of those players is considered to have broken the province.
+  - If a player has multiple opponents, each of those players is considered to have broken the province.
 
 ## Bow, Bowed
 
@@ -158,7 +158,7 @@ A player's stronghold card signals which clan a player has chosen as the primary
 
 - An 'in-clan' card bears a clan symbol that matches the clan symbol on its controller's stronghold card.
 - An 'out-of-clan' card bears one or more clan symbols that do not match the clan symbol on its controller's stronghold card, and does not bear a clan symbol that matches the clan symbol on its controller's stronghold card.
-- h If a player does not have a stronghold card, 'in-clan' and 'out-of-clan' determination is defined by the clan selected during deckbuilding to be that player's primary clan.
+  - If a player does not have a stronghold card, 'in-clan' and 'out-of-clan' determination is defined by the clan selected during deckbuilding to be that player's primary clan.
 
 Related : Deckbuilding
 
@@ -296,17 +296,17 @@ To build custom decks for Legend of the Five Rings: The Card Game :
 - A player's dynasty deck must contain a minimum of 40 and a maximum of 45 cards. Each of these cards must be in-clan or be neutral.
 - A player may use 1 role card.
 - A player's conflict deck must contain a minimum of 40 and a maximum of 45 cards. Each of these cards must be in-clan, be neutral, or be purchased from a single other clan by using influence.
-- h A player's stronghold indicates the amount of influence that player may spend during deckbuilding.
+  - A player's stronghold indicates the amount of influence that player may spend during deckbuilding.
 - No more than 3 copies of a single card by title can be included in any combination in a player's dynasty and conflict decks.
 - A player's set of provinces must include exactly 5 provinces. For each element, that player must choose one province associated with that element, such that all five elements are represented among their set of provinces. (Each province has a ring symbol in the lower right corner of the card to indicate its association.) Each of these provinces must be in-clan or be neutral.
-- h No more than 1 copy of each province, by title, may be included in a player's set of provinces.
+  - No more than 1 copy of each province, by title, may be included in a player's set of provinces.
 - Any additional deckbuilding restrictions contained in the separate Imperial Law document, based on the format being played, must be followed.
 - The skirmish format follows different deckbuilding rules than each other format. When building decks for the skirmish format, use the following rules instead:
-- h Do not include stronghold, role, or province cards.
-- h A player's dynasty deck must contain a minimum of 30 cards and a maximum of 40 cards. Each of these cards must be in-clan or neutral.
-- h A player's conflict deck must contain a minimum of 30 cards and a maximum of 40 cards. Each of these cards must be in-clan or neutral, or be purchased from a single other clan by using influence. (Each player has 6 influence with which to purchase out-of-clan cards during deckbuilding.)
-- h No more than 2 copies of a single card by title can be included in any combination in a player's dynasty and conflict decks.
-- h For tournament play, each player may include up to 10 additional cards in their 'sideboard,' which can be used to modify the contents of their decks in between games in a single match. The contents of a players' decks and sideboard combined must follow all rules outlined above.
+  - Do not include stronghold, role, or province cards.
+  - A player's dynasty deck must contain a minimum of 30 cards and a maximum of 40 cards. Each of these cards must be in-clan or neutral.
+  - A player's conflict deck must contain a minimum of 30 cards and a maximum of 40 cards. Each of these cards must be in-clan or neutral, or be purchased from a single other clan by using influence. (Each player has 6 influence with which to purchase out-of-clan cards during deckbuilding.)
+  - No more than 2 copies of a single card by title can be included in any combination in a player's dynasty and conflict decks.
+  - For tournament play, each player may include up to 10 additional cards in their 'sideboard,' which can be used to modify the contents of their decks in between games in a single match. The contents of a players' decks and sideboard combined must follow all rules outlined above.
 
 ## Deck Limits
 
@@ -412,7 +412,7 @@ Event cards represent tactical acts and maneuvers, court intrigues, spells, supe
 - Event cards are triggered from a player's hand or provinces. An event card's ability type, triggering condition (if any), play permissions/restrictions (if any), and originating location define when and how the card may be played.
 - Event cards played from a player's provinces cannot be played outside of the dynasty phase.
 - Event cards with action abilities may be played from a player's hand during any action window.
-- h In the skirmish format, event cards with action abilities cannot be played from a player's hand during the dynasty phase.
+  - In the skirmish format, event cards with action abilities cannot be played from a player's hand during the dynasty phase.
 - When an event card is played, its costs are paid, its effects are resolved (or canceled), and it is placed in its owner's appropriate discard pile prior to opening the reaction window which follows the ability's resolution.
 - Lasting effects, including those created by event cards, engage the game state at the time they resolve. If an event card creates a lasting effect on a set of cards, only cards that are in play (or in the affected game area or game state) at the time the event is played are eligible to be affected. Cards that enter play (or the affected game area or game state) after the resolution of the event are not affected by its lasting effect.
 - If the effects of an event card are canceled, the card is still considered to have been played, and its costs remain paid, and the card is still discarded. Only the effects have been canceled.
@@ -457,7 +457,7 @@ A first player is chosen during setup, and the first player token is used to ind
 - The first player has the first opportunity to initiate interrupt or reaction abilities at each appropriate game moment.
 - For any question as to who should perform an act or make a decision first, in the absence of any other direction by card or rules text, the first player does so first, followed by the player to the first player's left and continuing in clockwise order.
 - In the team conquest format, the first player token is given to a team rather than a player. Each player on that team is considered to be the first player. During action windows, each team has an action opportunity (rather than each player). When a team wishes to take an action, one of the players on that team takes the action, then a player on the opposing team has an opportunity to take an action. This continues until both teams pass in sequence, and the action window closes.
-- h At the end of the fate phase, the first player token is passed to the opposing team and they become the first player team.
+  - At the end of the fate phase, the first player token is passed to the opposing team and they become the first player team.
 
 Related : Active Player, Setup, Priority of Simultaneous Resolution, [Timing and Gameplay](timing-and-gameplay.md)
 
@@ -637,7 +637,7 @@ Once an interrupt window closes, further interrupts to that specific triggering 
 
 - Unless otherwise noted by the ability, each interrupt ability may be initiated once each round. (This includes forced interrupts.)
 - An interrupt with specified limit that enables it to be triggered more than once per round may only be initiated once each time its specified triggering condition occurs.
-- h If multiple players can trigger an interrupt ability, each may do so to the same triggering condition.
+  - If multiple players can trigger an interrupt ability, each may do so to the same triggering condition.
 
 ## Keywords
 
@@ -729,7 +729,7 @@ Any time a new modifier is applied (or removed), the entire quantity is recalcul
 - When a value is 'set' to a specific number, the set modifier overrides all non-set modifiers (including any new non-set modifiers that are added during the duration of the set value). If multiple set modifiers are in conflict, the most recently applied set modifier takes precedence.
 - A quantity cannot be reduced so that it functions with a value below zero: a card cannot have negative icons, political or military skill, glory, traits, cost, or keywords. Negative modifiers that would take a value below zero can be applied, but, after all active modifiers have been applied, any resultant value below zero is treated as zero.
 - If a value 'cannot be increased/decreased,' any modifiers to that value that would increase/decrease it are ignored for the duration of the 'cannot be increased/decreased' effect, even if those modifiers were applied before applying the 'cannot be increased/decreased' effect.
-- h 'Set' modifiers are not ignored, as they do not directly increase/decrease the value.
+  - 'Set' modifiers are not ignored, as they do not directly increase/decrease the value.
 
 ## Move
 
@@ -855,16 +855,16 @@ A permission is a variant of a play restriction that provides a player with addi
 In most game formats, players are eliminated from the game when certain conditions are met. Once a player is eliminated from the game, all cards that player owns are immediately removed from the game, and their honor dial is ignored for the purposes of card abilities for the rest of the game. If, after a player is eliminated, only one player remains in the game, that player is the game's winner.
 
 - If a player is eliminated from an enlightenment format game, perform the following steps:
-- h Any ring tokens an eliminated player had claimed on their provinces, or that are in the eliminated player's personal unclaimed ring pool, are placed in the common unclaimed ring pool.
-- h If the eliminated player was the first player, the first player token immediately passes to the player on the eliminated player's left.
-- h Any treaties made by the eliminated player are immediately dissolved.
+  - Any ring tokens an eliminated player had claimed on their provinces, or that are in the eliminated player's personal unclaimed ring pool, are placed in the common unclaimed ring pool.
+  - If the eliminated player was the first player, the first player token immediately passes to the player on the eliminated player's left.
+  - Any treaties made by the eliminated player are immediately dissolved.
 - Players are not eliminated from a team conquest format game until their entire team loses. If a player's stronghold province is broken, they continue to play, with the following penalties:
-- h Treat the printed text box of that player's stronghold as if it were blank (except for Traits ).
+  - Treat the printed text box of that player's stronghold as if it were blank (except for Traits ).
 
-- h That player cannot bid more than two during honor bids.
-- h That player cannot reshuffle either of their decks if those decks run out of cards.
-- h If a player reaches zero honor, their stronghold province is immediately broken.
-- h Broken stronghold provinces are immune to all card effects.
+  - That player cannot bid more than two during honor bids.
+  - That player cannot reshuffle either of their decks if those decks run out of cards.
+  - If a player reaches zero honor, their stronghold province is immediately broken.
+  - Broken stronghold provinces are immune to all card effects.
 
 ## Pride
 
@@ -925,7 +925,7 @@ Once a reaction window closes, further reactions to that specific triggering con
 - Unless otherwise noted by the ability, each reaction ability may be initiated once each round. (This includes forced reactions.)
 
 - A reaction with a specified limit that enables it to be triggered more than once per round may only be initiated once each time its specified triggering condition occurs.
-- h If multiple players can trigger a reaction ability, each may do so to the same triggering condition.
+  - If multiple players can trigger a reaction ability, each may do so to the same triggering condition.
 
 ## Ready
 
@@ -995,15 +995,15 @@ Claimed - Each ring in a player's claimed ring pool is a claimed ring.
 - While performing a glory count, each player adds 1 to their total for each ring in his or her claimed ring pool.
 
 - During the fate phase, place 1 fate on each unclaimed ring.
-- h This step is skipped when playing the skirmish format.
+  - This step is skipped when playing the skirmish format.
 - When a ring becomes the contested ring in a conflict, move all fate on that ring to the attacking player's fate pool.
 - When a ring is claimed, it is still considered to be contested until all reactions to its claiming have resolved.
 - A card effect that refers to 'the [ELEMENT] ring' refers to any ring that has that element.
 - When a player claims a ring in the enlightenment format, that ring is placed on one of that player's provinces. The ring is considered to be 'claimed on that province.' Rings claimed on a player's provinces do not return to the unclaimed ring pool during the fate phase. They are still considered to be in that player's claimed ring pool.
-- h A player cannot have multiple rings of the same printed element claimed on their provinces. If they would do so, the duplicate ring is not claimed and is instead returned to the attacking player's unclaimed ring pool (if contested) or to the defending player's unclaimed ring pool (if claimed on a broken province).
-- h A player cannot claim a ring on their stronghold province unless their stronghold province is eligible to be attacked by their opponents.
-- h If a player breaks an opponent's province during a conflict, they claim each ring that was claimed on that province, distributing those rings among their own provinces if able.
-- h When a card effect would cause a ring to move from a player's claimed ring pool to an unclaimed ring pool or vice-versa, both pools must belong to the same player. During a conflict, card effects can only switch the contested ring with rings in the claimed or unclaimed ring pools of the attacking player.
+  - A player cannot have multiple rings of the same printed element claimed on their provinces. If they would do so, the duplicate ring is not claimed and is instead returned to the attacking player's unclaimed ring pool (if contested) or to the defending player's unclaimed ring pool (if claimed on a broken province).
+  - A player cannot claim a ring on their stronghold province unless their stronghold province is eligible to be attacked by their opponents.
+  - If a player breaks an opponent's province during a conflict, they claim each ring that was claimed on that province, distributing those rings among their own provinces if able.
+  - When a card effect would cause a ring to move from a player's claimed ring pool to an unclaimed ring pool or vice-versa, both pools must belong to the same player. During a conflict, card effects can only switch the contested ring with rings in the claimed or unclaimed ring pools of the attacking player.
 - In the team conquest format, each team has a shared claimed ring pool. For the purposes of card and game effects, a team's claimed ring pool counts as the claimed ring pool of each player on that team.
 
 Related : Ring Effects
@@ -1025,9 +1025,9 @@ Void : Choose a character and remove 1 fate from it.
 - Whenever a player resolves a ring effect for a ring that has multiple elements, that player may choose among those elements when the conflict's ring effect resolves.
 - When a player is instructed to resolve multiple ring effects, they resolve each effect (or pass on that effect) in its entirety before resolving the next ring effect.
 - When playing the skirmish format, the following three rings have the following effects instead:
-- h Air : Take 1 honor from your opponent.
-- h Earth : Either draw 1 card from your conflict deck or discard 1 random card from your opponent's hand.
-- h Water : Choose a character in any player's home area with 1 or fewer fate on it and either ready or bow it.
+  - Air : Take 1 honor from your opponent.
+  - Earth : Either draw 1 card from your conflict deck or discard 1 random card from your opponent's hand.
+  - Water : Choose a character in any player's home area with 1 or fewer fate on it and either ready or bow it.
 
 ## Role Cards
 
@@ -1085,17 +1085,17 @@ To set up a game, perform the following steps in order:
 
 1. Select decks . Each player selects a deck using the deckbuilding rules. See "Deckbuilding".
 2. Create token bank and unclaimed ring pool . Place all fate tokens, honor tokens, status tokens, and the Imperial Favor in a pile within reach of each player. This area is known as the token bank. Place the rings near the token bank. This area is known as the unclaimed ring pool.
-- h In the enlightenment format, instead of placing five rings in a single unclaimed ring pool, each player places five ring tokens (one of each element) in their own personal unclaimed ring pool.
+  - In the enlightenment format, instead of placing five rings in a single unclaimed ring pool, each player places five ring tokens (one of each element) in their own personal unclaimed ring pool.
 3. Determine first player . Randomly select a player. That player will be the first player. Place the first player token in front of this player.
 4. Shuffle dynasty and conflict decks . Each player shuffles both their dynasty and conflict decks separately and presents them to the opponent for additional shuffling and/ or a final cut. Then each player places their dynasty deck to the left of their play area and their conflict deck to the right.
 5. Place provinces and stronghold . In player order, each player secretly selects one of their province cards, places it facedown above their dynasty deck, and places their stronghold card on top of it. If a player is using a role card, it is placed next to their stronghold during this step. Each player then places their other four provinces facedown between their dynasty and conflict decks, in any order.
-- h In the skirmish format, each player instead places three province tokens between their dynasty and conflict decks.
+  - In the skirmish format, each player instead places three province tokens between their dynasty and conflict decks.
 6. Fill provinces . Each player places a card from the top of their dynasty deck facedown onto each of their empty nonstronghold provinces. In player order, each player looks at each of their cards placed in this manner and has one opportunity to mulligan any number of them.
-- h Note : After this step, a player may not look at facedown cards in his or her provinces.
+  - Note : After this step, a player may not look at facedown cards in his or her provinces.
 7. Draw starting hand . Each player draws 4 cards from their conflict deck. In player order, each player has one opportunity to mulligan any number of these cards.
-- h In the skirmish format, each player draws and mulligans to 3 cards instead of 4.
+  - In the skirmish format, each player draws and mulligans to 3 cards instead of 4.
 8. Gain starting honor . Each player gains honor tokens equal to the honor value on their stronghold.
-- h In the skirmish format, each player starts the game with 6 honor.
+  - In the skirmish format, each player starts the game with 6 honor.
 
 The game is now ready to begin.
 
@@ -1268,7 +1268,7 @@ After a treaty is broken (and its effects resolved) or fulfilled (and its effect
 A boldface timing command followed by a colon indicates that an ability is a triggered ability. Triggered abilities fall into one of the following types: actions, interrupts, and reactions. Some interrupt and reaction abilities are also forced.
 
 - Unless the timing command is prefaced by the word 'Forced,' all triggered abilities are optional. They can be triggered (or not) by their controller at the ability's appropriate timing point. Forced triggered abilities are triggered automatically by the game at the ability's appropriate timing point.
-- h Any targets that must be chosen in the resolution of a card's 'Forced' ability are chosen by the controller of that card.
+  - Any targets that must be chosen in the resolution of a card's 'Forced' ability are chosen by the controller of that card.
 - Unless otherwise specified by the ability itself, each triggered ability may be triggered once per round. This limit is player specific.
 - Triggered abilities are written in a 'triggering condition (and/or) cost (and/or) targeting requirements - effect' template. Ability text before the dash consists of triggering conditions (and/or) costs (and/or) targeting requirements. Ability text after the dash consists of effects. and may sometimes include targeting requirements that come into play as the effect is being resolved.
 - If a triggered ability has no dash, the ability has no pre-dash content, and the entirety of the ability is considered an effect.
@@ -1331,21 +1331,21 @@ In each format, there are three primary paths to victory in the game. The game e
 - Some card abilities can introduce additional victory conditions to the game. Such a condition immediately ends the game if it is met.
 - If two or more players would reach a victory condition simultaneously, the first player wins the game if they have reached a victory condition. If they have not, the player closes to the first player's left who has reached a victory condition wins the game.
 - Stronghold format victory conditions:
-- h If a player's stronghold province is broken, that player is eliminated from the game.
-- h The first player to meet the condition of having 25 or more honor in their honor pool wins the game.
-- h The first player to have 0 honor in their honor pool is eliminated from the game.
+  - If a player's stronghold province is broken, that player is eliminated from the game.
+  - The first player to meet the condition of having 25 or more honor in their honor pool wins the game.
+  - The first player to have 0 honor in their honor pool is eliminated from the game.
 - Skirmish format victory conditions:
-- h If all three of a player's province are broken, that player is eliminated from the game.
-- h The first player to meet the condition of having 12 or more honor in their honor pool wins the game.
-- h When a player has 0 honor in their honor pool, they are eliminated from the game.
+  - If all three of a player's province are broken, that player is eliminated from the game.
+  - The first player to meet the condition of having 12 or more honor in their honor pool wins the game.
+  - When a player has 0 honor in their honor pool, they are eliminated from the game.
 - Enlightenment format victory conditions:
-- h The first player to collect all five elemental rings on their provinces wins the game.
-- h The first player to meet the condition of having 25 or more honor in their honor pool wins the game.
-- h If a player's stronghold province is broken, or if a player has 0 honor in their honor pool, that player is eliminated from the game.
+  - The first player to collect all five elemental rings on their provinces wins the game.
+  - The first player to meet the condition of having 25 or more honor in their honor pool wins the game.
+  - If a player's stronghold province is broken, or if a player has 0 honor in their honor pool, that player is eliminated from the game.
 
 - Team conquest format victory conditions:
-- h If the stronghold province of each member of a single team is broken, that team loses the game and the opposing team wins the game.
-- h The first team to meet the condition of having 50 or more honor in their honor pool wins the game.
+  - If the stronghold province of each member of a single team is broken, that team loses the game and the opposing team wins the game.
+  - The first team to meet the condition of having 50 or more honor in their honor pool wins the game.
 
 ## The word 'Would'
 

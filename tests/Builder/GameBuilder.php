@@ -164,11 +164,13 @@ final class GameBuilder
     /**
      * Fate on a ring and the player who claimed it (by alias).
      */
-    public function ring(Element $element, int $fate = 0, ?string $claimedBy = null): self
+    public function ring(Element $element, int $fate = 0, ?string $claimedBy = null, ConflictType $claimedIn = ConflictType::Military): self
     {
-        $this->stateChanges[] = function (GameState $state, Scenario $scenario) use ($element, $fate, $claimedBy): void {
+        $this->stateChanges[] = function (GameState $state, Scenario $scenario) use ($element, $fate, $claimedBy, $claimedIn): void {
             $state->getRing($element)->fate = $fate;
-            $state->getRing($element)->claimedById = $claimedBy === null ? null : $scenario->player($claimedBy)->getId();
+            if ($claimedBy !== null) {
+                $state->getRing($element)->claim($scenario->player($claimedBy)->getId(), $claimedIn);
+            }
         };
 
         return $this;

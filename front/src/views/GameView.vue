@@ -82,8 +82,9 @@ function switchType(): void {
 }
 
 function switchRing(element: Element): void {
-  if (!sending.value) {
-    void send('switch_contested_ring', { ring: element })
+  const contested = game.value?.conflict?.ring
+  if (!sending.value && contested !== undefined) {
+    void send('switch_ring', { ring: contested, other_ring: element })
   }
 }
 

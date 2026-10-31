@@ -10,7 +10,7 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * The winner of the conflict has claimed the contested ring.
+ * A player has claimed a ring: the winner of the conflict the contested ring, or a player by an effect (ClaimRing).
  */
 #[GameLog('{player} claims {ring}')]
 final readonly class RingClaimedEvent implements GameEventInterface

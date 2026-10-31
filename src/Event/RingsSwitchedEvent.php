@@ -10,16 +10,16 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * A player has switched the contested ring with another ring (SwitchContestedRing).
+ * A player has switched the places of two rings (SwitchRing).
  */
-#[GameLog('{player} switches {from} with {ring} as the contested ring')]
-final readonly class ContestedRingSwitchedEvent implements GameEventInterface
+#[GameLog('{player} switches {ring} with {otherRing}')]
+final readonly class RingsSwitchedEvent implements GameEventInterface
 {
     public function __construct(
         public Game $game,
         public Player $player,
-        public Element $from,
         public Element $ring,
+        public Element $otherRing,
     ) {
     }
 

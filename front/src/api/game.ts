@@ -69,6 +69,8 @@ export interface PlayerView {
 export interface RingView {
   fate: number
   claimed_by_id: string | null
+  /** the type of the conflict the ring was claimed in; null while it is unclaimed or contested */
+  claimed_conflict_type: ConflictType | null
 }
 
 export interface ConflictView {

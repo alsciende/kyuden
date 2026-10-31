@@ -8,6 +8,8 @@ use App\DataFixtures\UserFixtures;
 use App\DataFixtures\AppFixtures;
 use App\Controller\ApiGamesController;
 use App\Entity\Game;
+use App\Enum\ConflictType;
+use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Message\DrawConflictCards;
@@ -90,6 +92,23 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($jane));
         self::assertIsArray($game['available_actions']);
         self::assertContains('bow_card', $game['available_actions']);
+    }
+
+    public function testTheViewTellsTheConflictTypeOfTheClaimedRings(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p)
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p)
+            ->ring(Element::Fire, claimedBy: 'jane', claimedIn: ConflictType::Political)
+            ->ring(Element::Water, fate: 1)
+            ->persist();
+
+        $game = $this->decode($this->get($scenario->game()->getId()));
+
+        self::assertIsArray($game['rings']);
+        self::assertSame(['fate' => 0, 'claimed_by_id' => $scenario->player('jane')->getId(), 'claimed_conflict_type' => 'political'], $game['rings']['fire']);
+        self::assertSame(['fate' => 1, 'claimed_by_id' => null, 'claimed_conflict_type' => null], $game['rings']['water']);
     }
 
     public function testTheViewLinksTheMercureHub(): void

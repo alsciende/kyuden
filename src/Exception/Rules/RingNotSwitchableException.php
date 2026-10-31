@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Exception\Rules;
 
+use App\Enum\Element;
+
 class RingNotSwitchableException extends RulesException
 {
-    public function __construct(string $element)
+    public function __construct(Element $ring, Element $otherRing, string $reason)
     {
-        parent::__construct(sprintf('The %s ring is neither the contested ring nor in the claimed or unclaimed ring pool of the attacking player.', $element));
+        parent::__construct(sprintf('The %s ring cannot be switched with the %s ring: %s.', $ring->value, $otherRing->value, $reason));
     }
 }

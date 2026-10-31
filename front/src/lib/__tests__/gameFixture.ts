@@ -52,7 +52,7 @@ export function player(id: string, stacks: StackView[] = [], changes: Partial<Pl
 }
 
 export function game(me: PlayerView, opp: PlayerView, changes: Partial<GameView> = {}): GameView {
-  const ring = { fate: 0, claimed_by_id: null }
+  const ring = { fate: 0, claimed_by_id: null, claimed_conflict_type: null }
 
   return {
     id: 'game',

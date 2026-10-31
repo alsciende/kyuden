@@ -1,0 +1,35 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "switch_ring",
+    "description": "Switches the places of two rings, among the contested ring, the unclaimed ring pool and the claimed ring pools, e.g. to resolve an effect (Elemental Fury, Know the World). A ring that becomes the contested ring keeps the type of the conflict, and the attacking player takes the fate on it; a ring that goes to a claimed ring pool takes the conflict type of the ring it replaces. During a conflict, the contested ring is only switched with a ring of the unclaimed or claimed ring pool of the attacking player. The fate on the other rings stays on them.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Ring to switch.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        },
+        "other_ring": {
+            "description": "Ring it is switched with, from another place.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        }
+    },
+    "required": [
+        "ring",
+        "other_ring"
+    ],
+    "additionalProperties": false
+}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Workflow\Game;
 
+use App\Enum\ConflictType;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\State\Manager\GameStateManager;
@@ -72,7 +73,40 @@ class ConflictResolutionListenersTest extends AbstractKernelTestCase
 
         self::service(RingClaimedTransitionListener::class)(new TransitionEvent($scenario->game(), new Marking()));
 
-        self::assertSame($scenario->player('jane')->getId(), $this->gameState($scenario)->getRing(Element::Fire)->claimedById);
+        $ring = $this->gameState($scenario)->getRing(Element::Fire);
+        self::assertSame($scenario->player('jane')->getId(), $ring->claimedById);
+        self::assertSame(ConflictType::Military, $ring->claimedConflictType);
+    }
+
+    public function testTheWinnerClaimsTheContestedRingInTheCurrentTypeOfTheConflict(): void
+    {
+        $scenario = $this->scenarioWonBy('jane');
+        self::service(GameStateManager::class)->withState($scenario->game(), function (GameState $state): GameState {
+            $state->currentConflict()->type = ConflictType::Political;
+
+            return $state;
+        });
+
+        self::service(RingClaimedTransitionListener::class)(new TransitionEvent($scenario->game(), new Marking()));
+
+        self::assertSame(ConflictType::Political, $this->gameState($scenario)->getRing(Element::Fire)->claimedConflictType);
+    }
+
+    public function testARingAlreadyClaimedByAnEffectIsNotClaimedAgain(): void
+    {
+        $scenario = $this->scenarioWonBy('john');
+        self::service(GameStateManager::class)->withState($scenario->game(), function (GameState $state) use ($scenario): GameState {
+            $state->getRing(Element::Fire)->claim($scenario->player('jane')->getId(), ConflictType::Political);
+
+            return $state;
+        });
+
+        self::service(RingClaimedTransitionListener::class)(new TransitionEvent($scenario->game(), new Marking()));
+
+        $ring = $this->gameState($scenario)->getRing(Element::Fire);
+        self::assertSame($scenario->player('jane')->getId(), $ring->claimedById);
+        self::assertSame(ConflictType::Political, $ring->claimedConflictType);
+        self::assertSame([], $this->logLines($scenario->game(), $scenario->player('john')));
     }
 
     public function testTheRingIsNotClaimedWithoutAWinner(): void

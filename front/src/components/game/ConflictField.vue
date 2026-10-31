@@ -80,7 +80,7 @@ const favor = computed(() => {
 
 const available = computed(() => new Set(props.game.available_actions))
 const otherType = computed(() => (conflict.value.type === 'military' ? 'political' : 'military'))
-const ringChoices = computed(() => (available.value.has('switch_contested_ring') ? switchableRings(props.game) : []))
+const ringChoices = computed(() => (available.value.has('switch_ring') ? switchableRings(props.game) : []))
 const canSwitchType = computed(() => available.value.has('switch_conflict_type'))
 
 /** the popup opened from the icon of the type or of the contested ring, to switch it */

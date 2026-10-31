@@ -45,6 +45,24 @@ export interface ClaimImperialFavor {
 }
 
 /**
+ * The target player claims a ring that nobody has claimed, unclaimed or contested, e.g. to resolve an effect (Display of Power): it goes to their claimed ring pool, with the fate on it. The ring is claimed in `conflict_type`, by default the type of the conflict being resolved; outside of a conflict, `conflict_type` is required. A contested ring claimed this way is not claimed again by the winner of the conflict.
+ */
+export interface ClaimRing {
+  /**
+   * Ring to claim, unclaimed or contested.
+   */
+  ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
+  /**
+   * Player who claims the ring.
+   */
+  target_player_id: string
+  /**
+   * Type of the conflict the ring is claimed in; by default, the type of the conflict being resolved.
+   */
+  conflict_type?: 'military' | 'political' | null
+}
+
+/**
  * The player says how much fate they collect: card effects may modify the fate value of their stronghold.
  */
 export interface CollectFate {
@@ -325,6 +343,34 @@ export interface LoseHonor {
    * Honor lost.
    */
   honor_loss: number
+}
+
+/**
+ * Moves fate from a holder to another, e.g. to resolve an effect: from a fate pool to a ring ("spend 1 fate to an unclaimed ring"), from a character to its owner's fate pool (Jade Tetsubō), from a character to another, from a fate pool to another ("give your opponent 1 fate"), from a ring to a fate pool (Know the World).
+ *
+ * A holder is a `player` (their fate pool, by player id), a `card` (a character in play, by card id) or a `ring` (by element). The fate from or to the general token pool is gained, lost, placed or removed with the other messages.
+ */
+export interface MoveFate {
+  /**
+   * Kind of holder the fate comes from.
+   */
+  source: 'player' | 'card' | 'ring'
+  /**
+   * Holder the fate comes from: a player id, a card id or a ring element.
+   */
+  source_id: string
+  /**
+   * Kind of holder the fate goes to.
+   */
+  target: 'player' | 'card' | 'ring'
+  /**
+   * Holder the fate goes to: a player id, a card id or a ring element.
+   */
+  target_id: string
+  /**
+   * Fate moved.
+   */
+  amount: number
 }
 
 /**
@@ -641,13 +687,17 @@ export interface ShuffleDynastyDeck {
 export type SwitchConflictType = Record<string, never>
 
 /**
- * Switches the contested ring of the conflict being resolved with a ring of the unclaimed or claimed ring pool of the attacking player, e.g. to resolve an effect (Elemental Fury): the contested ring takes its place in that pool, and the attacking player takes the fate on the new contested ring.
+ * Switches the places of two rings, among the contested ring, the unclaimed ring pool and the claimed ring pools, e.g. to resolve an effect (Elemental Fury, Know the World). A ring that becomes the contested ring keeps the type of the conflict, and the attacking player takes the fate on it; a ring that goes to a claimed ring pool takes the conflict type of the ring it replaces. During a conflict, the contested ring is only switched with a ring of the unclaimed or claimed ring pool of the attacking player. The fate on the other rings stays on them.
  */
-export interface SwitchContestedRing {
+export interface SwitchRing {
   /**
-   * Ring that becomes the contested ring, unclaimed or claimed by the attacking player.
+   * Ring to switch.
    */
   ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
+  /**
+   * Ring it is switched with, from another place.
+   */
+  other_ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
 }
 
 /**
@@ -710,6 +760,7 @@ export interface MessagePayloads {
   bow_card: BowCard
   choose_stronghold_province: ChooseStrongholdProvince
   claim_imperial_favor: ClaimImperialFavor
+  claim_ring: ClaimRing
   collect_fate: CollectFate
   concede_game: ConcedeGame
   declare_conflict: DeclareConflict
@@ -733,6 +784,7 @@ export interface MessagePayloads {
   initiate_duel: InitiateDuel
   lose_fate: LoseFate
   lose_honor: LoseHonor
+  move_fate: MoveFate
   move_home: MoveHome
   move_to_conflict: MoveToConflict
   pass_conflict: PassConflict
@@ -757,7 +809,7 @@ export interface MessagePayloads {
   shuffle_conflict_deck: ShuffleConflictDeck
   shuffle_dynasty_deck: ShuffleDynastyDeck
   switch_conflict_type: SwitchConflictType
-  switch_contested_ring: SwitchContestedRing
+  switch_ring: SwitchRing
   transfer_honor: TransferHonor
   trigger_action_ability: TriggerActionAbility
   trigger_interrupt_ability: TriggerInterruptAbility

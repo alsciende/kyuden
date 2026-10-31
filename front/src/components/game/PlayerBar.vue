@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
-import type { CardView, GameView, PayloadArgs, PlayerView, Send } from '@/api/game'
+import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
+import RingPopover from '@/components/game/RingPopover.vue'
 import type { Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { playerBar, playerEffects, type BarStat } from '@/lib/playerBar'
 import { hidePreview, showPreview } from '@/lib/preview'
+import { vTip } from '@/lib/tooltip'
 
 /**
  * The bar of a player, above the board for the opponent and below it for the viewer: the player (their name on the tint
  * of their clan, honor, fate, conflicts left, claimed rings), their dynasty cards (intact provinces, deck, discard
  * pile) and their conflict cards (hand, deck, discard pile). A click on a value opens a popover with the effects on it,
- * or the cards of a discard pile, which open like the cards of the board.
+ * or the cards of a discard pile, which open like the cards of the board; a click on a claimed ring opens its window,
+ * as in the bar on the right.
  */
 const props = defineProps<{
   game: GameView
@@ -75,11 +78,20 @@ const ringsAria = computed(
 
 const root = useTemplateRef<HTMLElement>('root')
 const open = ref<BarStat | null>(null)
+/** the claimed ring whose window is open */
+const openRing = ref<Element | null>(null)
 /** the left of the popover in the bar, under the value clicked */
 const left = ref(0)
 const amount = ref(1)
 
 const POPOVER_WIDTH = 280
+
+/** places the popover under the value clicked */
+function place(event: MouseEvent): void {
+  const barRect = root.value!.getBoundingClientRect()
+  const anchor = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  left.value = Math.max(0, Math.min(anchor.left - barRect.left, barRect.width - POPOVER_WIDTH - 12))
+}
 
 function toggle(key: BarStat, event: MouseEvent): void {
   if (open.value === key) {
@@ -87,11 +99,27 @@ function toggle(key: BarStat, event: MouseEvent): void {
 
     return
   }
-  const barRect = root.value!.getBoundingClientRect()
-  const anchor = (event.currentTarget as HTMLElement).getBoundingClientRect()
-  left.value = Math.max(0, Math.min(anchor.left - barRect.left, barRect.width - POPOVER_WIDTH - 12))
+  place(event)
   amount.value = 1
+  openRing.value = null
   open.value = key
+}
+
+function toggleRing(element: Element, event: MouseEvent): void {
+  if (openRing.value === element) {
+    openRing.value = null
+
+    return
+  }
+  place(event)
+  close()
+  openRing.value = element
+}
+
+function ringLabel(element: Element): string {
+  const type = props.game.rings[element]?.claimed_conflict_type
+
+  return `${ELEMENT_NAMES[element]} ring${type ? `, claimed in a ${type} conflict` : ''}`
 }
 
 function close(): void {
@@ -141,12 +169,15 @@ function onKey(event: KeyboardEvent): void {
 watch(open, (current, previous) => {
   if (current !== null && previous === null) {
     window.addEventListener('keydown', onKey)
-    emit('popover', true)
   } else if (current === null) {
     window.removeEventListener('keydown', onKey)
-    emit('popover', false)
   }
 })
+
+watch(
+  () => open.value !== null || openRing.value !== null,
+  (opened) => emit('popover', opened),
+)
 
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
@@ -178,8 +209,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <span>Conflicts</span>
       </div>
       <div class="stat fixed">
-        <b v-if="bar.rings.length" class="icon glyphs" role="img" :aria-label="ringsAria">
-          <span v-for="element in bar.rings" :key="element">{{ ELEMENT_ICONS[element] }}</span>
+        <b v-if="bar.rings.length" class="icon glyphs" role="group" :aria-label="ringsAria">
+          <button
+            v-for="element in bar.rings"
+            :key="element"
+            v-tip="ringTip(element)"
+            type="button"
+            class="ring"
+            :class="{ on: openRing === element }"
+            :aria-label="ringLabel(element)"
+            :aria-expanded="openRing === element"
+            @click="toggleRing(element, $event)"
+          >
+            {{ ELEMENT_ICONS[element] }}
+          </button>
         </b>
         <b v-else class="glyphs none" role="img" :aria-label="ringsAria">–</b>
         <span>Rings</span>
@@ -218,6 +261,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </span>
       <span v-if="bar.firstPlayer" class="badge first">First player</span>
     </div>
+
+    <RingPopover
+      v-if="openRing"
+      :game="game"
+      :element="openRing"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      :anchor="{ left, width: POPOVER_WIDTH, position }"
+      @close="openRing = null"
+    />
 
     <template v-if="open">
       <div class="backdrop" @click="close" />
@@ -427,6 +481,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.stat .ring {
+  font: inherit;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stat .ring:hover,
+.stat .ring.on {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .stat b.none {

@@ -254,6 +254,13 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         add(menu.state, 'place_fate', 'Place 1 fate', { card_id: id, amount: 1 })
         if (view.fate > 0) {
           add(menu.state, 'remove_fate', 'Remove 1 fate', { card_id: id, amount: 1 })
+          add(menu.state, 'move_fate', 'Return 1 fate to its owner', {
+            source: 'card',
+            source_id: id,
+            target: 'player',
+            target_id: located.player.id,
+            amount: 1,
+          })
         }
         if (game.conflict !== null) {
           const participating = [...game.conflict.attacker_ids, ...game.conflict.defender_ids].includes(id)

@@ -92,6 +92,11 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
       effects = [
         { type: 'gain_fate', label: `Gain ${amount} fate`, payload: { ...target, fate_gain: amount } },
         { type: 'lose_fate', label: `Lose ${amount} fate`, payload: { ...target, fate_loss: amount } },
+        other && {
+          type: 'move_fate',
+          label: `Give ${amount} to ${other.id === game.viewer_id ? 'you' : 'Opp.'}`,
+          payload: { source: 'player', source_id: player.id, target: 'player', target_id: other.id, amount },
+        },
       ]
       break
     case 'hand':
