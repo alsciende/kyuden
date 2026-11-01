@@ -1,3 +1,4 @@
+
 mcp:
     servers:
         l5r:
@@ -143,6 +144,8 @@ mcp:
             http:
                 # under the firewall of the API: a bot authenticates with its API key (Authorization: Bearer)
                 path: /api/mcp
+                # any host: Symfony checks it against SYMFONY_TRUSTED_HOSTS (DNS rebinding), the Origin is still checked
+                allowed_hosts: ['*']
             # one tool per public message: every tool in a single page of tools/list
             pagination_limit: 100
             registry:
