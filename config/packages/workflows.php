@@ -228,6 +228,11 @@ return App::config([
                         'stack' => StackType::Hand,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    // a character or an attachment whose control is taken (TakeControl): the new controller is the
+                    // `controller` of the context; a character moves to a stack of its controller (TakeControlListener)
+                    WorkflowConfig::transition('take_control', ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_IN_PLAY, [
+                        'log' => '{controller} takes control of {card}',
+                    ]),
                     // an attachment moved to another character or a province (MoveAttachment): the target is the `stack` of
                     // the context
                     WorkflowConfig::transition('move_attachment', ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_IN_PLAY, [
@@ -271,6 +276,10 @@ return App::config([
                         'log' => '{card} is put into play from {from}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a character whose control is taken (TakeControl): see the conflict cards
+                    WorkflowConfig::transition('take_control', DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_IN_PLAY, [
+                        'log' => '{controller} takes control of {card}',
                     ]),
                     // a holding put into play in a province by an effect (PutHoldingIntoProvince): the province is the
                     // `stack` of the context

@@ -14,6 +14,7 @@ use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Enum\Type;
 use App\Service\ConflictService;
+use App\Service\ControlService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 
@@ -33,6 +34,7 @@ final readonly class BoardReader
         private GameStateManager $gameStateManager,
         private CardStateManager $cardStateManager,
         private ConflictService $conflictService,
+        private ControlService $controlService,
     ) {
     }
 
@@ -81,7 +83,7 @@ final readonly class BoardReader
     /**
      * The total skill of the ready characters among the given ones, with the Imperial Favor of their player.
      *
-     * @param list<PhysicalCard> $characters characters of the same player
+     * @param list<PhysicalCard> $characters characters controlled by the same player
      */
     public function sideSkill(Game $game, array $characters, ConflictType $type): int
     {
@@ -92,7 +94,7 @@ final readonly class BoardReader
             }
         }
 
-        return $skill + ($characters !== [] && $this->hasImperialFavor($game, $characters[0]->getPlayer(), $type) ? 1 : 0);
+        return $skill + ($characters !== [] && $this->hasImperialFavor($game, $this->controlService->getController($characters[0]), $type) ? 1 : 0);
     }
 
     public function hasImperialFavor(Game $game, Player $player, ConflictType $type): bool

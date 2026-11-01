@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\CardTypes\ConflictCard;
-use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Message\PlayAttachment;
 use App\MessageHandler\PlayAttachmentHandler;
 use App\Service\AbilityService;
@@ -51,22 +51,22 @@ class AbilityServiceTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_IN_PLAY, $scenario->card('tetsubo')->getCurrentPlace());
     }
 
-    public function testAnAbilityGrantedToTheAttachedCharacterIsNotTriggeredByTheOwnerOfTheAttachment(): void
+    public function testAnAbilityGrantedToTheAttachedCharacterIsNotTriggeredByTheControllerOfTheAttachment(): void
     {
         $scenario = $this->scenarioWithAttachmentsOnAnOpponentsCharacter();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         self::service(AbilityService::class)->trigger($scenario->card('tetsubo'), $scenario->player('john'));
     }
 
-    public function testTheOtherAbilitiesOfAnAttachmentAreTriggeredByItsOwner(): void
+    public function testTheOtherAbilitiesOfAnAttachmentAreTriggeredByItsController(): void
     {
         $scenario = $this->scenarioWithAttachmentsOnAnOpponentsCharacter();
 
         self::service(AbilityService::class)->trigger($scenario->card('katana'), $scenario->player('john'));
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         self::service(AbilityService::class)->trigger($scenario->card('katana'), $scenario->player('jane'));
     }

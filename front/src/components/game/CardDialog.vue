@@ -78,9 +78,14 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-/** pointing at the card, then the ways it leaves where it is: a row of icons, their label on hover */
+/** pointing at the card, taking control of it, then the ways it leaves where it is: a row of icons, their label on
+ * hover */
 const iconActions = computed(() =>
-  [...(props.menu.point ? [props.menu.point] : []), ...props.menu.removals].map((action) => ({
+  [
+    ...(props.menu.point ? [props.menu.point] : []),
+    ...(props.menu.control ? [props.menu.control] : []),
+    ...props.menu.removals,
+  ].map((action) => ({
     action,
     icon: actionIcon(action),
     tip: action.type === 'point_at_card' ? `${action.label}: shows it to your opponent in the log` : action.label,

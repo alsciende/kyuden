@@ -102,13 +102,20 @@ class Player implements StatefulInterface
     }
 
     /**
-     * @return list<PhysicalCard> the characters in play controlled (owned) by the player
+     * @return list<PhysicalCard> the characters in play controlled by the player: each one is in a stack of its controller
      */
     public function getCharactersInPlay(): array
     {
-        return array_values($this->getPhysicalCards()->filter(
-            fn (PhysicalCard $card): bool => $card->getLogicalCard()->getType() === Type::Character && $card->getStack()->getType() === StackType::InPlay,
-        )->toArray());
+        $characters = [];
+        foreach ($this->getStacks(StackType::InPlay) as $stack) {
+            foreach ($stack->getCards() as $card) {
+                if ($card->getLogicalCard()->getType() === Type::Character) {
+                    $characters[] = $card;
+                }
+            }
+        }
+
+        return $characters;
     }
 
     public function getStronghold(): PhysicalCard

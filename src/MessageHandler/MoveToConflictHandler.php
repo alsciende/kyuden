@@ -15,6 +15,7 @@ use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
+use App\Service\ControlService;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -33,6 +34,7 @@ final readonly class MoveToConflictHandler implements PlayerActionHandlerInterfa
         private CardRepository $cardRepository,
         private GameStateManager $gameStateManager,
         private ConflictService $conflictService,
+        private ControlService $controlService,
         private EventDispatcherInterface $eventDispatcher,
     ) {
     }
@@ -60,7 +62,7 @@ final readonly class MoveToConflictHandler implements PlayerActionHandlerInterfa
                 throw new AlreadyParticipatingException($card);
             }
 
-            match ($card->getPlayer()->getId()) {
+            match ($this->controlService->getController($card)->getId()) {
                 $conflict->attackingPlayerId => $conflict->attackerIds[] = $card->getId(),
                 $conflict->defendingPlayerId => $conflict->defenderIds[] = $card->getId(),
                 default => throw new NotInConflictException(),

@@ -20,6 +20,10 @@ describe('actionIcon', () => {
     expect(actionIcon({ type: 'point_at_card', payload })).toBe('point')
   })
 
+  it('draws taking control of a card', () => {
+    expect(actionIcon({ type: 'take_control', payload })).toBe('control')
+  })
+
   it('leaves the other actions to their label', () => {
     expect(actionIcon({ type: 'bow_card', payload })).toBeNull()
   })

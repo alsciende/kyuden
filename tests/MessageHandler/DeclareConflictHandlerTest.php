@@ -12,7 +12,7 @@ use App\Exception\Rules\CannotParticipateException;
 use App\Exception\Rules\NoAttackerException;
 use App\Exception\Rules\NoConflictOpportunityException;
 use App\Exception\Rules\NotActivePlayerException;
-use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\ProvinceNotAttackableException;
 use App\Exception\Rules\RingNotUnclaimedException;
 use App\Message\DeclareConflict;
@@ -231,7 +231,7 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->builder()->persist();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         $this->declare($scenario, attackers: ['spear']);
     }

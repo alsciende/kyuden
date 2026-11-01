@@ -72,6 +72,7 @@ function viewOf(card: InspectedCard): CardView {
     personal_honor: 'ordinary',
     military_skill: null,
     political_skill: null,
+    controller_id: props.inspection.ownerId,
   }
 }
 

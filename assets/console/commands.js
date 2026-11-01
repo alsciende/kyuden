@@ -75,6 +75,7 @@ export const MESSAGE_ALIASES = {
     'switch-province-cards': 'switch_province_cards',
     'break-province': 'break_province',
     'first-player': 'take_first_player_token',
+    'take-control': 'take_control',
     'move-fate': 'move_fate',
     skill: 'declare_conflict_skill',
     strength: 'declare_province_strength',

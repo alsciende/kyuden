@@ -9,8 +9,8 @@ use App\Entity\CardTypes\DynastyCard;
 use App\Exception\Data\WorkflowException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotADuplicateException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\NotInPlayException;
-use App\Exception\Rules\NotOwnedCardException;
 use App\Message\DiscardDuplicate;
 use App\MessageHandler\DiscardDuplicateHandler;
 use App\State\Manager\CardStateManager;
@@ -115,11 +115,11 @@ class DiscardDuplicateHandlerTest extends AbstractKernelTestCase
         $this->discard($scenario, 'facedown-toturi', 'toturi');
     }
 
-    public function testRejectsACopyOfAnotherPlayer(): void
+    public function testRejectsACopyControlledByAnotherPlayer(): void
     {
         $scenario = $this->scenarioWithDuplicates();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         $this->discard($scenario, 'toturi-duplicate', 'jane-toturi');
     }

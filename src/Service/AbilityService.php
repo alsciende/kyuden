@@ -6,7 +6,7 @@ namespace App\Service;
 
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
-use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\NotControlledCardException;
 use Symfony\Component\Workflow\Registry;
 
 /**
@@ -17,20 +17,20 @@ readonly class AbilityService
 {
     public function __construct(
         private Registry $workflowRegistry,
+        private ControlService $controlService,
     ) {
     }
 
     /**
-     * The card belongs to the player and is where its abilities can be used (`trigger_ability` transition of its
+     * The card is controlled by the player and is where its abilities can be used (`trigger_ability` transition of its
      * workflow); it stays where it is. The abilities an attachment grants to the card it is attached to belong to the
-     * player of that card, whose stack the attachment has joined.
+     * controller of that card, in whose stack the attachment is.
      */
     public function trigger(PhysicalCard $card, Player $player): void
     {
-        // the controller of the card should be checked, but control is not modeled yet
-        $abilityOwner = $card->getLogicalCard()->isAbilityGrantedToAttached() ? $card->getStack()->getPlayer() : $card->getPlayer();
-        if ($abilityOwner !== $player) {
-            throw new NotOwnedCardException($card, $player);
+        $abilityController = $card->getLogicalCard()->isAbilityGrantedToAttached() ? $card->getStack()->getPlayer() : $this->controlService->getController($card);
+        if ($abilityController !== $player) {
+            throw new NotControlledCardException($card, $player);
         }
 
         // fails unless the card is where its abilities can be used

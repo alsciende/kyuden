@@ -10,6 +10,8 @@ use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Enum\Side;
+use App\State\Manager\CardStateManager;
+use App\State\Model\CardState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -206,6 +208,25 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame($scenario->player('john')->getId(), $view->rings['fire']->claimedById);
         self::assertSame($scenario->player('jane')->getId(), $view->viewerId);
         self::assertSame('draw_phase_action_window', $view->place);
+    }
+
+    public function testTheControllerOfACardIsItsOwnerUnlessAnotherPlayerHasTakenControlOfIt(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['toturi' => '01-akodo-toturi', 'katana' => '01-fine-katana']))
+            ->withPlayer('jane')
+            ->build();
+        self::service(CardStateManager::class)->withState(
+            $scenario->card('katana'),
+            fn (CardState $state): CardState => $state->setControllerId($scenario->player('jane')->getId()),
+        );
+
+        $view = $this->view($scenario, 'jane');
+
+        self::assertSame($scenario->player('john')->getId(), $this->cardView($view, $scenario->card('toturi'))->controllerId);
+        self::assertSame($scenario->player('jane')->getId(), $this->cardView($view, $scenario->card('katana'))->controllerId);
     }
 
     public function testTheActionsAvailableToTheViewer(): void

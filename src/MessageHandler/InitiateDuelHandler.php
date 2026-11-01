@@ -18,6 +18,7 @@ use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
+use App\Service\ControlService;
 use App\Service\OpportunityService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -44,6 +45,7 @@ final readonly class InitiateDuelHandler implements PlayerActionHandlerInterface
         private PlayerStateManager $playerStateManager,
         private OpportunityService $opportunityService,
         private ConflictService $conflictService,
+        private ControlService $controlService,
         private EventDispatcherInterface $eventDispatcher,
     ) {
     }
@@ -71,7 +73,7 @@ final readonly class InitiateDuelHandler implements PlayerActionHandlerInterface
 
         $challengers = $this->getCharacters($message->getChallengerIds(), $game);
         $challenged = $this->getCharacters($message->getChallengedIds(), $game);
-        $opponent = $challenged[0]->getPlayer();
+        $opponent = $this->controlService->getController($challenged[0]);
         if ($opponent === $player) {
             throw new CannotDuelException($challenged[0], 'it is controlled by the player initiating the duel');
         }

@@ -11,15 +11,14 @@ use App\Enum\Orientation;
 use App\Enum\StackType;
 use App\Enum\Type;
 use App\Exception\Rules\CannotParticipateException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\NotInPlayException;
-use App\Exception\Rules\NotOwnedCardException;
 use App\Exception\Rules\ProvinceNotAttackableException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\State\Manager\PlayerStateManager;
 
 /**
- * Rules about what can be attacked and who can participate in a conflict. The controller of a card is its owner,
- * since control is not modeled.
+ * Rules about what can be attacked and who can participate in a conflict.
  */
 readonly class ConflictService
 {
@@ -30,6 +29,7 @@ readonly class ConflictService
 
     public function __construct(
         private PlayerStateManager $playerStateManager,
+        private ControlService $controlService,
     ) {
     }
 
@@ -76,8 +76,8 @@ readonly class ConflictService
      */
     public function assertCharacterInPlay(PhysicalCard $card, ?Player $player = null): void
     {
-        if ($player instanceof Player && $card->getPlayer() !== $player) {
-            throw new NotOwnedCardException($card, $player);
+        if ($player instanceof Player && $this->controlService->getController($card) !== $player) {
+            throw new NotControlledCardException($card, $player);
         }
 
         if ($card->getLogicalCard()->getType() !== Type::Character) {

@@ -138,6 +138,7 @@ final readonly class GameViewFactory
             personalHonor: $state->getPersonalHonor(),
             militarySkill: $state->getMilitarySkill(),
             politicalSkill: $state->getPoliticalSkill(),
+            controllerId: $state->getControllerId() ?? $card->getPlayer()->getId(),
         );
     }
 }

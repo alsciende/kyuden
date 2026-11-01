@@ -7,7 +7,7 @@ namespace App\Tests\MessageHandler;
 use App\Enum\Orientation;
 use App\Exception\Rules\CannotParticipateException;
 use App\Exception\Rules\NotActivePlayerException;
-use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Message\DeclareDefenders;
 use App\MessageHandler\DeclareDefendersHandler;
 use App\State\Manager\GameStateManager;
@@ -82,7 +82,7 @@ class DeclareDefendersHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenarioAtDeclareDefenders();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         $this->declare($scenario, ['toturi']);
     }

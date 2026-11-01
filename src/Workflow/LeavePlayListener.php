@@ -11,6 +11,7 @@ use App\Event\FateRemovedFromCardEvent;
 use App\Event\HonorGainedEvent;
 use App\Event\HonorLostEvent;
 use App\Event\PersonalHonorChangedEvent;
+use App\Service\ControlService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -27,7 +28,8 @@ use Symfony\Component\Workflow\Transition;
  * Consequences of a card leaving play ("Leaves Play" in the glossary), for any card transition from `in_play` to
  * another place (discarded, returned to hand…):
  * - the controller of an honored character gains 1 honor, of a dishonored one loses 1 honor;
- * - the tokens on the card return to the general token pool (its CardState is reset);
+ * - the tokens on the card return to the general token pool and the control by another player ends (its CardState is
+ *   reset): the card goes to an out-of-play area of its owner;
  * - the attachments on a character are discarded (ancestral attachments are not returned to hand);
  * - the character no longer participates in the conflict.
  */
@@ -38,6 +40,7 @@ readonly class LeavePlayListener
 
     public function __construct(
         private CardStateManager $cardStateManager,
+        private ControlService $controlService,
         private PlayerStateManager $playerStateManager,
         private GameStateManager $gameStateManager,
         private Registry $workflowRegistry,
@@ -67,13 +70,14 @@ readonly class LeavePlayListener
             PersonalHonor::Ordinary => 0,
         };
         if ($honorChange !== 0) {
+            $controller = $this->controlService->getController($card);
             $this->playerStateManager->withState(
-                $card->getPlayer(),
+                $controller,
                 fn (PlayerState $state): PlayerState => $state->incrementHonor($honorChange),
             );
             $this->eventDispatcher->dispatch($honorChange > 0
-                ? new HonorGainedEvent($card->getGame(), $card->getPlayer(), $honorChange)
-                : new HonorLostEvent($card->getGame(), $card->getPlayer(), -$honorChange));
+                ? new HonorGainedEvent($card->getGame(), $controller, $honorChange)
+                : new HonorLostEvent($card->getGame(), $controller, -$honorChange));
         }
 
         $this->cardStateManager->setState($card, new CardState());

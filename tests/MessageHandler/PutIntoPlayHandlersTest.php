@@ -19,7 +19,9 @@ use App\Message\ShuffleIntoDeck;
 use App\MessageHandler\PutCharacterIntoPlayHandler;
 use App\MessageHandler\PutHoldingIntoProvinceHandler;
 use App\MessageHandler\ShuffleIntoDeckHandler;
+use App\Service\ControlService;
 use App\Service\ProvinceRefiller;
+use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\Tests\AbstractKernelTestCase;
@@ -52,7 +54,7 @@ class PutIntoPlayHandlersTest extends AbstractKernelTestCase
                 ->province('01-the-art-of-peace', as: 'jane-province', orientation: Orientation::FaceUp));
     }
 
-    private function putIntoPlay(Scenario $scenario, string $card, bool $intoConflict = false): void
+    private function putIntoPlay(Scenario $scenario, string $card, bool $intoConflict = false, ?string $controller = null): void
     {
         // the opponent sends it: any player can
         self::service(PutCharacterIntoPlayHandler::class)(new PutCharacterIntoPlay(
@@ -60,6 +62,7 @@ class PutIntoPlayHandlersTest extends AbstractKernelTestCase
             $scenario->player('jane')->getId(),
             $scenario->card($card)->getId(),
             $intoConflict,
+            $controller === null ? null : $scenario->player($controller)->getId(),
         ));
     }
 
@@ -111,6 +114,36 @@ class PutIntoPlayHandlersTest extends AbstractKernelTestCase
             "Keeper Initiate is put into play from john's dynasty discard pile",
             'Keeper Initiate joins the conflict',
         ], $this->logLines($scenario->game()));
+    }
+
+    public function testACharacterIsPutIntoTheConflictUnderTheControlOfAnotherPlayer(): void
+    {
+        $scenario = $this->builder('conflict_action_window')->conflict('jane', 'province', attackers: ['spear'])->persist();
+
+        $this->putIntoPlay($scenario, 'keeper', intoConflict: true, controller: 'jane');
+
+        $keeper = $scenario->card('keeper');
+        self::assertSame(DynastyCard::STATE_IN_PLAY, $keeper->getCurrentPlace());
+        self::assertSame($scenario->player('jane'), $keeper->getStack()->getPlayer());
+        self::assertSame($scenario->player('jane'), self::service(ControlService::class)->getController($keeper));
+        $conflict = self::service(GameStateManager::class)->getState($scenario->game())->currentConflict();
+        self::assertSame([$scenario->card('spear')->getId(), $keeper->getId()], $conflict->attackerIds);
+        self::assertSame([], $conflict->defenderIds);
+        self::assertSame([
+            "Keeper Initiate is put into play from john's dynasty discard pile",
+            'jane takes control of Keeper Initiate',
+            'Keeper Initiate joins the conflict',
+        ], $this->logLines($scenario->game()));
+    }
+
+    public function testACharacterPutIntoPlayUnderTheControlOfItsOwnerDoesNotChangeControl(): void
+    {
+        $scenario = $this->builder()->persist();
+
+        $this->putIntoPlay($scenario, 'adept', controller: 'john');
+
+        self::assertNull(self::service(CardStateManager::class)->getState($scenario->card('adept'))->getControllerId());
+        self::assertSame(["Adept of Shadows is put into play from john's conflict discard pile"], $this->logLines($scenario->game()));
     }
 
     public function testACharacterOfTheHandIsPutIntoPlay(): void

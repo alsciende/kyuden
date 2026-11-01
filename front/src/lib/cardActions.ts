@@ -33,7 +33,7 @@ export type PlayAction = {
 export interface CardMenu {
   located: Located
   card: Card | undefined
-  /** whose card it is, for the viewer */
+  /** whether the viewer controls it */
   mine: boolean
   abilities: SimpleAction[]
   plays: PlayAction[]
@@ -46,7 +46,10 @@ export interface CardMenu {
   removals: SimpleAction[]
   /** pointing at it to show it to the opponent: a card every player sees (not in a hand nor a deck) */
   point: SimpleAction | null
-  /** putting a character into play without playing it, by an effect: at home or into the conflict */
+  /** taking control of a card in play controlled by the opponent, by an effect (Blackmail, Calling in Favors) */
+  control: SimpleAction | null
+  /** putting a character into play without playing it, by an effect: at home or into the conflict, under the control
+   * of its owner or of the viewer (Shosuro Actress) */
   intoPlay: SimpleAction[]
   /** the provinces of its owner a holding of the discard pile can be put into, by an effect (Rebuild) */
   intoProvince: ProvinceChoice[]
@@ -143,7 +146,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
   const menu: CardMenu = {
     located,
     card,
-    mine: located.player.id === game.viewer_id,
+    mine: view.controller_id === game.viewer_id,
     abilities: [],
     plays: [],
     state: [],
@@ -154,6 +157,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       available.has('point_at_card') && !HIDDEN_STACKS.has(stack.type)
         ? { type: 'point_at_card', label: 'Point at it', payload: { card_id: id } }
         : null,
+    control: null,
     intoPlay: [],
     intoProvince: [],
     moveAttachment: false,
@@ -190,18 +194,36 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       add(menu.state, 'look_at_card', 'Look at it')
     }
   }
-  // a character put into play by an effect, at home or into the conflict on the side of its owner
+  // a character put into play by an effect, at home or into the conflict on the side of its controller: its owner, or
+  // the viewer for a character of the opponent
   const putIntoPlay = () => {
     if (card?.type !== 'character') {
       return
     }
-    add(menu.intoPlay, 'put_character_into_play', 'Put into play', { card_id: id, into_conflict: false })
     const conflict = game.conflict
-    if (conflict !== null && [conflict.attacking_player_id, conflict.defending_player_id].includes(located.player.id)) {
+    const inConflict = (playerId: string) =>
+      conflict !== null && [conflict.attacking_player_id, conflict.defending_player_id].includes(playerId)
+    add(menu.intoPlay, 'put_character_into_play', 'Put into play', { card_id: id, into_conflict: false })
+    if (inConflict(located.player.id)) {
       add(menu.intoPlay, 'put_character_into_play', 'Put into play in the conflict', {
         card_id: id,
         into_conflict: true,
       })
+    }
+    if (located.player.id !== game.viewer_id) {
+      const controller_id = game.viewer_id
+      add(menu.intoPlay, 'put_character_into_play', 'Put into play under your control', {
+        card_id: id,
+        into_conflict: false,
+        controller_id,
+      })
+      if (inConflict(controller_id)) {
+        add(menu.intoPlay, 'put_character_into_play', 'Put into play in the conflict under your control', {
+          card_id: id,
+          into_conflict: true,
+          controller_id,
+        })
+      }
     }
   }
   const moveAttachment = () => {
@@ -336,6 +358,9 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     case 'in_play':
       abilities()
       bowOrReady()
+      if (!menu.mine && available.has('take_control')) {
+        menu.control = { type: 'take_control', label: 'Take control of it', payload: { card_id: id } }
+      }
       if (under === null) {
         if (view.personal_honor !== 'honored') {
           add(menu.state, 'honor_character', 'Honor')

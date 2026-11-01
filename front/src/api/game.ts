@@ -35,6 +35,9 @@ export interface CardView {
   /** the current skill recorded by the players (every modifier applied), null when none */
   military_skill: number | null
   political_skill: number | null
+  /** its owner, unless another player has taken control of it in play; an attachment may be controlled by another
+   * player than the one of the stack it is in */
+  controller_id: string
 }
 
 export interface StackView {

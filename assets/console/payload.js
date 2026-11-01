@@ -85,7 +85,7 @@ export function usage(schema) {
 export class UsageError extends Error {}
 
 export function isPlayerProperty(name) {
-    return name.endsWith('player_id') || name === 'giver_id' || name === 'recipient_id';
+    return name.endsWith('player_id') || name === 'giver_id' || name === 'recipient_id' || name === 'controller_id';
 }
 
 export function isCardProperty(name) {

@@ -32,6 +32,11 @@ class CardState
      */
     private ?int $politicalSkill = null;
 
+    /**
+     * Player controlling the card in play, when it is not its owner (TakeControl); null: its owner.
+     */
+    private ?string $controllerId = null;
+
     public function getFate(): int
     {
         return $this->fate;
@@ -142,5 +147,17 @@ class CardState
     public function resetSkills(): self
     {
         return $this->setMilitarySkill(null)->setPoliticalSkill(null);
+    }
+
+    public function getControllerId(): ?string
+    {
+        return $this->controllerId;
+    }
+
+    public function setControllerId(?string $controllerId): self
+    {
+        $this->controllerId = $controllerId;
+
+        return $this;
     }
 }

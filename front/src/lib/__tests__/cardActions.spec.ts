@@ -325,6 +325,69 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, raid.id)!.intoPlay).toEqual([])
   })
 
+  it('puts a character of the opponent into play under the control of the viewer', () => {
+    const kaezin = card('kaezin')
+    const raid = card('raid')
+    const view = game(
+      player('me', [stack('regular_province', [raid])]),
+      player('opp', [stack('conflict_discard_pile', [kaezin])]),
+      {
+        available_actions: ['put_character_into_play'],
+      },
+    )
+    const conflict = {
+      ...view,
+      conflict: {
+        attacking_player_id: 'opp',
+        defending_player_id: 'me',
+        ring: 'air' as const,
+        type: 'military' as const,
+        province_id: raid.id,
+        attacked_province_ids: [raid.id],
+        attacker_ids: [],
+        defender_ids: [],
+        evaded_ids: [],
+        attacker_skill: null,
+        defender_skill: null,
+        province_strengths: {},
+        declared_strength_province_ids: [],
+        winner_id: null,
+        broken_province_ids: [],
+      },
+    }
+
+    expect(cardMenu(view, cards, kaezin.id)!.intoPlay.map((action) => action.label)).toEqual([
+      'Put into play',
+      'Put into play under your control',
+    ])
+    expect(cardMenu(conflict, cards, kaezin.id)!.intoPlay.at(-1)).toEqual({
+      type: 'put_character_into_play',
+      label: 'Put into play in the conflict under your control',
+      payload: { card_id: kaezin.id, into_conflict: true, controller_id: 'me' },
+    })
+  })
+
+  it('takes control of a card in play controlled by the opponent', () => {
+    const kaezin = card('kaezin')
+    const ancestral = card('ancestral', { controller_id: 'me' })
+    const scout = card('scout')
+    const view = game(
+      player('me', [stack('in_play', [scout])]),
+      player('opp', [stack('in_play', [kaezin, ancestral])]),
+      { available_actions: ['take_control'] },
+    )
+
+    expect(cardMenu(view, cards, kaezin.id)!.control).toEqual({
+      type: 'take_control',
+      label: 'Take control of it',
+      payload: { card_id: kaezin.id },
+    })
+    // an attachment the viewer controls on a character of the opponent
+    expect(cardMenu(view, cards, ancestral.id)!.mine).toBe(true)
+    expect(cardMenu(view, cards, ancestral.id)!.control).toBeNull()
+    expect(cardMenu(view, cards, scout.id)!.control).toBeNull()
+  })
+
   it('puts a holding of the dynasty discard pile into a province of its owner', () => {
     const academy = card('academy')
     const raid = card('raid')

@@ -7,8 +7,8 @@ namespace App\Tests\MessageHandler;
 use App\Entity\CardTypes\DynastyCard;
 use App\Enum\Orientation;
 use App\Exception\Rules\NotActivePlayerException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\NotInActionWindowException;
-use App\Exception\Rules\NotOwnedCardException;
 use App\Message\TriggerActionAbility;
 use App\MessageHandler\TriggerActionAbilityHandler;
 use App\State\Manager\GameStateManager;
@@ -111,7 +111,7 @@ class TriggerActionAbilityHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenarioInActionWindow();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         $this->trigger($scenario, 'hotaru');
     }

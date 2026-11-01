@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
-use App\Exception\Rules\NotOwnedCardException;
+use App\Exception\Rules\NotControlledCardException;
 use App\Message\TriggerInterruptAbility;
 use App\MessageHandler\TriggerInterruptAbilityHandler;
 use App\State\Manager\GameStateManager;
@@ -68,7 +68,7 @@ class TriggerInterruptAbilityHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenarioDuringADuel();
 
-        $this->expectException(NotOwnedCardException::class);
+        $this->expectException(NotControlledCardException::class);
 
         $this->trigger($scenario, 'toturi');
     }

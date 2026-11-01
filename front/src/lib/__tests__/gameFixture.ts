@@ -19,6 +19,8 @@ export function card(code: string | null, changes: Partial<CardView> = {}): Card
     personal_honor: 'ordinary',
     military_skill: null,
     political_skill: null,
+    // the player of its stack by default (see player())
+    controller_id: '',
     ...changes,
   }
 }
@@ -28,6 +30,10 @@ export function stack(type: StackType, cards: CardView[] | null, id = `${type}-$
 }
 
 export function player(id: string, stacks: StackView[] = [], changes: Partial<PlayerView> = {}): PlayerView {
+  for (const cardView of stacks.flatMap((stackView) => stackView.cards ?? [])) {
+    cardView.controller_id ||= id
+  }
+
   return {
     id,
     user_id: `user-${id}`,

@@ -628,7 +628,7 @@ export interface PutCardOnDeck {
 }
 
 /**
- * Puts a character into play without playing it, e.g. to resolve an effect (Ambush, Charge!, Cavalry Reserves, Keeper Initiate): no cost is paid and no opportunity to act is used. The character comes from the hand of its owner, a province (face up) or a discard pile, and enters play ready, at home or participating in the conflict on the side of its owner. Fate placed on it is a separate action (`place_fate`); a province it leaves is refilled by the engine.
+ * Puts a character into play without playing it, e.g. to resolve an effect (Ambush, Charge!, Cavalry Reserves, Keeper Initiate): no cost is paid and no opportunity to act is used. The character comes from the hand of its owner, a province (face up) or a discard pile, and enters play ready, under the control of its owner or of the player given (Shosuro Actress), at home or participating in the conflict on the side of its controller. Fate placed on it is a separate action (`place_fate`); a province it leaves is refilled by the engine.
  *
  * The card can belong to any player: the engine does not apply card effects.
  */
@@ -638,9 +638,13 @@ export interface PutCharacterIntoPlay {
    */
   card_id: string
   /**
-   * Whether the character enters play into the conflict, on the side of its owner.
+   * Whether the character enters play into the conflict, on the side of its controller.
    */
   into_conflict: boolean
+  /**
+   * Player under whose control the character enters play; its owner by default.
+   */
+  controller_id?: string | null
 }
 
 /**
@@ -873,6 +877,18 @@ export interface SwitchRing {
 }
 
 /**
+ * Takes control of a character or an attachment in play, e.g. to resolve an effect (Blackmail, Calling in Favors). A character joins the play area of its new controller with its attachments, which keep their controller, and participates in the conflict on the side of its new controller. The control lasts until the card leaves play, or until another player takes control of it (its owner taking it back: the engine does not end effects).
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface TakeControl {
+  /**
+   * Character or attachment in play, controlled by another player.
+   */
+  card_id: string
+}
+
+/**
  * Gives the first player token to a player, e.g. to resolve an effect (Way of the Unicorn: keeping the token when it would be passed).
  */
 export interface TakeFirstPlayerToken {
@@ -1004,6 +1020,7 @@ export interface MessagePayloads {
   switch_conflict_type: SwitchConflictType
   switch_province_cards: SwitchProvinceCards
   switch_ring: SwitchRing
+  take_control: TakeControl
   take_first_player_token: TakeFirstPlayerToken
   transfer_honor: TransferHonor
   trigger_action_ability: TriggerActionAbility

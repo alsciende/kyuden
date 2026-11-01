@@ -17,7 +17,8 @@ use Symfony\Component\Workflow\Event\LeaveEvent;
  * Writes the log entry of every card transition, from the `log` metadata of the transition (required). Its params:
  * - `card`: the card, known to the players who see it before or after the transition (App\View\Visibility);
  * - `owner`: the player owning the card;
- * - `from`, `to`: the stacks the card leaves and goes to (the same for a transition that does not move it).
+ * - `from`, `to`: the stacks the card leaves and goes to (the same for a transition that does not move it);
+ * - `controller`: the player given in the `controller` key of the transition context, if any (take_control).
  *
  * Written when the card leaves its place, before the consequences of the transition (LeavePlayListener), which write
  * their own entries: the position the card goes to is read from the metadata of the transition, as
@@ -57,6 +58,7 @@ final readonly class CardTransitionLogListener
         $toOwner = $to?->getPlayer() ?? $card->getPlayer();
 
         $game = $card->getGame();
+        $controller = $event->getContext()['controller'] ?? null;
         $this->gameLogger->log($game, $template, [
             'card' => LogParam::card(
                 $card,
@@ -68,6 +70,7 @@ final readonly class CardTransitionLogListener
             'owner' => $card->getPlayer(),
             'from' => $from,
             'to' => LogParam::stackOf($toType, $toOwner, $to),
+            ...($controller instanceof Player ? ['controller' => $controller] : []),
         ]);
     }
 

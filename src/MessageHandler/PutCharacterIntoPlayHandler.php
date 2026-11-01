@@ -27,8 +27,9 @@ use Symfony\Component\Workflow\WorkflowInterface;
 /**
  * Accepted in any game place and from any player of the game, on any character: the engine does not apply card
  * effects, which decide what is put into play. The `put_into_play` transition fails for a character that is neither in
- * a hand, face up in a province nor in a discard pile. Into the conflict, the character joins the side of its owner,
- * who must be the attacking or the defending player.
+ * a hand, face up in a province nor in a discard pile. Under the control of another player than its owner, it enters
+ * play then changes control (`take_control`: both are logged). Into the conflict, the character joins the side of its
+ * controller, who must be the attacking or the defending player.
  */
 #[AsMessageHandler]
 final readonly class PutCharacterIntoPlayHandler implements PlayerActionHandlerInterface
@@ -63,10 +64,10 @@ final readonly class PutCharacterIntoPlayHandler implements PlayerActionHandlerI
             throw new WrongCardTypeException($card, Type::Character);
         }
 
-        $owner = $card->getPlayer();
+        $controller = $message->getControllerId() === null ? $card->getPlayer() : $this->playerRepository->get($message->getControllerId(), $game);
         if ($message->isIntoConflict()) {
             $conflict = $this->gameStateManager->getState($game)->conflict ?? throw new NoConflictException();
-            if (! in_array($owner->getId(), [$conflict->attackingPlayerId, $conflict->defendingPlayerId], true)) {
+            if (! in_array($controller->getId(), [$conflict->attackingPlayerId, $conflict->defendingPlayerId], true)) {
                 throw new NotInConflictException();
             }
         }
@@ -74,11 +75,16 @@ final readonly class PutCharacterIntoPlayHandler implements PlayerActionHandlerI
         $from = $card->getStack();
         $workflow = $card instanceof ConflictCard ? $this->conflictCardStateMachine : $this->dynastyCardStateMachine;
         $workflow->apply($card, 'put_into_play');
+        if ($controller !== $card->getPlayer()) {
+            $workflow->apply($card, 'take_control', [
+                'controller' => $controller,
+            ]);
+        }
 
         if ($message->isIntoConflict()) {
-            $this->gameStateManager->withState($game, function (GameState $state) use ($owner, $card): GameState {
+            $this->gameStateManager->withState($game, function (GameState $state) use ($controller, $card): GameState {
                 $conflict = $state->currentConflict();
-                if ($owner->getId() === $conflict->attackingPlayerId) {
+                if ($controller->getId() === $conflict->attackingPlayerId) {
                     $conflict->attackerIds[] = $card->getId();
                 } else {
                     $conflict->defenderIds[] = $card->getId();
