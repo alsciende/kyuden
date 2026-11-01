@@ -156,8 +156,8 @@ function staticCommands() {
         },
         {
             group: 'account', name: 'upload-deck', aliases: ['import-deck'],
-            usage: '[json]',
-            help: 'Imports a deck: {"name": …, "format": "emeralddb"|"codes", "cards": {"<id>": <quantity>}} (format codes by default). Without argument, opens a JSON file.',
+            usage: '[url|json]',
+            help: 'Imports a deck: the URL of its page on EmeraldDB, or {"name": …, "format": "emeralddb"|"codes", "cards": {"<id>": <quantity>}} (format codes by default). Without argument, opens a JSON file.',
             async run(ctx, args, block) {
                 let body;
                 if (args.length === 0) {
@@ -167,10 +167,12 @@ function staticCommands() {
                         return;
                     }
                     body = JSON.parse(text);
+                } else if (/^https?:\/\//i.test(args[0])) {
+                    body = { url: args[0] };
                 } else {
                     body = JSON.parse(args.join(' '));
                 }
-                if (body.format === undefined) {
+                if (body.format === undefined && body.url === undefined) {
                     body = { name: body.name ?? 'Imported deck', format: 'codes', cards: body.cards ?? body };
                 }
                 const result = await ctx.api.post('/api/decks', body, { trace: block });

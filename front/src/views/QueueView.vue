@@ -10,6 +10,7 @@ import {
   fetchQueue,
   fetchSelfGames,
   fetchSelfInvitation,
+  importDeck,
   joinQueue,
   leaveQueue,
   type Card,
@@ -23,12 +24,21 @@ import { follow } from '@/lib/hub'
 import { timeLeft } from '@/lib/invitation'
 import { newcomer } from '@/lib/newcomer'
 import { inverted } from '@/lib/page'
-import { deckChoices, waitingTime, type DeckChoice, type DeckChoices } from '@/lib/queue'
+import {
+  deckChoice,
+  deckChoices,
+  importProblem,
+  waitingTime,
+  type DeckChoice,
+  type DeckChoices,
+  type ImportProblem,
+} from '@/lib/queue'
 import { session } from '@/lib/session'
 
 /**
  * The matchmaking queue of the players who have an account: they choose a deck and join the queue, then wait (the
  * page in reverse) until the hub tells them a game of theirs has started (`game_started` on their topic), which opens.
+ * A deck of EmeraldDB is imported from the URL of its page, then chosen: the player still joins the queue themselves.
  *
  * A friendly game: the host of an invitation comes with its id (`?invitation=`), its guest with its code (`?code=`,
  * a guest account too); they are matched together only. The host leaving the queue cancels the invitation.
@@ -51,6 +61,12 @@ const since = ref(Date.now())
 const now = ref(Date.now())
 const error = ref<string | null>(null)
 const sending = ref(false)
+/** the URL of a deck of EmeraldDB to import */
+const deckUrl = ref('')
+const importing = ref(false)
+const importFailure = ref<ImportProblem | null>(null)
+/** the name of the deck just imported */
+const imported = ref<string | null>(null)
 /** the strongholds of the clans, by code, read from the API */
 const strongholds = reactive<Record<string, Card>>({})
 
@@ -240,6 +256,32 @@ async function join(): Promise<void> {
   }
 }
 
+/**
+ * Imports the deck of the URL, which becomes the first of the user's decks, chosen.
+ */
+async function importFromUrl(): Promise<void> {
+  const token = session.value?.token
+  const url = deckUrl.value.trim()
+  if (!token || url === '' || importing.value) {
+    return
+  }
+  importing.value = true
+  importFailure.value = null
+  imported.value = null
+  try {
+    const choice = deckChoice(await importDeck(token, url))
+    choices.value = { ...choices.value, mine: [choice, ...choices.value.mine] }
+    chosen.value = choice.deck.id
+    imported.value = choice.name
+    deckUrl.value = ''
+  } catch (problem) {
+    importFailure.value =
+      problem instanceof ApiProblem ? importProblem(problem) : { summary: 'The deck cannot be imported.', details: [] }
+  } finally {
+    importing.value = false
+  }
+}
+
 async function leave(): Promise<void> {
   const token = session.value?.token
   if (!token || sending.value) {
@@ -288,9 +330,35 @@ function stronghold(choice: DeckChoice): string | undefined {
       <p v-else class="lead">You face the next player who joins the queue.</p>
     </div>
 
-    <section v-if="choices.mine.length > 0" class="decks mine" aria-labelledby="mine">
-      <h2 id="mine" class="form-label">Your decks</h2>
-      <div class="grid">
+    <section class="decks mine" aria-labelledby="mine">
+      <div class="mine-heading">
+        <div class="mine-title">
+          <h2 id="mine" class="form-label">Your decks</h2>
+          <p v-if="imported !== null" class="imported" role="status">
+            <strong>{{ imported }}</strong> imported from EmeraldDB, and chosen.
+          </p>
+        </div>
+        <form class="import" novalidate @submit.prevent="importFromUrl">
+          <label for="deck-url">Import a deck from EmeraldDB</label>
+          <input
+            id="deck-url"
+            v-model="deckUrl"
+            class="field field-ui"
+            type="url"
+            placeholder="https://www.emeralddb.org/decks/…"
+            :aria-invalid="importFailure !== null"
+            :aria-describedby="importFailure !== null ? 'import-problem' : undefined"
+          />
+          <button type="submit" class="btn btn-ghost" :disabled="deckUrl.trim() === '' || importing">
+            {{ importing ? 'Importing…' : 'Import' }}
+          </button>
+        </form>
+      </div>
+      <div v-if="importFailure !== null" id="import-problem" class="form-alert" role="alert">
+        <p class="form-alert-title">{{ importFailure.summary }}</p>
+        <p v-for="detail in importFailure.details" :key="detail" class="form-alert-text">{{ detail }}</p>
+      </div>
+      <div v-if="choices.mine.length > 0" class="grid">
         <button
           v-for="choice in choices.mine"
           :key="choice.deck.id"
@@ -418,6 +486,64 @@ h1 {
 
 h2.form-label {
   font-family: var(--font-ui);
+}
+
+.mine-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.mine-title {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.imported {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.imported strong {
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.import {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.import label {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.import .field {
+  width: 440px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+  background: var(--card);
+  border-color: var(--line);
+}
+
+.import .field:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
+.import .field[aria-invalid='true'] {
+  border-color: var(--seal);
+}
+
+.import .btn {
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
 }
 
 .grid {

@@ -12,6 +12,9 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Service\Deck\DeckConstructionValidatorTest;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\JsonMockResponse;
+use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiDecksControllerTest extends AbstractKernelTestCase
@@ -104,6 +107,92 @@ class ApiDecksControllerTest extends AbstractKernelTestCase
         $deck = $this->deckRepository->find($view['id']);
         self::assertInstanceOf(Deck::class, $deck);
         self::assertSame(91, count($deck->getCardCodes()));
+    }
+
+    private const string EMERALDDB_URL = 'https://www.emeralddb.org/decks/d95c6eda-57ce-49a8-b03e-b40ab603f293';
+
+    /**
+     * EmeraldDB answers this response to every request.
+     */
+    private function emeraldDbAnswers(MockResponse $response): void
+    {
+        $client = self::getContainer()->get('app.test.emeralddb_client');
+        self::assertInstanceOf(MockHttpClient::class, $client);
+        $client->setResponseFactory($response);
+    }
+
+    public function testAUserImportsADeckFromItsURLOnEmeraldDb(): void
+    {
+        $this->emeraldDbAnswers(new JsonMockResponse(['name' => 'Moist Crane Duel', 'cards' => $this->emeraldDbCraneDeck()]));
+
+        $response = $this->request('POST', '/api/decks', ['url' => self::EMERALDDB_URL]);
+
+        self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
+        $view = $this->decode($response);
+        self::assertIsString($view['id']);
+        self::assertSame("/api/decks/{$view['id']}", $response->headers->get('Location'));
+        self::assertSame('Moist Crane Duel', $view['name']);
+        self::assertSame('akodo-bot', $view['owner_id']);
+        self::assertSame(DeckConstructionValidatorTest::craneDeck(), $view['cards']);
+    }
+
+    public function testTheNameGivenReplacesTheNameOnEmeraldDb(): void
+    {
+        $this->emeraldDbAnswers(new JsonMockResponse(['name' => 'Moist Crane Duel', 'cards' => $this->emeraldDbCraneDeck()]));
+
+        $response = $this->request('POST', '/api/decks', ['name' => 'Kakita duels', 'url' => self::EMERALDDB_URL]);
+
+        self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('Kakita duels', $this->decode($response)['name']);
+    }
+
+    public function testAURLComesWithoutCards(): void
+    {
+        $response = $this->request('POST', '/api/decks', ['url' => self::EMERALDDB_URL, 'format' => 'emeralddb', 'cards' => $this->emeraldDbCraneDeck()]);
+
+        self::assertEqualsCanonicalizing(['format', 'cards'], $this->violations($response, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+    }
+
+    public function testTheURLIsAString(): void
+    {
+        $response = $this->request('POST', '/api/decks', ['url' => 42]);
+
+        self::assertSame(['url'], $this->violations($response, Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+    }
+
+    public function testTheURLNamesADeckOfEmeraldDb(): void
+    {
+        $response = $this->request('POST', '/api/decks', ['url' => 'https://www.fiveringsdb.com/decks/d95c6eda-57ce-49a8-b03e-b40ab603f293']);
+
+        self::assertSame(['url'], $this->violations($response, Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck'));
+    }
+
+    public function testADeckEmeraldDbDoesNotHaveIsInvalid(): void
+    {
+        $this->emeraldDbAnswers(new MockResponse('Not Found', ['http_code' => 404]));
+
+        $response = $this->request('POST', '/api/decks', ['url' => self::EMERALDDB_URL]);
+
+        self::assertSame(['url'], $this->violations($response, Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck'));
+    }
+
+    public function testADeckOfEmeraldDbFollowsTheDeckbuildingRules(): void
+    {
+        $this->emeraldDbAnswers(new JsonMockResponse(['name' => 'Emerald', 'cards' => ['a-new-card' => 1, ...$this->emeraldDbCraneDeck()]]));
+
+        $response = $this->request('POST', '/api/decks', ['url' => self::EMERALDDB_URL]);
+
+        self::assertSame(['cards[a-new-card]'], $this->violations($response, Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck'));
+    }
+
+    public function testEmeraldDbUnavailableIsABadGateway(): void
+    {
+        $this->emeraldDbAnswers(new MockResponse('', ['http_code' => 503]));
+
+        $response = $this->request('POST', '/api/decks', ['url' => self::EMERALDDB_URL]);
+
+        self::assertSame(Response::HTTP_BAD_GATEWAY, $response->getStatusCode());
+        self::assertSame('deck_source_unavailable', $this->decode($response)['type']);
     }
 
     public function testAUserImportsADeckByTheCodesOfTheCards(): void

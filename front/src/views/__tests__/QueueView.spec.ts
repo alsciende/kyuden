@@ -73,6 +73,8 @@ describe('QueueView', () => {
   /** the answers of the queue, in order; the decks, the cards and the subscription are always answered */
   let queue: (() => Response)[]
   let games: unknown[]
+  /** the answer to a deck imported */
+  let importAnswer: () => Response
 
   beforeEach(() => {
     session.value = {
@@ -87,6 +89,8 @@ describe('QueueView', () => {
     FakeEventSource.opened = []
     queue = []
     games = []
+    importAnswer = () =>
+      json(201, { id: 'deck-9', name: 'Moist Crane Duel', owner_id: 'john', cards: { '01-shizuka-toshi': 1 } })
     vi.stubGlobal('EventSource', FakeEventSource)
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockImplementation(async (input, init) => {
@@ -95,7 +99,7 @@ describe('QueueView', () => {
         return json(200, { hub: 'http://hub.test/', token: 'jwt', topic: '/users/john', expires_at: '' })
       }
       if (path === '/api/decks') {
-        return json(200, decks)
+        return init?.method === 'POST' ? importAnswer() : json(200, decks)
       }
       if (path === '/api/self/games') {
         return json(200, games)
@@ -229,5 +233,59 @@ describe('QueueView', () => {
     const { router } = await mountQueue('/queue?invitation=invitation-0')
 
     expect(router.currentRoute.value.fullPath).toBe('/invite')
+  })
+
+  it('imports a deck from EmeraldDB, which is chosen, then joins the queue with it', async () => {
+    queue = [() => notQueued(), () => json(200, { deck_id: 'deck-9' })]
+    const { wrapper } = await mountQueue()
+
+    await wrapper.find('#deck-url').setValue(' https://www.emeralddb.org/decks/d95c6eda ')
+    await wrapper.find('form.import').trigger('submit')
+    await flushPromises()
+
+    const post = fetchMock.mock.calls.find(([path, init]) => path === '/api/decks' && init?.method === 'POST')!
+    expect(post[1]!.body).toBe(JSON.stringify({ url: 'https://www.emeralddb.org/decks/d95c6eda' }))
+    const mine = wrapper.findAll('.mine button.deck')
+    expect(mine.map((button) => button.text())).toEqual([
+      expect.stringContaining('Moist Crane Duel'),
+      expect.stringContaining('Crab starter deck'),
+    ])
+    expect(mine[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('.imported').text()).toContain('Moist Crane Duel imported from EmeraldDB')
+    expect((wrapper.find('#deck-url').element as HTMLInputElement).value).toBe('')
+
+    await wrapper.find('.actions .btn-primary').trigger('click')
+    await flushPromises()
+    const join = fetchMock.mock.calls.find(([path, init]) => path === '/api/queue' && init?.method === 'POST')!
+    expect(join[1]!.body).toBe(JSON.stringify({ deck_id: 'deck-9' }))
+  })
+
+  it('tells why a deck cannot be imported, and keeps the URL', async () => {
+    importAnswer = () =>
+      json(422, {
+        type: 'invalid_deck',
+        detail: 'The deck cannot be imported.',
+        violations: [{ property_path: 'cards[ashen-flame-plateau]', message: 'Unknown card.' }],
+      })
+    const { wrapper } = await mountQueue()
+
+    await wrapper.find('#deck-url').setValue('https://www.emeralddb.org/decks/75ffc2ba')
+    await wrapper.find('form.import').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.find('#import-problem').text()).toContain('not those of Emerald Legacy yet')
+    expect(wrapper.find('#import-problem').text()).toContain('ashen-flame-plateau')
+    expect(wrapper.find('#deck-url').attributes('aria-invalid')).toBe('true')
+    expect((wrapper.find('#deck-url').element as HTMLInputElement).value).toBe(
+      'https://www.emeralddb.org/decks/75ffc2ba',
+    )
+    expect(wrapper.findAll('.mine button.deck')).toHaveLength(1)
+  })
+
+  it('offers the import in the queue of a friendly game too', async () => {
+    const { wrapper } = await mountQueue('/queue?code=KX7-QM4-T9P')
+
+    expect(wrapper.find('form.import').exists()).toBe(true)
+    expect(wrapper.find('form.import button').attributes('disabled')).toBeDefined()
   })
 })

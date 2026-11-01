@@ -305,6 +305,14 @@ export function fetchDecks(token: string): Promise<Deck[]> {
 }
 
 /**
+ * Imports a deck of EmeraldDB from the URL of its page, for the user: 422 `invalid_deck` when it cannot be (violations
+ * on `url`, `cards[<id>]` or `cards`), 502 `deck_source_unavailable` when EmeraldDB cannot be reached.
+ */
+export function importDeck(token: string, url: string): Promise<Deck> {
+  return request<Deck>('/api/decks', { method: 'POST', body: { url }, token })
+}
+
+/**
  * The deck the user waits with in the queue; a 404 (`not_queued`) once matched or left.
  */
 export function fetchQueue(token: string): Promise<{ deck_id: string }> {

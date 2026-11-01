@@ -6,9 +6,13 @@ namespace App\Controller;
 
 use App\Entity\Deck;
 use App\Entity\User;
+use App\Enum\CardSource;
+use App\Exception\Api\DeckSourceUnavailableException;
 use App\Exception\Api\InvalidDeckException;
+use App\Exception\Api\InvalidDeckUrlException;
 use App\Repository\DeckRepository;
 use App\Service\Deck\DeckImporter;
+use App\Service\Deck\EmeraldDbDeckFetcher;
 use App\View\DeckViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +25,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 /**
  * The decks of the authenticated user, and the decks without owner (the starter decks) every user can use. A deck is
  * imported from its cards in one of the formats of DeckImporter (`{"name": ..., "format": "emeralddb", "cards":
- * {"card id": quantity}}`) and checked against the deckbuilding rules. Errors are problem details (RFC 9457).
+ * {"card id": quantity}}`), or downloaded from the URL of its page on EmeraldDB (`{"name": ..., "url": ...}`, the name
+ * of EmeraldDB unless given), and checked against the deckbuilding rules. Errors are problem details (RFC 9457).
  */
 class ApiDecksController extends AbstractController
 {
@@ -29,11 +34,14 @@ class ApiDecksController extends AbstractController
 
     public const int MAX_NAME_LENGTH = 255;
 
+    public const int MAX_URL_LENGTH = 2048;
+
     public function __construct(
         private readonly DeckRepository $deckRepository,
         private readonly DeckImporter $deckImporter,
         private readonly EntityManagerInterface $entityManager,
         private readonly DeckViewFactory $deckViewFactory,
+        private readonly EmeraldDbDeckFetcher $emeraldDbDeckFetcher,
     ) {
     }
 
@@ -67,12 +75,21 @@ class ApiDecksController extends AbstractController
         if ($violations !== []) {
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Invalid deck.', ['violations' => $violations]);
         }
-        /** @var array{name?: string|null, format: string, cards: array<string, int>} $body */
+        /** @var array{name?: string|null, url?: string, format?: string, cards?: array<string, int>} $body */
 
         try {
-            $deck = $this->deckImporter->import($user, $body['name'] ?? null, $body['format'], $body['cards']);
+            if (isset($body['url'])) {
+                $fetched = $this->emeraldDbDeckFetcher->fetch($body['url']);
+                $deck = $this->deckImporter->import($user, $body['name'] ?? $fetched['name'], CardSource::EmeraldDb->value, $fetched['cards']);
+            } else {
+                $deck = $this->deckImporter->import($user, $body['name'] ?? null, $body['format'] ?? '', $body['cards'] ?? []);
+            }
+        } catch (InvalidDeckUrlException $exception) {
+            return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck', 'The deck cannot be imported.', ['violations' => [['property_path' => 'url', 'message' => $exception->getMessage()]]]);
         } catch (InvalidDeckException $exception) {
             return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck', $exception->getMessage(), ['violations' => $exception->getViolations()]);
+        } catch (DeckSourceUnavailableException $exception) {
+            return $this->problem(Response::HTTP_BAD_GATEWAY, 'deck_source_unavailable', $exception->getMessage());
         }
         $this->entityManager->flush();
 
@@ -90,13 +107,22 @@ class ApiDecksController extends AbstractController
     private function getStructureViolations(array $body): array
     {
         $violations = [];
-        foreach (array_diff(array_map(strval(...), array_keys($body)), ['name', 'format', 'cards']) as $field) {
-            $violations[] = ['property_path' => $field, 'message' => 'This field is not expected.'];
+        $byUrl = array_key_exists('url', $body);
+        foreach (array_diff(array_map(strval(...), array_keys($body)), $byUrl ? ['name', 'url'] : ['name', 'format', 'cards']) as $field) {
+            $violations[] = ['property_path' => $field, 'message' => $byUrl ? 'This field is not expected with a URL.' : 'This field is not expected.'];
         }
 
         $name = $body['name'] ?? null;
         if ($name !== null && (! is_string($name) || mb_strlen($name) > self::MAX_NAME_LENGTH)) {
             $violations[] = ['property_path' => 'name', 'message' => sprintf('The name must be a string of at most %d characters.', self::MAX_NAME_LENGTH)];
+        }
+
+        if ($byUrl) {
+            if (! is_string($body['url']) || $body['url'] === '' || strlen($body['url']) > self::MAX_URL_LENGTH) {
+                $violations[] = ['property_path' => 'url', 'message' => sprintf('The URL must be a string of 1 to %d characters.', self::MAX_URL_LENGTH)];
+            }
+
+            return $violations;
         }
 
         if (! is_string($body['format'] ?? null)) {

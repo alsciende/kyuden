@@ -16,6 +16,15 @@ framework:
     php_errors:
         log: true
 
+    http_client:
+        scoped_clients:
+            # the decks of EmeraldDB, imported from their URL (EmeraldDbDeckFetcher)
+            emeralddb.client:
+                base_uri: 'https://www.emeralddb.org'
+                headers: { Accept: 'application/json' }
+                timeout: 10
+                max_redirects: 0
+
     serializer:
         name_converter: 'serializer.name_converter.camel_case_to_snake_case'
 

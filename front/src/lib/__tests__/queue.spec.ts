@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Deck } from '@/api/client'
-import { deckChoices, deckClan, waitingTime } from '@/lib/queue'
+import { ApiProblem, type Deck } from '@/api/client'
+import { deckChoices, deckClan, importProblem, waitingTime } from '@/lib/queue'
 
 const starter = (clan: string, stronghold: string): Deck => ({
   id: `${clan}-starter-deck`,
@@ -47,5 +47,50 @@ describe('waitingTime', () => {
     expect(waitingTime(42.7)).toBe('0:42')
     expect(waitingTime(605)).toBe('10:05')
     expect(waitingTime(3725)).toBe('1:02:05')
+  })
+})
+
+describe('importProblem', () => {
+  const invalid = (...violations: [string, string][]) =>
+    new ApiProblem(
+      422,
+      'invalid_deck',
+      'The deck cannot be imported.',
+      violations.map(([path, message]) => ({ property_path: path, message })),
+    )
+
+  it('tells the cards unknown to the engine, which has no card of Emerald Legacy', () => {
+    const problem = importProblem(
+      invalid(['cards[ashen-flame-plateau]', 'Unknown card.'], ['cards[earth-s-examination]', 'Unknown card.']),
+    )
+
+    expect(problem.summary).toBe(
+      'This deck cannot be imported: 2 of its cards are not in Kyūden, which has the cards of Fantasy Flight Games only, not those of Emerald Legacy yet.',
+    )
+    expect(problem.details).toEqual(['ashen-flame-plateau, earth-s-examination'])
+    expect(importProblem(invalid(['cards[ashen-flame-plateau]', 'Unknown card.'])).summary).toContain(
+      '1 of its cards is not in Kyūden',
+    )
+  })
+
+  it('lists the deckbuilding rules broken', () => {
+    const problem = importProblem(invalid(['cards', 'The deck must have exactly 1 stronghold.']))
+
+    expect(problem.summary).toContain('it breaks the deckbuilding rules')
+    expect(problem.details).toEqual(['The deck must have exactly 1 stronghold.'])
+  })
+
+  it('tells why the URL names no deck', () => {
+    expect(importProblem(invalid(['url', 'Not the URL of a deck of EmeraldDB.']))).toEqual({
+      summary: 'Not the URL of a deck of EmeraldDB.',
+      details: [],
+    })
+  })
+
+  it('asks to try again when EmeraldDB cannot be reached, and gives any other problem as is', () => {
+    expect(importProblem(new ApiProblem(502, 'deck_source_unavailable', 'Bad gateway')).summary).toBe(
+      'EmeraldDB cannot be reached, try again later.',
+    )
+    expect(importProblem(new ApiProblem(401, 'unauthorized', 'Invalid token.')).summary).toBe('Invalid token.')
   })
 })

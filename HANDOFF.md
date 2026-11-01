@@ -22,6 +22,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - **Agents (MCP)**: no game played by an agent yet; an agent that stops without conceding blocks the game (no timeout); the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
 - **Scaling**: each long-poll holds a FrankenPHP thread for up to 30 s (classic mode, 20 threads); the OAuth state, the rate limiter and the MCP sessions live in filesystem caches (one host only; MCP sessions lost on restart).
 - **Security**: a Mercure subscriber token outlives a revoked session by up to an hour; no rate limit on creating guests and accounts; deleting an account asks no re-authentication (Symfony 8.2 brings one).
+- **Decks of EmeraldDB**: the decks of the Emerald Legacy card pool are refused (their new cards are unknown to the engine); a deck whose page EmeraldDB does not show (private, not published) cannot be downloaded: only what `/api/decklists/<id>` answers without authentication.
 - **Data**: card images point at FFG's CloudFront name (`d2qmv0gg5fizll.cloudfront.net`: the FFG CDN name has a mismatched certificate), which may change; the banned and restricted lists are not checked, and copies are counted by title where EmeraldDB counts by version.
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; the fix is a breaking downgrade, wait for an update.
 
@@ -45,7 +46,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 
 - **Agents**: play a game against `agent/play.sh` and fix what it reports; a timeout for an agent that stops; a compact view if the context fills.
 - **Feedback**: read the reasons of the concessions (payload of the `ConcedeGame` events): a console command or a listener of `GameConcededEvent`.
-- **Decks**: deletion, the text export of EmeraldDB, the banned and restricted lists.
+- **Decks**: a deck of EmeraldDB is imported from the URL of its page (`EmeraldDbDeckFetcher`: `POST /api/decks` with `url`, `app:deck:import`, `/upload-deck <url>` in the development console, and the field of the queue screen, friendly games included: mockup in the row "Play a game: the queue" of `LBUBwNBPdSopj5NMj5GLTL`); importing does not join the queue, the player still clicks. Then: deletion, the text export of EmeraldDB, the banned and restricted lists.
 - **Authentication**: rate limit the creation of guests and accounts; press the players to link a provider; sessions expiring after a few hours, renewed by the client.
 - **Ranking** of the games that are not friendly.
 - **Mercure protocol 1.0**: leave the compatibility mode (`protocol_version_compatibility 8`): `protocol_version: 1.0`, the RFC 9068 claims in the tokens of `SubscriptionFactory` and of the publisher, an `issuer` block in the `Caddyfile`, the topics as matchers; then check the clients (`front/src/lib/hub.ts`, `assets/console/mercure.js`) and the tests of the private topics.
