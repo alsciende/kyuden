@@ -7,10 +7,13 @@ namespace App\Controller;
 use App\Entity\Deck;
 use App\Entity\User;
 use App\Enum\CardSource;
+use App\Enum\DeckImportOutcome;
+use App\Exception\Api\DeckInQueueException;
 use App\Exception\Api\DeckSourceUnavailableException;
 use App\Exception\Api\InvalidDeckException;
 use App\Exception\Api\InvalidDeckUrlException;
 use App\Repository\DeckRepository;
+use App\Service\Deck\DeckDeleter;
 use App\Service\Deck\DeckImporter;
 use App\Service\Deck\EmeraldDbDeckFetcher;
 use App\View\DeckViewFactory;
@@ -26,7 +29,9 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * The decks of the authenticated user, and the decks without owner (the starter decks) every user can use. A deck is
  * imported from its cards in one of the formats of DeckImporter (`{"name": ..., "format": "emeralddb", "cards":
  * {"card id": quantity}}`), or downloaded from the URL of its page on EmeraldDB (`{"name": ..., "url": ...}`, the name
- * of EmeraldDB unless given), and checked against the deckbuilding rules. Errors are problem details (RFC 9457).
+ * of EmeraldDB unless given), and checked against the deckbuilding rules: a deck the user already has is answered
+ * instead (200), restored when they had deleted it. A user deletes their own decks (DeckDeleter). Errors are problem
+ * details (RFC 9457).
  */
 class ApiDecksController extends AbstractController
 {
@@ -42,6 +47,7 @@ class ApiDecksController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly DeckViewFactory $deckViewFactory,
         private readonly EmeraldDbDeckFetcher $emeraldDbDeckFetcher,
+        private readonly DeckDeleter $deckDeleter,
     ) {
     }
 
@@ -80,9 +86,9 @@ class ApiDecksController extends AbstractController
         try {
             if (isset($body['url'])) {
                 $fetched = $this->emeraldDbDeckFetcher->fetch($body['url']);
-                $deck = $this->deckImporter->import($user, $body['name'] ?? $fetched['name'], CardSource::EmeraldDb->value, $fetched['cards']);
+                $imported = $this->deckImporter->import($user, $body['name'] ?? $fetched['name'], CardSource::EmeraldDb->value, $fetched['cards']);
             } else {
-                $deck = $this->deckImporter->import($user, $body['name'] ?? null, $body['format'] ?? '', $body['cards'] ?? []);
+                $imported = $this->deckImporter->import($user, $body['name'] ?? null, $body['format'] ?? '', $body['cards'] ?? []);
             }
         } catch (InvalidDeckUrlException $exception) {
             return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_deck', 'The deck cannot be imported.', ['violations' => [['property_path' => 'url', 'message' => $exception->getMessage()]]]);
@@ -93,10 +99,31 @@ class ApiDecksController extends AbstractController
         }
         $this->entityManager->flush();
 
-        $response = $this->json($this->deckViewFactory->create($deck), Response::HTTP_CREATED);
+        $deck = $imported->deck;
+        $status = $imported->outcome === DeckImportOutcome::AlreadyOwned ? Response::HTTP_OK : Response::HTTP_CREATED;
+        $response = $this->json($this->deckViewFactory->create($deck), $status);
         $response->headers->set('Location', $this->generateUrl('app_api_deck', ['id' => $deck->getId()]));
 
         return $response;
+    }
+
+    #[Route('/api/decks/{id}', name: 'app_api_deck_delete', methods: ['DELETE'])]
+    public function delete(string $id, #[CurrentUser] User $user): Response
+    {
+        $deck = $this->deckRepository->findUsable($id, $user);
+        // the starter decks are every user's
+        if (! $deck instanceof Deck || ! $deck->getOwner() instanceof User) {
+            return $this->problem(Response::HTTP_NOT_FOUND, 'deck_not_found', "Deck not found: [{$id}]");
+        }
+
+        try {
+            $this->deckDeleter->delete($deck);
+        } catch (DeckInQueueException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'deck_in_queue', $exception->getMessage());
+        }
+        $this->entityManager->flush();
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
     /**

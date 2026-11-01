@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { ApiProblem, type Deck } from '@/api/client'
-import { deckChoices, deckClan, importProblem, waitingTime } from '@/lib/queue'
+import { deckChoices, deckClan, importProblem, waitingTime, withImported, withoutDeck } from '@/lib/queue'
 
 const starter = (clan: string, stronghold: string): Deck => ({
   id: `${clan}-starter-deck`,
@@ -38,6 +38,32 @@ describe('deckChoices', () => {
 
   it('names a deck without a name', () => {
     expect(deckChoices([myCrane], null).mine[0]!.name).toBe('Untitled deck')
+  })
+})
+
+describe('withImported', () => {
+  it('puts a new deck first', () => {
+    const result = withImported(deckChoices([crab, myCrab], null), myCrane)
+
+    expect(result.alreadyOwned).toBe(false)
+    expect(result.choices.mine.map((choice) => choice.deck.id)).toEqual(['deck-2', 'deck-1'])
+  })
+
+  it('keeps a deck the user already has in its place', () => {
+    const choices = deckChoices([crab, myCrab, myCrane], null)
+    const result = withImported(choices, myCrane)
+
+    expect(result.alreadyOwned).toBe(true)
+    expect(result.choices).toBe(choices)
+  })
+})
+
+describe('withoutDeck', () => {
+  it('removes a deck of the user', () => {
+    const choices = withoutDeck(deckChoices([crab, myCrab, myCrane], null), 'deck-1')
+
+    expect(choices.mine.map((choice) => choice.deck.id)).toEqual(['deck-2'])
+    expect(choices.starters).toHaveLength(1)
   })
 })
 

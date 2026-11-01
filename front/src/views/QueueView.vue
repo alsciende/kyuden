@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
   ApiProblem,
+  deleteDeck,
   fetchCard,
   fetchDecks,
   fetchInvitationStatus,
@@ -18,6 +19,7 @@ import {
   type QueueInvitation,
 } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
+import ActionIcon from '@/components/ActionIcon.vue'
 import ClanMon from '@/components/ClanMon.vue'
 import { CLANS } from '@/data/clans'
 import { follow } from '@/lib/hub'
@@ -29,6 +31,8 @@ import {
   deckChoices,
   importProblem,
   waitingTime,
+  withImported,
+  withoutDeck,
   type DeckChoice,
   type DeckChoices,
   type ImportProblem,
@@ -39,6 +43,7 @@ import { session } from '@/lib/session'
  * The matchmaking queue of the players who have an account: they choose a deck and join the queue, then wait (the
  * page in reverse) until the hub tells them a game of theirs has started (`game_started` on their topic), which opens.
  * A deck of EmeraldDB is imported from the URL of its page, then chosen: the player still joins the queue themselves.
+ * Their own decks are deleted from here, once confirmed in the tile of the deck.
  *
  * A friendly game: the host of an invitation comes with its id (`?invitation=`), its guest with its code (`?code=`,
  * a guest account too); they are matched together only. The host leaving the queue cancels the invitation.
@@ -65,8 +70,11 @@ const sending = ref(false)
 const deckUrl = ref('')
 const importing = ref(false)
 const importFailure = ref<ImportProblem | null>(null)
-/** the name of the deck just imported */
-const imported = ref<string | null>(null)
+/** what happened to a deck of the user: imported, already theirs, deleted */
+const notice = ref<{ before: string; name: string; after: string } | null>(null)
+/** the deck of the user whose deletion is asked to be confirmed */
+const confirmingDeletion = ref<string | null>(null)
+const deleting = ref(false)
 /** the strongholds of the clans, by code, read from the API */
 const strongholds = reactive<Record<string, Card>>({})
 
@@ -267,18 +275,47 @@ async function importFromUrl(): Promise<void> {
   }
   importing.value = true
   importFailure.value = null
-  imported.value = null
+  notice.value = null
   try {
-    const choice = deckChoice(await importDeck(token, url))
-    choices.value = { ...choices.value, mine: [choice, ...choices.value.mine] }
-    chosen.value = choice.deck.id
-    imported.value = choice.name
+    const deck = await importDeck(token, url)
+    const result = withImported(choices.value, deck)
+    choices.value = result.choices
+    chosen.value = deck.id
+    const name = deckChoice(deck).name
+    notice.value = result.alreadyOwned
+      ? { before: 'You already have ', name, after: ', chosen.' }
+      : { before: '', name, after: ' imported from EmeraldDB, and chosen.' }
     deckUrl.value = ''
   } catch (problem) {
     importFailure.value =
       problem instanceof ApiProblem ? importProblem(problem) : { summary: 'The deck cannot be imported.', details: [] }
   } finally {
     importing.value = false
+  }
+}
+
+/**
+ * Deletes a deck of the user, once confirmed: the deck chosen is no longer, the user chooses another.
+ */
+async function removeDeck(choice: DeckChoice): Promise<void> {
+  const token = session.value?.token
+  if (!token || deleting.value) {
+    return
+  }
+  deleting.value = true
+  error.value = null
+  try {
+    await deleteDeck(token, choice.deck.id)
+    choices.value = withoutDeck(choices.value, choice.deck.id)
+    if (chosen.value === choice.deck.id) {
+      chosen.value = null
+    }
+    notice.value = { before: '', name: choice.name, after: ' deleted.' }
+  } catch (problem) {
+    error.value = problem instanceof ApiProblem ? problem.detail : 'The deck cannot be deleted.'
+  } finally {
+    confirmingDeletion.value = null
+    deleting.value = false
   }
 }
 
@@ -334,8 +371,9 @@ function stronghold(choice: DeckChoice): string | undefined {
       <div class="mine-heading">
         <div class="mine-title">
           <h2 id="mine" class="form-label">Your decks</h2>
-          <p v-if="imported !== null" class="imported" role="status">
-            <strong>{{ imported }}</strong> imported from EmeraldDB, and chosen.
+          <p v-if="notice !== null" class="notice" role="status">
+            {{ notice.before }}<strong>{{ notice.name }}</strong
+            >{{ notice.after }}
           </p>
         </div>
         <form class="import" novalidate @submit.prevent="importFromUrl">
@@ -359,18 +397,43 @@ function stronghold(choice: DeckChoice): string | undefined {
         <p v-for="detail in importFailure.details" :key="detail" class="form-alert-text">{{ detail }}</p>
       </div>
       <div v-if="choices.mine.length > 0" class="grid">
-        <button
-          v-for="choice in choices.mine"
-          :key="choice.deck.id"
-          type="button"
-          class="deck"
-          :aria-pressed="chosen === choice.deck.id"
-          @click="chosen = choice.deck.id"
-        >
-          <span class="kanji" :style="{ color: choice.clan?.color }">{{ choice.clan?.kanji ?? '' }}</span>
-          <span class="name">{{ choice.name }}</span>
-          <span class="detail">{{ [choice.clan?.name, stronghold(choice)].filter(Boolean).join(' · ') }}</span>
-        </button>
+        <div v-for="choice in choices.mine" :key="choice.deck.id" class="slot">
+          <div
+            v-if="confirmingDeletion === choice.deck.id"
+            class="confirm"
+            role="group"
+            :aria-labelledby="`delete-${choice.deck.id}`"
+          >
+            <span :id="`delete-${choice.deck.id}`" class="confirm-title">Delete {{ choice.name }}?</span>
+            <div class="confirm-actions">
+              <button type="button" class="btn btn-seal" :disabled="deleting" @click="removeDeck(choice)">
+                Delete
+              </button>
+              <button type="button" class="btn-link" @click="confirmingDeletion = null">Keep it</button>
+            </div>
+          </div>
+          <template v-else>
+            <button
+              type="button"
+              class="deck"
+              :aria-pressed="chosen === choice.deck.id"
+              @click="chosen = choice.deck.id"
+            >
+              <span class="kanji" :style="{ color: choice.clan?.color }">{{ choice.clan?.kanji ?? '' }}</span>
+              <span class="name">{{ choice.name }}</span>
+              <span class="detail">{{ [choice.clan?.name, stronghold(choice)].filter(Boolean).join(' · ') }}</span>
+            </button>
+            <button
+              type="button"
+              class="trash"
+              :aria-label="`Delete ${choice.name}`"
+              title="Delete this deck"
+              @click="confirmingDeletion = choice.deck.id"
+            >
+              <ActionIcon name="discard" :size="20" />
+            </button>
+          </template>
+        </div>
       </div>
     </section>
 
@@ -501,12 +564,12 @@ h2.form-label {
   gap: 18px;
 }
 
-.imported {
+.notice {
   font-size: 14px;
   color: var(--ink-2);
 }
 
-.imported strong {
+.notice strong {
   font-family: var(--font-display);
   font-size: 16px;
 }
@@ -569,6 +632,94 @@ h2.form-label {
 
 .deck:hover {
   border-color: var(--ink);
+}
+
+.slot {
+  position: relative;
+  display: flex;
+}
+
+.slot .deck {
+  flex: 1;
+  min-width: 0;
+}
+
+.slot .deck .name {
+  padding-right: 28px;
+}
+
+/* shown while the deck is hovered or focused */
+.trash {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  color: var(--ink-3);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.slot:hover .trash,
+.slot:focus-within .trash {
+  opacity: 1;
+}
+
+.trash:hover,
+.trash:focus-visible {
+  color: var(--seal);
+  background: var(--paper-2);
+}
+
+.confirm {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px 12px;
+  min-height: 132px;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+}
+
+.confirm-title {
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-seal {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--seal-ink);
+}
+
+.btn-seal:hover {
+  background: var(--seal);
+  color: var(--seal-ink);
+  filter: brightness(0.92);
+}
+
+.confirm-actions .btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
 }
 
 .deck[aria-pressed='true'] {

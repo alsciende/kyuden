@@ -306,10 +306,18 @@ export function fetchDecks(token: string): Promise<Deck[]> {
 
 /**
  * Imports a deck of EmeraldDB from the URL of its page, for the user: 422 `invalid_deck` when it cannot be (violations
- * on `url`, `cards[<id>]` or `cards`), 502 `deck_source_unavailable` when EmeraldDB cannot be reached.
+ * on `url`, `cards[<id>]` or `cards`), 502 `deck_source_unavailable` when EmeraldDB cannot be reached. A deck with the
+ * same cards as one of the user's is that deck, restored if they had deleted it.
  */
 export function importDeck(token: string, url: string): Promise<Deck> {
   return request<Deck>('/api/decks', { method: 'POST', body: { url }, token })
+}
+
+/**
+ * Deletes a deck of the user: 404 `deck_not_found` for a starter deck, 409 `deck_in_queue` while they wait with it.
+ */
+export function deleteDeck(token: string, deckId: string): Promise<void> {
+  return request<void>(`/api/decks/${encodeURIComponent(deckId)}`, { method: 'DELETE', token })
 }
 
 /**

@@ -101,6 +101,9 @@ describe('QueueView', () => {
       if (path === '/api/decks') {
         return init?.method === 'POST' ? importAnswer() : json(200, decks)
       }
+      if (path === '/api/decks/deck-1' && init?.method === 'DELETE') {
+        return new Response(null, { status: 204 })
+      }
       if (path === '/api/self/games') {
         return json(200, games)
       }
@@ -251,7 +254,7 @@ describe('QueueView', () => {
       expect.stringContaining('Crab starter deck'),
     ])
     expect(mine[0]!.attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('.imported').text()).toContain('Moist Crane Duel imported from EmeraldDB')
+    expect(wrapper.find('.notice').text()).toContain('Moist Crane Duel imported from EmeraldDB')
     expect((wrapper.find('#deck-url').element as HTMLInputElement).value).toBe('')
 
     await wrapper.find('.actions .btn-primary').trigger('click')
@@ -280,6 +283,52 @@ describe('QueueView', () => {
       'https://www.emeralddb.org/decks/75ffc2ba',
     )
     expect(wrapper.findAll('.mine button.deck')).toHaveLength(1)
+  })
+
+  it('chooses a deck the user already has instead of importing it again', async () => {
+    importAnswer = () => json(200, decks[0])
+    const { wrapper } = await mountQueue()
+    await wrapper.findAll('.grid')[1]!.find('button.deck').trigger('click')
+
+    await wrapper.find('#deck-url').setValue('https://www.emeralddb.org/decks/d95c6eda')
+    await wrapper.find('form.import').trigger('submit')
+    await flushPromises()
+
+    const mine = wrapper.findAll('.mine button.deck')
+    expect(mine).toHaveLength(1)
+    expect(mine[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('.notice').text()).toBe('You already have Crab starter deck, chosen.')
+  })
+
+  it('deletes a deck of the user once confirmed, and the user chooses another', async () => {
+    const { wrapper } = await mountQueue()
+    expect(wrapper.find('.mine button.deck').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.grid')[1]!.find('.trash').exists()).toBe(false)
+
+    await wrapper.find('.mine .trash').trigger('click')
+    expect(wrapper.find('.mine .confirm').text()).toContain('Delete Crab starter deck?')
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
+    await wrapper.find('.mine .confirm .btn-seal').trigger('click')
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.some(([path, init]) => path === '/api/decks/deck-1' && init?.method === 'DELETE')).toBe(
+      true,
+    )
+    expect(wrapper.findAll('.mine button.deck')).toHaveLength(0)
+    expect(wrapper.find('.notice').text()).toBe('Crab starter deck deleted.')
+    expect(wrapper.findAll('button.deck').every((deck) => deck.attributes('aria-pressed') === 'false')).toBe(true)
+    expect(wrapper.find('.actions .btn-primary').attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps the deck when the deletion is not confirmed', async () => {
+    const { wrapper } = await mountQueue()
+
+    await wrapper.find('.mine .trash').trigger('click')
+    await wrapper.find('.mine .confirm .btn-link').trigger('click')
+
+    expect(wrapper.find('.mine .confirm').exists()).toBe(false)
+    expect(wrapper.findAll('.mine button.deck')).toHaveLength(1)
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
   })
 
   it('offers the import in the queue of a friendly game too', async () => {

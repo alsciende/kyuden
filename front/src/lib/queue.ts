@@ -45,6 +45,25 @@ export function deckChoices(decks: Deck[], preferredClan: ClanId | null): DeckCh
 }
 
 /**
+ * The choices once a deck is imported: a deck the user already had stays in its place (the API answers the deck with
+ * the same cards), any other comes first.
+ */
+export function withImported(choices: DeckChoices, deck: Deck): { choices: DeckChoices; alreadyOwned: boolean } {
+  if (choices.mine.some((choice) => choice.deck.id === deck.id)) {
+    return { choices, alreadyOwned: true }
+  }
+
+  return { choices: { ...choices, mine: [deckChoice(deck), ...choices.mine] }, alreadyOwned: false }
+}
+
+/**
+ * The choices once a deck of the user is deleted.
+ */
+export function withoutDeck(choices: DeckChoices, deckId: string): DeckChoices {
+  return { ...choices, mine: choices.mine.filter((choice) => choice.deck.id !== deckId) }
+}
+
+/**
  * Why a deck of EmeraldDB cannot be imported, from the problem of the API: what went wrong, and what it concerns (the
  * cards unknown to the engine, the deckbuilding rules broken), if anything.
  */

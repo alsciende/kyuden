@@ -21,7 +21,7 @@ class DeckRepository extends ServiceEntityRepository
     }
 
     /**
-     * The decks a user can use: their own decks and the decks without owner, by id.
+     * The decks a user can use: their own decks not deleted and the decks without owner, by id.
      *
      * @return list<Deck>
      */
@@ -30,6 +30,7 @@ class DeckRepository extends ServiceEntityRepository
         /** @var list<Deck> $decks */
         $decks = $this->createQueryBuilder('d')
             ->where('d.owner IS NULL OR d.owner = :user')
+            ->andWhere('d.deletedAt IS NULL')
             ->setParameter('user', $user)
             ->orderBy('d.id', \SortDirection::Ascending)
             ->getQuery()
@@ -39,13 +40,32 @@ class DeckRepository extends ServiceEntityRepository
     }
 
     /**
-     * A deck the user can use, or null when it does not exist or belongs to another user.
+     * A deck the user can use, or null when it does not exist, belongs to another user or was deleted.
      */
     public function findUsable(string $id, User $user): ?Deck
     {
         $deck = $this->find($id);
 
         return $deck instanceof Deck && $deck->isUsableBy($user) ? $deck : null;
+    }
+
+    /**
+     * A deck of the user with these cards (Deck::hashCards()), one not deleted first.
+     */
+    public function findOwnedWithContent(User $owner, string $contentHash): ?Deck
+    {
+        $decks = $this->findBy(['owner' => $owner, 'contentHash' => $contentHash], ['id' => 'ASC']);
+        usort($decks, fn (Deck $a, Deck $b): int => $a->isDeleted() <=> $b->isDeleted());
+
+        return $decks[0] ?? null;
+    }
+
+    /**
+     * Whether a player of a game plays the deck.
+     */
+    public function isPlayed(Deck $deck): bool
+    {
+        return $this->getEntityManager()->getRepository(Player::class)->count(['deck' => $deck]) > 0;
     }
 
     /**

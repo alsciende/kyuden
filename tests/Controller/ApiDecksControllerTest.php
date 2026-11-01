@@ -8,6 +8,7 @@ use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Deck;
 use App\Entity\User;
+use App\Service\MatchMaking\MatchMakingQueue;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Service\Deck\DeckConstructionValidatorTest;
 use Doctrine\ORM\EntityManagerInterface;
@@ -276,6 +277,123 @@ class ApiDecksControllerTest extends AbstractKernelTestCase
 
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
         self::assertSame('deck_not_found', $this->decode($response)['type']);
+    }
+
+    public function testADeckTheUserHasIsNotImportedTwice(): void
+    {
+        $first = $this->decode($this->request('POST', '/api/decks', ['name' => 'Moist Crane Duel', 'format' => 'emeralddb', 'cards' => $this->emeraldDbCraneDeck()]));
+
+        $response = $this->request('POST', '/api/decks', ['name' => 'Kakita duels', 'format' => 'codes', 'cards' => array_reverse(DeckConstructionValidatorTest::craneDeck(), true)]);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $view = $this->decode($response);
+        self::assertIsString($first['id']);
+        self::assertSame($first['id'], $view['id']);
+        self::assertSame('Moist Crane Duel', $view['name']);
+        self::assertSame("/api/decks/{$first['id']}", $response->headers->get('Location'));
+    }
+
+    public function testADeckOfAnotherUserIsNoDuplicate(): void
+    {
+        $this->request('POST', '/api/decks', ['format' => 'codes', 'cards' => DeckConstructionValidatorTest::craneDeck()], 'hida-bot');
+
+        $response = $this->request('POST', '/api/decks', ['format' => 'codes', 'cards' => DeckConstructionValidatorTest::craneDeck()]);
+
+        self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
+    }
+
+    public function testADeckIdenticalToADeckWithoutOwnerIsImported(): void
+    {
+        $entityManager = self::service(EntityManagerInterface::class);
+        $shared = new Deck('shared-crane-deck');
+        $shared->setCards(DeckConstructionValidatorTest::craneDeck());
+        $entityManager->persist($shared);
+        $entityManager->flush();
+
+        $response = $this->request('POST', '/api/decks', ['format' => 'codes', 'cards' => DeckConstructionValidatorTest::craneDeck()]);
+
+        self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
+        self::assertNotSame('shared-crane-deck', $this->decode($response)['id']);
+    }
+
+    public function testAUserDeletesADeckNeverPlayed(): void
+    {
+        $this->createDeckOf('akodo-bot');
+
+        $response = $this->request('DELETE', '/api/decks/deck-of-akodo-bot');
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        self::service(EntityManagerInterface::class)->clear();
+        self::assertNull($this->deckRepository->find('deck-of-akodo-bot'));
+    }
+
+    public function testADeletedDeckPlayedInAGameStaysForItsPlayers(): void
+    {
+        $this->createDeckOf('akodo-bot');
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('akodo-bot', fn ($player) => $player->deck('deck-of-akodo-bot'))
+            ->withPlayer('hida-bot')
+            ->persist();
+
+        $response = $this->request('DELETE', '/api/decks/deck-of-akodo-bot');
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        $deck = $this->deckRepository->find('deck-of-akodo-bot');
+        self::assertInstanceOf(Deck::class, $deck);
+        self::assertTrue($deck->isDeleted());
+        self::assertSame($deck, $scenario->player('akodo-bot')->getDeck());
+        self::assertNotContains('deck-of-akodo-bot', array_column($this->decode($this->request('GET', '/api/decks')), 'id'));
+        self::assertSame(Response::HTTP_NOT_FOUND, $this->request('GET', '/api/decks/deck-of-akodo-bot')->getStatusCode());
+        self::assertSame(Response::HTTP_NOT_FOUND, $this->request('DELETE', '/api/decks/deck-of-akodo-bot')->getStatusCode());
+    }
+
+    public function testImportingADeletedDeckRestoresIt(): void
+    {
+        $first = $this->decode($this->request('POST', '/api/decks', ['name' => 'Moist Crane Duel', 'format' => 'codes', 'cards' => DeckConstructionValidatorTest::craneDeck()]));
+        self::assertIsString($first['id']);
+        $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('akodo-bot', fn ($player) => $player->deck($first['id']))
+            ->withPlayer('hida-bot')
+            ->persist();
+        $this->request('DELETE', "/api/decks/{$first['id']}");
+
+        $response = $this->request('POST', '/api/decks', ['name' => 'Kakita duels', 'format' => 'codes', 'cards' => DeckConstructionValidatorTest::craneDeck()]);
+
+        self::assertSame(Response::HTTP_CREATED, $response->getStatusCode(), (string) $response->getContent());
+        $view = $this->decode($response);
+        self::assertSame($first['id'], $view['id']);
+        self::assertSame('Kakita duels', $view['name']);
+        self::assertContains($first['id'], array_column($this->decode($this->request('GET', '/api/decks')), 'id'));
+    }
+
+    public function testADeckTheUserWaitsWithCannotBeDeleted(): void
+    {
+        $deck = $this->createDeckOf('akodo-bot');
+        $owner = $deck->getOwner();
+        self::assertInstanceOf(User::class, $owner);
+        self::service(MatchMakingQueue::class)->join($owner, 'deck-of-akodo-bot');
+
+        $response = $this->request('DELETE', '/api/decks/deck-of-akodo-bot');
+
+        self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('deck_in_queue', $this->decode($response)['type']);
+        self::assertInstanceOf(Deck::class, $this->deckRepository->find('deck-of-akodo-bot'));
+    }
+
+    public function testTheStarterDecksAndTheDecksOfOtherUsersCannotBeDeleted(): void
+    {
+        $this->createDeckOf('hida-bot');
+
+        foreach (['deck-of-hida-bot', AppFixtures::LION_STARTER_DECK, 'unknown'] as $id) {
+            $response = $this->request('DELETE', "/api/decks/{$id}");
+
+            self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode(), $id);
+            self::assertSame('deck_not_found', $this->decode($response)['type']);
+        }
+        self::assertInstanceOf(Deck::class, $this->deckRepository->find(AppFixtures::LION_STARTER_DECK));
+        self::assertInstanceOf(Deck::class, $this->deckRepository->find('deck-of-hida-bot'));
     }
 
     public function testTheDecksRequireAToken(): void

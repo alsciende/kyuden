@@ -6,14 +6,18 @@ namespace App\Service\Deck;
 
 use App\Entity\Deck;
 use App\Entity\User;
+use App\Enum\DeckImportOutcome;
 use App\Exception\Api\InvalidDeckException;
+use App\Model\ImportedDeck;
+use App\Repository\DeckRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Creates the deck of a user from its cards in one of the formats (DeckFormatInterface): the cards are converted to
- * their codes, then the deck is checked against the deckbuilding rules (DeckConstructionValidator). The caller flushes.
+ * their codes, then the deck is checked against the deckbuilding rules (DeckConstructionValidator). A user who has a
+ * deck with the same cards keeps it, restored if they had deleted it. The caller flushes.
  */
 readonly class DeckImporter
 {
@@ -24,6 +28,7 @@ readonly class DeckImporter
         #[AutowireIterator(DeckFormatInterface::class)]
         private iterable $formats,
         private DeckConstructionValidator $constructionValidator,
+        private DeckRepository $deckRepository,
         private EntityManagerInterface $entityManager,
     ) {
     }
@@ -33,7 +38,7 @@ readonly class DeckImporter
      *
      * @throws InvalidDeckException
      */
-    public function import(User $owner, ?string $name, string $formatName, array $cards): Deck
+    public function import(User $owner, ?string $name, string $formatName, array $cards): ImportedDeck
     {
         $format = $this->getFormat($formatName);
         if (! $format instanceof DeckFormatInterface) {
@@ -59,13 +64,24 @@ readonly class DeckImporter
             ));
         }
 
+        $owned = $this->deckRepository->findOwnedWithContent($owner, Deck::hashCards($converted['cards']));
+        if ($owned instanceof Deck && ! $owned->isDeleted()) {
+            return new ImportedDeck($owned, DeckImportOutcome::AlreadyOwned);
+        }
+        if ($owned instanceof Deck) {
+            $owned->restore();
+            $owned->setName($name);
+
+            return new ImportedDeck($owned, DeckImportOutcome::Restored);
+        }
+
         $deck = new Deck(Uuid::v4()->toString());
         $deck->setOwner($owner);
         $deck->setName($name);
         $deck->setCards($converted['cards']);
         $this->entityManager->persist($deck);
 
-        return $deck;
+        return new ImportedDeck($deck, DeckImportOutcome::Created);
     }
 
     /**

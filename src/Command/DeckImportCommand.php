@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Entity\User;
 use App\Enum\CardSource;
+use App\Enum\DeckImportOutcome;
 use App\Exception\Api\InvalidDeckException;
 use App\Repository\UserRepository;
 use App\Service\Deck\DeckImporter;
@@ -54,7 +55,7 @@ readonly class DeckImportCommand
 
         $fetched = $this->fetcher->fetch($url);
         try {
-            $deck = $this->deckImporter->import($owner, $name ?? $fetched['name'], CardSource::EmeraldDb->value, $fetched['cards']);
+            $imported = $this->deckImporter->import($owner, $name ?? $fetched['name'], CardSource::EmeraldDb->value, $fetched['cards']);
         } catch (InvalidDeckException $exception) {
             $io->error('The deck cannot be imported:');
             $io->listing(array_map(
@@ -66,7 +67,13 @@ readonly class DeckImportCommand
         }
         $this->entityManager->flush();
 
-        $io->success(sprintf('Deck %s imported for %s: %s (%d cards).', $deck->getId(), $owner->getId(), $deck->getName() ?? 'no name', array_sum($deck->getCards())));
+        $deck = $imported->deck;
+        if ($imported->outcome === DeckImportOutcome::AlreadyOwned) {
+            $io->success(sprintf('%s already has this deck: %s (%s).', $owner->getId(), $deck->getName() ?? 'no name', $deck->getId()));
+
+            return Command::SUCCESS;
+        }
+        $io->success(sprintf('Deck %s %s for %s: %s (%d cards).', $deck->getId(), $imported->outcome === DeckImportOutcome::Restored ? 'restored' : 'imported', $owner->getId(), $deck->getName() ?? 'no name', array_sum($deck->getCards())));
 
         return Command::SUCCESS;
     }

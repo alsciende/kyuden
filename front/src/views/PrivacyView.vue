@@ -7,7 +7,7 @@
         Kyūden asks for no personal data: no email address, no real name, no birth date. It keeps what you play with,
         and nothing more. Nothing is sold, shared or used for advertising.
       </p>
-      <p class="updated">Last updated on 27 October 2026.</p>
+      <p class="updated">Last updated on 1 November 2026.</p>
     </header>
 
     <section>
@@ -21,7 +21,10 @@
           Your <strong>name at court</strong>, the name the other players see, which you choose and change at any time.
         </li>
         <li>Your <strong>preferred clan</strong> and your <strong>website settings</strong>.</li>
-        <li>The <strong>decks</strong> you import, which only you see.</li>
+        <li>
+          The <strong>decks</strong> you import, which only you see. A deck you delete is gone, unless you have played a
+          game with it: it then stays with that game, hidden from your decks, and comes back if you import it again.
+        </li>
         <li>
           Your <strong>invitation</strong> to a friendly game: whom it is for (your bot or a friend), its code and until
           when it waits. Your bot plays under your name at court (“Hida Takeshi's bot”), and its key is kept as a
