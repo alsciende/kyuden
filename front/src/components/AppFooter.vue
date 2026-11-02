@@ -1,6 +1,10 @@
+<script setup lang="ts">
+const version = import.meta.env.VITE_KYUDEN_VERSION ?? 'dev'
+</script>
+
 <template>
   <footer class="footer">
-    <span>Kyūden is a fan-made project, not affiliated with Fantasy Flight Games.</span>
+    <span>Kyūden {{ version }} is a fan-made project, not affiliated with Fantasy Flight Games.</span>
     <nav class="links">
       <RouterLink :to="{ name: 'terms' }">Terms and conditions</RouterLink>
       <RouterLink :to="{ name: 'privacy' }">Privacy</RouterLink>

@@ -103,7 +103,7 @@ sh:
 PROD_COMPOSE := KYUDEN_VERSION=local docker compose -p kyuden-prod -f docker/production/compose.yaml --env-file docker/production/.env
 
 prod-build:
-	docker build -f docker/production/Dockerfile -t ghcr.io/alsciende/kyuden-app:local .
+	docker build -f docker/production/Dockerfile --build-arg KYUDEN_VERSION=local -t ghcr.io/alsciende/kyuden-app:local .
 
 prod-up:
 	$(PROD_COMPOSE) up --detach

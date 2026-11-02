@@ -10,7 +10,9 @@ WORKDIR /app/front
 COPY front/package.json front/package-lock.json ./
 RUN npm ci
 COPY front/ ./
-RUN npm run build
+# the release shown by the web client (the git tag, set by release.yml)
+ARG KYUDEN_VERSION=dev
+RUN VITE_KYUDEN_VERSION="$KYUDEN_VERSION" npm run build
 
 FROM dunglas/frankenphp:1-php8.5-alpine AS app
 

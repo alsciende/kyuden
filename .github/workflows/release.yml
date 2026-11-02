@@ -47,6 +47,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: KYUDEN_VERSION=${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app
@@ -64,6 +65,7 @@ jobs:
       - id: check
         run: |
           if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] && git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::notice::$GITHUB_REF_NAME will be deployed: vX.Y.Z, on main"
             echo "deployable=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::$GITHUB_REF_NAME is not deployed: not vX.Y.Z, or not on main"
