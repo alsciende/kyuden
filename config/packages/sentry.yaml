@@ -1,0 +1,18 @@
+when@dev:
+    sentry:
+        dsn: '%env(SENTRY_DSN)%'
+        options:
+            ignore_exceptions:
+                - 'Symfony\Component\ErrorHandler\Error\FatalError'
+                - 'Symfony\Component\Debug\Exception\FatalErrorException'
+
+    monolog:
+        handlers:
+            sentry_logs:
+                type: service
+                id: Sentry\SentryBundle\Monolog\LogsHandler
+
+    services:
+        Sentry\SentryBundle\Monolog\LogsHandler:
+            arguments:
+                - !php/const Monolog\Logger::INFO
