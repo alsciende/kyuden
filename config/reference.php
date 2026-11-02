@@ -1742,7 +1742,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     mcp?: McpConfig,
  *     twig?: TwigConfig,
  *     twig_extra?: TwigExtraConfig,
- *     sentry?: SentryConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1757,7 +1756,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         mcp?: McpConfig,
  *         twig?: TwigConfig,
  *         twig_extra?: TwigExtraConfig,
- *         sentry?: SentryConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1788,7 +1786,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig?: TwigConfig,
  *         twig_extra?: TwigExtraConfig,
  *         dama_doctrine_test?: DamaDoctrineTestConfig,
- *         sentry?: SentryConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

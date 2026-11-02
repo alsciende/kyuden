@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Enum\Clan;
@@ -12,35 +14,28 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[AsCommand(
     name: 'app:cards:rename',
     description: 'Rename cards from the scan dump to our ids',
 )]
-class CardsRenameCommand
+readonly class CardsRenameCommand
 {
-
     public function __construct(
         #[Autowire(param: 'kernel.project_dir')]
-        private readonly string $projectDir,
-        private readonly PrintingRepository $printingRepository,
-    )
-    {
+        private string $projectDir,
+        private PrintingRepository $printingRepository,
+    ) {
     }
 
     public function __invoke(
-        SymfonyStyle               $io,
-        #[Argument('Path')] string $path,
-    ): int
-    {
+        SymfonyStyle $io,
+        #[Argument('Path')]
+        string $path,
+    ): int {
         $io->note(sprintf('The value of $path is: %s', var_export($path, true)));
 
-        if (str_ends_with($path, '/')) {
-            $path = substr($path, 0, strlen($path) - 1);
-        }
-
-        $slugger = new AsciiSlugger();
+        $path = rtrim($path, '/');
 
         $fs = new Filesystem();
         if (!$fs->exists($path)) {
@@ -177,6 +172,7 @@ class CardsRenameCommand
                         5 => 'Lion',
                         2 => 'Scorpion',
                         3 => 'Unicorn',
+                        default => throw new \UnexpectedValueException(sprintf('Unknown clan pack position %d', $packPosition)),
                     },
                     match ($clanName) {
                         'Pheonix' => match ($packPosition) {
@@ -324,9 +320,10 @@ class CardsRenameCommand
                 continue;
             }
 
-            $fs->dumpFile(
+            $fs->copy(
+                $absoluteFilePath,
                 sprintf('%s/cdn/cards/%s.webp', $this->projectDir, $dictionary[strtolower($absoluteFilePath)]),
-                file_get_contents($absoluteFilePath)
+                true,
             );
             $fs->remove($absoluteFilePath);
             $io->success('Moved ' . $absoluteFilePath);
