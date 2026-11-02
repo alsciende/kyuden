@@ -2,7 +2,7 @@
 
 ## Current status
 
-Every phase of the round is modeled: a game loops from round to round until a victory condition is met. The engine is a board (see README): the players apply the cards with generic effect messages, which now cover the cards of the Core Set but those listed under "Next steps". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, linked providers), the queue, friendly games (own bot or a friend), the web client and the production stack (FrankenPHP, CI, releases on `ghcr.io`), deployed at kyuden.app (DigitalOcean).
+Every phase of the round is modeled: a game loops from round to round until a victory condition is met. The engine is a board (see README): the players apply the cards with generic effect messages, which now cover the cards of the Core Set but those listed under "Next steps". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, linked providers), the queue, friendly games (own bot or a friend), the web client and the production stack (FrankenPHP, CI, releases on `ghcr.io`), deployed at kyuden.app (DigitalOcean) by the release of each tag `vX.Y.Z` of `main`.
 
 ## Principles to keep
 

@@ -1,5 +1,6 @@
 # every tag, on any branch: the tests and the linters (test.yml), then the production image
-# (docker/production/Dockerfile) pushed to the GitHub Container Registry, tagged with the name of the git tag
+# (docker/production/Dockerfile) pushed to the GitHub Container Registry, tagged with the name of the git tag;
+# a tag vX.Y.Z of a commit of main is then deployed to the production host (environment production, README "Production")
 name: Release
 
 on:
@@ -49,3 +50,52 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app
+
+  # whether the tag is deployed: vX.Y.Z, on a commit of main
+  deployable:
+    runs-on: ubuntu-latest
+    outputs:
+      deployable: ${{ steps.check.outputs.deployable }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: check
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] && git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$GITHUB_REF_NAME is not deployed: not vX.Y.Z, or not on main"
+            echo "deployable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # the forced command of the key on the host (docker/production/deploy.sh) deploys the tag sent
+  deploy:
+    needs: [build, deployable]
+    if: needs.deployable.outputs.deployable == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.DEPLOY_URL }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "deploy@$DEPLOY_HOST" "$GITHUB_REF_NAME"
+
+      # the entrypoint runs the migrations before serving anything
+      - name: Check
+        env:
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+        run: curl --fail --silent --show-error --output /dev/null --retry 30 --retry-delay 5 --retry-all-errors "$DEPLOY_URL/api/actions"
