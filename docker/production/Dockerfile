@@ -42,11 +42,10 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-pr
 COPY --exclude=front --exclude=docker . ./
 RUN composer dump-autoload --no-dev --classmap-authoritative \
     && composer run-script --no-dev post-install-cmd \
-    && bin/console asset-map:compile \
     && bin/console cache:warmup \
     && chown -R www-data:www-data var
 
-# one root: the front controller of Symfony, the assets of the development console (AssetMapper) and the web client
+# one root: the front controller of Symfony and the web client
 COPY --from=front /app/front/dist public/
 
 COPY --chmod=755 docker/production/app/entrypoint.sh /usr/local/bin/app-entrypoint

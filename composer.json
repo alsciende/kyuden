@@ -17,8 +17,6 @@
         "nyholm/psr7": "^1.8",
         "phpdocumentor/reflection-docblock": "^5.4",
         "sentry/sentry-symfony": "^5.15",
-        "symfony/asset": "*",
-        "symfony/asset-mapper": "*",
         "symfony/cache": "*",
         "symfony/console": "*",
         "symfony/doctrine-messenger": "*",
@@ -45,14 +43,11 @@
         "symfony/serializer": "*",
         "symfony/string": "*",
         "symfony/translation": "*",
-        "symfony/twig-bundle": "*",
         "symfony/uid": "*",
         "symfony/validator": "*",
         "symfony/web-link": "*",
         "symfony/workflow": "*",
         "symfony/yaml": "*",
-        "twig/extra-bundle": "^2.12|^3.0",
-        "twig/twig": "^2.12|^3.0",
         "wohali/oauth2-discord-new": "^1.2"
     },
     "config": {
@@ -87,8 +82,7 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd",
-            "importmap:install": "symfony-cmd"
+            "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "post-install-cmd": [
             "@auto-scripts"

@@ -26,9 +26,8 @@
 		}
 	}
 
-	# Symfony: the API, the development console and its assets (AssetMapper); only the front controller is
-	# executed
-	@symfony path /api /api/* /console /console/* /assets/* /bundles/*
+	# Symfony: the API and the public files of the bundles; only the front controller is executed
+	@symfony path /api /api/* /bundles/*
 	handle @symfony {
 		php_server
 	}

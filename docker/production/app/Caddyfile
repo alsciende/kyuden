@@ -26,8 +26,8 @@
 		reverse_proxy 127.0.0.1:8000
 	}
 
-	# Symfony: the API and the development console; only the front controller is executed
-	@symfony path /api /api/* /console /console/*
+	# Symfony: the API; only the front controller is executed
+	@symfony path /api /api/*
 	handle @symfony {
 		php_server
 	}
@@ -38,7 +38,7 @@
 		respond 404
 	}
 
-	# the files built by Vite and AssetMapper carry a hash in their name
+	# the files built by Vite carry a hash in their name
 	handle /assets/* {
 		header Cache-Control "public, max-age=31536000, immutable"
 		file_server

@@ -7,9 +7,7 @@
 proxy.env
 var
 vendor
-public/assets
 public/bundles
-assets/vendor
 front/node_modules
 front/dist
 front/coverage

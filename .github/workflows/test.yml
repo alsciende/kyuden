@@ -26,14 +26,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # the dependencies as installed by the last run with the same lock files: composer and importmap:install only
-      # run their scripts
+      # the dependencies as installed by the last run with the same lock file: composer only runs its scripts
       - uses: actions/cache@v6
         with:
-          path: |
-            vendor
-            assets/vendor
-          key: php-${{ runner.os }}-${{ hashFiles('composer.lock', 'importmap.php') }}
+          path: vendor
+          key: php-${{ runner.os }}-${{ hashFiles('composer.lock') }}
 
       - uses: actions/cache@v6
         with:
