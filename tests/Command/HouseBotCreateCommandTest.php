@@ -31,11 +31,24 @@ class HouseBotCreateCommandTest extends AbstractKernelTestCase
         self::assertInstanceOf(User::class, $bot);
         self::assertSame(UserType::Bot, $bot->getType());
         self::assertSame(HouseBotCreateCommand::OWNER_ID, $bot->getOwner()?->getId());
+        self::assertSame(HouseBotCreateCommand::NAME, $bot->getName());
     }
 
     public function testAHouseBotThatExistsIsKept(): void
     {
         self::assertStringContainsString('House bot kyuden-bot already exists.', $this->createHouseBot('kyuden-bot'));
+    }
+
+    public function testAHouseBotOfAnotherNameIsRenamed(): void
+    {
+        $entityManager = self::service(EntityManagerInterface::class);
+        $bot = $entityManager->find(User::class, 'kyuden-bot');
+        self::assertInstanceOf(User::class, $bot);
+        $bot->rename('Kyūden Bot');
+        $entityManager->flush();
+
+        self::assertStringContainsString('House bot kyuden-bot renamed Kyūden no Karō.', $this->createHouseBot('kyuden-bot'));
+        self::assertSame(HouseBotCreateCommand::NAME, $bot->getName());
     }
 
     public function testTheHouseBotIsABot(): void

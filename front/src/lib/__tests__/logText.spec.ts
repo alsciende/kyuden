@@ -49,6 +49,22 @@ describe('entryText', () => {
     expect(text).toBe("Kakita Kaezin moves from the opponent's hand for the Void ring: 2, ?")
   })
 
+  it('names the players to a spectator, in the third person', () => {
+    const watched = game(player('me', [], { name: 'Doji Akiko' }), player('opp', [], { name: 'Matsu Kenji' }), {
+      spectating: true,
+    })
+    const entry = {
+      template: '{player} draws {card} from {from}',
+      params: {
+        player: { type: 'player' as const, id: 'me' },
+        card: { type: 'card' as const, id: null, code: null },
+        from: { type: 'stack' as const, stack_type: 'conflict_draw_deck' as const, player_id: 'opp', id: null },
+      },
+    }
+
+    expect(entryText(entry, watched, cards)).toBe("Doji Akiko draws a hidden card from Matsu Kenji's conflict deck")
+  })
+
   it('keeps a template without params as is', () => {
     expect(entryText({ template: 'The conflict phase begins', params: [] }, view, cards)).toBe(
       'The conflict phase begins',

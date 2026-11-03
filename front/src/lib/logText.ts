@@ -1,10 +1,10 @@
 import type { GameView, LogEntry, LogParam, StackType } from '@/api/game'
-import type { Cards } from '@/lib/board'
+import { nameOf, playerById, type Cards } from '@/lib/board'
 import { ELEMENT_NAMES } from '@/lib/icons'
 
 /**
  * The text of an entry of the log: its template with its params, as the viewer knows them. The players are named
- * from the point of view of the viewer (you, the opponent).
+ * from the point of view of the viewer (you, the opponent), or by their names for a spectator.
  */
 
 const STACK_NAMES: Record<StackType, string> = {
@@ -22,7 +22,7 @@ const STACK_NAMES: Record<StackType, string> = {
 export function paramText(param: LogParam, game: GameView, cards: Cards): string {
   switch (param.type) {
     case 'player':
-      return param.id === game.viewer_id ? 'You' : 'Opp.'
+      return nameOf(game, playerById(game, param.id))
     case 'card':
       if (param.code !== null) {
         return cards[param.code]?.name ?? 'a card'
@@ -30,7 +30,11 @@ export function paramText(param: LogParam, game: GameView, cards: Cards): string
 
       return 'a hidden card'
     case 'stack': {
-      const owner = param.player_id === game.viewer_id ? 'your' : "the opponent's"
+      const owner = game.spectating
+        ? `${playerById(game, param.player_id)?.name ?? 'a player'}'s`
+        : param.player_id === game.viewer_id
+          ? 'your'
+          : "the opponent's"
 
       return param.stack_type === 'in_play' ? 'play' : `${owner} ${STACK_NAMES[param.stack_type]}`
     }
@@ -86,7 +90,7 @@ export function entryParts(entry: LogEntry, game: GameView, cards: Cards): TextP
   // the templates are written in the third person: "{player} passes" reads "You pass" for the viewer
   const subject = /^\{(\w+)\} (\w+)/.exec(template)
   const subjectParam = subject ? params[subject[1]!] : undefined
-  if (subject && subjectParam?.type === 'player' && subjectParam.id === game.viewer_id) {
+  if (!game.spectating && subject && subjectParam?.type === 'player' && subjectParam.id === game.viewer_id) {
     template = `{${subject[1]}} ${secondPerson(subject[2]!)}${template.slice(subject[0].length)}`.replace(
       /\btheir\b/g,
       'your',

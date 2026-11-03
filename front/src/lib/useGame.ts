@@ -4,11 +4,16 @@ import { ApiProblem, fetchCard } from '@/api/client'
 import {
   fetchGame,
   fetchLog,
+  fetchSpectators,
+  leaveGame,
+  seenFrom,
   sendMessage,
   type GameView,
+  type GameViewData,
   type LoggedMessage,
   type LogParam,
   type PayloadArgs,
+  type SpectatorView,
 } from '@/api/game'
 import type { MessagePayloads, MessageType } from '@/api/messages'
 import { gameEnded, visibleCodes, type Cards } from '@/lib/board'
@@ -29,10 +34,19 @@ function codesOf(param: LogParam): string[] {
  * A game followed by its player: its view and its log, read again whenever the Mercure hub announces a change (or once
  * it has not changed for a while: a notification may be lost, and reading a game of the house bot makes it play a turn
  * it has not played), the cards it shows as printed, and the messages the player sends.
+ *
+ * An account that does not play the game watches it: the engine sends it what is public only, and it sends nothing. It
+ * watches from the side of a player (the first in player order), and switches sides. The spectators of the game are
+ * read again whenever the hub announces they have changed (`spectators_updated`).
  */
 export function useGame(gameId: string) {
   const session = loadSession()
+  /** the view as the engine sent it */
+  const data = shallowRef<GameViewData | null>(null)
+  /** the player a spectator watches from, null for the first in player order */
+  const seat = ref<string | null>(null)
   const game = shallowRef<GameView | null>(null)
+  const spectators = ref<SpectatorView[]>([])
   const log = ref<LoggedMessage[]>([])
   const cards = reactive<Cards>({})
   /** why the game cannot be shown */
@@ -74,15 +88,22 @@ export function useGame(gameId: string) {
     }
     try {
       const loaded = await fetchGame(session.token, gameId)
-      if (gameEnded(loaded)) {
+      const seen = seenFrom(loaded, seat.value)
+      if (gameEnded(seen)) {
         idle.stop()
       } else if (loaded.version !== game.value?.version) {
         idle.touch()
       }
-      game.value = loaded
+      data.value = loaded
+      game.value = seen
       loadError.value = null
-      readCards(visibleCodes(loaded))
-      unfollow ??= follow(session.token, [`/games/${gameId}`], () => void refresh())
+      readCards(visibleCodes(game.value))
+      if (unfollow === null) {
+        unfollow = follow(session.token, [`/games/${gameId}`], (update) =>
+          update.event === 'spectators_updated' ? void readSpectators() : void refresh(),
+        )
+        void readSpectators()
+      }
       await readLog()
     } catch (problem) {
       if (problem instanceof ApiProblem) {
@@ -90,6 +111,38 @@ export function useGame(gameId: string) {
       } else {
         throw problem
       }
+    }
+  }
+
+  async function readSpectators(): Promise<void> {
+    if (session === null) {
+      return
+    }
+    try {
+      spectators.value = await fetchSpectators(session.token, gameId)
+    } catch {
+      // the spectators are read again on the next change
+    }
+  }
+
+  /** a spectator watches from the side of the other player */
+  function switchSides(): void {
+    if (data.value === null || game.value === null || !game.value.spectating) {
+      return
+    }
+    seat.value = game.value.players.find((player) => player.id !== game.value!.viewer_id)?.id ?? null
+    game.value = seenFrom(data.value, seat.value)
+  }
+
+  /** a spectator stops watching the game */
+  async function leave(): Promise<void> {
+    if (session === null || !game.value?.spectating) {
+      return
+    }
+    try {
+      await leaveGame(session.token, gameId)
+    } catch {
+      // they will no longer read it: the engine forgets them soon
     }
   }
 
@@ -126,7 +179,7 @@ export function useGame(gameId: string) {
    * Sends a message of the player for the version of the game they see. Returns whether it was handled.
    */
   async function send<T extends MessageType>(type: T, ...[payload]: PayloadArgs<T>): Promise<boolean> {
-    if (session === null || game.value === null) {
+    if (session === null || game.value === null || game.value.spectating) {
       return false
     }
     sending.value = true
@@ -153,13 +206,15 @@ export function useGame(gameId: string) {
     }
   }
 
+  // a spectator who leaves the page no longer watches the game
   onBeforeUnmount(() => {
     idle.stop()
     unfollow?.()
     unfollow = null
+    void leave()
   })
 
-  return { session, game, log, cards, loadError, error, sending, send, refresh }
+  return { session, game, log, cards, spectators, loadError, error, sending, send, refresh, switchSides }
 }
 
 export type GameContext = ReturnType<typeof useGame>

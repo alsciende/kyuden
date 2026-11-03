@@ -7,7 +7,7 @@
         Kyūden asks for no personal data: no email address, no real name, no birth date. It keeps what you play with,
         and nothing more. Nothing is sold, shared or used for advertising.
       </p>
-      <p class="updated">Last updated on 1 November 2026.</p>
+      <p class="updated">Last updated on 3 November 2026.</p>
     </header>
 
     <section>
@@ -85,6 +85,10 @@
           password.
         </li>
         <li>A sign-in with a provider is remembered for ten minutes at most, until it is completed.</li>
+        <li>
+          The <strong>games you watch</strong>, while you watch them: their players and spectators see your name at
+          court. Forgotten once you leave, within an hour.
+        </li>
         <li>The server writes its errors in a log, to fix them.</li>
       </ul>
     </section>

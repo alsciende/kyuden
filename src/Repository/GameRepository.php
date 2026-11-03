@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\CardTypes\StrongholdCard;
 use App\Entity\Game;
+use App\Entity\Player;
+use App\Enum\Clan;
 use App\Exception\Data\GameNotFoundException;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -121,5 +124,67 @@ class GameRepository extends ServiceEntityRepository
             ->orderBy('g.id', \SortDirection::Ascending)
             ->getQuery()
             ->getArrayResult();
+    }
+
+    /**
+     * The games that have started and not ended, with their players and their users, in a single query; the last
+     * started first (the latest arrival of their players).
+     *
+     * @return list<Game>
+     */
+    public function findInProgress(): array
+    {
+        /** @var list<Game> $games */
+        $games = $this->createQueryBuilder('g')
+            ->addSelect('p', 'u')
+            ->join('g.players', 'p')
+            ->join('p.user', 'u')
+            ->where('g.currentPlace NOT IN (:places)')
+            ->setParameter('places', ['join_game', Game::STATE_ENDED])
+            ->orderBy('g.id', \SortDirection::Ascending)
+            ->addOrderBy('p.joinRank', \SortDirection::Ascending)
+            ->getQuery()
+            ->getResult();
+
+        $startedAt = fn (Game $game): int => max(array_map(
+            fn (Player $player): int => $player->getJoinDate()->getTimestamp(),
+            $game->getPlayers()->getValues(),
+        ) ?: [0]);
+        usort($games, fn (Game $a, Game $b): int => $startedAt($b) <=> $startedAt($a));
+
+        return $games;
+    }
+
+    /**
+     * The clan of the stronghold of each player of the games, by id of the player (a single query, no card loaded).
+     *
+     * @param list<string> $gameIds
+     *
+     * @return array<string, Clan>
+     */
+    public function findStrongholdClans(array $gameIds): array
+    {
+        if ($gameIds === []) {
+            return [];
+        }
+
+        /** @var list<array{playerId: string, clan: Clan|null}> $rows */
+        $rows = $this->getEntityManager()->createQueryBuilder()
+            ->select('IDENTITY(c.player) AS playerId', 'l.clan AS clan')
+            ->from(StrongholdCard::class, 'c')
+            ->join('c.logicalCard', 'l')
+            ->where('c.game IN (:games)')
+            ->setParameter('games', $gameIds)
+            ->getQuery()
+            ->getArrayResult();
+
+        $clans = [];
+        foreach ($rows as $row) {
+            if ($row['clan'] instanceof Clan) {
+                $clans[$row['playerId']] = $row['clan'];
+            }
+        }
+
+        return $clans;
     }
 }

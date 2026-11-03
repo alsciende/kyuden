@@ -19,6 +19,17 @@ export function opponent(game: GameView): PlayerView | undefined {
   return game.players.find((player) => player.id !== game.viewer_id)
 }
 
+/**
+ * How a player is named to the viewer: "You", and "Opp." (short) or "Opponent"; a spectator reads their names.
+ */
+export function nameOf(game: GameView, player: PlayerView | undefined, short = true): string {
+  if (game.spectating) {
+    return player?.name ?? ''
+  }
+
+  return player?.id === game.viewer_id ? 'You' : short ? 'Opp.' : 'Opponent'
+}
+
 export function playerById(game: GameView, id: string | null): PlayerView | undefined {
   return game.players.find((player) => player.id === id)
 }
@@ -34,6 +45,24 @@ export function stackOf(player: PlayerView, type: StackType): StackView | undefi
 /** the cards of a stack, from the bottom to the top (none when the viewer only sees their number) */
 export function cardsOf(stack: StackView | undefined): CardView[] {
   return stack?.cards ?? []
+}
+
+/**
+ * Cards the viewer only knows the number of, drawn by their backs (the hand a spectator watches): no id of the engine,
+ * so that nothing opens them.
+ */
+export function hiddenCards(count: number, side: CardView['side']): CardView[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `hidden-${side}-${index}`,
+    code: null,
+    side,
+    orientation: 'face_down' as const,
+    fate: 0,
+    personal_honor: 'ordinary' as const,
+    military_skill: null,
+    political_skill: null,
+    controller_id: '',
+  }))
 }
 
 export interface Province {
@@ -266,6 +295,42 @@ const STEPS: Record<string, Step> = {
   game_ended: { phase: null, title: 'The game is over', help: '' },
 }
 
+/** the steps told to a spectator, who does not play: what the players do (the others are told as to a player) */
+const SPECTATOR_STEPS: Record<string, Pick<Step, 'title' | 'help'>> = {
+  choose_stronghold: {
+    title: 'Choose the stronghold provinces',
+    help: 'Each player chooses the province placed under their stronghold. The others are placed face down at random.',
+  },
+  reveal_facedown_dynasty_cards: {
+    title: 'Reveal the dynasty cards',
+    help: 'Each player turns face up the dynasty cards in their provinces.',
+  },
+  play_cards_from_provinces: {
+    title: 'Play cards from provinces',
+    help: 'Each player in turn pays the cost of a character to bring it into play, or passes. The first player to pass gains 1 fate.',
+  },
+  honor_bid: {
+    title: 'Bid honor',
+    help: 'Each player draws as many cards as their bid. The higher bidder gives the difference in honor to the lower one.',
+  },
+  declare_conflict: {
+    title: 'Declare a conflict',
+    help: 'The attacker chooses a type, a ring, a province and their attackers, then declares, or passes this conflict.',
+  },
+  determine_result: {
+    title: 'Declare the skills',
+    help: 'Each side declares its total skill, every modifier applied.',
+  },
+  glory_count: {
+    title: 'Count the glory',
+    help: 'The glory of the ready characters of each player, plus one for each ring they claimed.',
+  },
+  discard_from_provinces: {
+    title: 'Discard from provinces',
+    help: 'Each player discards the face up dynasty cards they do not want, then passes. The provinces are refilled.',
+  },
+}
+
 /** the steps where the players have opportunities to act and pass them (the `opportunities` places of the engine) */
 const OPPORTUNITY_PLACES = [
   'play_cards_from_provinces',
@@ -352,9 +417,14 @@ const PHASE_PREFIXES: [string, Phase][] = [
  * The step of the round a game place stands for. Places the players do not act in are passed through at once: they
  * only get a phase.
  */
-export function stepOf(place: string | null): Step {
+export function stepOf(place: string | null, spectating = false): Step {
   if (place !== null && place in STEPS) {
-    return STEPS[place]!
+    const step = STEPS[place]!
+
+    // a spectator does nothing on the board: no hint
+    const told = SPECTATOR_STEPS[place]
+
+    return spectating ? { phase: step.phase, title: told?.title ?? step.title, help: told?.help ?? step.help } : step
   }
   const phase = PHASE_PREFIXES.find(([prefix]) => place?.includes(prefix))?.[1] ?? null
 

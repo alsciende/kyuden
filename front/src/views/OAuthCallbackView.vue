@@ -25,7 +25,7 @@ onMounted(async () => {
   }
   const result = await completeOAuth(provider.value, route.query)
   if (result.outcome === 'signed_in') {
-    await router.replace({ name: 'account' })
+    await router.replace({ name: 'landing' })
   } else if (result.purpose === 'link') {
     await router.replace({ name: 'account', query: { oauth: result.outcome, provider: provider.value } })
   } else {

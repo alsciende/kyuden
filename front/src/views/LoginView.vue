@@ -78,7 +78,7 @@ async function submit(): Promise<void> {
   error.value = null
   try {
     await signIn(username.value.trim(), password.value)
-    await router.push(next ?? { name: 'account' })
+    await router.push(next ?? { name: 'landing' })
   } catch (problem) {
     if (problem instanceof ApiProblem && problem.status === 401) {
       // the same message whether the username exists or not

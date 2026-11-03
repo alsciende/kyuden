@@ -23,7 +23,7 @@ const crane = CLANS[1]!
 const botGame = {
   game_id: 'game-1',
   player_id: 'player-1',
-  opponent: { user_id: 'kyuden-bot', name: 'Kyūden Bot', deck_id: 'lion-starter-deck' },
+  opponent: { user_id: 'kyuden-bot', name: 'Kyūden no Karō', deck_id: 'lion-starter-deck' },
 }
 
 function json(status: number, body: unknown): Response {

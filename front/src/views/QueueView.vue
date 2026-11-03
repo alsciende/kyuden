@@ -4,6 +4,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
   ApiProblem,
+  createBotGame,
   deleteDeck,
   fetchCard,
   fetchDecks,
@@ -22,6 +23,7 @@ import enso from '@/assets/mons/neutral.svg'
 import ActionIcon from '@/components/ActionIcon.vue'
 import ClanMon from '@/components/ClanMon.vue'
 import { CLANS } from '@/data/clans'
+import { HOUSE_BOT } from '@/data/houseBot'
 import { follow } from '@/lib/hub'
 import { timeLeft } from '@/lib/invitation'
 import { newcomer } from '@/lib/newcomer'
@@ -44,6 +46,8 @@ import { session } from '@/lib/session'
  * page in reverse) until the hub tells them a game of theirs has started (`game_started` on their topic), which opens.
  * A deck of EmeraldDB is imported from the URL of its page, then chosen: the player still joins the queue themselves.
  * Their own decks are deleted from here, once confirmed in the tile of the deck.
+ *
+ * Instead of the queue, the user may face the house bot with the deck chosen: the game opens at once.
  *
  * A friendly game: the host of an invitation comes with its id (`?invitation=`), its guest with its code (`?code=`,
  * a guest account too); they are matched together only. The host leaving the queue cancels the invitation.
@@ -345,6 +349,26 @@ async function leave(): Promise<void> {
   }
 }
 
+/**
+ * A game against the house bot with the deck chosen, without the queue.
+ */
+async function faceHouseBot(): Promise<void> {
+  const token = session.value?.token
+  if (!token || chosen.value === null || sending.value) {
+    return
+  }
+  sending.value = true
+  error.value = null
+  try {
+    const game = await createBotGame(token, chosen.value)
+    await open(game.game_id)
+  } catch (problem) {
+    error.value = problem instanceof ApiProblem ? problem.detail : `${HOUSE_BOT.name} cannot be faced.`
+  } finally {
+    sending.value = false
+  }
+}
+
 async function open(gameId: string): Promise<void> {
   state.value = null
   await router.push({ name: 'game', params: { id: gameId } })
@@ -364,7 +388,9 @@ function stronghold(choice: DeckChoice): string | undefined {
         You face <strong>{{ opponent }}</strong
         >, and nobody else. Not ranked.
       </p>
-      <p v-else class="lead">You face the next player who joins the queue.</p>
+      <p v-else class="lead">
+        Face the next player who joins the queue, or train against {{ HOUSE_BOT.name }}, {{ HOUSE_BOT.title }}.
+      </p>
     </div>
 
     <section class="decks mine" aria-labelledby="mine">
@@ -462,6 +488,19 @@ function stronghold(choice: DeckChoice): string | undefined {
       <span v-if="chosenDeck" class="with">
         with <strong>{{ chosenDeck.name }}</strong>
       </span>
+      <template v-if="friendly === null">
+        <span class="separator" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="btn btn-ghost btn-large bot"
+          :disabled="!chosenDeck || sending"
+          :aria-label="`Face ${HOUSE_BOT.name}, a bot${chosenDeck ? `, with ${chosenDeck.name}` : ''}`"
+          @click="faceHouseBot"
+        >
+          <span class="bot-name">Face {{ HOUSE_BOT.name }}</span>
+          <span class="bot-title">{{ HOUSE_BOT.role }} · a bot, to train</span>
+        </button>
+      </template>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <RouterLink v-if="hostInvitation !== null" :to="{ name: 'invite' }" class="btn-link aside">
         Back to the invitation
@@ -760,6 +799,31 @@ h2.form-label {
 .with {
   font-size: 15px;
   color: var(--ink-2);
+}
+
+.separator {
+  width: 1px;
+  height: 40px;
+  background: var(--line);
+}
+
+.bot {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+}
+
+.bot-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.bot-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
 }
 
 .aside {

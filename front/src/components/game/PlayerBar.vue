@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
-import type { Cards } from '@/lib/board'
+import { nameOf as playerName, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat } from '@/lib/playerBar'
@@ -54,9 +54,12 @@ const mine = computed(() => props.player.id === props.game.viewer_id)
 const tint = computed(() => findClan(props.player.clan)?.tint ?? '#e2d8c4')
 const bar = computed(() => playerBar(props.game, props.player))
 
+/** a value opening the effects on it, which a spectator does not apply: they only see the discard piles */
+const effectsOn = (key: BarStat): BarStat | null => (props.game.spectating ? null : key)
+
 const general = computed((): Stat[] => [
-  { key: 'honor', label: 'Honor', value: bar.value.honor ?? '–' },
-  { key: 'fate', label: 'Fate', value: bar.value.fate },
+  { key: effectsOn('honor'), label: 'Honor', value: bar.value.honor ?? '–' },
+  { key: effectsOn('fate'), label: 'Fate', value: bar.value.fate },
 ])
 const dynasty = computed((): Stat[] => [
   {
@@ -66,12 +69,12 @@ const dynasty = computed((): Stat[] => [
     of: bar.value.provinces,
     tip: bar.value.strongholdTip,
   },
-  { key: 'dynasty_deck', label: 'Deck', value: bar.value.dynastyDeck },
+  { key: effectsOn('dynasty_deck'), label: 'Deck', value: bar.value.dynastyDeck },
   { key: 'dynasty_discard', label: 'Discard', value: bar.value.dynastyDiscard.length },
 ])
 const conflict = computed((): Stat[] => [
-  { key: 'hand', label: 'Hand', value: bar.value.hand },
-  { key: 'conflict_deck', label: 'Deck', value: bar.value.conflictDeck },
+  { key: effectsOn('hand'), label: 'Hand', value: bar.value.hand },
+  { key: effectsOn('conflict_deck'), label: 'Deck', value: bar.value.conflictDeck },
   { key: 'conflict_discard', label: 'Discard', value: bar.value.conflictDiscard.length },
 ])
 
@@ -192,72 +195,86 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <section ref="root" class="bar" :class="position" :aria-label="mine ? 'You' : 'Opponent'">
-    <div class="section first" role="group" aria-label="Player">
-      <div class="who">
-        <span class="name" :style="{ background: tint }">{{ player.name }}</span>
-        <span class="caption">{{ mine ? 'You' : 'Opp.' }}</span>
-      </div>
-      <button
-        v-for="stat in general"
-        :key="stat.label"
-        type="button"
-        class="stat"
-        :class="{ on: open === stat.key }"
-        :aria-expanded="open === stat.key"
-        @click="toggle(stat.key!, $event)"
-      >
-        <b>{{ stat.value }}</b
-        ><span>{{ stat.label }}</span>
-      </button>
-      <div class="stat fixed">
-        <b class="icon glyphs" role="img" :aria-label="conflictsAria">
-          <span :class="{ used: !bar.conflictsLeft.includes('military') }">{{ CONFLICT_ICONS.military }}</span>
-          <span :class="{ used: !bar.conflictsLeft.includes('political') }">{{ CONFLICT_ICONS.political }}</span>
-        </b>
-        <span>Conflicts</span>
-      </div>
-      <div class="stat fixed">
-        <b v-if="bar.rings.length" class="icon glyphs" role="group" :aria-label="ringsAria">
-          <button
-            v-for="element in bar.rings"
-            :key="element"
-            v-tip="ringTip(element)"
-            type="button"
-            class="ring"
-            :class="{ on: openRing === element }"
-            :aria-label="ringLabel(element)"
-            :aria-expanded="openRing === element"
-            @click="toggleRing(element, $event)"
-          >
-            {{ ELEMENT_ICONS[element] }}
-          </button>
-        </b>
-        <b v-else class="glyphs none" role="img" :aria-label="ringsAria">–</b>
-        <span>Rings</span>
-      </div>
+  <section
+    ref="root"
+    class="bar"
+    :class="position"
+    :aria-label="game.spectating ? player.name : mine ? 'You' : 'Opponent'"
+  >
+    <div class="who">
+      <span class="name" :style="{ background: tint }">{{ player.name }}</span>
+      <span v-if="!game.spectating" class="caption">{{ mine ? 'You' : 'Opp.' }}</span>
     </div>
 
-    <div v-for="section in sections" :key="section.name" class="section" role="group" :aria-label="section.name">
-      <span class="caption seal">{{ section.name }}</span>
-      <template v-for="stat in section.stats" :key="stat.label">
-        <button
-          v-if="stat.key"
-          type="button"
-          class="stat"
-          :class="{ on: open === stat.key }"
-          :aria-expanded="open === stat.key"
-          @click="toggle(stat.key, $event)"
-        >
-          <b>{{ stat.value }}</b
-          ><span>{{ stat.label }}</span>
-        </button>
-        <div v-else v-tip="stat.tip ?? ''" class="stat fixed" :tabindex="stat.tip ? 0 : undefined">
-          <b
-            >{{ stat.value }}<small v-if="stat.of !== undefined">/{{ stat.of }}</small></b
-          ><span>{{ stat.label }}</span>
+    <!-- the values of the player, centered in the bar -->
+    <div class="stats">
+      <div class="section first" role="group" aria-label="Player">
+        <template v-for="stat in general" :key="stat.label">
+          <button
+            v-if="stat.key"
+            type="button"
+            class="stat"
+            :class="{ on: open === stat.key }"
+            :aria-expanded="open === stat.key"
+            @click="toggle(stat.key, $event)"
+          >
+            <b>{{ stat.value }}</b
+            ><span>{{ stat.label }}</span>
+          </button>
+          <div v-else class="stat fixed">
+            <b>{{ stat.value }}</b
+            ><span>{{ stat.label }}</span>
+          </div>
+        </template>
+        <div class="stat fixed">
+          <b class="icon glyphs" role="img" :aria-label="conflictsAria">
+            <span :class="{ used: !bar.conflictsLeft.includes('military') }">{{ CONFLICT_ICONS.military }}</span>
+            <span :class="{ used: !bar.conflictsLeft.includes('political') }">{{ CONFLICT_ICONS.political }}</span>
+          </b>
+          <span>Conflicts</span>
         </div>
-      </template>
+        <div class="stat fixed">
+          <b v-if="bar.rings.length" class="icon glyphs" role="group" :aria-label="ringsAria">
+            <button
+              v-for="element in bar.rings"
+              :key="element"
+              v-tip="ringTip(element)"
+              type="button"
+              class="ring"
+              :class="{ on: openRing === element }"
+              :aria-label="ringLabel(element)"
+              :aria-expanded="openRing === element"
+              @click="toggleRing(element, $event)"
+            >
+              {{ ELEMENT_ICONS[element] }}
+            </button>
+          </b>
+          <b v-else class="glyphs none" role="img" :aria-label="ringsAria">–</b>
+          <span>Rings</span>
+        </div>
+      </div>
+
+      <div v-for="section in sections" :key="section.name" class="section" role="group" :aria-label="section.name">
+        <span class="caption seal">{{ section.name }}</span>
+        <template v-for="stat in section.stats" :key="stat.label">
+          <button
+            v-if="stat.key"
+            type="button"
+            class="stat"
+            :class="{ on: open === stat.key }"
+            :aria-expanded="open === stat.key"
+            @click="toggle(stat.key, $event)"
+          >
+            <b>{{ stat.value }}</b
+            ><span>{{ stat.label }}</span>
+          </button>
+          <div v-else v-tip="stat.tip ?? ''" class="stat fixed" :tabindex="stat.tip ? 0 : undefined">
+            <b
+              >{{ stat.value }}<small v-if="stat.of !== undefined">/{{ stat.of }}</small></b
+            ><span>{{ stat.label }}</span>
+          </div>
+        </template>
+      </div>
     </div>
 
     <div class="badges">
@@ -268,8 +285,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         }}</span>
         Imperial Favor
       </span>
+      <span v-if="bar.firstPlayer && game.spectating" class="badge first">First player</span>
       <button
-        v-if="bar.firstPlayer"
+        v-else-if="bar.firstPlayer"
         type="button"
         class="badge first"
         :class="{ on: open === 'first_player' }"
@@ -298,10 +316,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         :class="position"
         :style="{ left: `${left}px`, width: `${POPOVER_WIDTH}px` }"
         role="dialog"
-        :aria-label="`${TITLES[open]} · ${mine ? 'You' : 'Opponent'}`"
+        :aria-label="`${TITLES[open]} · ${playerName(game, player, false)}`"
       >
         <div class="head">
-          <span class="caption">{{ TITLES[open] }} · {{ mine ? 'You' : 'Opp.' }}</span>
+          <span class="caption">{{ TITLES[open] }} · {{ playerName(game, player) }}</span>
           <button type="button" class="close" aria-label="Close" @click="close">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
               <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" fill="none" />
@@ -367,9 +385,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   height: 60px;
   box-sizing: border-box;
   padding: 0 24px;
+  /* the name on the left, the values centered, the badges on the right: both sides share what is left */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  background: var(--paper-2);
+}
+
+.stats {
   display: flex;
   align-items: center;
-  background: var(--paper-2);
 }
 
 .bar.top {
@@ -398,9 +424,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 180px;
+  /* the name takes the room left of the values: cut only when it does not fit */
   min-width: 0;
-  margin-right: 6px;
 }
 
 /* the tints are light whatever the theme: the name keeps the ink of the day */
@@ -531,7 +556,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .badges {
-  margin-left: auto;
+  justify-self: end;
   display: flex;
   gap: 8px;
 }

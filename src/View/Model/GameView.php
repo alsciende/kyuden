@@ -11,7 +11,8 @@ use App\State\Model\DuelState;
 use App\State\Model\RingState;
 
 /**
- * The state of a game as one of its players sees it (GameViewFactory). The rings, the conflict and the duel are public.
+ * The state of a game as one of its players sees it, or a spectator (GameViewFactory). The rings, the conflict and the
+ * duel are public.
  */
 final readonly class GameView
 {
@@ -27,7 +28,8 @@ final readonly class GameView
         public string $id,
         public int $version,
         public ?string $place,
-        public string $viewerId,
+        /** the player reading the view, null for a spectator */
+        public ?string $viewerId,
         public array $playerIds,
         public ?string $firstPlayerId,
         public array $activePlayerIds,

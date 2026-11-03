@@ -10,13 +10,14 @@ use App\Notification\GameStartedNotification;
 use App\Notification\GameUpdatedNotification;
 use App\Notifier\NotifierInterface;
 use App\Repository\GameRepository;
+use App\Service\Spectating\SpectatorRegistry;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 
 /**
- * Notifies the players that the game has changed, once the transaction is committed: a player reading the game on
- * notification sees the new version. Once the last player has joined a game, it has started: every player is also told
+ * Notifies the players and the spectators that the game has changed, once the transaction is committed: a player
+ * reading the game on notification sees the new version. Once the last player has joined a game, it has started: every player is also told
  * on their topic, so that a user matched by the queue finds their game.
  */
 readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
@@ -24,6 +25,7 @@ readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
     public function __construct(
         private GameRepository $gameRepository,
         private NotifierInterface $notifier,
+        private SpectatorRegistry $spectatorRegistry,
     ) {
     }
 
@@ -35,7 +37,7 @@ readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
         $message = $envelope->getMessage();
         if ($message instanceof ActionInterface) {
             $game = $this->gameRepository->get($message->getGameId());
-            $this->notifier->notify(new GameUpdatedNotification($game));
+            $this->notifier->notify(new GameUpdatedNotification($game, $this->spectatorRegistry->getSpectatorIds($game)));
             if ($message instanceof JoinGame && $game->getCurrentPlace() !== 'join_game') {
                 $this->notifier->notify(new GameStartedNotification($game));
             }

@@ -10,8 +10,11 @@ use App\Middleware\GameUpdatedNotificationMiddleware;
 use App\Notification\NotificationInterface;
 use App\Notifier\NotifierInterface;
 use App\Repository\GameRepository;
+use App\Repository\SpectatorRepository;
+use App\Service\Spectating\SpectatorRegistry;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\Scenario;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -43,7 +46,11 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
             }
         };
 
-        return new GameUpdatedNotificationMiddleware(self::service(GameRepository::class), $notifier);
+        return new GameUpdatedNotificationMiddleware(
+            self::service(GameRepository::class),
+            $notifier,
+            new SpectatorRegistry(self::service(SpectatorRepository::class), $notifier, self::service(ClockInterface::class)),
+        );
     }
 
     private function scenarioWithJohn(): Scenario
@@ -77,6 +84,19 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
             '/users/jane/games/' . $game->getId(),
         ], $notification->getTopics());
         self::assertSame(['id' => $game->getId(), 'version' => 1, 'event' => 'game_updated'], $notification->getData());
+    }
+
+    public function testAlsoNotifiesTheSpectators(): void
+    {
+        $scenario = $this->scenarioWithJohn();
+        $game = $scenario->game();
+        self::service(SpectatorRepository::class)->see($game->getId(), 'harry', self::service(ClockInterface::class)->now());
+
+        $this->middleware()->handle($this->envelope($scenario), new StackMiddleware());
+
+        $notification = $this->notifications[0];
+        self::assertInstanceOf(NotificationInterface::class, $notification);
+        self::assertContains('/users/harry/games/' . $game->getId(), $notification->getTopics());
     }
 
     public function testTellsThePlayersOnceTheLastOneHasJoined(): void

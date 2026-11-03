@@ -21,7 +21,7 @@ const userGame = (id: string, ended: boolean) => ({
 const gameView = {
   players: [
     { user_id: 'john', name: 'Hida Takeshi' },
-    { user_id: 'kyuden-bot', name: 'Kyūden Bot' },
+    { user_id: 'kyuden-bot', name: 'Kyūden no Karō' },
   ],
 }
 
@@ -75,7 +75,7 @@ describe('GameInProgressBanner', () => {
 
     const { wrapper } = await mountBanner()
 
-    expect(wrapper.text()).toContain('Your game against Kyūden Bot is still in progress.')
+    expect(wrapper.text()).toContain('Your game against Kyūden no Karō is still in progress.')
     expect(wrapper.get('a').attributes('href')).toBe('/games/game-1')
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain('/api/games/game-1')
   })

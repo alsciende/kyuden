@@ -22,7 +22,8 @@ use App\View\Model\StackView;
 use function Symfony\Component\String\u;
 
 /**
- * Builds the view of a game for one of its players. The visibility rules only depend on the state, never on the game
+ * Builds the view of a game for one of its players, or for a reader who is not a player (null: a spectator), who only
+ * sees what is public and can send nothing. The visibility rules only depend on the state, never on the game
  * place:
  * - the cards follow the rules of Visibility: a hidden stack only shows its number of cards, a hidden card has no code;
  * - the pending honor bid and the chosen stronghold province are shown to their owner only;
@@ -40,7 +41,7 @@ final readonly class GameViewFactory
     ) {
     }
 
-    public function create(Game $game, Player $viewer): GameView
+    public function create(Game $game, ?Player $viewer): GameView
     {
         $state = $this->gameStateManager->getState($game);
 
@@ -48,7 +49,7 @@ final readonly class GameViewFactory
             id: $game->getId(),
             version: $game->getVersion(),
             place: $game->getCurrentPlace(),
-            viewerId: $viewer->getId(),
+            viewerId: $viewer?->getId(),
             playerIds: $state->playerIds,
             firstPlayerId: $state->firstPlayerId,
             activePlayerIds: $state->activePlayerIds,
@@ -61,11 +62,11 @@ final readonly class GameViewFactory
             gloryCountWinnerId: $state->gloryCountWinnerId,
             winnerId: $state->winnerId,
             victoryCondition: $state->victoryCondition,
-            availableActions: $this->availableActionsResolver->resolve($game, $viewer),
+            availableActions: $viewer instanceof Player ? $this->availableActionsResolver->resolve($game, $viewer) : [],
         );
     }
 
-    private function createPlayerView(Player $player, Player $viewer): PlayerView
+    private function createPlayerView(Player $player, ?Player $viewer): PlayerView
     {
         $state = $this->playerStateManager->getState($player);
         $isViewer = $player === $viewer;
@@ -112,7 +113,7 @@ final readonly class GameViewFactory
         return null;
     }
 
-    private function createStackView(Stack $stack, Player $viewer): StackView
+    private function createStackView(Stack $stack, ?Player $viewer): StackView
     {
         $hidden = ! $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer);
 
@@ -124,7 +125,7 @@ final readonly class GameViewFactory
         );
     }
 
-    private function createCardView(PhysicalCard $card, Player $viewer): CardView
+    private function createCardView(PhysicalCard $card, ?Player $viewer): CardView
     {
         $state = $this->cardStateManager->getState($card);
         $visible = $this->visibility->isCardInStackVisibleTo($card, $card->getStack(), $viewer);

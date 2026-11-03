@@ -12,6 +12,7 @@ use App\Entity\LinkedAccount;
 use App\Entity\User;
 use App\Enum\OAuthProvider;
 use App\Model\UserSettings;
+use App\Repository\SpectatorRepository;
 use App\Security\AccountDeleter;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -60,6 +61,16 @@ class AccountDeleterTest extends AbstractKernelTestCase
         self::assertSame(0, $entityManager->getRepository(LinkedAccount::class)->count(['user' => 'john']));
         self::assertSame(0, $entityManager->getRepository(AccessToken::class)->count(['user' => ['john', 'akodo-bot', 'hida-bot']]));
         self::assertSame(1, $entityManager->getRepository(AccessToken::class)->count(['user' => 'jane']));
+    }
+
+    public function testTheUserNoLongerWatchesAnyGame(): void
+    {
+        $game = $this->scenario()->atPlace('draw_phase_action_window')->withPlayer('jane')->withPlayer('harry')->persist()->game();
+        self::service(SpectatorRepository::class)->see($game->getId(), 'john', new \DateTimeImmutable());
+
+        self::service(AccountDeleter::class)->delete($this->user('john'));
+
+        self::assertSame(0, self::service(SpectatorRepository::class)->count(['user' => 'john']));
     }
 
     public function testTheDecksAreDeletedButThosePlayedInAGame(): void

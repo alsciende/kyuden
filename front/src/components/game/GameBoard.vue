@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import type { ConflictType, Element, GameView } from '@/api/game'
+import type { CardView, ConflictType, Element, GameView } from '@/api/game'
 import CharacterRow from '@/components/game/CharacterRow.vue'
 import ConflictField from '@/components/game/ConflictField.vue'
 import GameCard from '@/components/game/GameCard.vue'
@@ -11,6 +11,7 @@ import {
   cardsOf,
   charactersInPlay,
   conflictsLeft,
+  hiddenCards,
   locate,
   opponent,
   provinces,
@@ -99,7 +100,13 @@ const defendable = computed(() =>
 const ringChoices = computed(() => rings(props.game))
 const typesLeft = computed(() => conflictsLeft(me.value))
 
-const hand = computed(() => cardsOf(stackOf(me.value, 'hand')))
+/** the hand at the bottom: a spectator sees its backs only */
+const hand = computed((): CardView[] => {
+  const stack = stackOf(me.value, 'hand')
+
+  return stack?.cards ?? hiddenCards(stack?.count ?? 0, 'conflict')
+})
+const handOwner = computed(() => (props.game.spectating ? `Hand of ${me.value.name}` : 'Hand'))
 const handFromProvinces = computed(() => props.game.place === 'play_cards_from_provinces')
 
 const myProvinceNames = computed(() =>
@@ -302,7 +309,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
         <section v-if="unfolded.includes('hand')" class="zone" aria-label="Your hand">
           <span class="label"
-            >Hand · {{ hand.length }} cards · no action while declaring
+            >{{ handOwner }} · {{ hand.length }} cards · no action while declaring
             <button type="button" class="btn-link fold" @click="fold('hand')">Fold</button></span
           >
           <div class="row dimmed">
@@ -401,7 +408,11 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
       </div>
 
       <section class="zone hand" aria-label="Your hand">
-        <span class="label">Hand · {{ hand.length }} cards · click a card to play it</span>
+        <span class="label"
+          >{{ handOwner }} · {{ hand.length }} cards<template v-if="!game.spectating">
+            · click a card to play it</template
+          ></span
+        >
         <div class="row">
           <GameCard
             v-for="card in hand"
@@ -440,11 +451,11 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
       <section class="zone hand" aria-label="Your hand">
         <span class="label">
-          Hand · {{ hand.length }} cards<template v-if="handFromProvinces">
+          {{ handOwner }} · {{ hand.length }} cards<template v-if="handFromProvinces && !game.spectating">
             · not playable during the dynasty phase</template
           >
         </span>
-        <div class="row" :class="{ dimmed: handFromProvinces }">
+        <div class="row" :class="{ dimmed: handFromProvinces && !game.spectating }">
           <GameCard
             v-for="card in hand"
             :key="card.id"

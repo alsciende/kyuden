@@ -70,6 +70,13 @@ const BROKEN_FOR_STRONGHOLD = 3
 function strongholdTip(game: GameView, player: PlayerView, broken: number): string {
   const left = Math.max(BROKEN_FOR_STRONGHOLD - broken, 0)
   const mine = player.id === game.viewer_id
+  if (game.spectating) {
+    const other = game.players.find((candidate) => candidate.id !== player.id)?.name ?? 'The opponent'
+
+    return left === 0
+      ? `${other} can attack ${player.name}'s stronghold.`
+      : `${other} must break ${left} more province${left === 1 ? '' : 's'} before attacking ${player.name}'s stronghold.`
+  }
   if (left === 0) {
     return mine ? 'Opp. can attack your stronghold.' : "You can attack Opp.'s stronghold."
   }

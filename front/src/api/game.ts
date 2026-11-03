@@ -2,8 +2,9 @@ import { request, toProblem } from '@/api/client'
 import type { MessagePayloads, MessageType } from '@/api/messages'
 
 /**
- * A game as its player sees it (`GET /api/games/{id}`), its log, and the messages a player sends to it. The view
- * follows the visibility rules of the engine: hidden stacks have no cards, hidden cards no code.
+ * A game as its player sees it (`GET /api/games/{id}`), or a spectator, its log, its spectators, and the messages a
+ * player sends to it. The view follows the visibility rules of the engine: hidden stacks have no cards, hidden cards
+ * no code; a spectator only sees what is public.
  */
 
 export type Element = 'air' | 'earth' | 'fire' | 'void' | 'water'
@@ -112,7 +113,10 @@ export interface GameView {
   id: string
   version: number
   place: string | null
+  /** the player at the bottom of the board: the viewer, or the player whose side a spectator watches from */
   viewer_id: string
+  /** set by the client (seenFrom): the viewer watches the game without playing it, and can send nothing */
+  spectating?: boolean
   player_ids: string[]
   first_player_id: string | null
   active_player_ids: string[]
@@ -127,6 +131,48 @@ export interface GameView {
   winner_id: string | null
   victory_condition: string | null
   available_actions: string[]
+}
+
+/** the view as the API sends it: no viewer for a spectator */
+export type GameViewData = Omit<GameView, 'viewer_id' | 'spectating'> & { viewer_id: string | null }
+
+/**
+ * The view as the client shows it: a spectator watches from the side of a player (`seat`, the first player in player
+ * order by default), at the bottom of the board as the viewer would be.
+ */
+export function seenFrom(data: GameViewData, seat: string | null): GameView {
+  if (data.viewer_id !== null) {
+    return { ...data, viewer_id: data.viewer_id, spectating: false }
+  }
+  const ids = data.players.map((player) => player.id)
+  const viewerId = seat !== null && ids.includes(seat) ? seat : (data.player_ids[0] ?? ids[0] ?? '')
+
+  return { ...data, viewer_id: viewerId, spectating: true }
+}
+
+/** an account watching a game */
+export interface SpectatorView {
+  user_id: string
+  name: string
+}
+
+/** a player of a game in progress, in the list of the games to watch */
+export interface WatchableGamePlayer {
+  user_id: string
+  name: string
+  clan: string | null
+  bot: boolean
+}
+
+/** a game in progress, which an account may watch (`GET /api/games`) */
+export interface WatchableGame {
+  id: string
+  version: number
+  place: string | null
+  friendly: boolean
+  /** in player order of arrival */
+  players: WatchableGamePlayer[]
+  spectators: number
 }
 
 export type LogParam =
@@ -156,8 +202,21 @@ export interface GameLog {
   messages: LoggedMessage[]
 }
 
-export function fetchGame(token: string, gameId: string): Promise<GameView> {
-  return request<GameView>(`/api/games/${encodeURIComponent(gameId)}`, { token })
+export function fetchGame(token: string, gameId: string): Promise<GameViewData> {
+  return request<GameViewData>(`/api/games/${encodeURIComponent(gameId)}`, { token })
+}
+
+export function fetchGamesInProgress(token: string): Promise<WatchableGame[]> {
+  return request<WatchableGame[]>('/api/games', { token })
+}
+
+export function fetchSpectators(token: string, gameId: string): Promise<SpectatorView[]> {
+  return request<SpectatorView[]>(`/api/games/${encodeURIComponent(gameId)}/spectators`, { token })
+}
+
+/** the spectator stops watching the game */
+export function leaveGame(token: string, gameId: string): Promise<void> {
+  return request<void>(`/api/games/${encodeURIComponent(gameId)}/spectators/self`, { method: 'DELETE', token })
 }
 
 export function fetchLog(token: string, gameId: string, since: number): Promise<GameLog> {

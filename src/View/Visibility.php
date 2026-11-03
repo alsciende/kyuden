@@ -19,6 +19,8 @@ use App\Enum\StackType;
  *   code;
  * - everything else is public.
  *
+ * A viewer who is not a player of the game (null: a spectator) only sees what is public.
+ *
  * The rules are written for a position (stack type, owner of the stack, orientation), so that the position a card is
  * about to take can be checked before it moves.
  */
@@ -27,7 +29,7 @@ final readonly class Visibility
     /**
      * Whether the viewer sees the cards of a stack (their ids).
      */
-    public function isStackVisibleTo(StackType $type, Player $owner, Player $viewer): bool
+    public function isStackVisibleTo(StackType $type, Player $owner, ?Player $viewer): bool
     {
         return match ($type) {
             StackType::ConflictDrawDeck, StackType::DynastyDrawDeck => false,
@@ -39,13 +41,13 @@ final readonly class Visibility
     /**
      * Whether the viewer knows a card (its code) when it is in that position.
      */
-    public function isCardVisibleTo(PhysicalCard $card, StackType $type, Player $owner, Orientation $orientation, Player $viewer): bool
+    public function isCardVisibleTo(PhysicalCard $card, StackType $type, Player $owner, Orientation $orientation, ?Player $viewer): bool
     {
         return $this->isStackVisibleTo($type, $owner, $viewer)
             && ($orientation !== Orientation::FaceDown || ($card instanceof ProvinceCard && $card->getPlayer() === $viewer));
     }
 
-    public function isCardInStackVisibleTo(PhysicalCard $card, Stack $stack, Player $viewer): bool
+    public function isCardInStackVisibleTo(PhysicalCard $card, Stack $stack, ?Player $viewer): bool
     {
         return $this->isCardVisibleTo($card, $stack->getType(), $stack->getPlayer(), $card->getOrientation(), $viewer);
     }

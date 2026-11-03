@@ -2,7 +2,7 @@
 
 ## Current status
 
-Every phase of the round is modeled: a game loops from round to round until a victory condition is met. The engine is a board (see README): the players apply the cards with generic effect messages, which now cover the cards of the Core Set but those listed under "Next steps". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, linked providers), the queue, friendly games (own bot or a friend), the web client and the production stack (FrankenPHP, CI, releases on `ghcr.io`), deployed at kyuden.app (DigitalOcean) by the release of each tag `vX.Y.Z` of `main`.
+Every phase of the round is modeled: a game loops from round to round until a victory condition is met. The engine is a board (see README): the players apply the cards with generic effect messages, which now cover the cards of the Core Set but those listed under "Next steps". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, linked providers), the queue, friendly games (own bot or a friend), spectators (an account watches any game in progress), the web client and the production stack (FrankenPHP, CI, releases on `ghcr.io`), deployed at kyuden.app (DigitalOcean) by the release of each tag `vX.Y.Z` of `main`.
 
 ## Principles to keep
 
@@ -13,11 +13,14 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - **Interrupts and reactions** are accepted from any player in any place and ended with `EndResolution`; the interrupt and reaction windows of the rules (first player first, consecutive passes) are not modeled. The `react_to_*` places of the conflict are generous on purpose: to lock down once the game has been tested.
 - **Accounts**: no email nor personal data; an account is recovered through the providers it is linked to, which the site should press players to link. Only a bot gets API keys, so that a program is always known as a bot; a human helped by an AI is a matter of the terms of use. The `playerId` is public, never a credential.
 - **Mercure announces, the clients read**: the hub carries the version of the game, not its state, which would have to be published per player (secrets), kept in the history of the hub, and computed for every message; the delays of reading the game again are not felt.
-- **Mockups first** for the screens of the web client: the board and the cards looked at (Claude artifact `GiPbGSPNcvLD2r9eFKKNp5`), the accounts, the queue and the friendly games (`LBUBwNBPdSopj5NMj5GLTL`).
+- **Mockups first** for the screens of the web client: the board and the cards looked at (Claude artifact `GiPbGSPNcvLD2r9eFKKNp5`), the accounts, the queue, the friendly games and the spectators (`LBUBwNBPdSopj5NMj5GLTL`, row "Watch a game in progress").
+- **Spectators**: an account (not a guest nor a bot: the list of the spectators names accounts) watches any game in progress, its own included, and sees only what is public (`Visibility` with no viewer). Being a spectator is not part of the game: no version, no log, no event; it is kept apart (`Spectator`, `SpectatorRegistry`), a spectator who stops reading for 45 seconds forgotten, and each arrival or departure announced (`spectators_updated`). The client shows a spectator the board of a player (the first in player order, then the other one), with their names instead of "You" and "Opp.". The end of a game is told to a spectator by the log only.
+- **The house bot** is Kyūden no Karō, "the steward of the palace": a title rather than a name, being a bot. It is faced from the queue (the deck chosen there), and named with the label "Bot" only in the games.
 
 ## Known limitations
 
 - **Rules not enforced**: uniqueness, mulligan, the Limited keyword and "max X per conflict / round", covert (the keyword and the number of evaded characters), ancestral attachments (discarded with their character). The end of a lasting effect is not handled: a player takes control back with `TakeControl` (Blackmail).
+- **Spectators**: the list of the games has no round number (nor has the board); a spectator sees the same layouts as the player at the bottom (the declaration of a conflict folds their hand and provinces), and a few texts of the board still speak to the player; the players are told who watches but cannot refuse it.
 - **Web client**: covert is not offered (`evaded_ids` sent empty); a multi-province conflict shows its first province only; no round number; no layout of its own for the draw and fate phases, the duels and the reaction windows.
 - **House bot**: plays no conflict card and triggers no ability, always puts the Imperial Favor on its military side, never discards from its provinces, never ends a duel. A turn it has not played (its request ended before: a restart, a timeout) is played when its opponent reads the game again (the web client reads it again after 15 seconds without a change); a failure makes it pass, else concede, the reason in the event for the developers only. Kept in `kernel.terminate` rather than a Messenger worker: a worker would free the FrankenPHP threads and keep the turns across restarts, not worth a process to deploy while the games against the bot are few.
 - **Agents (MCP)**: no game played by an agent yet; an agent that stops without conceding blocks the game (no timeout); the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
@@ -41,7 +44,8 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - Choosing the stronghold province: the five provinces larger and centered.
 - Dedicated layouts for the remaining steps (see the limitations), and a component test of `GameView`.
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
-- Accounts: list and edit their decks; "Leave the game" leads an account to the queue.
+- Accounts: list and edit their decks.
+- Spectators: the round in the list of the games; a component test of the spectator mode of `GameView`.
 
 ### API and platform
 

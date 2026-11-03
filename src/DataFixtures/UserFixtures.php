@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
+use App\Command\HouseBotCreateCommand;
 use App\Entity\AccessToken;
 use App\Entity\User;
 use App\Enum\AccessTokenType;
@@ -88,7 +89,7 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
             new User('akodo-bot', 'Akodo Bot', UserType::Bot, $john),
             new User('hida-bot', 'Hida Bot', UserType::Bot, $john),
             $kyuden,
-            new User('kyuden-bot', 'Kyūden Bot', UserType::Bot, $kyuden),
+            new User('kyuden-bot', HouseBotCreateCommand::NAME, UserType::Bot, $kyuden),
         ];
         foreach (self::USERNAMES as $id => $username) {
             $user = array_find($users, static fn (User $user): bool => $user->getId() === $id);

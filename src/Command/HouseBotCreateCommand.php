@@ -14,16 +14,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * The house bot (HOUSE_BOT_ID) and the platform that owns it, created when missing: it runs on every start of the
- * production containers. The bot gets no API key: it plays in the requests of its opponents.
+ * The house bot (HOUSE_BOT_ID) and the platform that owns it, created when missing, the bot renamed when its name has
+ * changed: it runs on every start of the production containers. The bot gets no API key: it plays in the requests of
+ * its opponents.
  */
 #[AsCommand(
     name: 'app:house-bot:create',
-    description: 'Create the house bot (HOUSE_BOT_ID) and its owner, the platform, when they are missing',
+    description: 'Create the house bot (HOUSE_BOT_ID) and its owner, the platform, when they are missing; rename the bot',
 )]
 readonly class HouseBotCreateCommand
 {
     public const string OWNER_ID = 'kyuden';
+
+    /** the name at court of the house bot: the steward of the palace */
+    public const string NAME = 'Kyūden no Karō';
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -37,10 +41,17 @@ readonly class HouseBotCreateCommand
         if ($this->houseBotId === '') {
             throw new \RuntimeException('HOUSE_BOT_ID is empty.');
         }
-        $bot =$this->entityManager->find(User::class, $this->houseBotId);
+        $bot = $this->entityManager->find(User::class, $this->houseBotId);
         if ($bot instanceof User) {
             if ($bot->getType() !== UserType::Bot) {
                 throw new \RuntimeException("User {$this->houseBotId} is not a bot.");
+            }
+            if ($bot->getName() !== self::NAME) {
+                $bot->rename(self::NAME);
+                $this->entityManager->flush();
+                $io->success("House bot {$this->houseBotId} renamed " . self::NAME . '.');
+
+                return Command::SUCCESS;
             }
             $io->success("House bot {$this->houseBotId} already exists.");
 
@@ -54,7 +65,7 @@ readonly class HouseBotCreateCommand
         } elseif ($owner->getType() !== UserType::Human) {
             throw new \RuntimeException('User ' . self::OWNER_ID . ' is not a human: it cannot own the house bot.');
         }
-        $this->entityManager->persist(new User($this->houseBotId, 'Kyūden Bot', UserType::Bot, $owner));
+        $this->entityManager->persist(new User($this->houseBotId, self::NAME, UserType::Bot, $owner));
         $this->entityManager->flush();
         $io->success("House bot {$this->houseBotId} created.");
 

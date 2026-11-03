@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import type { ConflictType, Element } from '@/api/game'
 import enso from '@/assets/mons/neutral.svg'
@@ -19,16 +19,29 @@ import { inspectionsOf } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
 import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
+import { SPECTATING } from '@/lib/spectating'
 import { hideTooltip } from '@/lib/tooltip'
 import { useGame } from '@/lib/useGame'
 
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
- * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the Mercure hub. Once the game has ended, the board darkens under the result, in a thin light frame.
+ * right, between the bar of the opponent above and the bar of the viewer below. It follows the game through the
+ * Mercure hub. Once the game has ended, the board darkens under the result, in a thin light frame.
  * The cards the player looks at or reveals open a window over everything else, until the player closes it.
+ *
+ * An account that does not play the game watches it, from the side of a player (at the bottom), which it switches: it
+ * sees what is public, does nothing but leave, and reads the end of the game in the log.
  */
 const route = useRoute()
-const { game, log, cards, loadError, error, sending, send, refresh } = useGame(String(route.params.id))
+const router = useRouter()
+const { game, log, cards, spectators, loadError, error, sending, send, refresh, switchSides } = useGame(
+  String(route.params.id),
+)
+
+provide(
+  SPECTATING,
+  computed(() => game.value?.spectating === true),
+)
 
 const SIDEBAR_WIDTH = 340
 
@@ -68,7 +81,8 @@ watch(log, (messages, previous) => {
 })
 const inspection = computed(() => {
   const since = inspectedUpTo.value
-  if (game.value === null || since === null) {
+  // a spectator looks at nothing: the player at the bottom does
+  if (game.value === null || since === null || game.value.spectating) {
     return null
   }
 
@@ -126,7 +140,7 @@ function switchRing(element: Element): void {
   }
 }
 
-const ended = computed(() => game.value !== null && gameEnded(game.value))
+const ended = computed(() => game.value !== null && gameEnded(game.value) && !game.value.spectating)
 const result = computed(() =>
   game.value === null
     ? null
@@ -171,7 +185,7 @@ const problem = computed(() => {
     case 401:
       return 'This game is played from another browser.'
     case 403:
-      return 'You are not a player of this game.'
+      return 'Only an account watches the games of others.'
     case 404:
       return 'There is no such game.'
     default:
@@ -215,11 +229,15 @@ const problem = computed(() => {
       :game="game"
       :cards="cards"
       :log="log"
+      :spectators="spectators"
+      :user-id="session?.userId ?? null"
       :selection="selection"
       :sending="sending"
       :error="openCardId || barOpen || inspection ? null : error"
       :send="send"
       @open-log="logOpen = true"
+      @switch-sides="switchSides"
+      @leave="router.push('/')"
     />
     <PlayerBar
       v-if="me"

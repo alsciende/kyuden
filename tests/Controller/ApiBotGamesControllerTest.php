@@ -53,7 +53,7 @@ class ApiBotGamesControllerTest extends AbstractKernelTestCase
         self::assertIsString($data['game_id']);
         self::assertIsArray($data['opponent']);
         self::assertSame('kyuden-bot', $data['opponent']['user_id']);
-        self::assertSame('Kyūden Bot', $data['opponent']['name']);
+        self::assertSame('Kyūden no Karō', $data['opponent']['name']);
         self::assertNotSame(AppFixtures::CRAB_STARTER_DECK, $data['opponent']['deck_id']);
         self::assertIsString($data['opponent']['deck_id']);
         self::assertStringEndsWith('-starter-deck', $data['opponent']['deck_id']);

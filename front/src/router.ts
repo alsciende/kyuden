@@ -7,7 +7,6 @@ import AccountView from '@/views/AccountView.vue'
 import GameView from '@/views/GameView.vue'
 import InviteView from '@/views/InviteView.vue'
 import JoinView from '@/views/JoinView.vue'
-import LandingView from '@/views/LandingView.vue'
 import LoginView from '@/views/LoginView.vue'
 import NameView from '@/views/NameView.vue'
 import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
@@ -15,14 +14,17 @@ import OpponentView from '@/views/OpponentView.vue'
 import PrivacyView from '@/views/PrivacyView.vue'
 import QueueView from '@/views/QueueView.vue'
 import SignupView from '@/views/SignupView.vue'
+import StartView from '@/views/StartView.vue'
 import TermsView from '@/views/TermsView.vue'
+import WatchView from '@/views/WatchView.vue'
 
 const hasAccount = () => session.value !== null && session.value.username !== null
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'landing', component: LandingView, meta: { title: 'Kyūden' } },
+    // an account plays or watches a game, anyone else comes as a newcomer
+    { path: '/', name: 'landing', component: StartView, meta: { title: 'Kyūden' } },
     {
       path: '/name',
       name: 'name',
@@ -60,6 +62,13 @@ export const router = createRouter({
       // the guest of an invitation enters it with its code
       beforeEnter: (to) =>
         hasAccount() || (session.value !== null && typeof to.query.code === 'string') ? true : { name: 'login' },
+    },
+    {
+      path: '/watch',
+      name: 'watch',
+      component: WatchView,
+      meta: { title: 'Watch a game · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
     },
     {
       path: '/invite',

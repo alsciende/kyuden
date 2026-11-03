@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  nameOf,
   charactersInPlay,
   conflictResolved,
   conflictsLeft,
@@ -289,6 +290,27 @@ describe('the state of the game', () => {
   it('names the step of the round of a place', () => {
     expect(stepOf('declare_conflict')).toMatchObject({ phase: 'conflict', title: 'Declare a conflict' })
     expect(stepOf('fate_phase_begins')).toMatchObject({ phase: 'fate', title: 'Fate phase begins' })
+  })
+
+  it('tells a spectator what the players do in the step, without a hint', () => {
+    expect(stepOf('play_cards_from_provinces', true)).toEqual({
+      phase: 'dynasty',
+      title: 'Play cards from provinces',
+      help: 'Each player in turn pays the cost of a character to bring it into play, or passes. The first player to pass gains 1 fate.',
+    })
+    expect(stepOf('draw_phase_action_window', true).hint).toBeUndefined()
+  })
+
+  it('names the players to the viewer, by their names to a spectator', () => {
+    const me = player('me', [], { name: 'Doji Akiko' })
+    const opp = player('opp', [], { name: 'Matsu Kenji' })
+
+    expect([nameOf(game(me, opp), me), nameOf(game(me, opp), opp), nameOf(game(me, opp), opp, false)]).toEqual([
+      'You',
+      'Opp.',
+      'Opponent',
+    ])
+    expect(nameOf(game(me, opp, { spectating: true }), me)).toBe('Doji Akiko')
   })
 
   it('lists the codes the viewer sees', () => {

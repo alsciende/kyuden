@@ -52,7 +52,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertInstanceOf(KernelBrowser::class, $client);
         $client->disableReboot();
 
-        $client->request('GET', "/api/games/{$gameId}{$path}", server: array_filter([
+        $client->request('GET', rtrim("/api/games/{$gameId}", '/') . $path, server: array_filter([
             'HTTP_AUTHORIZATION' => $user === null ? null : 'Bearer ' . UserFixtures::TOKENS[$user],
             ...$headers,
         ]));
@@ -237,11 +237,11 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertInstanceOf(Profile::class, $profile);
         $collector = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $collector);
-        // the access token with its user, then the game
-        self::assertSame(2, $collector->getQueryCount());
+        // the access token with its user, the game, then the spectators who have stopped reading it
+        self::assertSame(3, $collector->getQueryCount());
     }
 
-    public function testAUserWhoIsNotAPlayerOfTheGameCannotReadIt(): void
+    public function testAGuestWhoIsNotAPlayerOfTheGameCannotReadIt(): void
     {
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
@@ -249,7 +249,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
             ->withPlayer('jack')
             ->persist();
 
-        $response = $this->get($scenario->game()->getId(), 'jane');
+        $response = $this->get($scenario->game()->getId(), 'harry');
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
         self::assertSame('application/problem+json', $response->headers->get('Content-Type'));
@@ -375,7 +375,7 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertSame('invalid_since', $this->decode($response)['type']);
     }
 
-    public function testAUserWhoIsNotAPlayerOfTheGameCannotReadItsLog(): void
+    public function testAGuestWhoIsNotAPlayerOfTheGameCannotReadItsLog(): void
     {
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
@@ -383,10 +383,144 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
             ->withPlayer('jack')
             ->persist();
 
-        $response = $this->get($scenario->game()->getId(), 'jane', path: '/log');
+        $response = $this->get($scenario->game()->getId(), 'harry', path: '/log');
 
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
         self::assertSame('not_a_player', $this->decode($response)['type']);
+    }
+
+    /**
+     * Jane, an account, watches the game of John and Harry.
+     */
+    private function scenarioToWatch(string $place = 'draw_phase_action_window'): Scenario
+    {
+        return $this->scenario()
+            ->atPlace($place)
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->stronghold('01-yojin-no-shiro')->hand(['01-fine-katana']))
+            ->withPlayer('harry', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10)->hand(['01-banzai']))
+            ->persist();
+    }
+
+    /**
+     * @return list<array<mixed>>
+     */
+    private function spectators(string $gameId, string $user): array
+    {
+        $response = $this->get($gameId, $user, path: '/spectators');
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+
+        /** @var list<array<mixed>> */
+        return $this->decode($response);
+    }
+
+    public function testAnAccountWatchesAGameItDoesNotPlay(): void
+    {
+        $scenario = $this->scenarioToWatch();
+
+        $response = $this->get($scenario->game()->getId(), 'jane');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $game = $this->decode($response);
+        self::assertNull($game['viewer_id']);
+        self::assertSame([], $game['available_actions']);
+        self::assertIsArray($game['players']);
+        [$john, $harry] = $game['players'];
+        self::assertIsArray($john);
+        self::assertIsArray($harry);
+        // nothing secret: neither hand is seen
+        self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($john));
+        self::assertSame([['type' => 'hand', 'count' => 1, 'codes' => null]], $this->hands($harry));
+        self::assertSame([['user_id' => 'jane', 'name' => 'Jane']], $this->spectators($scenario->game()->getId(), 'john'));
+    }
+
+    public function testASpectatorReadsTheLogAsNobodyKnowsIt(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->conflictDeck(['01-banzai']))
+            ->withPlayer('harry')
+            ->persist();
+        $johnId = $scenario->player('john')->getId();
+        $this->messageBus->dispatch(new DrawConflictCards($scenario->game()->getId(), $johnId, $johnId, 1));
+
+        $response = $this->get($scenario->game()->getId(), 'jane', path: '/log');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $log = $this->decode($response);
+        self::assertIsArray($log['messages']);
+        self::assertIsArray($log['messages'][0]);
+        self::assertSame([[
+            'template' => '{owner} draws {card}',
+            'params' => [
+                'owner' => ['type' => 'player', 'id' => $johnId],
+                'card' => ['type' => 'card', 'id' => null, 'code' => null],
+            ],
+        ]], $log['messages'][0]['entries']);
+        self::assertSame([['user_id' => 'jane', 'name' => 'Jane']], $this->spectators($scenario->game()->getId(), 'harry'));
+    }
+
+    public function testABotDoesNotWatchAGame(): void
+    {
+        $scenario = $this->scenarioToWatch();
+
+        $response = $this->get($scenario->game()->getId(), 'akodo-bot');
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        self::assertSame('not_a_player', $this->decode($response)['type']);
+    }
+
+    public function testASpectatorLeavesTheGame(): void
+    {
+        $scenario = $this->scenarioToWatch();
+        $gameId = $scenario->game()->getId();
+        $this->get($gameId, 'jane');
+
+        $client = self::getContainer()->get('test.client');
+        self::assertInstanceOf(KernelBrowser::class, $client);
+        $client->request('DELETE', "/api/games/{$gameId}/spectators/self", server: ['HTTP_AUTHORIZATION' => 'Bearer ' . UserFixtures::TOKENS['jane']]);
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $client->getResponse()->getStatusCode());
+        self::assertSame([], $this->spectators($gameId, 'john'));
+    }
+
+    public function testAGuestDoesNotReadTheSpectatorsOfAGameItDoesNotPlay(): void
+    {
+        $scenario = $this->scenarioToWatch();
+
+        $response = $this->get($scenario->game()->getId(), 'sally', path: '/spectators');
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+    }
+
+    public function testAnAccountListsTheGamesInProgress(): void
+    {
+        $scenario = $this->scenarioToWatch();
+        $this->scenario()->atPlace('join_game')->withPlayer('jack')->persist();
+        $gameId = $scenario->game()->getId();
+        $this->get($gameId, 'jane');
+
+        $response = $this->get('', 'john');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame([[
+            'id' => $gameId,
+            'version' => 0,
+            'place' => 'draw_phase_action_window',
+            'friendly' => false,
+            'players' => [
+                ['user_id' => 'john', 'name' => 'John', 'clan' => 'lion', 'bot' => false],
+                ['user_id' => 'harry', 'name' => 'Harry', 'clan' => null, 'bot' => false],
+            ],
+            'spectators' => 1,
+        ]], $this->decode($response));
+    }
+
+    public function testAGuestDoesNotListTheGamesInProgress(): void
+    {
+        $response = $this->get('', 'harry');
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        self::assertSame('account_required', $this->decode($response)['type']);
     }
 
     public function testTheGameOfTheLogMustExist(): void
