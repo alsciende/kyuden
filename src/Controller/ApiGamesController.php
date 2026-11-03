@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Game;
 use App\Repository\GameRepository;
+use App\Service\Bot\HouseBot;
 use App\Service\GameUpdateWaiter;
 use App\View\GameLogViewFactory;
 use App\View\GameViewFactory;
@@ -27,6 +28,9 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  *
  * The view links the Mercure hub (`Link: <…>; rel="mercure"`), where the client subscribes to the topic of the game.
  *
+ * Reading a game of the house bot wakes the bot, which plays once the response is sent if it has something to do: a turn
+ * it has not played (its request ended before) is played when its opponent reads the game again (see HouseBot).
+ *
  * The log is also a long-poll (`wait`, in seconds): the response waits until the game changes after `since`, then
  * sends what changed; if nothing has changed when the time is up, it is sent as is (no message, or a 304).
  */
@@ -45,6 +49,7 @@ class ApiGamesController extends AbstractController
         private readonly GameLogViewFactory $gameLogViewFactory,
         private readonly GameUpdateWaiter $gameUpdateWaiter,
         private readonly Discovery $discovery,
+        private readonly HouseBot $houseBot,
     ) {
     }
 
@@ -58,6 +63,7 @@ class ApiGamesController extends AbstractController
 
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $user->getUserIdentifier()) {
+                $this->houseBot->wake($game);
                 $this->discovery->addLink($request);
 
                 $notModified = $this->withVersion(new Response(), $game);

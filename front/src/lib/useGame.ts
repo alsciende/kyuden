@@ -11,8 +11,9 @@ import {
   type PayloadArgs,
 } from '@/api/game'
 import type { MessagePayloads, MessageType } from '@/api/messages'
-import { visibleCodes, type Cards } from '@/lib/board'
+import { gameEnded, visibleCodes, type Cards } from '@/lib/board'
 import { follow } from '@/lib/hub'
+import { idleWatch } from '@/lib/idleWatch'
 import { loadSession } from '@/lib/session'
 
 /** the codes of the cards a param of the log names, those of a list included (the cards looked at) */
@@ -25,8 +26,9 @@ function codesOf(param: LogParam): string[] {
 }
 
 /**
- * A game followed by its player: its view and its log, read again whenever the Mercure hub announces a change, the
- * cards it shows as printed, and the messages the player sends.
+ * A game followed by its player: its view and its log, read again whenever the Mercure hub announces a change (or once
+ * it has not changed for a while: a notification may be lost, and reading a game of the house bot makes it play a turn
+ * it has not played), the cards it shows as printed, and the messages the player sends.
  */
 export function useGame(gameId: string) {
   const session = loadSession()
@@ -42,6 +44,7 @@ export function useGame(gameId: string) {
   let unfollow: (() => void) | null = null
   let refreshing: Promise<void> | null = null
   let refreshAgain = false
+  const idle = idleWatch(() => void refresh())
 
   /** reads the game again; a change announced meanwhile reads it once more afterwards */
   async function refresh(): Promise<void> {
@@ -71,6 +74,11 @@ export function useGame(gameId: string) {
     }
     try {
       const loaded = await fetchGame(session.token, gameId)
+      if (gameEnded(loaded)) {
+        idle.stop()
+      } else if (loaded.version !== game.value?.version) {
+        idle.touch()
+      }
       game.value = loaded
       loadError.value = null
       readCards(visibleCodes(loaded))
@@ -146,6 +154,7 @@ export function useGame(gameId: string) {
   }
 
   onBeforeUnmount(() => {
+    idle.stop()
     unfollow?.()
     unfollow = null
   })

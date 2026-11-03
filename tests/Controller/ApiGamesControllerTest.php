@@ -71,6 +71,23 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         return $content;
     }
 
+    public function testReadingAGameOfTheHouseBotMakesItPlay(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('choose_stronghold')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::LION_STARTER_DECK))
+            ->withPlayer('kyuden-bot', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::CRAB_STARTER_DECK))
+            ->persist();
+        $gameId = $scenario->game()->getId();
+
+        $response = $this->get($gameId);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        // the view is read before the bot plays, once the response is sent
+        self::assertSame('0', trim((string) $response->getEtag(), '"'));
+        self::assertSame(1, $this->gameRepository->get($gameId)->getVersion());
+    }
+
     public function testThePlayerReadsTheGameAsTheySeeIt(): void
     {
         $scenario = $this->scenarioWithHands();
