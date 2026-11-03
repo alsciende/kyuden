@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 class ApiSelfControllerTest extends AbstractKernelTestCase
@@ -242,20 +243,45 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
         self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self/games', null)->getStatusCode());
     }
 
-    public function testAUserGetsATokenForTheirTopicAndTheirGames(): void
+    public function testAUserGetsATokenForTheirTopicAndTheirGamesInACookieOfTheHub(): void
     {
-        $subscription = $this->decode($this->get('/api/self/subscription', 'jane'));
+        $response = $this->get('/api/self/subscription', 'jane');
+        $subscription = $this->decode($response);
 
-        self::assertSame('no-store, private', $this->get('/api/self/subscription', 'jane')->headers->get('Cache-Control'));
+        self::assertSame('no-store, private', $response->headers->get('Cache-Control'));
         self::assertIsString($subscription['hub']);
         self::assertStringEndsWith('/.well-known/mercure', $subscription['hub']);
         self::assertSame('/users/jane', $subscription['topic']);
-        self::assertIsString($subscription['token']);
-        $claims = json_decode(base64_decode(strtr(explode('.', $subscription['token'])[1], '-_', '+/'), true) ?: '', true, flags: \JSON_THROW_ON_ERROR);
-        self::assertIsArray($claims);
-        self::assertSame(['publish' => [], 'subscribe' => ['/users/jane', '/users/jane/games/{gameId}']], $claims['mercure']);
+        self::assertArrayNotHasKey('token', $subscription);
+        $cookies = $response->headers->getCookies();
+        self::assertCount(1, $cookies);
+        $cookie = $cookies[0];
+        self::assertSame('mercure_access_token', $cookie->getName());
+        self::assertSame('/.well-known/mercure', $cookie->getPath());
+        self::assertTrue($cookie->isHttpOnly());
+        self::assertSame(Cookie::SAMESITE_STRICT, $cookie->getSameSite());
         self::assertIsString($subscription['expires_at']);
-        self::assertSame(new \DateTime($subscription['expires_at'])->getTimestamp(), $claims['exp']);
+        self::assertSame(new \DateTime($subscription['expires_at'])->getTimestamp(), $cookie->getExpiresTime());
+
+        [$header, $payload] = array_map(
+            static fn (string $part): mixed => json_decode(base64_decode(strtr($part, '-_', '+/'), true) ?: '', true, flags: \JSON_THROW_ON_ERROR),
+            \array_slice(explode('.', (string) $cookie->getValue()), 0, 2),
+        );
+        self::assertIsArray($header);
+        self::assertSame('at+jwt', $header['typ']);
+        self::assertIsArray($payload);
+        self::assertSame('https://kyuden.app', $payload['iss']);
+        self::assertSame('https://kyuden.app/.well-known/mercure', $payload['aud']);
+        self::assertSame('jane', $payload['sub']);
+        self::assertSame([[
+            'type' => 'https://mercure.rocks/authorization-detail',
+            'actions' => ['subscribe'],
+            'topics' => [
+                ['match' => '/users/jane'],
+                ['match' => '/users/jane/games/:gameId', 'match_type' => 'urlpattern'],
+            ],
+        ]], $payload['authorization_details']);
+        self::assertSame($cookie->getExpiresTime(), $payload['exp']);
     }
 
     public function testTheSubscriptionRequiresAToken(): void

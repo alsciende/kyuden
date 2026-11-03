@@ -1,9 +1,20 @@
 mercure:
     hubs:
         default:
-            protocol_version: 0.x
+            protocol_version: '1.0'
             url: '%env(MERCURE_URL)%'
             public_url: '%env(MERCURE_PUBLIC_URL)%'
+            # the subscriber token goes in this cookie (the hub of the Caddyfiles reads the same name): not prefixed with
+            # __Secure-, so that it is also kept over plain HTTP (development, the production stack on a workstation)
+            cookie_name: mercure_access_token
             jwt:
                 secret: '%env(MERCURE_JWT_SECRET)%'
                 publish: '*'
+                # the claims of the protocol 1.0 (RFC 9068): the issuer the hub trusts and the resource identifier it is
+                # given (issuer and resource_identifier of the Caddyfiles), the same whatever its URL; the subject of a
+                # subscriber token is its user (SubscriptionFactory)
+                claims:
+                    iss: 'https://kyuden.app'
+                    aud: 'https://kyuden.app/.well-known/mercure'
+                    sub: kyuden
+                    client_id: kyuden

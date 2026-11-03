@@ -61,13 +61,22 @@ http://:8000 {
 	bind 127.0.0.1
 
 	mercure {
-		# the hub speaks the protocol 1.0, Symfony the 0.x: its tokens are accepted in compatibility mode
-		protocol_version_compatibility 8
 		transport bolt {
 			path /data/caddy/mercure.db
 		}
-		# the topics are private: no anonymous subscriber
-		publisher_jwt {env.MERCURE_JWT_SECRET}
-		subscriber_jwt {env.MERCURE_JWT_SECRET}
+		# the topics are private: no anonymous subscriber. The tokens are issued by Symfony (config/packages/mercure.yaml:
+		# the issuer, the audience, the cookie of the browsers), signed with the same secret; the resource identifier is
+		# the same whatever the URL the hub is reached at (the browsers on the origin of the site, Symfony in the
+		# container), and the base of the relative topics
+		resource_identifier https://kyuden.app/.well-known/mercure
+		cookie_name mercure_access_token
+		issuer https://kyuden.app {
+			publisher {
+				jwt {env.MERCURE_JWT_SECRET} HS256
+			}
+			subscriber {
+				jwt {env.MERCURE_JWT_SECRET} HS256
+			}
+		}
 	}
 }

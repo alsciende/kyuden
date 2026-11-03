@@ -176,12 +176,15 @@ class ApiSelfController extends AbstractController
     }
 
     /**
-     * The subscription of the user to the Mercure hub: the hub and a token for their topic and the games they play.
+     * The subscription of the user to the Mercure hub: the hub, their topic, and a token for it and the games they play,
+     * in the cookie the hub reads.
      */
     #[Route('/api/self/subscription', name: 'app_api_self_subscription', methods: ['GET'])]
     public function subscription(#[CurrentUser] UserInterface $user): JsonResponse
     {
-        $response = $this->json($this->subscriptionFactory->create($user->getUserIdentifier()));
+        [$subscription, $cookie] = $this->subscriptionFactory->create($user->getUserIdentifier());
+        $response = $this->json($subscription);
+        $response->headers->setCookie($cookie);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

@@ -4,11 +4,11 @@ import { fetchSubscription, type Subscription } from '@/api/client'
 export const RETRY_DELAY = 2000
 
 /**
- * Follows topics of the Mercure hub. The topics are private: the subscriber token of the user
- * (`GET /api/self/subscription`) goes in the `authorization` query parameter. The browser reconnects by itself after a
- * network error; once the hub refuses the connection (the token has expired), a new token is read and the
- * subscription opened again from the last update received (`lastEventID`), so that the hub sends those missed
- * meanwhile. Returns the function that stops following.
+ * Follows topics of the Mercure hub (protocol 1.0). The topics are private: reading the subscription of the user
+ * (`GET /api/self/subscription`) sets their subscriber token in a cookie the browser sends to the hub, on the origin of
+ * the site. The browser reconnects by itself after a network error; once the hub refuses the connection (the token has
+ * expired), the subscription is read again (a new token) and opened again from the last update received
+ * (`last_event_id`), so that the hub sends those missed meanwhile. Returns the function that stops following.
  */
 export function follow(
   token: string,
@@ -43,11 +43,10 @@ export function follow(
     }
     const url = new URL(subscription.hub, window.location.href)
     for (const topic of typeof topics === 'function' ? topics(subscription) : topics) {
-      url.searchParams.append('topic', topic)
+      url.searchParams.append('match', topic)
     }
-    url.searchParams.set('authorization', subscription.token)
     if (lastEventId !== null) {
-      url.searchParams.set('lastEventID', lastEventId)
+      url.searchParams.set('last_event_id', lastEventId)
     }
     const opened = new EventSource(url)
     opened.onmessage = (message: MessageEvent<string>) => {

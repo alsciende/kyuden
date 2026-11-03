@@ -158,11 +158,11 @@ export interface Deck {
 }
 
 /**
- * The subscription of the user to the Mercure hub: a subscriber token for their topic and the games they play.
+ * The subscription of the user to the Mercure hub. Reading it sets a subscriber token for their topic and the games they
+ * play in a cookie the browser sends to the hub (HTTP only: the client never reads it).
  */
 export interface Subscription {
   hub: string
-  token: string
   /** the topic of the user, where they learn they have joined a game */
   topic: string
   expires_at: string

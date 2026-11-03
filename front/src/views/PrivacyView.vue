@@ -69,10 +69,11 @@
     <section>
       <h2>Your browser</h2>
       <p>
-        Kyūden sets no cookie and uses no analytics, advertising nor tracking of any kind. Your browser keeps your
-        session, so that you stay signed in (until you sign out), and, for the time of a tab, the clan and name chosen
-        before your first game, the state of a sign-in with a provider and the key of your bot, so that the page of your
-        invitation shows it again.
+        Kyūden uses no analytics, advertising nor tracking of any kind. Its only cookie lets your browser follow your
+        games as they change: it carries the right to read them, for an hour, and goes nowhere else. Your browser keeps
+        your session, so that you stay signed in (until you sign out), and, for the time of a tab, the clan and name
+        chosen before your first game, the state of a sign-in with a provider and the key of your bot, so that the page
+        of your invitation shows it again.
       </p>
     </section>
 

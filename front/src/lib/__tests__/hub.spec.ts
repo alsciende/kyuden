@@ -32,9 +32,9 @@ class FakeEventSource {
   }
 }
 
-function subscription(token: string): Response {
+function subscription(expiresAt: string): Response {
   return new Response(
-    JSON.stringify({ hub: 'http://hub.test/.well-known/mercure', token, topic: '/users/john', expires_at: '' }),
+    JSON.stringify({ hub: 'http://hub.test/.well-known/mercure', topic: '/users/john', expires_at: expiresAt }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   )
 }
@@ -55,8 +55,8 @@ describe('follow', () => {
     vi.useRealTimers()
   })
 
-  it('subscribes to the topics with the token of the user', async () => {
-    fetchMock.mockResolvedValueOnce(subscription('jwt-1'))
+  it('subscribes to the topics once the subscription of the user is read', async () => {
+    fetchMock.mockResolvedValueOnce(subscription('2026-11-02T13:00:00+00:00'))
     const updates: unknown[] = []
 
     follow('l5r_john', ['/games/game-1'], (data) => updates.push(data))
@@ -65,15 +65,15 @@ describe('follow', () => {
     expect(fetchMock.mock.calls[0]![0]).toBe('/api/self/subscription')
     const url = FakeEventSource.opened[0]!.url
     expect(url.origin + url.pathname).toBe('http://hub.test/.well-known/mercure')
-    expect(url.searchParams.getAll('topic')).toEqual(['/games/game-1'])
-    expect(url.searchParams.get('authorization')).toBe('jwt-1')
+    expect(url.searchParams.getAll('match')).toEqual(['/games/game-1'])
+    expect(url.searchParams.has('authorization')).toBe(false)
     FakeEventSource.opened[0]!.receive('{"event":"game_updated","version":3}')
     FakeEventSource.opened[0]!.receive('not json')
     expect(updates).toEqual([{ event: 'game_updated', version: 3 }])
   })
 
   it('reads the topics in the subscription', async () => {
-    fetchMock.mockResolvedValueOnce(subscription('jwt-1'))
+    fetchMock.mockResolvedValueOnce(subscription('2026-11-02T13:00:00+00:00'))
 
     follow(
       'l5r_john',
@@ -82,11 +82,13 @@ describe('follow', () => {
     )
     await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(1))
 
-    expect(FakeEventSource.opened[0]!.url.searchParams.getAll('topic')).toEqual(['/users/john'])
+    expect(FakeEventSource.opened[0]!.url.searchParams.getAll('match')).toEqual(['/users/john'])
   })
 
-  it('subscribes again with a new token from the last update once the hub refuses the connection', async () => {
-    fetchMock.mockResolvedValueOnce(subscription('jwt-1')).mockResolvedValueOnce(subscription('jwt-2'))
+  it('reads the subscription again (a new token) and subscribes from the last update once the hub refuses the connection', async () => {
+    fetchMock
+      .mockResolvedValueOnce(subscription('2026-11-02T13:00:00+00:00'))
+      .mockResolvedValueOnce(subscription('2026-11-02T14:00:00+00:00'))
 
     follow('l5r_john', ['/games/game-1'], () => {})
     await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(1))
@@ -95,13 +97,12 @@ describe('follow', () => {
     await vi.advanceTimersByTimeAsync(RETRY_DELAY)
     await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(2))
 
-    const url = FakeEventSource.opened[1]!.url
-    expect(url.searchParams.get('authorization')).toBe('jwt-2')
-    expect(url.searchParams.get('lastEventID')).toBe('urn:uuid:42')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(FakeEventSource.opened[1]!.url.searchParams.get('last_event_id')).toBe('urn:uuid:42')
   })
 
   it('closes the subscription once stopped', async () => {
-    fetchMock.mockResolvedValueOnce(subscription('jwt-1'))
+    fetchMock.mockResolvedValueOnce(subscription('2026-11-02T13:00:00+00:00'))
 
     const stop = follow('l5r_john', ['/games/game-1'], () => {})
     await vi.waitFor(() => expect(FakeEventSource.opened).toHaveLength(1))

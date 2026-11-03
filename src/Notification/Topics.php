@@ -6,9 +6,9 @@ namespace App\Notification;
 
 /**
  * The topics of the Mercure hub. Every update is private: a subscriber needs a token (`SubscriptionFactory`) whose
- * `subscribe` claim matches one of the topics of the update. An update of a game also carries the topic of the game
- * for each of its players (`/users/{user}/games/{game}`), so that the token of a user, a template of the topics of their
- * games, gives access to every game they play without being issued again when they join one.
+ * `subscribe` grant matches one of the topics of the update. An update of a game also carries the topic of the game
+ * for each of its players (`/users/{user}/games/{game}`), so that the token of a user, a URL pattern of the topics of
+ * their games, gives access to every game they play without being issued again when they join one.
  */
 final class Topics
 {
@@ -28,12 +28,16 @@ final class Topics
     }
 
     /**
-     * The topic selectors a user may subscribe to: their own topic and the games they play.
+     * The topics a user may subscribe to, by matcher type of the protocol 1.0: their own topic, and the games they play
+     * (a URL pattern, resolved against the resource identifier of the hub like the topics).
      *
-     * @return list<string>
+     * @return array{exact: list<string>, urlpattern: list<string>}
      */
     public static function subscribableBy(string $userId): array
     {
-        return [self::user($userId), self::user($userId) . '/games/{gameId}'];
+        // the characters of the syntax of URL patterns, which an id must not bring in
+        $userPattern = addcslashes(self::user($userId), '\\:*?+(){}');
+
+        return ['exact' => [self::user($userId)], 'urlpattern' => [$userPattern . '/games/:gameId']];
     }
 }

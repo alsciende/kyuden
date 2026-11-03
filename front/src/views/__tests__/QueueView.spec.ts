@@ -96,7 +96,7 @@ describe('QueueView', () => {
     fetchMock.mockImplementation(async (input, init) => {
       const path = String(input)
       if (path === '/api/self/subscription') {
-        return json(200, { hub: 'http://hub.test/', token: 'jwt', topic: '/users/john', expires_at: '' })
+        return json(200, { hub: 'http://hub.test/', topic: '/users/john', expires_at: '' })
       }
       if (path === '/api/decks') {
         return init?.method === 'POST' ? importAnswer() : json(200, decks)
@@ -163,7 +163,7 @@ describe('QueueView', () => {
     const { wrapper, router } = await mountQueue()
     expect(wrapper.find('.waiting').exists()).toBe(true)
 
-    expect(FakeEventSource.opened[0]!.url.searchParams.getAll('topic')).toEqual(['/users/john'])
+    expect(FakeEventSource.opened[0]!.url.searchParams.getAll('match')).toEqual(['/users/john'])
     FakeEventSource.opened[0]!.receive({
       event: 'game_started',
       id: 'game-1',
