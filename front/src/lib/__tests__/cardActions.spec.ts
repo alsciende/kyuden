@@ -462,6 +462,44 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, ordinary.id)!.moveStatusToken).toBe(false)
   })
 
+  it('places and discards the status tokens of a province or a character, apart with the special actions', () => {
+    const dishonored = card('raid', { side: 'province', personal_honor: 'dishonored' })
+    const hidden = card(null, { side: 'province', orientation: 'face_down' })
+    const kaezin = card('kaezin', { personal_honor: 'honored' })
+    const view = game(
+      player('me', [stack('regular_province', [dishonored]), stack('in_play', [kaezin])]),
+      player('opp', [stack('regular_province', [hidden])]),
+      {
+        available_actions: ['place_status_token', 'discard_status_token'],
+        special_actions: [
+          { type: 'place_status_token', card_ids: [] },
+          { type: 'discard_status_token', card_ids: [] },
+        ],
+      },
+    )
+
+    expect(cardMenu(view, cards, dishonored.id)!.more).toEqual([
+      {
+        type: 'place_status_token',
+        label: 'Place an honored status token',
+        payload: { card_id: dishonored.id, token: 'honored' },
+      },
+      {
+        type: 'discard_status_token',
+        label: 'Discard its dishonored status token',
+        payload: { card_id: dishonored.id },
+      },
+    ])
+    expect(cardMenu(view, cards, hidden.id)!.more.map((action) => action.payload)).toEqual([
+      { card_id: hidden.id, token: 'honored' },
+      { card_id: hidden.id, token: 'dishonored' },
+    ])
+    expect(cardMenu(view, cards, kaezin.id)!.more.map((action) => action.label)).toEqual([
+      'Place a dishonored status token',
+      'Discard its honored status token',
+    ])
+  })
+
   it('switches a dynasty card with the dynasty cards of the other provinces of its owner', () => {
     const scout = card('scout', { side: 'dynasty' })
     const hidden = card(null, { side: 'dynasty', orientation: 'face_down' })

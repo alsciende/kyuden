@@ -8,6 +8,7 @@ use App\Enum\ConflictType;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
+use App\Enum\StatusToken;
 use App\Message\ChooseStrongholdProvince;
 use App\Message\DeclareConflict;
 use App\Message\DeclareProvinceStrength;
@@ -20,6 +21,7 @@ use App\Message\LoseFate;
 use App\Message\MoveHome;
 use App\Message\MoveStatusToken;
 use App\Message\MoveToConflict;
+use App\Message\PlaceStatusToken;
 use App\Message\PlayActionEvent;
 use App\Message\PlayCharacterFromHand;
 use App\Message\RemoveFate;
@@ -109,12 +111,14 @@ class MessageLogTest extends AbstractKernelTestCase
         $this->messageBus->dispatch(new MoveStatusToken($gameId, $john, $toturi, $spear));
         $this->messageBus->dispatch(new HonorCharacter($gameId, $john, $toturi));
         $this->messageBus->dispatch(new DiscardStatusToken($gameId, $john, $toturi));
+        $this->messageBus->dispatch(new PlaceStatusToken($gameId, $john, $spear, StatusToken::Dishonored));
 
         self::assertSame([
             'Akodo Toturi is now honored',
             'The honored status token of Akodo Toturi is moved to Master of the Spear, now ordinary',
             'Akodo Toturi is now honored',
             'The honored status token of Akodo Toturi is discarded',
+            'A dishonored status token is placed on Master of the Spear, now dishonored',
         ], $this->janesLog($scenario));
     }
 

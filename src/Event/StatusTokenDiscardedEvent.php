@@ -10,8 +10,8 @@ use App\Enum\PersonalHonor;
 use App\GameLog\GameLog;
 
 /**
- * The status token of a character has been discarded by an effect: the character is ordinary, without having been
- * honored nor dishonored.
+ * The status token of a character or a province has been discarded by an effect: the card is ordinary, without having
+ * been honored nor dishonored.
  */
 #[GameLog('The {status} status token of {card} is discarded')]
 final readonly class StatusTokenDiscardedEvent implements GameEventInterface

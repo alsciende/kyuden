@@ -123,10 +123,10 @@ class CardState
     }
 
     /**
-     * A status token is moved onto the character: an ordinary character takes its status, a character with the other
-     * token discards both and returns to ordinary status (glossary, "Status Token").
+     * A status token is placed or moved onto the card (a character, or a province): an ordinary card takes its status,
+     * a card with the other token discards both and returns to ordinary status (glossary, "Status Token").
      *
-     * @throws PersonalHonorException if the character already has a token of this kind
+     * @throws PersonalHonorException if the card already has a token of this kind
      */
     public function receiveStatusToken(PersonalHonor $token): self
     {

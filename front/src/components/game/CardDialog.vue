@@ -275,6 +275,7 @@ const specials = computed(() => specialActions(props.game, props.cards))
 const HINTS: Partial<Record<string, string>> = {
   put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
   put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
+  place_status_token: 'It is neither honored nor dishonored; opposed tokens are both discarded.',
   discard_status_token: 'It is neither honored nor dishonored.',
   move_status_token: 'Neither is honored nor dishonored; opposed tokens are both discarded.',
 }

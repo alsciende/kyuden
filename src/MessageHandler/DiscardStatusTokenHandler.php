@@ -18,8 +18,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Accepted in any game place and from any player of the game, on any character in play with a status token: the engine
- * does not apply card effects, which decide whose token is discarded and when.
+ * Accepted in any game place and from any player of the game, on any character in play or province with a status
+ * token: the engine does not apply card effects, which decide whose token is discarded and when.
  */
 #[AsMessageHandler]
 final readonly class DiscardStatusTokenHandler implements PlayerActionHandlerInterface
@@ -46,7 +46,7 @@ final readonly class DiscardStatusTokenHandler implements PlayerActionHandlerInt
         // checks that the sender is a player of the game
         $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
         $card = $this->cardRepository->get($message->getCardId(), $game);
-        $this->conflictService->assertCharacterInPlay($card);
+        $this->conflictService->assertCanHoldStatusToken($card);
 
         $status = $this->cardStateManager->getState($card)->getPersonalHonor();
         $this->cardStateManager->withState(

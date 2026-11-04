@@ -72,6 +72,16 @@ readonly class ConflictService
     }
 
     /**
+     * A card that can hold a status token: a character in play or a province (glossary, "Status Token").
+     */
+    public function assertCanHoldStatusToken(PhysicalCard $card): void
+    {
+        if (! $card instanceof ProvinceCard) {
+            $this->assertCharacterInPlay($card);
+        }
+    }
+
+    /**
      * A character in play, controlled by the player if one is given.
      */
     public function assertCharacterInPlay(PhysicalCard $card, ?Player $player = null): void

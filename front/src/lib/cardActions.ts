@@ -258,6 +258,21 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
             }))
     })
   }
+  // placing or discarding a status token by an effect, without honoring nor dishonoring the card: special actions,
+  // offered apart; on a character in play or a province (an honored token on a province is the players' business)
+  const statusTokens = () => {
+    for (const token of ['honored', 'dishonored'] as const) {
+      if (view.personal_honor !== token) {
+        add(menu.state, 'place_status_token', `Place ${token === 'honored' ? 'an' : 'a'} ${token} status token`, {
+          card_id: id,
+          token,
+        })
+      }
+    }
+    if (view.personal_honor !== 'ordinary') {
+      add(menu.state, 'discard_status_token', `Discard its ${view.personal_honor} status token`)
+    }
+  }
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -301,6 +316,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           add(menu.state, 'reveal_province', 'Reveal it')
           lookAt()
         }
+        statusTokens()
         if ((stack.cards?.length ?? 0) <= 1) {
           add(menu.state, 'fill_province', 'Fill this province', { province_id: id })
         }
@@ -349,9 +365,11 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       } else if (faceUp) {
         abilities()
         breakProvince()
+        statusTokens()
       } else {
         add(menu.state, 'reveal_province', 'Reveal it')
         lookAt()
+        statusTokens()
       }
       break
 
@@ -372,11 +390,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (view.personal_honor !== 'dishonored') {
           add(menu.state, 'dishonor_character', 'Dishonor')
         }
-        if (view.personal_honor !== 'ordinary') {
-          // without honoring nor dishonoring it: special actions, offered apart
-          add(menu.state, 'discard_status_token', `Discard its ${view.personal_honor} status token`)
-          menu.moveStatusToken = available.has('move_status_token')
-        }
+        statusTokens()
+        menu.moveStatusToken = view.personal_honor !== 'ordinary' && available.has('move_status_token')
         add(menu.state, 'place_fate', 'Place 1 fate', { card_id: id, amount: 1 })
         if (view.fate > 0) {
           add(menu.state, 'remove_fate', 'Remove 1 fate', { card_id: id, amount: 1 })

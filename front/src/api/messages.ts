@@ -234,13 +234,13 @@ export interface DiscardRandomCardFromHand {
 }
 
 /**
- * Discards the status token of a character in play, by an effect: an honored or dishonored character returns to ordinary status without being dishonored nor honored, so that nothing reacting to that is triggered.
+ * Discards the status token of a character in play or a province, by an effect: an honored or dishonored character returns to ordinary status without being dishonored nor honored, so that nothing reacting to that is triggered.
  *
- * The character can belong to any player: the engine does not apply card effects.
+ * The card can belong to any player: the engine does not apply card effects.
  */
 export interface DiscardStatusToken {
   /**
-   * Honored or dishonored character in play.
+   * Character in play or province with a status token.
    */
   card_id: string
 }
@@ -513,6 +513,22 @@ export interface PlaceFate {
    * Fate placed.
    */
   amount: number
+}
+
+/**
+ * Places a status token on a character in play or a province, by an effect, without honoring nor dishonoring it, so that nothing reacting to that is triggered (Final Whisper; a dishonored status token on a province, whose printed text is then treated as blank: Overrun). A card with the other token discards both and returns to ordinary status; a card cannot receive a second token of a kind.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PlaceStatusToken {
+  /**
+   * Character in play or province, without a status token of this kind.
+   */
+  card_id: string
+  /**
+   * Kind of the status token placed.
+   */
+  token: 'honored' | 'dishonored'
 }
 
 /**
@@ -1023,6 +1039,7 @@ export interface MessagePayloads {
   pass_conflict: PassConflict
   pass_opportunity: PassOpportunity
   place_fate: PlaceFate
+  place_status_token: PlaceStatusToken
   play_action_event: PlayActionEvent
   play_attachment: PlayAttachment
   play_character_from_hand: PlayCharacterFromHand
