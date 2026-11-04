@@ -4,43 +4,48 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Entity\Game;
-use App\Entity\Player;
-use Doctrine\ORM\EntityManagerInterface;
+use App\View\GameInProgressViewFactory;
+use App\View\Model\GameInProgressPlayerView;
+use App\View\Model\GameInProgressView;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:game:list',
-    description: 'Add a short description for your command',
+    description: 'List the games in progress (started, not ended), the last started first',
 )]
 readonly class GameListCommand
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private GameInProgressViewFactory $gameInProgressViewFactory,
     ) {
     }
 
-    public function __invoke(InputInterface $input, OutputInterface $output): int
+    public function __invoke(SymfonyStyle $io): int
     {
-        $io = new SymfonyStyle($input, $output);
-        /** @var Game[] $rows */
-        $rows = $this->entityManager->getRepository(Game::class)->findAll();
         $io->table(
-            ['Id', 'Current Place', 'Players'],
+            ['Id', 'Version', 'Place', 'Friendly', 'Players', 'Spectators'],
             array_map(
-                fn (Game $game): array => [
-                    $game->getId(),
-                    $game->getCurrentPlace(),
-                    implode(' & ', array_map(fn (Player $player): string => $player->getUserId(), $game->getPlayers()->toArray())),
+                fn (GameInProgressView $game): array => [
+                    $game->id,
+                    $game->version,
+                    $game->place,
+                    $game->friendly ? 'yes' : 'no',
+                    implode(' vs ', array_map($this->describePlayer(...), $game->players)),
+                    $game->spectators,
                 ],
-                $rows
-            )
+                $this->gameInProgressViewFactory->createAll(),
+            ),
         );
 
         return Command::SUCCESS;
+    }
+
+    private function describePlayer(GameInProgressPlayerView $player): string
+    {
+        $details = array_filter([$player->clan?->value, $player->bot ? 'bot' : null]);
+
+        return sprintf('%s [%s]%s', $player->name, $player->userId, $details === [] ? '' : ' (' . implode(', ', $details) . ')');
     }
 }

@@ -106,6 +106,16 @@ abstract class PhysicalCard implements StatefulInterface
     }
 
     /**
+     * Debugging only (app:card:swap): a card never changes what it is printed as during a game.
+     */
+    public function setLogicalCard(LogicalCard $logicalCard): static
+    {
+        $this->logicalCard = $logicalCard;
+
+        return $this;
+    }
+
+    /**
      * @throws \LogicException if the card is in a stack or orientation it cannot have
      */
     public function getCurrentPlace(): string
