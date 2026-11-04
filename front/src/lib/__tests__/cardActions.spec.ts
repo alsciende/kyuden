@@ -315,14 +315,14 @@ describe('cardMenu', () => {
       },
     }
 
-    expect(cardMenu(view, cards, scout.id)!.intoPlay).toEqual([
+    expect(cardMenu(view, cards, scout.id)!.more).toEqual([
       { type: 'put_character_into_play', label: 'Put into play', payload: { card_id: scout.id, into_conflict: false } },
     ])
-    expect(cardMenu(conflict, cards, kaezin.id)!.intoPlay.map((action) => action.label)).toEqual([
+    expect(cardMenu(conflict, cards, kaezin.id)!.more.map((action) => action.label)).toEqual([
       'Put into play',
       'Put into play in the conflict',
     ])
-    expect(cardMenu(view, cards, raid.id)!.intoPlay).toEqual([])
+    expect(cardMenu(view, cards, raid.id)!.more).toEqual([])
   })
 
   it('puts a character of the opponent into play under the control of the viewer', () => {
@@ -356,11 +356,11 @@ describe('cardMenu', () => {
       },
     }
 
-    expect(cardMenu(view, cards, kaezin.id)!.intoPlay.map((action) => action.label)).toEqual([
+    expect(cardMenu(view, cards, kaezin.id)!.more.map((action) => action.label)).toEqual([
       'Put into play',
       'Put into play under your control',
     ])
-    expect(cardMenu(conflict, cards, kaezin.id)!.intoPlay.at(-1)).toEqual({
+    expect(cardMenu(conflict, cards, kaezin.id)!.more.at(-1)).toEqual({
       type: 'put_character_into_play',
       label: 'Put into play in the conflict under your control',
       payload: { card_id: kaezin.id, into_conflict: true, controller_id: 'me' },

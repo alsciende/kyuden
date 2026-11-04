@@ -10,7 +10,7 @@ use App\Attribute\Description;
 /**
  * Shuffles the conflict deck of the target player, e.g. to resolve an effect.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class ShuffleConflictDeck implements PlayerActionInterface
 {
     public function __construct(

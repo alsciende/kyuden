@@ -23,6 +23,8 @@ final readonly class GameView
      * @param list<PlayerView>         $players         in player order of arrival
      * @param array<string, RingState> $rings           by element
      * @param list<string>             $availableActions the types of the messages the viewer can send now
+     * @param list<SpecialActionView>  $specialActions  every special action, with the active cards of the viewer that
+     *                                                  need it
      */
     public function __construct(
         public string $id,
@@ -43,6 +45,7 @@ final readonly class GameView
         public ?string $winnerId,
         public ?VictoryCondition $victoryCondition,
         public array $availableActions,
+        public array $specialActions,
     ) {
     }
 }

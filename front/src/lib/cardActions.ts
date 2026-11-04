@@ -48,9 +48,9 @@ export interface CardMenu {
   point: SimpleAction | null
   /** taking control of a card in play controlled by the opponent, by an effect (Blackmail, Calling in Favors) */
   control: SimpleAction | null
-  /** putting a character into play without playing it, by an effect: at home or into the conflict, under the control
-   * of its owner or of the viewer (Shosuro Actress) */
-  intoPlay: SimpleAction[]
+  /** the special actions (`lib/specialActions.ts`) that need nothing but a click: put on its deck, return it to hand,
+   * put a character into play by an effect (Shosuro Actress)… offered apart, with the forms below */
+  more: SimpleAction[]
   /** the provinces of its owner a holding of the discard pile can be put into, by an effect (Rebuild) */
   intoProvince: ProvinceChoice[]
   /** an attachment in play can be moved to another character, by an effect */
@@ -158,12 +158,13 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         ? { type: 'point_at_card', label: 'Point at it', payload: { card_id: id } }
         : null,
     control: null,
-    intoPlay: [],
+    more: [],
     intoProvince: [],
     moveAttachment: false,
     switchWith: [],
   }
-  // the payload is the card by default, for the messages whose payload is a card only
+  const special = new Set(game.special_actions.map((action) => action.type))
+  // the payload is the card by default, for the messages whose payload is a card only; a special action goes apart
   const add = <T extends MessageType>(
     list: SimpleAction[],
     type: T,
@@ -171,7 +172,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     ...[payload]: { card_id: string } extends MessagePayloads[T] ? [MessagePayloads[T]?] : [MessagePayloads[T]]
   ) => {
     if (available.has(type)) {
-      list.push({ type, label, payload: payload ?? { card_id: id } } as SimpleAction)
+      ;(special.has(type) ? menu.more : list).push({ type, label, payload: payload ?? { card_id: id } } as SimpleAction)
     }
   }
   const discard = () => add(menu.removals, 'discard_card', 'Discard')
@@ -203,22 +204,22 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     const conflict = game.conflict
     const inConflict = (playerId: string) =>
       conflict !== null && [conflict.attacking_player_id, conflict.defending_player_id].includes(playerId)
-    add(menu.intoPlay, 'put_character_into_play', 'Put into play', { card_id: id, into_conflict: false })
+    add(menu.more, 'put_character_into_play', 'Put into play', { card_id: id, into_conflict: false })
     if (inConflict(located.player.id)) {
-      add(menu.intoPlay, 'put_character_into_play', 'Put into play in the conflict', {
+      add(menu.more, 'put_character_into_play', 'Put into play in the conflict', {
         card_id: id,
         into_conflict: true,
       })
     }
     if (located.player.id !== game.viewer_id) {
       const controller_id = game.viewer_id
-      add(menu.intoPlay, 'put_character_into_play', 'Put into play under your control', {
+      add(menu.more, 'put_character_into_play', 'Put into play under your control', {
         card_id: id,
         into_conflict: false,
         controller_id,
       })
       if (inConflict(controller_id)) {
-        add(menu.intoPlay, 'put_character_into_play', 'Put into play in the conflict under your control', {
+        add(menu.more, 'put_character_into_play', 'Put into play in the conflict under your control', {
           card_id: id,
           into_conflict: true,
           controller_id,

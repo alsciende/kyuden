@@ -15,6 +15,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - **Mercure announces, the clients read**: the hub carries the version of the game, not its state, which would have to be published per player (secrets), kept in the history of the hub, and computed for every message; the delays of reading the game again are not felt.
 - **Mockups first** for the screens of the web client: the board and the cards looked at (Claude artifact `GiPbGSPNcvLD2r9eFKKNp5`), the accounts, the queue, the friendly games and the spectators (`LBUBwNBPdSopj5NMj5GLTL`, row "Watch a game in progress").
 - **Spectators**: an account (not a guest nor a bot: the list of the spectators names accounts) watches any game in progress, its own included, and sees only what is public (`Visibility` with no viewer). Being a spectator is not part of the game: no version, no log, no event; it is kept apart (`Spectator`, `SpectatorRegistry`), a spectator who stops reading for 45 seconds forgotten, and each arrival or departure announced (`spectators_updated`). The client shows a spectator the board of a player (the first in player order, then the other one), with their names instead of "You" and "Opp.". The end of a game is told to a spectator by the log only.
+- **Special actions and card scripts**: the effect messages few cards need are marked `special` (`#[AppAction(special: true)]`: 23 of them, those that react to or undo an effect of the opponent stay basic, `TakeControl` and `TransferHonor` included) and offered by the web client behind a "+" (the card dialog, the popovers of the bars, the window of a ring), those the active cards of the player need first, every other one on demand ("Show every action", the safety net for what the engine does not know). Which card needs what is said by the script of the card (`src/CardScript`, a class per card overriding `AbstractCardScript`), not by the fixtures, so that a card can later say more than a list (conditions, skill bonuses, triggering conditions). A script informs, it never decides. The first 241 scripts were generated from a review of the texts (special actions only): approximations accepted where no message fits exactly (Calling in Favors, Karada District and Shinjo Saddle as `move_attachment`; Frontline Engineer and Kaiu Shihobu as `put_holding_into_province`; Educated Heimin and The Wealth of the Crane as `fill_province`; Roving Michibiku as `claim_ring`; fate from the general pool onto a ring as `move_fate`), and the effects without a message (see "Cards not playable yet") left out.
 - **The house bot** is Kyūden no Karō, "the steward of the palace": a title rather than a name, being a bot. It is faced from the queue (the deck chosen there), and named with the label "Bot" only in the games.
 
 ## Known limitations
@@ -32,12 +33,78 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 
 ## Next steps
 
-### Messages left (from the review of the Core Set)
+### Cards not playable yet
 
-- Playing an attachment or an action event from the conflict discard pile or the top of the conflict deck (Guidance of the Ancestors, Artisan Academy): `play_card` already allows the discard pile, `HandService::assertPlayable()` and the client only offer the hand.
-- A character played as an attachment (Tattooed Wanderer, Togashi Kazue): a new place of the conflict card workflow, last.
-- Beyond the Core Set: `TurnDynastyCardFacedown` (Governor's Spy, which should also renew ids), `TurnProvinceFacedown`, `FillProvince` face up, `MoveStatusToken`, `RemoveFromGame`, adding an attacked province (A War on Two Fronts: `ConflictState::attackedProvinceIds` is ready), moving the contested ring to another province, discarding the Imperial Favor.
-- Not planned: `DiscardStatusToken` (`HonorCharacter` / `DishonorCharacter` make a character ordinary), `ReturnRing` (covered by `SwitchRing`); Breakthrough needs a place or a flag of the `game` workflow.
+A review of the texts of every card of the fixtures (1,129 cards, all of FFG) against the public messages: about 190 cards have an effect that the players cannot apply. "Mental" effects (skills, costs, strength, glory, keywords, targeting restrictions, cancelling an effect, limits) are not gaps: the players declare the values and do not apply what is cancelled. By category of the missing effect, with a few examples each:
+
+1. **Status tokens: discard or move** (about 30 cards). Honoring or dishonoring back makes a character ordinary, but it triggers what reacts to honoring or dishonoring, and it can make the player lose the last honor of a stronghold province. Soshi Illusionist, Origami Master, Bayushi Dairu, Shameless Gossip, Perfect Land Ethos, Stand Your Ground, Pledge of Loyalty, Liar's Mask, Prepare for War, Fearless Skirmisher, Yasuki Fuzake. The Disguised characters keep the status token of the character they replace: Akodo Zentaro, Shinjo Kyora, Hiruma Yoshino, Shosuro Miyako, Daidoji Kageyu.
+2. **Tokens on provinces and holdings**: a dishonored status token on a province (its printed text treated as blank): Return from Shadows, Meticulous Scout, Overrun, Untainted. Honor tokens on a province or a holding: Public Forum, Fortified Assembly, Distinguished Dojo, Endless Archives.
+3. **Turning facedown**: a province (Kitsuki Yaruma, Saadiyah al-Mozedu, Traveling Philosopher, Untamed Steppe, Hidden Mountain Pass), the dynasty cards of the provinces (Governor's Spy).
+4. **Removing from the game**: Stolen Secrets (facedown, playable afterwards), Kyuden Isawa, Isawa Ujina, Karmic Balance, Kitsuki Kagi, Ethereal Alignment, Bayushi Kachiko, Isawa Tadaka, Dragon Tattoo, Champions of Yomi, Shadow Step (and back into play), Trading on the Sand Road.
+5. **Cards under a card, set aside**: Back-Alley Hideaway (a character facedown on the holding), Kaiu Shihobu (holdings under the stronghold province), Daidoji Uji (4 cards under him, playable), Under Siege (the hand set aside, then back).
+6. **Playing a card from elsewhere than the hand** (the Play messages take a card of the hand, and the characters of the provinces in their step only):
+   - the conflict discard pile: Guidance of the Ancestors, Kyuden Isawa, Togashi Mitsu, Warm Welcome, Right Hand of the Emperor, Exposed Courtyard, In Service to My Lord, Dragon Tattoo; the opponent's: Bayushi Kachiko, Kunshu;
+   - the dynasty discard pile: Gateway to Meido;
+   - the top of a deck: Artisan Academy, Pillow Book, Master Tactician, Calling the Storm, Third Whisker Warrens, Kyuden Hida; the opponent's: Infiltrator;
+   - out of play: Stolen Secrets, Trading on the Sand Road (the cards of both players), Back-Alley Hideaway, Daidoji Uji (37);
+   - a province outside the dynasty step: Sneaky Shinjo, Hidden Moon Dojo, Prepared Ambush, Wind's Path, Daidoji Uji (18).
+7. **Characters as attachments, and back**: Tattooed Wanderer, Togashi Kazue, Ancient Master, Serene Ise Zumi, Togashi Acolyte, Promising Youth, Voice of the Ancestors (a character of the dynasty discard pile); an attachment that becomes a character: Togashi Hoshi, Promising Youth.
+8. **Putting into play without playing, from elsewhere**: a character from the dynasty deck (Retire to the Brotherhood, Shinjo Altansarnai, Daughter of War, Guardians of Rokugan, Shinjo Gunso, Favorable Dealbroker); an attachment from hand, deck or discard pile (Time for War, Restored Heirloom, Agasha Shunsen, Illustrious Forge, Niten, Daimyō's Gunbai); a holding from the deck (Frontline Engineer); facedown cards of the provinces as characters (Force of the River).
+9. **Cards into provinces** (`SwitchProvinceCards` swaps, `FillProvince` puts the top card facedown into an empty province only):
+   - adding a card to a province that holds one, the Rally keyword (26 cards: Akodo Reserve Company, Butcher of the Fallen, Daidoji Marketplace, Ikoma Tsanuri…) and City of the Rich Frog (filled to 3);
+   - from the dynasty deck, face up: Walking the Way, Our Foe Does Not Wait, The Wealth of the Crane, Breaking In, The Western Wind, Emperor's Summons, Unyielding Sensei, Miya Library, Kaiu Forges;
+   - from the dynasty discard pile or from under the stronghold province: Miya Satoshi, Kaiu Shihobu;
+   - from a province to another without a swap: Mountaintop Statuary, Recalled Defenses, Logistics, Soshi Diviner, Governor's Spy (the cards redistributed);
+   - a character leaving play into a province: Master of Many Lifetimes, The Receding Tide;
+   - control of a holding moved into a province of the player: Akodo Zentaro.
+10. **Imperial Favor**: discarding it (a cost): Ikoma Ujiaki, Kakita Yoshi, Fair Accord, Itinerant Philosopher, Ride Them Down, Kanjo District, Sake House Confidant, Kunshu, Bayushi Shoju (an opponent cannot have it); claiming it by an effect: Fawning Diplomat.
+11. **Rings**:
+    - fate from the general token pool onto rings, or back (the workaround `GainFate` + `MoveFate` logs a gain of fate): Written in the Stars, Army of the Rising Wave, Fuchi Mura, Taoist Adept;
+    - returning a claimed ring to the unclaimed pool (`SwitchRing` claims another ring in its place): Severed from the Stream (every ring), Deduction, Perceptive Kitsuki, Overlooked Community; the contested ring returned instead of claimed: Henshin Mysteries;
+    - taking a ring of the claimed pool of another player: Roving Michibiku;
+    - a ring out of the game until the end of the round: Sudden Tempest; an attachment on a ring: Greater Understanding.
+12. **Conflicts**:
+    - an additional conflict: Hisu Mori Tōride (both), Hida O-Ushi, Suffer the Consequences, Shori, Courteous Scheming;
+    - declaring the next conflict at once, out of turn: Breakthrough, Ivory Kingdoms Unicorn;
+    - moving the conflict to another province or adding one: Chasing the Sun, Talisman of the Sun, Matsu Agetoki, Know the Terrain, Shrug Off Despair, Golden Plains, A War on Two Fronts (`ConflictState::attackedProvinceIds` is ready);
+    - attacking the stronghold province before 3 provinces are broken: Scouted Terrain;
+    - a broken province restored, or not broken: Ethereal Alignment, Public Forum, Akodo Toshiro;
+    - the defenders declared before the attackers: Seven Stings Keep;
+    - the conflict resolved as if both players had passed: Moment of Perfect Beauty.
+13. **Opportunities to act**: the attacking player acting first in a conflict (Child of the Plains); taking another action after one (Hawk Tattoo), or several actions (Current of the Beryt, Austere Exemplar). Several cards played within one action (Wayfarer's Camp, Invoke the Divine) already work: an active player who has acted can still play.
+14. **Random cards of a hand, looked at or revealed** (`LookAtCards` / `RevealCards` take the whole hand): Shrewd Investigator, Kitsuki Chiari, Isawa Tadaka, Court of Justice, Overhear.
+15. **What the engine applies and a card prevents or changes**: cancelling a duel before its result (Stay Your Hand: `EndDuel` only once it is resolved); the honor loss of an unopposed conflict (Ikebana Artisan); losing the last honor (Duty: the game ends at once); triggering the ability of a card one does not control (Kujira's Hireling: `AbilityService` checks the controller); a secret honor dial outside a bid (Maze of Illusion).
+16. **Phases**: skipping or repeating one: A Season of War (a second dynasty phase), Jurojin's Curse (a second fate phase), Trading on the Sand Road (no draw phase).
+
+Borderline, not counted: "does not bow as a result of conflict resolution" (17 cards such as Indomitable Will, Sashimono: `ReadyCard` afterwards, which can trigger what reacts to readying); the hand put at the bottom of the deck in a random order (An Ocean in a Drop: the player chooses the order); a Disguised character played over another (`PlayCharacterFromHand`, then `MoveAttachment`, `MoveFate` and `DiscardCard` of the character replaced, which then leaves play).
+
+### Messages proposed
+
+In order of value (cards covered, cost). Like the other effect messages: accepted in any place, from any player, on any card or player; each writes its entry in the log.
+
+1. **`DiscardStatusToken`** (`card_id`) and **`MoveStatusToken`** (`from_card_id`, `to_card_id`): a character becomes ordinary without being honored or dishonored; the token moves (a character or a province, see 2). Reverses the "not planned" of the review of the Core Set.
+2. **Tokens on provinces and holdings**: `DishonorCharacter` extended to a province (`card_id` any card that can hold a status token; the province treated as blank by the players), and **`PlaceHonorTokens` / `RemoveHonorTokens`** (`card_id`, `amount`) on a province or a holding, kept in `CardState` (the honor of the player does not change: Public Forum, Fortified Assembly).
+3. **`FillProvince`** with `face_up` and adding to a province that holds cards (Rally, City of the Rich Frog, A Season of War, Cycle of Rebirth), and **`PutCardIntoProvince`** (`card_id`, `province_id`, `face_up`): a dynasty card from the dynasty deck (known through `look_at_cards`), the dynasty discard pile, another province, out of play, or a character in play (it leaves play), into a province of its owner. Covers category 9 but control (Akodo Zentaro).
+4. **`DiscardImperialFavor`** and **`TakeImperialFavor`** (`target_player_id`, `side`): `GameState::imperialFavorHolderId` and `imperialFavorSide`.
+5. **`GrantConflictOpportunity`** (`target_player_id`, `type`, `immediately`): one more conflict of that type (`PlayerState::conflictOpportunities` and `declaredConflictTypes`); `immediately` makes the target the next to declare (`DeclareConflictEnterListener`: a flag of `GameState` read before the order), which covers Breakthrough and Ivory Kingdoms Unicorn.
+6. **Playing from elsewhere than the hand**: `PlayActionEvent`, `PlayInterruptEvent`, `PlayReactionEvent`, `PlayAttachment` and `PlayCharacterFromHand` accept a card of a discard pile, the top of a deck, out of play (see 7) or face up in a province, of any player (`HandService::assertPlayable()` and the client: a card played is offered from where it is); the sender controls what they play, which goes to the discard pile of its owner. `PlayCharacterFromHand` from a province covers the characters played from provinces during a conflict. Same opportunity and resolution as from the hand. Category 6.
+7. **`RemoveFromGame`** (`card_id`, `face_down`): a new stack of each player (`StackType::RemovedFromGame`), public unless facedown (its owner and the sender see it then, `Visibility`); `PutCharacterIntoPlay` and the plays of 6 accept its cards (Shadow Step, Stolen Secrets). **`PlaceCardUnder`** (`card_id`, `host_card_id`, `face_down`): a stack of the host card, like the attachments, out of play, discarded with its host (Back-Alley Hideaway, Kaiu Shihobu, Daidoji Uji); Under Siege as `PlaceCardUnder` of each card on the stronghold, then `AddCardToHand` from there.
+8. **`TurnProvinceFacedown`** (`province_id`, unbroken, not eminent) and **`TurnDynastyCardFacedown`** (`card_id`, a new id for the card, as a shuffle, so that it cannot be followed: Governor's Spy then redistributes with `PutCardIntoProvince`).
+9. **Rings**: `PlaceFate` / `RemoveFate` on a ring (an optional `ring` instead of `card_id`); **`ReturnRing`** (`ring`): a claimed or contested ring to the unclaimed pool, with its fate (reverses the "not planned"); `ClaimRing` accepted on a ring claimed by another player (Roving Michibiku).
+10. **`PutAttachmentIntoPlay`** (`card_id`, `target_card_id`, `controller_id`): from a hand, a deck or a discard pile, without cost nor opportunity; and `PutCharacterIntoPlay` accepting the dynasty deck (a card known through `look_at_cards`) and out of play. `PutHoldingIntoProvince` accepting the dynasty deck and the cards under the stronghold province (Frontline Engineer, Kaiu Shihobu).
+11. **`LookAtCards` / `RevealCards`** with `random: true` on a hand: the cards drawn by the generator of the game (category 14).
+12. **Conflicts**: **`AddAttackedProvince`** (`province_id`) and **`MoveConflict`** (`province_id`: the new attacked province, revealed by `RevealProvince`); **`RestoreProvince`** (`province_id`: a broken province face up again, unless the game has ended); the stronghold province check of `DeclareConflict` lifted by an `ignore_stronghold_restriction` flag (Scouted Terrain).
+13. **`GiveActionOpportunity`** (`target_player_id`): in an action window, the target becomes the active player, passes kept (Child of the Plains; Hawk Tattoo, Current of the Beryt and Austere Exemplar: the sender gives it back to themselves after `EndResolution`).
+14. **`CancelDuel`**: the duel ends at any step, no result (Stay Your Hand).
+15. **Characters as attachments**: a new place of the conflict and dynasty character workflows (`attached`), with **`PlayCharacterAsAttachment`** (`card_id`, `target_card_id`, `card_cost`) and **`DetachAsCharacter`** (`card_id`): category 7, the most work, last.
+
+Not planned, since the cards are few and the changes deep: Seven Stings Keep (the order of the declarations), Moment of Perfect Beauty (the window closed after one opportunity), the phases skipped or repeated (A Season of War, Jurojin's Curse, Trading on the Sand Road), Kujira's Hireling (the controller checked by `AbilityService`), Maze of Illusion, Duty and Ikebana Artisan (losses applied by the engine: the honor given back with `GainHonor`, but the game ends at 0 honor), Henshin Mysteries (`ReturnRing` after the claim), Sudden Tempest, Greater Understanding, Force of the River.
+
+### Card scripts
+
+- Give the scripts their conditions where a special action only makes sense somewhere (a duel from a character in play only…), and add a script (`make:app:card-script`) with each message proposed above, for the cards it covers.
+- Next hooks of `AbstractCardScript`: the constant skill bonuses, read by both the prefill of the web client (`board.ts`) and the house bot (`BoardReader`), which compute them twice today; the triggering conditions of the reactions and interrupts, to point the player at the cards that can react.
+- The clicks of the conflict field that switch the type or the ring are not behind a "+" (they crowd nothing).
 
 ### Web client
 

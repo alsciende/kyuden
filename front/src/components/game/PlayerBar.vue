@@ -4,10 +4,12 @@ import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
+import SpecialEffects from '@/components/game/SpecialEffects.vue'
 import { nameOf as playerName, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
-import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat } from '@/lib/playerBar'
+import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat, type Effect } from '@/lib/playerBar'
+import { specialActions } from '@/lib/specialActions'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { vTip } from '@/lib/tooltip'
 
@@ -142,6 +144,17 @@ function close(): void {
 const effects = computed(() =>
   open.value === null ? [] : playerEffects(props.game, props.player, open.value, amount.value),
 )
+/** the effects shown at once; the special ones behind a "+" (SpecialEffects) */
+const basicEffects = computed(() => {
+  const specials = specialActions(props.game, props.cards)
+
+  return effects.value.filter((effect) => !specials.isSpecial(effect.type))
+})
+
+function runEffect(effect: Effect): void {
+  void run(effect.type, effect.payload as never)
+}
+
 const pile = computed((): CardView[] | null => {
   switch (open.value) {
     case 'dynasty_discard':
@@ -301,6 +314,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <RingPopover
       v-if="openRing"
       :game="game"
+      :cards="cards"
       :element="openRing"
       :sending="sending"
       :error="error"
@@ -355,9 +369,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             <b aria-live="polite">{{ amount }}</b>
             <button type="button" class="step" aria-label="More" @click="amount++">+</button>
           </div>
-          <div v-if="effects.length" class="effects">
+          <div v-if="basicEffects.length" class="effects">
             <button
-              v-for="(effect, index) in effects"
+              v-for="(effect, index) in basicEffects"
               :key="effect.type"
               type="button"
               class="effect"
@@ -368,7 +382,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               {{ effect.label }}
             </button>
           </div>
-          <p v-else class="hint">Nothing to do now.</p>
+          <SpecialEffects
+            :effects="effects"
+            :game="game"
+            :cards="cards"
+            :sending="sending"
+            :open="!basicEffects.length"
+            @run="runEffect"
+          />
+          <p v-if="!effects.length" class="hint">Nothing to do now.</p>
         </template>
 
         <p v-if="error" class="error" role="alert">{{ error }}</p>

@@ -15,7 +15,7 @@ use App\Enum\Element;
  * type of the ring it replaces. During a conflict, the contested ring is only switched with a ring of the unclaimed or
  * claimed ring pool of the attacking player. The fate on the other rings stays on them.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class SwitchRing implements PlayerActionInterface
 {
     public function __construct(

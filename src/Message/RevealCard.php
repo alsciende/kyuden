@@ -12,7 +12,7 @@ use App\Attribute\Description;
  * (Agasha Swordsmith: "reveal it"). The log gives the card to every player; nothing is recorded. A facedown province is
  * turned face up with `reveal_province`, a facedown dynasty card with `reveal_dynasty_card`.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class RevealCard implements PlayerActionInterface
 {
     public function __construct(

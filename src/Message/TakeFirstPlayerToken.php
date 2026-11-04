@@ -11,7 +11,7 @@ use App\Attribute\Description;
  * Gives the first player token to a player, e.g. to resolve an effect (Way of the Unicorn: keeping the token when it
  * would be passed).
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class TakeFirstPlayerToken implements PlayerActionInterface
 {
     public function __construct(

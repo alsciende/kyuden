@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Discards cards chosen at random by the engine from the hand of a player (e.g. the earth ring effect), one after the
  * other; the whole hand when it holds fewer cards.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class DiscardRandomCardFromHand implements PlayerActionInterface
 {
     public function __construct(

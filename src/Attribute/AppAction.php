@@ -15,6 +15,11 @@ readonly class AppAction
          * Whether players can send it through the API: false for the actions of the platform (game creation…).
          */
         public bool $public = true,
+        /**
+         * Whether the web client only offers it when a card known to the player needs it (an effect few cards have): see
+         * AbstractCardScript::getSpecialActions(). The engine accepts it like any other action.
+         */
+        public bool $special = false,
     ) {
     }
 }

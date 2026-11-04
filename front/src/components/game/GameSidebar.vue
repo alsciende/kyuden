@@ -201,6 +201,7 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <RingPopover
         v-if="openRing"
         :game="game"
+        :cards="cards"
         :element="openRing"
         :sending="sending"
         :error="error"

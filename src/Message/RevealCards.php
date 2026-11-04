@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * deck by default) or a hand, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy). The log
  * gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class RevealCards implements PlayerActionInterface
 {
     public function __construct(

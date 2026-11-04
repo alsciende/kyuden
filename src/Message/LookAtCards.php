@@ -16,7 +16,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`,
  * `reveal_card`). Nothing is recorded: the cards are out of sight again afterwards.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class LookAtCards implements PlayerActionInterface
 {
     public function __construct(

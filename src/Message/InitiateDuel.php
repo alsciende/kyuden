@@ -13,7 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * The player resolving a card ability initiates a duel (D.1) between characters they control (`challengerIds`) and
  * characters controlled by an opponent (`challengedIds`). The players involved then bid (`BidHonor`).
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class InitiateDuel implements PlayerActionInterface
 {
     /**

@@ -13,7 +13,7 @@ use App\Attribute\Description;
  *
  * The province can belong to any player: the engine does not apply card effects.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class BreakProvince implements PlayerActionInterface
 {
     public function __construct(

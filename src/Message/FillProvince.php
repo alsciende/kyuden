@@ -11,7 +11,7 @@ use App\Attribute\Description;
  * Puts the top card of the dynasty deck of its owner face down on a province, for the effects that fill a province: a
  * province a dynasty card has left (played, discarded) is refilled by the engine.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class FillProvince implements PlayerActionInterface
 {
     public function __construct(

@@ -11,12 +11,14 @@ use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\StackType;
 use App\Service\AvailableActionsResolver;
+use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\SpecialActionView;
 use App\View\Model\StackView;
 
 use function Symfony\Component\String\u;
@@ -28,7 +30,8 @@ use function Symfony\Component\String\u;
  * - the cards follow the rules of Visibility: a hidden stack only shows its number of cards, a hidden card has no code;
  * - the pending honor bid and the chosen stronghold province are shown to their owner only;
  * - everything else is public.
- * The actions available to the viewer come from AvailableActionsResolver.
+ * The actions available to the viewer come from AvailableActionsResolver, the special actions their cards need from
+ * SpecialActionsResolver.
  */
 final readonly class GameViewFactory
 {
@@ -37,6 +40,7 @@ final readonly class GameViewFactory
         private PlayerStateManager $playerStateManager,
         private CardStateManager $cardStateManager,
         private AvailableActionsResolver $availableActionsResolver,
+        private SpecialActionsResolver $specialActionsResolver,
         private Visibility $visibility,
     ) {
     }
@@ -63,6 +67,11 @@ final readonly class GameViewFactory
             winnerId: $state->winnerId,
             victoryCondition: $state->victoryCondition,
             availableActions: $viewer instanceof Player ? $this->availableActionsResolver->resolve($game, $viewer) : [],
+            specialActions: array_map(
+                fn (string $type, array $cardIds): SpecialActionView => new SpecialActionView($type, $cardIds),
+                array_keys($specialActions = $this->specialActionsResolver->resolve($game, $viewer)),
+                $specialActions,
+            ),
         );
     }
 

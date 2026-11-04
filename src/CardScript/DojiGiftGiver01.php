@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\CardScript;
+
+use App\Entity\Game;
+use App\Entity\PhysicalCard;
+use App\Message\MoveFate;
+
+/**
+ * Doji Gift Giver.
+ */
+final readonly class DojiGiftGiver01 extends AbstractCardScript
+{
+    #[\Override]
+    public static function getCode(): string
+    {
+        return '01-doji-gift-giver';
+    }
+
+    #[\Override]
+    public function getSpecialActions(PhysicalCard $card, Game $game): array
+    {
+        return [MoveFate::class];
+    }
+}

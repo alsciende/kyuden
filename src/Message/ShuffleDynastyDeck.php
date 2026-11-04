@@ -10,7 +10,7 @@ use App\Attribute\Description;
 /**
  * Shuffles the dynasty deck of the target player, e.g. to resolve an effect.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class ShuffleDynastyDeck implements PlayerActionInterface
 {
     public function __construct(

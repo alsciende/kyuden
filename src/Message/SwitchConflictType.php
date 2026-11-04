@@ -10,7 +10,7 @@ use App\Attribute\AppAction;
  * Switches the type of the conflict being resolved, military to political or political to military, e.g. to resolve
  * an effect (Rally to the Cause). The conflict opportunity used by its declaration does not change.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class SwitchConflictType implements PlayerActionInterface
 {
     public function __construct(

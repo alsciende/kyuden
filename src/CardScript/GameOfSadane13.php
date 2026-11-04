@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\CardScript;
+
+use App\Entity\Game;
+use App\Entity\PhysicalCard;
+use App\Message\InitiateDuel;
+
+/**
+ * Game of Sadane.
+ */
+final readonly class GameOfSadane13 extends AbstractCardScript
+{
+    #[\Override]
+    public static function getCode(): string
+    {
+        return '13-game-of-sadane';
+    }
+
+    #[\Override]
+    public function getSpecialActions(PhysicalCard $card, Game $game): array
+    {
+        return [InitiateDuel::class];
+    }
+}

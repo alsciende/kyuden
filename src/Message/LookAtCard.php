@@ -11,7 +11,7 @@ use App\Attribute\Description;
  * The sender looks at a card, e.g. a facedown province or a facedown card in a province (Iuchi Wayfinder). The log
  * gives the card to the sender only; nothing is recorded: the card is out of sight again afterwards.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class LookAtCard implements PlayerActionInterface
 {
     public function __construct(

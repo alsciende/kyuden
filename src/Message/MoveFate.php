@@ -17,7 +17,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * A holder is a `player` (their fate pool, by player id), a `card` (a character in play, by card id) or a `ring` (by
  * element). The fate from or to the general token pool is gained, lost, placed or removed with the other messages.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class MoveFate implements PlayerActionInterface
 {
     public function __construct(

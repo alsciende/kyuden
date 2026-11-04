@@ -3,8 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { Element, GameView, PayloadArgs, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
-import { rings } from '@/lib/board'
+import SpecialEffects from '@/components/game/SpecialEffects.vue'
+import { rings, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } from '@/lib/icons'
+import type { Effect } from '@/lib/playerBar'
 import { ringEffects, ringsToSwitchWith } from '@/lib/rings'
 import { vTip } from '@/lib/tooltip'
 
@@ -12,10 +14,12 @@ import { vTip } from '@/lib/tooltip'
  * The window of a ring, opened by a click on it in the bar on the right (under the rings) or in the bar of a player
  * (`anchor`: above or below the bar, under the ring clicked): where it is (unclaimed with its fate, contested, or
  * claimed by whom and in which type of conflict, which card effects refer to), its effect, and the effects on it:
- * switch it with another ring, claim it, take the fate on it or place fate on it.
+ * switch it with another ring, claim it, take the fate on it or place fate on it. These are special actions
+ * (SpecialEffects): those the cards of the viewer need first, the others on demand.
  */
 const props = defineProps<{
   game: GameView
+  cards: Cards
   element: Element
   sending: boolean
   error: string | null
@@ -51,6 +55,10 @@ const switchChoices = computed(() =>
   props.game.available_actions.includes('switch_ring') ? ringsToSwitchWith(props.game, props.element) : [],
 )
 const effects = computed(() => ringEffects(props.game, props.element, amount.value))
+
+function runEffect(effect: Effect): void {
+  void run(effect.type, effect.payload as never)
+}
 
 async function run<T extends MessageType>(type: T, ...payload: PayloadArgs<T>): Promise<void> {
   if (await props.send(type, ...payload)) {
@@ -93,47 +101,41 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <p v-if="ring && ring.fate > 0" class="claimed">{{ ring.fate }} fate on it</p>
     <p class="hint">{{ RING_EFFECTS[element] }}</p>
 
-    <template v-if="switchChoices.length">
-      <span class="label">Switch with</span>
-      <div class="switch-rings">
-        <button
-          v-for="choice in switchChoices"
-          :key="choice.element"
-          v-tip="ringTip(choice.element)"
-          type="button"
-          class="switch-ring"
-          :class="choice.status"
-          :disabled="sending"
-          :aria-label="`Switch with the ${ELEMENT_NAMES[choice.element]} ring`"
-          @click="run('switch_ring', { ring: element, other_ring: choice.element })"
-        >
-          <span class="icon">{{ ELEMENT_ICONS[choice.element] }}</span>
-        </button>
-      </div>
-    </template>
-
-    <template v-if="effects.length">
-      <div class="amount">
-        <span>Fate</span>
-        <button type="button" class="step" aria-label="Less" :disabled="amount <= 1" @click="amount--">−</button>
-        <b aria-live="polite">{{ amount }}</b>
-        <button type="button" class="step" aria-label="More" @click="amount++">+</button>
-      </div>
-      <div class="effects">
-        <button
-          v-for="(effect, index) in effects"
-          :key="effect.label"
-          type="button"
-          class="effect"
-          :class="{ primary: index === 0 }"
-          :disabled="sending"
-          @click="run(effect.type, effect.payload)"
-        >
-          {{ effect.label }}
-        </button>
-      </div>
-    </template>
-    <p v-else-if="!switchChoices.length" class="hint">Nothing to do now.</p>
+    <div v-if="effects.length" class="amount">
+      <span>Fate</span>
+      <button type="button" class="step" aria-label="Less" :disabled="amount <= 1" @click="amount--">−</button>
+      <b aria-live="polite">{{ amount }}</b>
+      <button type="button" class="step" aria-label="More" @click="amount++">+</button>
+    </div>
+    <SpecialEffects
+      :effects="effects"
+      :forms="switchChoices.length ? ['switch_ring'] : []"
+      :game="game"
+      :cards="cards"
+      :sending="sending"
+      open
+      @run="runEffect"
+    >
+      <template #switch_ring>
+        <span class="label">Switch with</span>
+        <div class="switch-rings">
+          <button
+            v-for="choice in switchChoices"
+            :key="choice.element"
+            v-tip="ringTip(choice.element)"
+            type="button"
+            class="switch-ring"
+            :class="choice.status"
+            :disabled="sending"
+            :aria-label="`Switch with the ${ELEMENT_NAMES[choice.element]} ring`"
+            @click="run('switch_ring', { ring: element, other_ring: choice.element })"
+          >
+            <span class="icon">{{ ELEMENT_ICONS[choice.element] }}</span>
+          </button>
+        </div>
+      </template>
+    </SpecialEffects>
+    <p v-if="!effects.length && !switchChoices.length" class="hint">Nothing to do now.</p>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
   </div>

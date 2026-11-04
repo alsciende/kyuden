@@ -131,6 +131,15 @@ export interface GameView {
   winner_id: string | null
   victory_condition: string | null
   available_actions: string[]
+  /** every special action: offered apart, and only on demand when none of the viewer's cards needs it */
+  special_actions: SpecialActionView[]
+}
+
+/** a special action and the cards of the viewer whose text needs it (in play under their control, or their own cards
+ * out of play they know) */
+export interface SpecialActionView {
+  type: string
+  card_ids: string[]
 }
 
 /** the view as the API sends it: no viewer for a spectator */

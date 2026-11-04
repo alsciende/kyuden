@@ -13,7 +13,7 @@ use App\Attribute\Description;
  *
  * The card can belong to any player: effects often target an opponent's card.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class ReturnCardToHand implements PlayerActionInterface
 {
     public function __construct(

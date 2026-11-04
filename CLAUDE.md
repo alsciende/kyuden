@@ -26,7 +26,7 @@ Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which ser
 
 Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), import a deck of EmeraldDB from its URL for a user (`app:deck:import`), matchmaking, create a game, list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message; then `make front-messages`, which generates the types of the web client from them).
 
-Use the custom makers to scaffold new code: `MakeAction` (message + handler) and `MakeWorkflowListener` (`src/Maker`).
+Use the custom makers to scaffold new code: `MakeAction` (message + handler), `MakeWorkflowListener` and `MakeCardScript` (the script of a card, `make:app:card-script`) (`src/Maker`).
 
 After changing a workflow, compare `bin/console workflow:dump <name>` before and after.
 

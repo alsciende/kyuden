@@ -9,10 +9,13 @@ import { actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
 import { CONFLICT_ICONS } from '@/lib/icons'
+import { groupSpecial, neededCount, specialActions } from '@/lib/specialActions'
 import { vTip } from '@/lib/tooltip'
 
 /**
- * A card opened: its image in the middle of the darkened screen, and what the player can do with it beside it.
+ * A card opened: its image in the middle of the darkened screen, and what the player can do with it beside it; the
+ * special actions (`lib/specialActions.ts`) in a panel of their own, opened with the "+": those the cards of the player
+ * need, with these cards, then every other one on demand.
  */
 const props = defineProps<{
   menu: CardMenu
@@ -78,17 +81,19 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-/** pointing at the card, taking control of it, then the ways it leaves where it is: a row of icons, their label on
- * hover */
+/** the ways the card leaves where it is on the left, then taking control of it and pointing at it: a row of icons,
+ * their label on hover, ended by the "+" of the special actions */
 const iconActions = computed(() =>
   [
-    ...(props.menu.point ? [props.menu.point] : []),
-    ...(props.menu.control ? [props.menu.control] : []),
     ...props.menu.removals,
-  ].map((action) => ({
+    ...(props.menu.control ? [props.menu.control] : []),
+    ...(props.menu.point ? [props.menu.point] : []),
+  ].map((action, index) => ({
     action,
     icon: actionIcon(action),
     tip: action.type === 'point_at_card' ? `${action.label}: shows it to your opponent in the log` : action.label,
+    /** the first of the actions on the right */
+    start: index === props.menu.removals.length,
   })),
 )
 
@@ -240,6 +245,49 @@ function challenge(): void {
   }
 }
 
+// the special actions: a click, or one of the forms
+const specials = computed(() => specialActions(props.game, props.cards))
+
+const HINTS: Partial<Record<string, string>> = {
+  put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
+  put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
+}
+
+const specialGroups = computed(() =>
+  groupSpecial(specials.value, props.menu.more, [
+    ...(props.menu.duel && challengeable.value.length ? ['initiate_duel'] : []),
+    ...(props.menu.intoProvince.length ? ['put_holding_into_province'] : []),
+    ...(props.menu.moveAttachment && hosts.value.length ? ['move_attachment'] : []),
+    ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
+  ]),
+)
+
+/** the number of special actions the cards of the player need: the badge of the "+" */
+const neededSpecial = computed(() => neededCount(specialGroups.value.needed))
+const hasSpecial = computed(() => specialGroups.value.needed.length + specialGroups.value.others.length > 0)
+const specialOpen = ref(false)
+const everyAction = ref(false)
+
+/** the sections of the panel: the actions the cards need, then the others on demand (at once when none is needed) */
+const specialSections = computed(() => {
+  const { needed, others } = specialGroups.value
+  const showOthers = (everyAction.value || needed.length === 0) && others.length > 0
+
+  return [
+    ...(needed.length ? [{ key: 'needed', label: 'For your cards', hint: null, groups: needed }] : []),
+    ...(showOthers
+      ? [
+          {
+            key: 'others',
+            label: needed.length ? 'Every other action' : 'Every action',
+            hint: 'No card you know needs them: for an effect the engine does not know about.',
+            groups: others,
+          },
+        ]
+      : []),
+  ]
+})
+
 function onKey(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     emit('close')
@@ -281,207 +329,258 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </figcaption>
     </figure>
 
-    <section class="panel" aria-label="Card actions">
-      <header class="head">
-        <div class="owner">
-          <PlayerChip :player="owner" :viewer-id="game.viewer_id" />
-          <span class="kind"
-            >{{ menu.card?.type ?? '' }}<template v-if="menu.card?.clan"> · {{ menu.card.clan }}</template></span
-          >
-        </div>
-        <h2>{{ name }}</h2>
-        <div v-if="tags.length" class="tags">
-          <span v-for="tag in tags" :key="tag" class="tag">{{ tag }}</span>
-        </div>
-      </header>
+    <div class="panels">
+      <section class="panel" aria-label="Card actions">
+        <header class="head">
+          <div class="owner">
+            <PlayerChip :player="owner" :viewer-id="game.viewer_id" />
+            <span class="kind"
+              >{{ menu.card?.type ?? '' }}<template v-if="menu.card?.clan"> · {{ menu.card.clan }}</template></span
+            >
+          </div>
+          <h2>{{ name }}</h2>
+          <div v-if="tags.length" class="tags">
+            <span v-for="tag in tags" :key="tag" class="tag">{{ tag }}</span>
+          </div>
+        </header>
 
-      <div v-if="menu.abilities.length" class="group">
-        <button
-          v-for="ability in menu.abilities"
-          :key="ability.type"
-          type="button"
-          class="btn btn-primary"
-          :disabled="sending"
-          @click="run(ability.type, ability.payload)"
-        >
-          {{ ability.label }}
-        </button>
-      </div>
-
-      <div v-if="menu.plays.length" class="group">
-        <template v-if="playing === null">
+        <div v-if="menu.abilities.length" class="group">
           <button
-            v-for="action in menu.plays"
-            :key="action.type"
+            v-for="ability in menu.abilities"
+            :key="ability.type"
             type="button"
             class="btn btn-primary"
             :disabled="sending"
-            @click="startPlay(action)"
+            @click="run(ability.type, ability.payload)"
           >
-            {{ action.label }}
+            {{ ability.label }}
           </button>
-        </template>
-        <form v-else class="form" @submit.prevent="confirmPlay">
-          <span class="label">{{ playing.label }}</span>
-          <label class="field-row">
-            <span>Cost</span>
-            <input v-model.number="play.cost" class="number" type="number" min="0" />
-          </label>
-          <label v-if="playing.kind === 'from_province' || playing.kind === 'from_hand'" class="field-row">
-            <span>Fate placed on it</span>
-            <input v-model.number="play.fate" class="number" type="number" min="0" />
-          </label>
-          <label v-if="playing.kind === 'from_hand' && viewerInConflict" class="check">
-            <input v-model="play.intoConflict" type="checkbox" /> Into the conflict
-          </label>
-          <fieldset v-if="playing.kind === 'attachment'" class="choices">
-            <legend class="label">Attach it to</legend>
-            <label v-for="target in targets" :key="target.id" class="choice">
-              <input v-model="play.target" type="radio" name="target" :value="target.id" />
-              {{ target.name }} <span class="whose">{{ target.mine ? 'yours' : "opponent's" }}</span>
-            </label>
-          </fieldset>
-          <span class="hint">You pay {{ play.cost + (playing.kind.startsWith('from') ? play.fate : 0) }} fate.</span>
-          <div class="row two">
-            <button type="button" class="btn btn-ghost" @click="playing = null">Back</button>
+        </div>
+
+        <div v-if="menu.plays.length" class="group">
+          <template v-if="playing === null">
             <button
-              type="submit"
+              v-for="action in menu.plays"
+              :key="action.type"
+              type="button"
               class="btn btn-primary"
-              :disabled="sending || (playing.kind === 'attachment' && play.target === null)"
+              :disabled="sending"
+              @click="startPlay(action)"
             >
-              Play
+              {{ action.label }}
+            </button>
+          </template>
+          <form v-else class="form" @submit.prevent="confirmPlay">
+            <span class="label">{{ playing.label }}</span>
+            <label class="field-row">
+              <span>Cost</span>
+              <input v-model.number="play.cost" class="number" type="number" min="0" />
+            </label>
+            <label v-if="playing.kind === 'from_province' || playing.kind === 'from_hand'" class="field-row">
+              <span>Fate placed on it</span>
+              <input v-model.number="play.fate" class="number" type="number" min="0" />
+            </label>
+            <label v-if="playing.kind === 'from_hand' && viewerInConflict" class="check">
+              <input v-model="play.intoConflict" type="checkbox" /> Into the conflict
+            </label>
+            <fieldset v-if="playing.kind === 'attachment'" class="choices">
+              <legend class="label">Attach it to</legend>
+              <label v-for="target in targets" :key="target.id" class="choice">
+                <input v-model="play.target" type="radio" name="target" :value="target.id" />
+                {{ target.name }} <span class="whose">{{ target.mine ? 'yours' : "opponent's" }}</span>
+              </label>
+            </fieldset>
+            <span class="hint">You pay {{ play.cost + (playing.kind.startsWith('from') ? play.fate : 0) }} fate.</span>
+            <div class="row two">
+              <button type="button" class="btn btn-ghost" @click="playing = null">Back</button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="sending || (playing.kind === 'attachment' && play.target === null)"
+              >
+                Play
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div v-if="menu.state.length" class="group">
+          <span class="label">State</span>
+          <div class="row three">
+            <button
+              v-for="action in menu.state"
+              :key="action.type"
+              type="button"
+              class="btn btn-ghost"
+              :disabled="sending"
+              @click="run(action.type, action.payload)"
+            >
+              {{ action.label }}
             </button>
           </div>
+        </div>
+
+        <form v-if="menu.skill" class="group" @submit.prevent="recordSkills">
+          <span class="label">Current skill</span>
+          <div class="skills">
+            <label class="skill">
+              <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.military }}</span>
+              <span class="visually-hidden">Military skill</span>
+              <input v-model.number="skills.military" class="number" type="number" min="0" />
+            </label>
+            <label class="skill">
+              <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.political }}</span>
+              <span class="visually-hidden">Political skill</span>
+              <input v-model.number="skills.political" class="number" type="number" min="0" />
+            </label>
+            <button type="submit" class="btn btn-ghost set" :disabled="sending">Set</button>
+          </div>
+          <span class="hint">
+            {{ recorded ? 'Recorded by a player.' : 'Computed from the cards: nobody has recorded it.' }}
+            Every modifier applied, for both players to see.
+            <button
+              v-if="recorded"
+              type="button"
+              class="btn-link"
+              :disabled="sending"
+              @click="run('reset_character_skill', { card_id: view.id })"
+            >
+              Reset
+            </button>
+          </span>
         </form>
-      </div>
 
-      <div v-if="menu.state.length" class="group">
-        <span class="label">State</span>
-        <div class="row three">
+        <p v-if="error" class="error" role="alert">{{ error }}</p>
+
+        <div v-if="iconActions.length > 0 || hasSpecial" class="removals">
           <button
-            v-for="action in menu.state"
-            :key="action.type"
+            v-for="{ action, icon, tip, start } in iconActions"
+            :key="action.label"
+            v-tip="tip"
             type="button"
-            class="btn btn-ghost"
+            class="btn"
+            :class="[icon ? 'icon-action' : 'text-action', { start, point: action.type === 'point_at_card' || start }]"
+            :aria-label="action.label"
             :disabled="sending"
-            @click="run(action.type, action.payload)"
+            @click="runAction(action)"
           >
-            {{ action.label }}
+            <ActionIcon v-if="icon" :name="icon" />
+            <template v-else>{{ action.label }}</template>
+          </button>
+          <button
+            v-if="hasSpecial"
+            v-tip="'More actions'"
+            type="button"
+            class="btn icon-action more"
+            :class="{ start: !menu.control && !menu.point }"
+            :aria-label="neededSpecial ? `More actions, ${neededSpecial} for your cards` : 'More actions'"
+            aria-controls="special-actions"
+            :aria-expanded="specialOpen"
+            @click="specialOpen = !specialOpen"
+          >
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <path d="M5 12h14" />
+              <path v-if="!specialOpen" d="M12 5v14" />
+            </svg>
+            <span v-if="neededSpecial && !specialOpen" class="badge" aria-hidden="true">{{ neededSpecial }}</span>
           </button>
         </div>
-      </div>
+      </section>
 
-      <form v-if="menu.skill" class="group" @submit.prevent="recordSkills">
-        <span class="label">Current skill</span>
-        <div class="skills">
-          <label class="skill">
-            <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.military }}</span>
-            <span class="visually-hidden">Military skill</span>
-            <input v-model.number="skills.military" class="number" type="number" min="0" />
-          </label>
-          <label class="skill">
-            <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS.political }}</span>
-            <span class="visually-hidden">Political skill</span>
-            <input v-model.number="skills.political" class="number" type="number" min="0" />
-          </label>
-          <button type="submit" class="btn btn-ghost set" :disabled="sending">Set</button>
+      <section v-if="specialOpen" id="special-actions" class="panel special-panel" aria-label="More actions">
+        <h3>More actions</h3>
+        <div v-for="section in specialSections" :key="section.key" class="group section" :class="section.key">
+          <span class="label">{{ section.label }}</span>
+          <span v-if="section.hint" class="hint">{{ section.hint }}</span>
+          <div v-for="group in section.groups" :key="group.type" class="special">
+            <button
+              v-for="action in group.items"
+              :key="action.label"
+              type="button"
+              class="btn btn-ghost"
+              :disabled="sending"
+              @click="runAction(action)"
+            >
+              {{ action.label }}
+            </button>
+            <form v-if="group.form && group.type === 'initiate_duel'" class="group" @submit.prevent="challenge">
+              <span class="label">Challenge to a duel</span>
+              <div class="row three">
+                <label v-for="type in ['military', 'political', 'glory'] as const" :key="type" class="choice">
+                  <input v-model="duel.type" type="radio" name="duel-type" :value="type" /> {{ type }}
+                </label>
+              </div>
+              <label v-for="target in challengeable" :key="target.id" class="choice">
+                <input v-model="duel.challenged" type="radio" name="challenged" :value="target.id" /> {{ target.name }}
+              </label>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || duel.challenged === null">
+                Challenge
+              </button>
+            </form>
+
+            <form
+              v-if="group.form && group.type === 'put_holding_into_province'"
+              class="group"
+              @submit.prevent="putIntoProvince"
+            >
+              <fieldset class="choices">
+                <legend class="label">Put it into a province</legend>
+                <label v-for="province in menu.intoProvince" :key="province.id" class="choice">
+                  <input v-model="provinceId" type="radio" name="province" :value="province.id" /> {{ province.name }}
+                </label>
+              </fieldset>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || provinceId === null">
+                Put it into play there
+              </button>
+            </form>
+
+            <form v-if="group.form && group.type === 'move_attachment'" class="group" @submit.prevent="moveAttachment">
+              <fieldset class="choices">
+                <legend class="label">Move it to</legend>
+                <label v-for="host in hosts" :key="host.id" class="choice">
+                  <input v-model="hostId" type="radio" name="host" :value="host.id" />
+                  {{ host.name }} <span class="whose">{{ host.mine ? 'yours' : "opponent's" }}</span>
+                </label>
+              </fieldset>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
+            </form>
+
+            <form
+              v-if="group.form && group.type === 'switch_province_cards'"
+              class="group"
+              @submit.prevent="switchCards"
+            >
+              <fieldset class="choices">
+                <legend class="label">Switch it with</legend>
+                <label v-for="other in menu.switchWith" :key="other.id" class="choice">
+                  <input v-model="switchId" type="radio" name="switch" :value="other.id" /> {{ other.name }}
+                </label>
+              </fieldset>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || switchId === null">Switch them</button>
+            </form>
+            <span v-if="HINTS[group.type]" class="hint">{{ HINTS[group.type] }}</span>
+            <span v-if="group.sources" class="source">{{ group.sources }}</span>
+          </div>
         </div>
-        <span class="hint">
-          {{ recorded ? 'Recorded by a player.' : 'Computed from the cards: nobody has recorded it.' }}
-          Every modifier applied, for both players to see.
-          <button
-            v-if="recorded"
-            type="button"
-            class="btn-link"
-            :disabled="sending"
-            @click="run('reset_character_skill', { card_id: view.id })"
-          >
-            Reset
-          </button>
-        </span>
-      </form>
-
-      <form v-if="menu.duel && challengeable.length" class="group" @submit.prevent="challenge">
-        <span class="label">Challenge to a duel</span>
-        <div class="row three">
-          <label v-for="type in ['military', 'political', 'glory'] as const" :key="type" class="choice">
-            <input v-model="duel.type" type="radio" name="duel-type" :value="type" /> {{ type }}
-          </label>
-        </div>
-        <label v-for="target in challengeable" :key="target.id" class="choice">
-          <input v-model="duel.challenged" type="radio" name="challenged" :value="target.id" /> {{ target.name }}
-        </label>
-        <button type="submit" class="btn btn-ghost" :disabled="sending || duel.challenged === null">Challenge</button>
-      </form>
-
-      <div v-if="menu.intoPlay.length" class="group">
-        <span class="label">By an effect</span>
         <button
-          v-for="action in menu.intoPlay"
-          :key="action.label"
+          v-if="specialGroups.needed.length && specialGroups.others.length"
           type="button"
-          class="btn btn-ghost"
-          :disabled="sending"
-          @click="runAction(action)"
+          class="btn-link every"
+          @click="everyAction = !everyAction"
         >
-          {{ action.label }}
+          {{ everyAction ? 'Only the actions for your cards' : 'Show every action' }}
         </button>
-        <span class="hint">Without paying its cost nor using an opportunity to act.</span>
-      </div>
-
-      <form v-if="menu.intoProvince.length" class="group" @submit.prevent="putIntoProvince">
-        <fieldset class="choices">
-          <legend class="label">Put it into a province</legend>
-          <label v-for="province in menu.intoProvince" :key="province.id" class="choice">
-            <input v-model="provinceId" type="radio" name="province" :value="province.id" /> {{ province.name }}
-          </label>
-        </fieldset>
-        <button type="submit" class="btn btn-ghost" :disabled="sending || provinceId === null">
-          Put it into play there
-        </button>
-        <span class="hint">The cards of the province stay there, and it is no longer refilled.</span>
-      </form>
-
-      <form v-if="menu.moveAttachment && hosts.length" class="group" @submit.prevent="moveAttachment">
-        <fieldset class="choices">
-          <legend class="label">Move it to</legend>
-          <label v-for="host in hosts" :key="host.id" class="choice">
-            <input v-model="hostId" type="radio" name="host" :value="host.id" />
-            {{ host.name }} <span class="whose">{{ host.mine ? 'yours' : "opponent's" }}</span>
-          </label>
-        </fieldset>
-        <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
-      </form>
-
-      <form v-if="menu.switchWith.length" class="group" @submit.prevent="switchCards">
-        <fieldset class="choices">
-          <legend class="label">Switch it with</legend>
-          <label v-for="other in menu.switchWith" :key="other.id" class="choice">
-            <input v-model="switchId" type="radio" name="switch" :value="other.id" /> {{ other.name }}
-          </label>
-        </fieldset>
-        <button type="submit" class="btn btn-ghost" :disabled="sending || switchId === null">Switch them</button>
-      </form>
-
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
-
-      <div v-if="iconActions.length > 0" class="removals">
-        <button
-          v-for="{ action, icon, tip } in iconActions"
-          :key="action.label"
-          v-tip="tip"
-          type="button"
-          class="btn"
-          :class="[icon ? 'icon-action' : 'text-action', { point: action.type === 'point_at_card' }]"
-          :aria-label="action.label"
-          :disabled="sending"
-          @click="runAction(action)"
-        >
-          <ActionIcon v-if="icon" :name="icon" />
-          <template v-else>{{ action.label }}</template>
-        </button>
-      </div>
-    </section>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -755,9 +854,83 @@ h2 {
   font-size: 15px;
 }
 
-.removals .point {
-  margin-right: auto;
+.removals .start {
+  margin-left: auto;
+}
+
+/* taking control, pointing at the card and the special actions: not the ways it leaves */
+.removals .point,
+.removals .more {
   border-color: var(--ink);
   color: var(--ink);
+}
+
+.removals .more {
+  position: relative;
+}
+
+.removals .more[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--board);
+}
+
+.badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--seal);
+  color: var(--board);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* the panel of the special actions, beside the panel of the card, their bottoms aligned: it opens by the "+" */
+.panels {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.special-panel {
+  width: 320px;
+}
+
+.special-panel h3 {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.special {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.special .btn {
+  justify-content: flex-start;
+}
+
+.section + .section {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.source {
+  font-size: 12px;
+  color: var(--ink-2);
+  padding-left: 2px;
+}
+
+.every {
+  align-self: flex-start;
+  font-size: 13px;
 }
 </style>

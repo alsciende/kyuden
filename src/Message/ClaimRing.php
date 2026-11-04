@@ -15,7 +15,7 @@ use App\Enum\Element;
  * default the type of the conflict being resolved; outside of a conflict, `conflict_type` is required. A contested ring
  * claimed this way is not claimed again by the winner of the conflict.
  */
-#[AppAction]
+#[AppAction(special: true)]
 final readonly class ClaimRing implements PlayerActionInterface
 {
     public function __construct(

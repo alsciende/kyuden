@@ -45,6 +45,18 @@ class ActionMessageRegistry
     }
 
     /**
+     * @param class-string $className
+     *
+     * @return string the type of a message: the snake case short name of its class
+     */
+    public function getMessageType(string $className): string
+    {
+        $type = array_search($className, $this->actionMessages, true);
+
+        return \is_string($type) ? $type : throw new \OutOfBoundsException("Not an action message: {$className}");
+    }
+
+    /**
      * @return class-string|null
      */
     public function findMessageClass(string $eventName): ?string
@@ -61,6 +73,14 @@ class ActionMessageRegistry
         ksort($classes);
 
         return $classes;
+    }
+
+    /**
+     * @return list<string> the types of the public messages the web client only offers when a card needs them, sorted
+     */
+    public function getSpecialMessageTypes(): array
+    {
+        return array_keys(array_filter($this->getPublicMessageClasses(), fn (string $className): bool => $this->getAttribute($className)->special));
     }
 
     /**

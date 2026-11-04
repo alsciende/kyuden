@@ -78,6 +78,7 @@ export function game(me: PlayerView, opp: PlayerView, changes: Partial<GameView>
     winner_id: null,
     victory_condition: null,
     available_actions: [],
+    special_actions: [],
     ...changes,
   }
 }
