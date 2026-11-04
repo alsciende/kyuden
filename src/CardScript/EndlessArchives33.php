@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\PlaceHonorTokens;
 use App\Message\PutCardOnDeck;
 
 /**
@@ -29,6 +30,6 @@ final readonly class EndlessArchives33 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [PutCardOnDeck::class];
+        return [PlaceHonorTokens::class, PutCardOnDeck::class];
     }
 }

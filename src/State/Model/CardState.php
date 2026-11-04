@@ -7,6 +7,7 @@ namespace App\State\Model;
 use App\Enum\ConflictType;
 use App\Enum\PersonalHonor;
 use App\Exception\Rules\NotEnoughFateException;
+use App\Exception\Rules\NotEnoughHonorTokensException;
 use App\Exception\Rules\NoStatusTokenException;
 use App\Exception\Rules\PersonalHonorException;
 
@@ -20,6 +21,11 @@ class CardState
      * Fate tokens on the card.
      */
     private int $fate = 0;
+
+    /**
+     * Honor tokens on a province or a holding (counters, not status tokens: Fortified Assembly, Endless Archives).
+     */
+    private int $honorTokens = 0;
 
     private PersonalHonor $personalHonor = PersonalHonor::Ordinary;
 
@@ -65,6 +71,35 @@ class CardState
         }
 
         return $this->setFate($this->fate - $amount);
+    }
+
+    public function getHonorTokens(): int
+    {
+        return $this->honorTokens;
+    }
+
+    public function setHonorTokens(int $honorTokens): self
+    {
+        $this->honorTokens = $honorTokens;
+
+        return $this;
+    }
+
+    public function incrementHonorTokens(int $amount): self
+    {
+        return $this->setHonorTokens($this->honorTokens + $amount);
+    }
+
+    /**
+     * @throws NotEnoughHonorTokensException if the card holds fewer honor tokens
+     */
+    public function decrementHonorTokens(int $amount): self
+    {
+        if ($amount > $this->honorTokens) {
+            throw new NotEnoughHonorTokensException($amount, $this->honorTokens);
+        }
+
+        return $this->setHonorTokens($this->honorTokens - $amount);
     }
 
     public function getPersonalHonor(): PersonalHonor

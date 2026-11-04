@@ -14,7 +14,7 @@ import { session } from '@/lib/session'
 
 /**
  * A card on the board: its face (name, type, values) when the viewer sees it, its back otherwise. A bowed card lies
- * sideways; fate and personal honor are marked on it. Hovering it shows its image beside it. A character shows its
+ * sideways; fate, honor tokens and personal honor are marked on it. Hovering it shows its image beside it. A character shows its
  * current skills: recorded by a player (solid), else computed from the cards (dotted underline, nobody recorded them).
  *
  * When the player prefers the images of the cards (their settings), the card shows its image, or the back of its side
@@ -134,6 +134,9 @@ const label = computed(() => {
   if (props.card.fate > 0) {
     parts.push(`${props.card.fate} fate`)
   }
+  if (props.card.honor_tokens > 0) {
+    parts.push(`${props.card.honor_tokens} honor ${props.card.honor_tokens === 1 ? 'token' : 'tokens'}`)
+  }
   if (props.card.personal_honor !== 'ordinary') {
     parts.push(props.card.personal_honor)
   }
@@ -207,6 +210,9 @@ function enter(): void {
       >
     </template>
     <span v-if="card.fate > 0" class="fate" aria-hidden="true">{{ card.fate }}</span>
+    <span v-if="card.honor_tokens > 0" class="honor-tokens" :class="{ stacked: card.fate > 0 }" aria-hidden="true">{{
+      card.honor_tokens
+    }}</span>
     <span v-if="card.personal_honor !== 'ordinary'" class="honor" :class="card.personal_honor" aria-hidden="true">
       {{ card.personal_honor === 'honored' ? 'Honored' : 'Dishonored' }}
     </span>
@@ -451,6 +457,29 @@ function enter(): void {
   align-items: center;
   justify-content: center;
   border: 2px solid var(--board);
+}
+
+.honor-tokens {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  min-width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  padding: 0 5px;
+  border-radius: 11px;
+  background: var(--paper);
+  color: var(--seal);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--seal);
+}
+
+.honor-tokens.stacked {
+  top: 15px;
 }
 
 .honor {

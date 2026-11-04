@@ -278,6 +278,8 @@ const HINTS: Partial<Record<string, string>> = {
   place_status_token: 'It is neither honored nor dishonored; opposed tokens are both discarded.',
   discard_status_token: 'It is neither honored nor dishonored.',
   move_status_token: 'Neither is honored nor dishonored; opposed tokens are both discarded.',
+  place_honor_tokens: 'A counter on the card, from the token pool: no player gains nor loses honor.',
+  remove_honor_tokens: 'Back to the token pool: no player gains nor loses honor.',
 }
 
 const specialGroups = computed(() =>

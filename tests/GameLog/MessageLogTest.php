@@ -21,10 +21,12 @@ use App\Message\LoseFate;
 use App\Message\MoveHome;
 use App\Message\MoveStatusToken;
 use App\Message\MoveToConflict;
+use App\Message\PlaceHonorTokens;
 use App\Message\PlaceStatusToken;
 use App\Message\PlayActionEvent;
 use App\Message\PlayCharacterFromHand;
 use App\Message\RemoveFate;
+use App\Message\RemoveHonorTokens;
 use App\Message\ResetCharacterSkill;
 use App\Message\RevealProvince;
 use App\Message\SetCharacterSkill;
@@ -54,6 +56,7 @@ class MessageLogTest extends AbstractKernelTestCase
                 ->inPlay(['toturi' => '01-akodo-toturi'], fate: 1))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->honor(10)
+                ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceUp)
                 ->inPlay(['spear' => '01-master-of-the-spear'], personalHonor: PersonalHonor::Dishonored)
                 ->conflictDeck(['01-banzai', '01-banzai']))
             ->activePlayer('john')
@@ -120,6 +123,17 @@ class MessageLogTest extends AbstractKernelTestCase
             'The honored status token of Akodo Toturi is discarded',
             'A dishonored status token is placed on Master of the Spear, now dishonored',
         ], $this->janesLog($scenario));
+    }
+
+    public function testTheHonorTokensOfAProvince(): void
+    {
+        $scenario = $this->scenarioInActionWindow();
+        [$gameId, $john, $province] = [$scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('province')->getId()];
+
+        $this->messageBus->dispatch(new PlaceHonorTokens($gameId, $john, $province, 2));
+        $this->messageBus->dispatch(new RemoveHonorTokens($gameId, $john, $province, 1));
+
+        self::assertSame(['Honor tokens are placed on Entrenched Position: 2', 'Honor tokens are removed from Entrenched Position: 1'], $this->janesLog($scenario));
     }
 
     public function testTheSkillsOfACharacter(): void

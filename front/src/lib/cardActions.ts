@@ -273,6 +273,14 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       add(menu.state, 'discard_status_token', `Discard its ${view.personal_honor} status token`)
     }
   }
+  // honor tokens on a province or a holding: counters, not status tokens, placed and removed by an effect (Fortified
+  // Assembly, Endless Archives); special actions, offered apart
+  const honorTokens = () => {
+    add(menu.state, 'place_honor_tokens', 'Place 1 honor token', { card_id: id, amount: 1 })
+    if (view.honor_tokens > 0) {
+      add(menu.state, 'remove_honor_tokens', 'Remove 1 honor token', { card_id: id, amount: 1 })
+    }
+  }
   const bowOrReady = () =>
     view.orientation === 'sideways' ? add(menu.state, 'ready_card', 'Ready') : add(menu.state, 'bow_card', 'Bow')
   const abilities = () => {
@@ -317,6 +325,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           lookAt()
         }
         statusTokens()
+        honorTokens()
         if ((stack.cards?.length ?? 0) <= 1) {
           add(menu.state, 'fill_province', 'Fill this province', { province_id: id })
         }
@@ -347,6 +356,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           moveAttachment()
         }
         if (card?.type === 'holding') {
+          honorTokens()
           sacrifice()
         }
         discardDuplicate()
@@ -366,10 +376,12 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         abilities()
         breakProvince()
         statusTokens()
+        honorTokens()
       } else {
         add(menu.state, 'reveal_province', 'Reveal it')
         lookAt()
         statusTokens()
+        honorTokens()
       }
       break
 

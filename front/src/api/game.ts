@@ -32,6 +32,8 @@ export interface CardView {
   side: Side
   orientation: Orientation
   fate: number
+  /** honor tokens on a province or a holding: counters, not status tokens */
+  honor_tokens: number
   personal_honor: PersonalHonor
   /** the current skill recorded by the players (every modifier applied), null when none */
   military_skill: number | null

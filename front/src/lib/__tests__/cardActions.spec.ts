@@ -35,6 +35,7 @@ const cards = {
   toturi: printed('toturi', { name: 'Akodo Toturi', uniqueness: true }),
   'toturi-2': printed('toturi-2', { name: 'Akodo Toturi', uniqueness: true }),
   raid: printed('raid', { type: 'province', strength: 3 }),
+  academy: printed('academy', { type: 'holding' }),
 }
 
 describe('cardMenu', () => {
@@ -498,6 +499,32 @@ describe('cardMenu', () => {
       'Place a dishonored status token',
       'Discard its honored status token',
     ])
+  })
+
+  it('places and removes the honor tokens of a province or a holding, apart with the special actions', () => {
+    const forum = card('raid', { side: 'province', honor_tokens: 1 })
+    const academy = card('academy', { side: 'dynasty' })
+    const hidden = card(null, { side: 'province', orientation: 'face_down' })
+    const kaezin = card('kaezin')
+    const view = game(
+      player('me', [stack('regular_province', [forum, academy]), stack('in_play', [kaezin])]),
+      player('opp', [stack('stronghold_province', [card('stronghold', { side: 'stronghold' }), hidden])]),
+      {
+        available_actions: ['place_honor_tokens', 'remove_honor_tokens'],
+        special_actions: [
+          { type: 'place_honor_tokens', card_ids: [] },
+          { type: 'remove_honor_tokens', card_ids: [] },
+        ],
+      },
+    )
+
+    expect(cardMenu(view, cards, forum.id)!.more).toEqual([
+      { type: 'place_honor_tokens', label: 'Place 1 honor token', payload: { card_id: forum.id, amount: 1 } },
+      { type: 'remove_honor_tokens', label: 'Remove 1 honor token', payload: { card_id: forum.id, amount: 1 } },
+    ])
+    expect(cardMenu(view, cards, academy.id)!.more.map((action) => action.type)).toEqual(['place_honor_tokens'])
+    expect(cardMenu(view, cards, hidden.id)!.more.map((action) => action.type)).toEqual(['place_honor_tokens'])
+    expect(cardMenu(view, cards, kaezin.id)!.more).toEqual([])
   })
 
   it('switches a dynasty card with the dynasty cards of the other provinces of its owner', () => {

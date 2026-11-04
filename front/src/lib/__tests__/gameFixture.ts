@@ -16,6 +16,7 @@ export function card(code: string | null, changes: Partial<CardView> = {}): Card
     side: 'conflict',
     orientation: 'face_up',
     fate: 0,
+    honor_tokens: 0,
     personal_honor: 'ordinary',
     military_skill: null,
     political_skill: null,

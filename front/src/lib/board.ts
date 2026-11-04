@@ -58,6 +58,7 @@ export function hiddenCards(count: number, side: CardView['side']): CardView[] {
     side,
     orientation: 'face_down' as const,
     fate: 0,
+    honor_tokens: 0,
     personal_honor: 'ordinary' as const,
     military_skill: null,
     political_skill: null,

@@ -145,6 +145,7 @@ final readonly class GameViewFactory
             side: $card->getLogicalCard()->getSide(),
             orientation: $card->getOrientation(),
             fate: $state->getFate(),
+            honorTokens: $state->getHonorTokens(),
             personalHonor: $state->getPersonalHonor(),
             militarySkill: $state->getMilitarySkill(),
             politicalSkill: $state->getPoliticalSkill(),

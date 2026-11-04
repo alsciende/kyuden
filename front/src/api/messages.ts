@@ -521,6 +521,22 @@ export interface PlaceFate {
 }
 
 /**
+ * Places honor tokens from the general token pool on a province or a holding face up in a province (Fortified Assembly, Public Forum, Distinguished Dojo, Endless Archives). These are counters, not status tokens: the honor of the players does not change. The tokens of a holding return to the general token pool when it leaves play.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PlaceHonorTokens {
+  /**
+   * Province, or holding face up in a province, the honor tokens are placed on.
+   */
+  card_id: string
+  /**
+   * Honor tokens placed.
+   */
+  amount: number
+}
+
+/**
  * Places a status token on a character in play or a province, by an effect, without honoring nor dishonoring it, so that nothing reacting to that is triggered (Final Whisper; a dishonored status token on a province, whose printed text is then treated as blank: Overrun). A card with the other token discards both and returns to ordinary status; a card cannot receive a second token of a kind.
  *
  * The card can belong to any player: the engine does not apply card effects.
@@ -736,6 +752,22 @@ export interface RemoveFate {
   card_id: string
   /**
    * Fate removed.
+   */
+  amount: number
+}
+
+/**
+ * Removes honor tokens from a province or a holding face up in a province, to the general token pool (spent by an ability, or placed by mistake). The honor of the players does not change.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface RemoveHonorTokens {
+  /**
+   * Province, or holding face up in a province, holding the honor tokens.
+   */
+  card_id: string
+  /**
+   * Honor tokens removed, at most those on the card.
    */
   amount: number
 }
@@ -1059,6 +1091,7 @@ export interface MessagePayloads {
   pass_conflict: PassConflict
   pass_opportunity: PassOpportunity
   place_fate: PlaceFate
+  place_honor_tokens: PlaceHonorTokens
   place_status_token: PlaceStatusToken
   play_action_event: PlayActionEvent
   play_attachment: PlayAttachment
@@ -1072,6 +1105,7 @@ export interface MessagePayloads {
   put_holding_into_province: PutHoldingIntoProvince
   ready_card: ReadyCard
   remove_fate: RemoveFate
+  remove_honor_tokens: RemoveHonorTokens
   reset_character_skill: ResetCharacterSkill
   return_card_to_hand: ReturnCardToHand
   reveal_card: RevealCard

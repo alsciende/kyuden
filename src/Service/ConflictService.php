@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
@@ -13,6 +14,7 @@ use App\Enum\Type;
 use App\Exception\Rules\CannotParticipateException;
 use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\NotInPlayException;
+use App\Exception\Rules\NotInProvinceException;
 use App\Exception\Rules\ProvinceNotAttackableException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\State\Manager\PlayerStateManager;
@@ -78,6 +80,24 @@ readonly class ConflictService
     {
         if (! $card instanceof ProvinceCard) {
             $this->assertCharacterInPlay($card);
+        }
+    }
+
+    /**
+     * A card that can hold honor tokens (counters): a province, or a holding face up in a province, in play there.
+     */
+    public function assertCanHoldHonorTokens(PhysicalCard $card): void
+    {
+        if ($card instanceof ProvinceCard) {
+            return;
+        }
+
+        if ($card->getLogicalCard()->getType() !== Type::Holding) {
+            throw new WrongCardTypeException($card, Type::Holding);
+        }
+
+        if ($card->getCurrentPlace() !== DynastyCard::STATE_PROVINCE_FACEUP) {
+            throw new NotInProvinceException($card);
         }
     }
 

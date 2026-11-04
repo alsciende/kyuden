@@ -69,6 +69,7 @@ function viewOf(card: InspectedCard): CardView {
     side: (props.cards[card.code]?.side ?? 'conflict') as Side,
     orientation: 'face_up',
     fate: 0,
+    honor_tokens: 0,
     personal_honor: 'ordinary',
     military_skill: null,
     political_skill: null,
