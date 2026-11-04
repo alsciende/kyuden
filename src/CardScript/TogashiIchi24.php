@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\BreakProvince;
+use App\Message\MoveStatusToken;
 
 /**
  * Togashi Ichi.
@@ -29,6 +30,6 @@ final readonly class TogashiIchi24 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [BreakProvince::class];
+        return [BreakProvince::class, MoveStatusToken::class];
     }
 }

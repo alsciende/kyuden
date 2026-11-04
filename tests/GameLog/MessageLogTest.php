@@ -7,15 +7,18 @@ namespace App\Tests\GameLog;
 use App\Enum\ConflictType;
 use App\Enum\Element;
 use App\Enum\Orientation;
+use App\Enum\PersonalHonor;
 use App\Message\ChooseStrongholdProvince;
 use App\Message\DeclareConflict;
 use App\Message\DeclareProvinceStrength;
+use App\Message\DiscardStatusToken;
 use App\Message\DrawConflictCards;
 use App\Message\GainFate;
 use App\Message\GainHonor;
 use App\Message\HonorCharacter;
 use App\Message\LoseFate;
 use App\Message\MoveHome;
+use App\Message\MoveStatusToken;
 use App\Message\MoveToConflict;
 use App\Message\PlayActionEvent;
 use App\Message\PlayCharacterFromHand;
@@ -49,6 +52,7 @@ class MessageLogTest extends AbstractKernelTestCase
                 ->inPlay(['toturi' => '01-akodo-toturi'], fate: 1))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->honor(10)
+                ->inPlay(['spear' => '01-master-of-the-spear'], personalHonor: PersonalHonor::Dishonored)
                 ->conflictDeck(['01-banzai', '01-banzai']))
             ->activePlayer('john')
             ->persist();
@@ -94,6 +98,24 @@ class MessageLogTest extends AbstractKernelTestCase
         $this->messageBus->dispatch(new RemoveFate($gameId, $john, $toturi, 1));
 
         self::assertSame(['Akodo Toturi is now honored', '1 fate is removed from Akodo Toturi'], $this->janesLog($scenario));
+    }
+
+    public function testTheStatusTokensOfCharacters(): void
+    {
+        $scenario = $this->scenarioInActionWindow();
+        [$gameId, $john, $toturi, $spear] = [$scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('toturi')->getId(), $scenario->card('spear')->getId()];
+
+        $this->messageBus->dispatch(new HonorCharacter($gameId, $john, $toturi));
+        $this->messageBus->dispatch(new MoveStatusToken($gameId, $john, $toturi, $spear));
+        $this->messageBus->dispatch(new HonorCharacter($gameId, $john, $toturi));
+        $this->messageBus->dispatch(new DiscardStatusToken($gameId, $john, $toturi));
+
+        self::assertSame([
+            'Akodo Toturi is now honored',
+            'The honored status token of Akodo Toturi is moved to Master of the Spear, now ordinary',
+            'Akodo Toturi is now honored',
+            'The honored status token of Akodo Toturi is discarded',
+        ], $this->janesLog($scenario));
     }
 
     public function testTheSkillsOfACharacter(): void

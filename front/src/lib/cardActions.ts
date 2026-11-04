@@ -55,6 +55,8 @@ export interface CardMenu {
   intoProvince: ProvinceChoice[]
   /** an attachment in play can be moved to another character, by an effect */
   moveAttachment: boolean
+  /** the status token of a character in play can be moved to another character, by an effect */
+  moveStatusToken: boolean
   /** the dynasty cards of the other provinces of its owner a dynasty card can be switched with, by an effect */
   switchWith: ProvinceChoice[]
 }
@@ -161,6 +163,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     more: [],
     intoProvince: [],
     moveAttachment: false,
+    moveStatusToken: false,
     switchWith: [],
   }
   const special = new Set(game.special_actions.map((action) => action.type))
@@ -368,6 +371,11 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         }
         if (view.personal_honor !== 'dishonored') {
           add(menu.state, 'dishonor_character', 'Dishonor')
+        }
+        if (view.personal_honor !== 'ordinary') {
+          // without honoring nor dishonoring it: special actions, offered apart
+          add(menu.state, 'discard_status_token', `Discard its ${view.personal_honor} status token`)
+          menu.moveStatusToken = available.has('move_status_token')
         }
         add(menu.state, 'place_fate', 'Place 1 fate', { card_id: id, amount: 1 })
         if (view.fate > 0) {

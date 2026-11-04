@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\MoveStatusToken;
 use App\Message\SwitchRing;
 
 /**
@@ -29,6 +30,6 @@ final readonly class ShinjoKyora19 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [SwitchRing::class];
+        return [MoveStatusToken::class, SwitchRing::class];
     }
 }

@@ -7,6 +7,7 @@ namespace App\State\Model;
 use App\Enum\ConflictType;
 use App\Enum\PersonalHonor;
 use App\Exception\Rules\NotEnoughFateException;
+use App\Exception\Rules\NoStatusTokenException;
 use App\Exception\Rules\PersonalHonorException;
 
 /**
@@ -103,6 +104,40 @@ class CardState
             PersonalHonor::Honored => PersonalHonor::Ordinary,
             PersonalHonor::Ordinary => PersonalHonor::Dishonored,
             PersonalHonor::Dishonored => throw new PersonalHonorException(PersonalHonor::Dishonored),
+        });
+    }
+
+    /**
+     * Its status token is discarded by an effect: the character returns to ordinary status without being honored nor
+     * dishonored (glossary, "Personal Honor, Personal Dishonor").
+     *
+     * @throws NoStatusTokenException if the character has no status token
+     */
+    public function discardStatusToken(): self
+    {
+        if ($this->personalHonor === PersonalHonor::Ordinary) {
+            throw new NoStatusTokenException();
+        }
+
+        return $this->setPersonalHonor(PersonalHonor::Ordinary);
+    }
+
+    /**
+     * A status token is moved onto the character: an ordinary character takes its status, a character with the other
+     * token discards both and returns to ordinary status (glossary, "Status Token").
+     *
+     * @throws PersonalHonorException if the character already has a token of this kind
+     */
+    public function receiveStatusToken(PersonalHonor $token): self
+    {
+        if ($token === PersonalHonor::Ordinary) {
+            throw new \InvalidArgumentException('An ordinary status is not a token.');
+        }
+
+        return $this->setPersonalHonor(match ($this->personalHonor) {
+            PersonalHonor::Ordinary => $token,
+            $token => throw new PersonalHonorException($token),
+            default => PersonalHonor::Ordinary,
         });
     }
 

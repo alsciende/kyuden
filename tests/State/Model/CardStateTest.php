@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\State\Model;
 
 use App\Enum\PersonalHonor;
+use App\Exception\Rules\NoStatusTokenException;
 use App\Exception\Rules\NotEnoughFateException;
 use App\Exception\Rules\PersonalHonorException;
 use App\State\Model\CardState;
@@ -51,5 +52,37 @@ class CardStateTest extends TestCase
         $this->expectException(NotEnoughFateException::class);
 
         $state->removeFate(2);
+    }
+
+    public function testDiscardingTheStatusTokenMakesTheCharacterOrdinary(): void
+    {
+        self::assertSame(PersonalHonor::Ordinary, new CardState()->setPersonalHonor(PersonalHonor::Honored)->discardStatusToken()->getPersonalHonor());
+        self::assertSame(PersonalHonor::Ordinary, new CardState()->setPersonalHonor(PersonalHonor::Dishonored)->discardStatusToken()->getPersonalHonor());
+    }
+
+    public function testAnOrdinaryCharacterHasNoStatusTokenToDiscard(): void
+    {
+        $this->expectException(NoStatusTokenException::class);
+
+        new CardState()->discardStatusToken();
+    }
+
+    public function testAnOrdinaryCharacterTakesTheStatusOfTheTokenItReceives(): void
+    {
+        self::assertSame(PersonalHonor::Honored, new CardState()->receiveStatusToken(PersonalHonor::Honored)->getPersonalHonor());
+        self::assertSame(PersonalHonor::Dishonored, new CardState()->receiveStatusToken(PersonalHonor::Dishonored)->getPersonalHonor());
+    }
+
+    public function testOpposedStatusTokensAreBothDiscarded(): void
+    {
+        self::assertSame(PersonalHonor::Ordinary, new CardState()->setPersonalHonor(PersonalHonor::Dishonored)->receiveStatusToken(PersonalHonor::Honored)->getPersonalHonor());
+        self::assertSame(PersonalHonor::Ordinary, new CardState()->setPersonalHonor(PersonalHonor::Honored)->receiveStatusToken(PersonalHonor::Dishonored)->getPersonalHonor());
+    }
+
+    public function testACharacterCannotReceiveASecondTokenOfTheSameKind(): void
+    {
+        $this->expectException(PersonalHonorException::class);
+
+        new CardState()->setPersonalHonor(PersonalHonor::Honored)->receiveStatusToken(PersonalHonor::Honored);
     }
 }

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "discard_status_token",
+    "description": "Discards the status token of a character in play, by an effect: an honored or dishonored character returns to ordinary status without being dishonored nor honored, so that nothing reacting to that is triggered.\n\nThe character can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Honored or dishonored character in play.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

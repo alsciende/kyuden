@@ -437,6 +437,31 @@ describe('cardMenu', () => {
     expect(cardMenu(view, withKatana, kaezin.id)!.moveAttachment).toBe(false)
   })
 
+  it('discards or moves the status token of a character, apart with the special actions', () => {
+    const honored = card('kaezin', { personal_honor: 'honored' })
+    const ordinary = card('scout')
+    const view = game(player('me', [stack('in_play', [honored]), stack('in_play', [ordinary])]), player('opp'), {
+      available_actions: ['discard_status_token', 'move_status_token'],
+      special_actions: [
+        { type: 'discard_status_token', card_ids: [] },
+        { type: 'move_status_token', card_ids: [] },
+      ],
+    })
+
+    const menu = cardMenu(view, cards, honored.id)!
+    expect(menu.state).toEqual([])
+    expect(menu.more).toEqual([
+      {
+        type: 'discard_status_token',
+        label: 'Discard its honored status token',
+        payload: { card_id: honored.id },
+      },
+    ])
+    expect(menu.moveStatusToken).toBe(true)
+    expect(cardMenu(view, cards, ordinary.id)!.more).toEqual([])
+    expect(cardMenu(view, cards, ordinary.id)!.moveStatusToken).toBe(false)
+  })
+
   it('switches a dynasty card with the dynasty cards of the other provinces of its owner', () => {
     const scout = card('scout', { side: 'dynasty' })
     const hidden = card(null, { side: 'dynasty', orientation: 'face_down' })

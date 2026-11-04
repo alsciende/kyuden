@@ -107,6 +107,30 @@ function moveAttachment(): void {
   }
 }
 
+// the status token of a character moved to another character: not to one with a token of the same kind
+const tokenTargetId = ref<string | null>(null)
+const tokenTargets = computed(() =>
+  props.game.players.flatMap((player) =>
+    charactersInPlay(player)
+      .filter(
+        (character) =>
+          character.card.id !== view.value.id && character.card.personal_honor !== view.value.personal_honor,
+      )
+      .map((character) => ({
+        id: character.card.id,
+        name: character.card.code ? (props.cards[character.card.code]?.name ?? 'Character') : 'Character',
+        mine: player.id === props.game.viewer_id,
+        status: character.card.personal_honor,
+      })),
+  ),
+)
+
+function moveStatusToken(): void {
+  if (tokenTargetId.value !== null) {
+    void run('move_status_token', { from_card_id: view.value.id, to_card_id: tokenTargetId.value })
+  }
+}
+
 // a dynasty card switched with a card of another province
 const switchId = ref<string | null>(null)
 
@@ -251,6 +275,8 @@ const specials = computed(() => specialActions(props.game, props.cards))
 const HINTS: Partial<Record<string, string>> = {
   put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
   put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
+  discard_status_token: 'It is neither honored nor dishonored.',
+  move_status_token: 'Neither is honored nor dishonored; opposed tokens are both discarded.',
 }
 
 const specialGroups = computed(() =>
@@ -259,6 +285,7 @@ const specialGroups = computed(() =>
     ...(props.menu.intoProvince.length ? ['put_holding_into_province'] : []),
     ...(props.menu.moveAttachment && hosts.value.length ? ['move_attachment'] : []),
     ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
+    ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
   ]),
 )
 
@@ -552,6 +579,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 </label>
               </fieldset>
               <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
+            </form>
+
+            <form
+              v-if="group.form && group.type === 'move_status_token'"
+              class="group"
+              @submit.prevent="moveStatusToken"
+            >
+              <fieldset class="choices">
+                <legend class="label">Move its {{ view.personal_honor }} status token to</legend>
+                <label v-for="target in tokenTargets" :key="target.id" class="choice">
+                  <input v-model="tokenTargetId" type="radio" name="token-target" :value="target.id" />
+                  {{ target.name }} <span class="whose">{{ target.mine ? 'yours' : "opponent's" }}</span>
+                  <span v-if="target.status !== 'ordinary'" class="whose">{{ target.status }}</span>
+                </label>
+              </fieldset>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || tokenTargetId === null">Move it</button>
             </form>
 
             <form

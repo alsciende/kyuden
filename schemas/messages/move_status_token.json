@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_status_token",
+    "description": "Moves the status token of a character in play to another character in play, by an effect: neither is honored nor dishonored. The source returns to ordinary status; the target takes the status of the token, or returns to ordinary status when it had the other token (both are discarded).\n\nThe characters can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "from_card_id": {
+            "description": "Honored or dishonored character in play whose status token is moved.",
+            "type": "string"
+        },
+        "to_card_id": {
+            "description": "Another character in play, without a status token of the same kind.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "from_card_id",
+        "to_card_id"
+    ],
+    "additionalProperties": false
+}

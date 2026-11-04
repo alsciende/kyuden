@@ -234,6 +234,18 @@ export interface DiscardRandomCardFromHand {
 }
 
 /**
+ * Discards the status token of a character in play, by an effect: an honored or dishonored character returns to ordinary status without being dishonored nor honored, so that nothing reacting to that is triggered.
+ *
+ * The character can belong to any player: the engine does not apply card effects.
+ */
+export interface DiscardStatusToken {
+  /**
+   * Honored or dishonored character in play.
+   */
+  card_id: string
+}
+
+/**
  * Dishonors a character in play (e.g. the fire ring effect): an honored character becomes ordinary, an ordinary one dishonored.
  *
  * The character can belong to any player: effects often target an opponent's character.
@@ -449,6 +461,22 @@ export interface MoveHome {
    * Participating character to move home.
    */
   card_id: string
+}
+
+/**
+ * Moves the status token of a character in play to another character in play, by an effect: neither is honored nor dishonored. The source returns to ordinary status; the target takes the status of the token, or returns to ordinary status when it had the other token (both are discarded).
+ *
+ * The characters can belong to any player: the engine does not apply card effects.
+ */
+export interface MoveStatusToken {
+  /**
+   * Honored or dishonored character in play whose status token is moved.
+   */
+  from_card_id: string
+  /**
+   * Another character in play, without a status token of the same kind.
+   */
+  to_card_id: string
 }
 
 /**
@@ -973,6 +1001,7 @@ export interface MessagePayloads {
   discard_card: DiscardCard
   discard_duplicate: DiscardDuplicate
   discard_random_card_from_hand: DiscardRandomCardFromHand
+  discard_status_token: DiscardStatusToken
   dishonor_character: DishonorCharacter
   draw_conflict_cards: DrawConflictCards
   end_duel: EndDuel
@@ -989,6 +1018,7 @@ export interface MessagePayloads {
   move_attachment: MoveAttachment
   move_fate: MoveFate
   move_home: MoveHome
+  move_status_token: MoveStatusToken
   move_to_conflict: MoveToConflict
   pass_conflict: PassConflict
   pass_opportunity: PassOpportunity
