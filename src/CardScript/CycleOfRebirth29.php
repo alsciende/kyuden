@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\FillProvince;
 use App\Message\ShuffleIntoDeck;
 
@@ -18,6 +19,12 @@ final readonly class CycleOfRebirth29 extends AbstractCardScript
     public static function getCode(): string
     {
         return '29-cycle-of-rebirth';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

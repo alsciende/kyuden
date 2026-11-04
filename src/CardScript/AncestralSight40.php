@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
 use App\Message\PutCardOnDeck;
 
@@ -18,6 +19,18 @@ final readonly class AncestralSight40 extends AbstractCardScript
     public static function getCode(): string
     {
         return '40-ancestral-sight';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
+    }
+
+    #[\Override]
+    public function isAbilityGrantedToAttached(): bool
+    {
+        return true;
     }
 
     #[\Override]

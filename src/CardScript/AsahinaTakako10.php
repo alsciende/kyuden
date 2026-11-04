@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCard;
 use App\Message\SwitchProvinceCards;
 
@@ -18,6 +19,12 @@ final readonly class AsahinaTakako10 extends AbstractCardScript
     public static function getCode(): string
     {
         return '10-asahina-takako';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

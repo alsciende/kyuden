@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 use App\Message\MoveFate;
 
@@ -18,6 +19,12 @@ final readonly class TaoistAdept25 extends AbstractCardScript
     public static function getCode(): string
     {
         return '25-taoist-adept';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

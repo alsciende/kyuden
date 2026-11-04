@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Maker;
 
+use App\Enum\AbilityTiming;
 use App\Repository\LogicalCardRepository;
 use App\Service\ActionMessageRegistry;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
@@ -21,7 +22,8 @@ use Symfony\Component\Console\Input\InputOption;
 use function Symfony\Component\String\u;
 
 /**
- * The script of a card (AbstractCardScript), from its code, with the special actions its text needs, if any.
+ * The script of a card (AbstractCardScript), from its code, with the timings of its triggered abilities, whether they are
+ * granted to the card it is attached to, and the special actions its text needs, if any.
  */
 final class MakeCardScript extends AbstractMaker
 {
@@ -55,6 +57,8 @@ final class MakeCardScript extends AbstractMaker
     {
         $command
             ->addArgument('code', InputArgument::REQUIRED, 'The code of the card (e.g. <fg=yellow>01-kakita-kaezin</>)')
+            ->addOption('timing', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'The timing of a triggered ability printed on it (<fg=yellow>action</>, <fg=yellow>interrupt</> or <fg=yellow>reaction</>)', [])
+            ->addOption('granted-to-attached', null, InputOption::VALUE_NONE, 'Its triggered abilities are granted to the card it is attached to')
             ->addOption('special-action', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'A special action its text needs (e.g. <fg=yellow>initiate_duel</>)', [])
         ;
     }
@@ -68,6 +72,17 @@ final class MakeCardScript extends AbstractMaker
         /** @var string $code */
         $code = $input->getArgument('code');
         $card = $this->logicalCardRepository->find($code) ?? throw new RuntimeCommandException("Unknown card: {$code}");
+
+        /** @var list<string> $timingValues */
+        $timingValues = $input->getOption('timing');
+        $timings = [];
+        foreach ($timingValues as $value) {
+            $timing = AbilityTiming::tryFrom($value) ?? throw new RuntimeCommandException("Not a timing: {$value}");
+            $timings[$timing->value] = $timing;
+        }
+
+        // in the order of the enum
+        $timings = array_values(array_filter(AbilityTiming::cases(), static fn (AbilityTiming $timing): bool => isset($timings[$timing->value])));
 
         /** @var list<string> $types */
         $types = $input->getOption('special-action');
@@ -89,6 +104,8 @@ final class MakeCardScript extends AbstractMaker
             [
                 'code' => $code,
                 'card_name' => $card->getName(),
+                'timings' => array_map(static fn (AbilityTiming $timing): string => $timing->name, $timings),
+                'granted_to_attached' => (bool) $input->getOption('granted-to-attached'),
                 'message_classes' => $messageClasses,
                 'message_names' => array_map(Str::getShortClassName(...), $messageClasses),
             ]

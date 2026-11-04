@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
 
 /**
@@ -17,6 +18,12 @@ final readonly class AncestralArmory11 extends AbstractCardScript
     public static function getCode(): string
     {
         return '11-ancestral-armory';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

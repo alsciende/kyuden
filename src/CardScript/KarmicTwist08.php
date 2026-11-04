@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
 
 /**
@@ -17,6 +18,12 @@ final readonly class KarmicTwist08 extends AbstractCardScript
     public static function getCode(): string
     {
         return '08-karmic-twist';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

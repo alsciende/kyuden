@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\ClaimRing;
 
 /**
@@ -17,6 +18,12 @@ final readonly class RovingMichibiku14 extends AbstractCardScript
     public static function getCode(): string
     {
         return '14-roving-michibiku';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

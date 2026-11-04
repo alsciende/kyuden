@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\RevealCards;
 
 /**
@@ -17,6 +18,12 @@ final readonly class PillowBook07 extends AbstractCardScript
     public static function getCode(): string
     {
         return '07-pillow-book';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

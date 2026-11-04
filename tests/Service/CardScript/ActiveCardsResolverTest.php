@@ -34,7 +34,7 @@ class ActiveCardsResolverTest extends AbstractKernelTestCase
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
-                ->hand(['levy' => '01-levy', 'banzai' => '01-banzai'])
+                ->hand(['levy' => '01-levy', 'katana' => '01-fine-katana'])
                 ->conflictDiscardPile(['tetsubo' => '01-jade-tetsubo'])
                 ->conflictDeck(['kazue' => '01-togashi-kazue'])
                 ->province('01-the-art-of-peace', dynasty: '01-doji-gift-giver', dynastyAs: 'gift_giver', dynastyFaceup: true)
@@ -42,7 +42,7 @@ class ActiveCardsResolverTest extends AbstractKernelTestCase
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->hand(['know_the_world' => '01-know-the-world']))
             ->build();
-        $aliases = ['levy', 'banzai', 'tetsubo', 'kazue', 'gift_giver', 'mediator', 'know_the_world'];
+        $aliases = ['levy', 'katana', 'tetsubo', 'kazue', 'gift_giver', 'mediator', 'know_the_world'];
 
         // not a card without a script, nor the cards of their deck, nor their facedown dynasty cards, nor the cards of
         // the opponent

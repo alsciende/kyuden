@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\ShuffleDynastyDeck;
 
@@ -18,6 +19,12 @@ final readonly class BreakingIn32 extends AbstractCardScript
     public static function getCode(): string
     {
         return '32-breaking-in';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

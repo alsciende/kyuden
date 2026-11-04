@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutCardOnDeck;
 
 /**
@@ -17,6 +18,12 @@ final readonly class ChrysanthemumSteward24 extends AbstractCardScript
     public static function getCode(): string
     {
         return '24-chrysanthemum-steward';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

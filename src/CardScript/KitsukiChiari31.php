@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\RevealCards;
 
 /**
@@ -17,6 +18,12 @@ final readonly class KitsukiChiari31 extends AbstractCardScript
     public static function getCode(): string
     {
         return '31-kitsuki-chiari';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

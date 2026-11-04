@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 
 /**
@@ -17,6 +18,12 @@ final readonly class GameOfSadane13 extends AbstractCardScript
     public static function getCode(): string
     {
         return '13-game-of-sadane';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

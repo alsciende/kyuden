@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\ShuffleDynastyDeck;
@@ -19,6 +20,12 @@ final readonly class ShinjoAltansarnai33 extends AbstractCardScript
     public static function getCode(): string
     {
         return '33-shinjo-altansarnai';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

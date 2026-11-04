@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
 
 /**
@@ -17,6 +18,12 @@ final readonly class EmbraceTheVoid02 extends AbstractCardScript
     public static function getCode(): string
     {
         return '02-embrace-the-void';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Interrupt];
     }
 
     #[\Override]

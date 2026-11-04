@@ -6,6 +6,7 @@ namespace App\View;
 
 use App\Entity\LogicalCard;
 use App\Entity\Printing;
+use App\Service\CardScript\CardScriptRegistry;
 use App\View\Model\LogicalCardView;
 
 /**
@@ -13,6 +14,11 @@ use App\View\Model\LogicalCardView;
  */
 final readonly class LogicalCardViewFactory
 {
+    public function __construct(
+        private CardScriptRegistry $cardScriptRegistry,
+    ) {
+    }
+
     public function create(LogicalCard $card): LogicalCardView
     {
         return new LogicalCardView(
@@ -40,8 +46,8 @@ final readonly class LogicalCardViewFactory
             politicalBonus: $card->getPoliticalBonus(),
             strength: $card->getStrength(),
             strengthBonus: $card->getStrengthBonus(),
-            abilityTimings: $card->getAbilityTimings(),
-            abilityGrantedToAttached: $card->isAbilityGrantedToAttached(),
+            abilityTimings: $this->cardScriptRegistry->getAbilityTimings($card->getId()),
+            abilityGrantedToAttached: $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getId()),
             imageUrl: $this->getImageUrl($card),
         );
     }

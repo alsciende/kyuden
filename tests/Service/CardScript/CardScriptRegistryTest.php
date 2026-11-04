@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service\CardScript;
 
 use App\CardScript\AbstractCardScript;
+use App\Enum\AbilityTiming;
 use App\Maker\MakeCardScript;
 use App\Repository\LogicalCardRepository;
 use App\Service\ActionMessageRegistry;
@@ -56,5 +57,26 @@ class CardScriptRegistryTest extends AbstractKernelTestCase
                 self::assertContains($registry->getMessageType($className), $specialTypes, "{$code} needs {$className}, which is not a special action.");
             }
         }
+    }
+
+    public function testTheAbilitiesOfACardComeFromItsScript(): void
+    {
+        $registry = self::service(CardScriptRegistry::class);
+
+        self::assertSame([AbilityTiming::Action], $registry->getAbilityTimings('01-kakita-kaezin'));
+        self::assertTrue($registry->hasAbilityTiming('01-kakita-kaezin', AbilityTiming::Action));
+        self::assertFalse($registry->hasAbilityTiming('01-kakita-kaezin', AbilityTiming::Reaction));
+        self::assertFalse($registry->isAbilityGrantedToAttached('01-kakita-kaezin'));
+        self::assertSame([AbilityTiming::Action], $registry->getAbilityTimings('40-ancestral-sight'));
+        self::assertTrue($registry->isAbilityGrantedToAttached('40-ancestral-sight'));
+    }
+
+    public function testACardWithoutScriptHasNoAbility(): void
+    {
+        $registry = self::service(CardScriptRegistry::class);
+
+        self::assertNull($registry->find('01-aggressive-moto'));
+        self::assertSame([], $registry->getAbilityTimings('01-aggressive-moto'));
+        self::assertFalse($registry->isAbilityGrantedToAttached('01-aggressive-moto'));
     }
 }

@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\ShuffleDynastyDeck;
 
@@ -18,6 +19,12 @@ final readonly class TheWesternWind39 extends AbstractCardScript
     public static function getCode(): string
     {
         return '39-the-western-wind';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

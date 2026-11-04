@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 
 /**
@@ -17,6 +18,12 @@ final readonly class KyudenHida26 extends AbstractCardScript
     public static function getCode(): string
     {
         return '26-kyuden-hida';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

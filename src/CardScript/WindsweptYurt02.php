@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\FillProvince;
 
 /**
@@ -17,6 +18,12 @@ final readonly class WindsweptYurt02 extends AbstractCardScript
     public static function getCode(): string
     {
         return '02-windswept-yurt';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

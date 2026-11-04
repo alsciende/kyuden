@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 
 /**
@@ -17,6 +18,12 @@ final readonly class DaringChallenger16 extends AbstractCardScript
     public static function getCode(): string
     {
         return '16-daring-challenger';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

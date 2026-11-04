@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\DiscardRandomCardFromHand;
 
 /**
@@ -17,6 +18,12 @@ final readonly class RiverOfTheLastStand26 extends AbstractCardScript
     public static function getCode(): string
     {
         return '26-river-of-the-last-stand';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

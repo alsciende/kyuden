@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\ShuffleIntoDeck;
 
@@ -18,6 +19,12 @@ final readonly class FeralNingyo10 extends AbstractCardScript
     public static function getCode(): string
     {
         return '10-feral-ningyo';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

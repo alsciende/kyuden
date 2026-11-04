@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\ReturnCardToHand;
 
 /**
@@ -17,6 +18,12 @@ final readonly class EsteemedTeaHouse19 extends AbstractCardScript
     public static function getCode(): string
     {
         return '19-esteemed-tea-house';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

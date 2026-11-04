@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutCharacterIntoPlay;
 
 /**
@@ -17,6 +18,12 @@ final readonly class Fushicho08 extends AbstractCardScript
     public static function getCode(): string
     {
         return '08-fushicho';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Interrupt];
     }
 
     #[\Override]

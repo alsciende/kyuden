@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
 
 /**
@@ -17,6 +18,18 @@ final readonly class Chikara36 extends AbstractCardScript
     public static function getCode(): string
     {
         return '36-chikara';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
+    }
+
+    #[\Override]
+    public function isAbilityGrantedToAttached(): bool
+    {
+        return true;
     }
 
     #[\Override]

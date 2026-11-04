@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\MoveAttachment;
 
 /**
@@ -17,6 +18,12 @@ final readonly class GiverOfGifts01 extends AbstractCardScript
     public static function getCode(): string
     {
         return '01-giver-of-gifts';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

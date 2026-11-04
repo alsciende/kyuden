@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
 use App\Message\PutCardOnDeck;
 
@@ -18,6 +19,12 @@ final readonly class RenownedSinger36 extends AbstractCardScript
     public static function getCode(): string
     {
         return '36-renowned-singer';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

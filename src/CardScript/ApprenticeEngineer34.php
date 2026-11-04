@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutHoldingIntoProvince;
 
 /**
@@ -17,6 +18,12 @@ final readonly class ApprenticeEngineer34 extends AbstractCardScript
     public static function getCode(): string
     {
         return '34-apprentice-engineer';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

@@ -17,6 +17,7 @@ use App\Exception\Rules\NotInHandException;
 use App\Exception\Rules\NotOwnedCardException;
 use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
+use App\Service\CardScript\CardScriptRegistry;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -33,6 +34,7 @@ readonly class HandService
         #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
         private EventDispatcherInterface $eventDispatcher,
+        private CardScriptRegistry $cardScriptRegistry,
     ) {
     }
 
@@ -65,7 +67,7 @@ readonly class HandService
         foreach ($player->getStacks(StackType::Hand) as $hand) {
             foreach ($hand->getCards() as $card) {
                 $logicalCard = $card->getLogicalCard();
-                if ($logicalCard->getType() === Type::Event && $logicalCard->hasAbilityTiming($timing)) {
+                if ($logicalCard->getType() === Type::Event && $this->cardScriptRegistry->hasAbilityTiming($logicalCard->getId(), $timing)) {
                     return;
                 }
             }
@@ -81,7 +83,7 @@ readonly class HandService
     public function playEvent(PhysicalCard $card, Player $player, int $cardCost, AbilityTiming $timing): void
     {
         $this->assertPlayable($card, $player, Type::Event);
-        if (! $card->getLogicalCard()->hasAbilityTiming($timing)) {
+        if (! $this->cardScriptRegistry->hasAbilityTiming($card->getLogicalCard()->getId(), $timing)) {
             throw new WrongAbilityTimingException($card, $timing);
         }
 

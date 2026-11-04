@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 
 /**
@@ -17,6 +18,12 @@ final readonly class BayushiSWhisperers15 extends AbstractCardScript
     public static function getCode(): string
     {
         return '15-bayushi-s-whisperers';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

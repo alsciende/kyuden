@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 
 /**
@@ -17,6 +18,18 @@ final readonly class TrueStrikeKenjutsu16 extends AbstractCardScript
     public static function getCode(): string
     {
         return '16-true-strike-kenjutsu';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
+    }
+
+    #[\Override]
+    public function isAbilityGrantedToAttached(): bool
+    {
+        return true;
     }
 
     #[\Override]

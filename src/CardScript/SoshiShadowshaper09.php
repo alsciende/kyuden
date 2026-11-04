@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\ReturnCardToHand;
 
 /**
@@ -17,6 +18,12 @@ final readonly class SoshiShadowshaper09 extends AbstractCardScript
     public static function getCode(): string
     {
         return '09-soshi-shadowshaper';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

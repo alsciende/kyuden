@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\RevealCards;
 use App\Message\ShuffleDynastyDeck;
@@ -19,6 +20,12 @@ final readonly class RetireToTheBrotherhood30 extends AbstractCardScript
     public static function getCode(): string
     {
         return '30-retire-to-the-brotherhood';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\PutCardOnDeck;
 use App\Message\RevealCard;
 
@@ -18,6 +19,12 @@ final readonly class Overhear22 extends AbstractCardScript
     public static function getCode(): string
     {
         return '22-overhear';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

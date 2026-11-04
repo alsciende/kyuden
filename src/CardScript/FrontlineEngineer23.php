@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\PutHoldingIntoProvince;
 use App\Message\ShuffleDynastyDeck;
@@ -19,6 +20,12 @@ final readonly class FrontlineEngineer23 extends AbstractCardScript
     public static function getCode(): string
     {
         return '23-frontline-engineer';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

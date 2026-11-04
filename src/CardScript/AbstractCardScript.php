@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\ActionInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
@@ -25,6 +26,26 @@ abstract readonly class AbstractCardScript
      * The code of the card (LogicalCard id).
      */
     abstract public static function getCode(): string;
+
+    /**
+     * The timings of the triggered abilities printed on the card, including the abilities it grants to the card it is
+     * attached to.
+     *
+     * @return list<AbilityTiming>
+     */
+    public function getAbilityTimings(): array
+    {
+        return [];
+    }
+
+    /**
+     * The triggered abilities of the card are granted to the card it is attached to ("Attached character gains…"):
+     * the controller of that card triggers them.
+     */
+    public function isAbilityGrantedToAttached(): bool
+    {
+        return false;
+    }
 
     /**
      * The special messages (AppAction::$special) the text of the card needs, offered by the web client to the player

@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 
 /**
@@ -17,6 +18,12 @@ final readonly class DefendYourHonor16 extends AbstractCardScript
     public static function getCode(): string
     {
         return '16-defend-your-honor';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Interrupt];
     }
 
     #[\Override]

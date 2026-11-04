@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
 use App\Message\LookAtCards;
 use App\Message\RevealCard;
@@ -20,6 +21,12 @@ final readonly class AncientMaster09 extends AbstractCardScript
     public static function getCode(): string
     {
         return '09-ancient-master';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

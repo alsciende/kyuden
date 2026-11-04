@@ -1,8 +1,4 @@
 {
-    "ability_granted_to_attached": false,
-    "ability_timings": [
-        "interrupt"
-    ],
     "allowed_clans": [
         "crab"
     ],

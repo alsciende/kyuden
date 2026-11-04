@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\ShuffleDynastyDeck;
@@ -19,6 +20,12 @@ final readonly class DaughterOfWar36 extends AbstractCardScript
     public static function getCode(): string
     {
         return '36-daughter-of-war';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Interrupt];
     }
 
     #[\Override]

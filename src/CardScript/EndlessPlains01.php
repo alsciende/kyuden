@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\BreakProvince;
 
 /**
@@ -17,6 +18,12 @@ final readonly class EndlessPlains01 extends AbstractCardScript
     public static function getCode(): string
     {
         return '01-endless-plains';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

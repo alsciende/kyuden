@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Exception\Rules\NotControlledCardException;
+use App\Service\CardScript\CardScriptRegistry;
 use Symfony\Component\Workflow\Registry;
 
 /**
@@ -18,6 +19,7 @@ readonly class AbilityService
     public function __construct(
         private Registry $workflowRegistry,
         private ControlService $controlService,
+        private CardScriptRegistry $cardScriptRegistry,
     ) {
     }
 
@@ -28,7 +30,7 @@ readonly class AbilityService
      */
     public function trigger(PhysicalCard $card, Player $player): void
     {
-        $abilityController = $card->getLogicalCard()->isAbilityGrantedToAttached() ? $card->getStack()->getPlayer() : $this->controlService->getController($card);
+        $abilityController = $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getLogicalCard()->getId()) ? $card->getStack()->getPlayer() : $this->controlService->getController($card);
         if ($abilityController !== $player) {
             throw new NotControlledCardException($card, $player);
         }

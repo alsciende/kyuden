@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\ClaimRing;
 
 /**
@@ -17,6 +18,12 @@ final readonly class DisplayOfPower01 extends AbstractCardScript
     public static function getCode(): string
     {
         return '01-display-of-power';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

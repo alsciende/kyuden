@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\RevealCards;
 
 /**
@@ -17,6 +18,12 @@ final readonly class ArtisanAcademy01 extends AbstractCardScript
     public static function getCode(): string
     {
         return '01-artisan-academy';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]

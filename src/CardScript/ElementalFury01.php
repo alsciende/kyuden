@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\SwitchRing;
 
 /**
@@ -17,6 +18,12 @@ final readonly class ElementalFury01 extends AbstractCardScript
     public static function getCode(): string
     {
         return '01-elemental-fury';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Reaction];
     }
 
     #[\Override]

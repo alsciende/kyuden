@@ -6,6 +6,7 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
 use App\Message\RevealCard;
 
@@ -18,6 +19,12 @@ final readonly class DaimyoSGunbai18 extends AbstractCardScript
     public static function getCode(): string
     {
         return '18-daimyo-s-gunbai';
+    }
+
+    #[\Override]
+    public function getAbilityTimings(): array
+    {
+        return [AbilityTiming::Action];
     }
 
     #[\Override]
