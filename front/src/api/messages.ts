@@ -220,6 +220,11 @@ export interface DiscardDuplicate {
 }
 
 /**
+ * Discards the Imperial Favor, which returns to its unclaimed state, e.g. to pay the cost of an ability (Kanjo District, Kakita Yoshi, Fair Accord).
+ */
+export type DiscardImperialFavor = Record<string, never>
+
+/**
  * Discards cards chosen at random by the engine from the hand of a player (e.g. the earth ring effect), one after the other; the whole hand when it holds fewer cards.
  */
 export interface DiscardRandomCardFromHand {
@@ -943,6 +948,20 @@ export interface TakeFirstPlayerToken {
 }
 
 /**
+ * A player claims the Imperial Favor by a card effect (Fawning Diplomat), from its unclaimed state or from a player, and sets it to either side; the claim of the glory count is claim_imperial_favor.
+ */
+export interface TakeImperialFavor {
+  /**
+   * Player who claims the Imperial Favor.
+   */
+  target_player_id: string
+  /**
+   * Side the Imperial Favor is set to.
+   */
+  side: 'military' | 'political'
+}
+
+/**
  * The giver gives honor to the recipient: "give your opponent 1 honor" is a transfer from the player, "take 1 honor from that opponent" a transfer from that opponent.
  */
 export interface TransferHonor {
@@ -1016,6 +1035,7 @@ export interface MessagePayloads {
   declare_province_strength: DeclareProvinceStrength
   discard_card: DiscardCard
   discard_duplicate: DiscardDuplicate
+  discard_imperial_favor: DiscardImperialFavor
   discard_random_card_from_hand: DiscardRandomCardFromHand
   discard_status_token: DiscardStatusToken
   dishonor_character: DishonorCharacter
@@ -1069,6 +1089,7 @@ export interface MessagePayloads {
   switch_ring: SwitchRing
   take_control: TakeControl
   take_first_player_token: TakeFirstPlayerToken
+  take_imperial_favor: TakeImperialFavor
   transfer_honor: TransferHonor
   trigger_action_ability: TriggerActionAbility
   trigger_interrupt_ability: TriggerInterruptAbility

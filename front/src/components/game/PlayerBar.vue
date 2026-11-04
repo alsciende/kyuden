@@ -50,9 +50,14 @@ const TITLES: Record<BarStat, string> = {
   dynasty_discard: 'Dynasty discard pile',
   conflict_discard: 'Conflict discard pile',
   first_player: 'First player token',
+  imperial_favor: 'Imperial Favor',
 }
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
+/** the Imperial Favor nobody has, in the bar of the viewer: a card effect may claim it */
+const unclaimedFavor = computed(
+  () => mine.value && !props.game.spectating && props.game.imperial_favor_holder_id === null,
+)
 const tint = computed(() => findClan(props.player.clan)?.tint ?? '#e2d8c4')
 const bar = computed(() => playerBar(props.game, props.player))
 
@@ -292,12 +297,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
     <div class="badges">
       <span v-for="note in bar.notes" :key="note" class="badge">{{ note }}</span>
-      <span v-if="bar.favor" class="badge">
+      <span v-if="bar.favor && game.spectating" class="badge">
         <span v-if="game.imperial_favor_side" class="icon" aria-hidden="true">{{
           CONFLICT_ICONS[game.imperial_favor_side]
         }}</span>
         Imperial Favor
       </span>
+      <button
+        v-else-if="bar.favor || unclaimedFavor"
+        v-tip="bar.favor ? '' : 'Nobody has the Imperial Favor'"
+        type="button"
+        class="badge"
+        :class="{ on: open === 'imperial_favor', unclaimed: !bar.favor }"
+        :aria-label="bar.favor ? undefined : 'Imperial Favor, unclaimed'"
+        :aria-expanded="open === 'imperial_favor'"
+        @click="toggle('imperial_favor', $event)"
+      >
+        <span v-if="bar.favor && game.imperial_favor_side" class="icon" aria-hidden="true">{{
+          CONFLICT_ICONS[game.imperial_favor_side]
+        }}</span>
+        Imperial Favor
+      </button>
       <span v-if="bar.firstPlayer && game.spectating" class="badge first">First player</span>
       <button
         v-else-if="bar.firstPlayer"
@@ -600,6 +620,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .badge.first {
   border-color: var(--seal);
   color: var(--seal);
+}
+
+/* the Imperial Favor nobody has, only offered to be claimed */
+.badge.unclaimed {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--ink-3);
 }
 
 /* the token opens the effects on it */

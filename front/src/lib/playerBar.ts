@@ -89,10 +89,20 @@ function strongholdTip(game: GameView, player: PlayerView, broken: number): stri
 
 /** the values of the bar a click opens, with the effects on them or the cards of a discard pile */
 export type BarStat =
-  'honor' | 'fate' | 'hand' | 'dynasty_deck' | 'conflict_deck' | 'dynasty_discard' | 'conflict_discard' | 'first_player'
+  | 'honor'
+  | 'fate'
+  | 'hand'
+  | 'dynasty_deck'
+  | 'conflict_deck'
+  | 'dynasty_discard'
+  | 'conflict_discard'
+  | 'first_player'
+  | 'imperial_favor'
 
 /** the values whose effects take no amount */
-export const WITHOUT_AMOUNT: BarStat[] = ['first_player']
+export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor']
+
+const SIDES: ConflictType[] = ['military', 'political']
 
 export type Effect = Message & { label: string }
 
@@ -175,6 +185,32 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
           payload: { target_player_id: other.id },
         },
       ]
+      break
+    // the Imperial Favor of the player: discarded, set to its other side, or claimed by the other player; else claimed
+    case 'imperial_favor':
+      effects =
+        game.imperial_favor_holder_id === player.id
+          ? [
+              { type: 'discard_imperial_favor', label: 'Discard it', payload: {} },
+              ...SIDES.filter((side) => side !== game.imperial_favor_side).map((side): Effect => ({
+                type: 'take_imperial_favor',
+                label: `Turn it ${side} side up`,
+                payload: { ...target, side },
+              })),
+              ...SIDES.map(
+                (side) =>
+                  other && {
+                    type: 'take_imperial_favor' as const,
+                    label: `${other.id === game.viewer_id ? 'Take it' : 'Give it to Opp.'}, ${side} side up`,
+                    payload: { target_player_id: other.id, side },
+                  },
+              ),
+            ]
+          : SIDES.map((side): Effect => ({
+              type: 'take_imperial_favor',
+              label: `Claim it, ${side} side up`,
+              payload: { ...target, side },
+            }))
       break
   }
   const available = new Set(game.available_actions)

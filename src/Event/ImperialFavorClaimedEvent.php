@@ -10,7 +10,7 @@ use App\Enum\ConflictType;
 use App\GameLog\GameLog;
 
 /**
- * A player has claimed the Imperial Favor (ClaimImperialFavor), set to a side.
+ * A player has claimed the Imperial Favor (ClaimImperialFavor, TakeImperialFavor), set to a side.
  */
 #[GameLog('{player} claims the Imperial Favor, {side} side up')]
 final readonly class ImperialFavorClaimedEvent implements GameEventInterface

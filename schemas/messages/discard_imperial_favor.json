@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "discard_imperial_favor",
+    "description": "Discards the Imperial Favor, which returns to its unclaimed state, e.g. to pay the cost of an ability (Kanjo District, Kakita Yoshi, Fair Accord).",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

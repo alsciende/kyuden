@@ -187,3 +187,68 @@ describe('playerEffects of the first player token', () => {
     ])
   })
 })
+
+describe('playerEffects of the Imperial Favor', () => {
+  const me = player('me')
+  const opp = player('opp')
+  const available = ['discard_imperial_favor', 'take_imperial_favor']
+
+  it('discards the favor of a player, turns it or gives it to the other player', () => {
+    const view = game(me, opp, {
+      available_actions: available,
+      imperial_favor_holder_id: 'opp',
+      imperial_favor_side: 'political',
+    })
+
+    expect(playerEffects(view, opp, 'imperial_favor', 1)).toEqual([
+      { type: 'discard_imperial_favor', label: 'Discard it', payload: {} },
+      {
+        type: 'take_imperial_favor',
+        label: 'Turn it military side up',
+        payload: { target_player_id: 'opp', side: 'military' },
+      },
+      {
+        type: 'take_imperial_favor',
+        label: 'Take it, military side up',
+        payload: { target_player_id: 'me', side: 'military' },
+      },
+      {
+        type: 'take_imperial_favor',
+        label: 'Take it, political side up',
+        payload: { target_player_id: 'me', side: 'political' },
+      },
+    ])
+  })
+
+  it('gives the favor of the viewer to the opponent', () => {
+    const view = game(me, opp, {
+      available_actions: available,
+      imperial_favor_holder_id: 'me',
+      imperial_favor_side: 'military',
+    })
+
+    expect(playerEffects(view, me, 'imperial_favor', 1).map((effect) => effect.label)).toEqual([
+      'Discard it',
+      'Turn it political side up',
+      'Give it to Opp., military side up',
+      'Give it to Opp., political side up',
+    ])
+  })
+
+  it('claims the unclaimed favor; nothing to discard', () => {
+    const view = game(me, opp, { available_actions: ['take_imperial_favor'] })
+
+    expect(playerEffects(view, me, 'imperial_favor', 1)).toEqual([
+      {
+        type: 'take_imperial_favor',
+        label: 'Claim it, military side up',
+        payload: { target_player_id: 'me', side: 'military' },
+      },
+      {
+        type: 'take_imperial_favor',
+        label: 'Claim it, political side up',
+        payload: { target_player_id: 'me', side: 'political' },
+      },
+    ])
+  })
+})

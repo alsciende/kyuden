@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "take_imperial_favor",
+    "description": "A player claims the Imperial Favor by a card effect (Fawning Diplomat), from its unclaimed state or from a player, and sets it to either side; the claim of the glory count is claim_imperial_favor.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who claims the Imperial Favor.",
+            "type": "string"
+        },
+        "side": {
+            "description": "Side the Imperial Favor is set to.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political"
+            ]
+        }
+    },
+    "required": [
+        "target_player_id",
+        "side"
+    ],
+    "additionalProperties": false
+}

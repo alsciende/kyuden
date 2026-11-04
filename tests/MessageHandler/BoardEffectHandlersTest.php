@@ -7,23 +7,30 @@ namespace App\Tests\MessageHandler;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
+use App\Enum\ConflictType;
 use App\Enum\Orientation;
 use App\Exception\Rules\AlreadyAttachedException;
 use App\Exception\Rules\AlreadyFirstPlayerException;
+use App\Exception\Rules\ImperialFavorUnclaimedException;
 use App\Exception\Rules\NotInPlayException;
 use App\Exception\Rules\NotInProvinceException;
 use App\Exception\Rules\NotOwnedCardException;
 use App\Exception\Rules\SameProvinceException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\BreakProvince;
+use App\Message\DiscardImperialFavor;
 use App\Message\MoveAttachment;
 use App\Message\SwitchProvinceCards;
 use App\Message\TakeFirstPlayerToken;
+use App\Message\TakeImperialFavor;
 use App\MessageHandler\BreakProvinceHandler;
+use App\MessageHandler\DiscardImperialFavorHandler;
 use App\MessageHandler\MoveAttachmentHandler;
 use App\MessageHandler\SwitchProvinceCardsHandler;
 use App\MessageHandler\TakeFirstPlayerTokenHandler;
+use App\MessageHandler\TakeImperialFavorHandler;
 use App\State\Manager\GameStateManager;
+use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -31,7 +38,7 @@ use Symfony\Component\Workflow\Exception\NotEnabledTransitionException;
 
 /**
  * Effects on the board: moving an attachment, switching the cards of two provinces, breaking a province, taking the
- * first player token.
+ * first player token, discarding and taking the Imperial Favor.
  */
 class BoardEffectHandlersTest extends AbstractKernelTestCase
 {
@@ -242,5 +249,82 @@ class BoardEffectHandlersTest extends AbstractKernelTestCase
         $this->expectException(AlreadyFirstPlayerException::class);
 
         self::service(TakeFirstPlayerTokenHandler::class)(new TakeFirstPlayerToken($this->game($scenario)->getId(), $this->sender($scenario), $scenario->player('john')->getId()));
+    }
+
+    public function testDiscardsTheImperialFavor(): void
+    {
+        $scenario = $this->scenarioWithImperialFavor('jane', ConflictType::Political);
+        $handler = self::service(DiscardImperialFavorHandler::class);
+        $handler->assertAvailable($this->game($scenario), $scenario->player('john'));
+
+        $handler(new DiscardImperialFavor($this->game($scenario)->getId(), $scenario->player('john')->getId()));
+
+        $state = self::service(GameStateManager::class)->getState($this->game($scenario));
+        self::assertNull($state->imperialFavorHolderId);
+        self::assertNull($state->imperialFavorSide);
+        self::assertSame(['jane loses the Imperial Favor'], $this->logLines($this->game($scenario)));
+    }
+
+    public function testRejectsDiscardingTheUnclaimedImperialFavor(): void
+    {
+        $scenario = $this->scenarioWithBoard();
+
+        $this->expectException(ImperialFavorUnclaimedException::class);
+
+        self::service(DiscardImperialFavorHandler::class)->assertAvailable($this->game($scenario), $scenario->player('john'));
+    }
+
+    public function testAPlayerTakesTheUnclaimedImperialFavor(): void
+    {
+        $scenario = $this->scenarioWithBoard();
+
+        $this->takeImperialFavor($scenario, 'john', ConflictType::Military);
+
+        $state = self::service(GameStateManager::class)->getState($this->game($scenario));
+        self::assertSame($scenario->player('john')->getId(), $state->imperialFavorHolderId);
+        self::assertSame(ConflictType::Military, $state->imperialFavorSide);
+        self::assertSame('conflict_phase_action_window', $this->game($scenario)->getCurrentPlace());
+        self::assertSame(['john claims the Imperial Favor, military side up'], $this->logLines($this->game($scenario)));
+    }
+
+    public function testAPlayerTakesTheImperialFavorFromTheOtherOne(): void
+    {
+        $scenario = $this->scenarioWithImperialFavor('jane', ConflictType::Political);
+
+        $this->takeImperialFavor($scenario, 'john', ConflictType::Military);
+
+        $state = self::service(GameStateManager::class)->getState($this->game($scenario));
+        self::assertSame($scenario->player('john')->getId(), $state->imperialFavorHolderId);
+        self::assertSame(ConflictType::Military, $state->imperialFavorSide);
+    }
+
+    public function testTheHolderClaimsTheImperialFavorAgainOnTheOtherSide(): void
+    {
+        $scenario = $this->scenarioWithImperialFavor('jane', ConflictType::Political);
+
+        $this->takeImperialFavor($scenario, 'jane', ConflictType::Military);
+
+        $state = self::service(GameStateManager::class)->getState($this->game($scenario));
+        self::assertSame($scenario->player('jane')->getId(), $state->imperialFavorHolderId);
+        self::assertSame(ConflictType::Military, $state->imperialFavorSide);
+        self::assertSame(['jane claims the Imperial Favor, military side up'], $this->logLines($this->game($scenario)));
+    }
+
+    private function scenarioWithImperialFavor(string $holder, ConflictType $side): Scenario
+    {
+        return $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->withGameState(function (GameState $state, Scenario $scenario) use ($holder, $side): void {
+                $state->imperialFavorHolderId = $scenario->player($holder)->getId();
+                $state->imperialFavorSide = $side;
+            })
+            ->persist();
+    }
+
+    private function takeImperialFavor(Scenario $scenario, string $target, ConflictType $side): void
+    {
+        self::service(TakeImperialFavorHandler::class)(new TakeImperialFavor($this->game($scenario)->getId(), $this->sender($scenario), $scenario->player($target)->getId(), $side));
     }
 }
