@@ -284,7 +284,7 @@ final readonly class BotStrategy
         $best = null;
         $bestScore = null;
         foreach (ConflictType::cases() as $type) {
-            if (in_array($type, $this->playerStateManager->getState($player)->getDeclaredConflictTypes(), true)) {
+            if (! $this->playerStateManager->getState($player)->canDeclareConflict($type)) {
                 continue;
             }
 
@@ -383,7 +383,7 @@ final readonly class BotStrategy
     {
         $state = $this->playerStateManager->getState($player);
 
-        return $state->getConflictOpportunities() > 0 && count($state->getDeclaredConflictTypes()) < count(ConflictType::cases());
+        return $state->declarableConflictTypes() !== [];
     }
 
     /**

@@ -108,6 +108,7 @@ final readonly class GameViewFactory
             fateCollected: $state->isFateCollected(),
             conflictOpportunities: $state->getConflictOpportunities(),
             declaredConflictTypes: $state->getDeclaredConflictTypes(),
+            declarableConflictTypes: $state->declarableConflictTypes(),
             gloryCount: $state->getGloryCount(),
             stacks: array_map(fn (Stack $stack): StackView => $this->createStackView($stack, $viewer), $stacks),
         );

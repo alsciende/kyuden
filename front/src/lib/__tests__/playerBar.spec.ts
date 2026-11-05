@@ -60,7 +60,7 @@ describe('playerBar', () => {
   })
 
   it('reads the conflicts left, the claimed rings and the Imperial Favor', () => {
-    const me = player('me', [], { declared_conflict_types: ['military'] })
+    const me = player('me', [], { declared_conflict_types: ['military'], declarable_conflict_types: ['political'] })
     const opp = player('opp')
     const ring = { fate: 0, claimed_by_id: null, claimed_conflict_type: null }
     const view = game(me, opp, {
@@ -263,6 +263,39 @@ describe('playerEffects of the Imperial Favor', () => {
         label: 'Claim it, political side up',
         payload: { target_player_id: 'me', side: 'political' },
       },
+    ])
+  })
+})
+
+describe('playerEffects of the conflicts', () => {
+  const available = ['grant_conflict_opportunity', 'declare_next_conflict']
+
+  it('grants an additional conflict of either type, or the next conflict', () => {
+    const me = player('me')
+    const view = game(me, player('opp'), { available_actions: available })
+
+    expect(playerEffects(view, me, 'conflicts', 1)).toEqual([
+      {
+        type: 'grant_conflict_opportunity',
+        label: 'An additional military conflict',
+        payload: { target_player_id: 'me', type: 'military' },
+      },
+      {
+        type: 'grant_conflict_opportunity',
+        label: 'An additional political conflict',
+        payload: { target_player_id: 'me', type: 'political' },
+      },
+      { type: 'declare_next_conflict', label: 'Declare the next conflict', payload: { target_player_id: 'me' } },
+    ])
+  })
+
+  it('does not offer the next conflict to a player with no opportunity left', () => {
+    const opp = player('opp', [], { conflict_opportunities: 0, declarable_conflict_types: [] })
+    const view = game(player('me'), opp, { available_actions: available })
+
+    expect(playerEffects(view, opp, 'conflicts', 1).map((effect) => effect.type)).toEqual([
+      'grant_conflict_opportunity',
+      'grant_conflict_opportunity',
     ])
   })
 })

@@ -53,6 +53,7 @@ export function player(id: string, stacks: StackView[] = [], changes: Partial<Pl
     fate_collected: false,
     conflict_opportunities: 2,
     declared_conflict_types: [],
+    declarable_conflict_types: ['military', 'political'],
     glory_count: null,
     stacks,
     ...changes,

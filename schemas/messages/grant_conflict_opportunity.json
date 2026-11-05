@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "grant_conflict_opportunity",
+    "description": "A player may declare an additional conflict of a type this round: one more conflict opportunity (Hida O-Ushi, Hisu Mori Toride, Shori, Suffer the Consequences, Courteous Scheming).",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who may declare the additional conflict.",
+            "type": "string"
+        },
+        "type": {
+            "description": "Type of the additional conflict.",
+            "type": "string",
+            "enum": [
+                "military",
+                "political"
+            ]
+        }
+    },
+    "required": [
+        "target_player_id",
+        "type"
+    ],
+    "additionalProperties": false
+}

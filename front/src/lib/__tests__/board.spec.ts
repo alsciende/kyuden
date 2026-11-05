@@ -275,8 +275,8 @@ describe('the state of the game', () => {
   })
 
   it('tells the conflicts a player may still declare', () => {
-    expect(conflictsLeft(player('me', [], { declared_conflict_types: ['political'] }))).toEqual(['military'])
-    expect(conflictsLeft(player('me', [], { conflict_opportunities: 0 }))).toEqual([])
+    expect(conflictsLeft(player('me', [], { declarable_conflict_types: ['military'] }))).toEqual(['military'])
+    expect(conflictsLeft(player('me', [], { declarable_conflict_types: [] }))).toEqual([])
   })
 
   it('tells when the result of the conflict is determined', () => {

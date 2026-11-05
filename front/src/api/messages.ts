@@ -175,6 +175,16 @@ export interface DeclareGloryCount {
 }
 
 /**
+ * A player declares the next conflict of the phase, out of the order of the conflict opportunities, with one of their own (Breakthrough, Ivory Kingdoms Unicorn: its type is switched once declared, switch_conflict_type).
+ */
+export interface DeclareNextConflict {
+  /**
+   * Player who declares the next conflict.
+   */
+  target_player_id: string
+}
+
+/**
  * The defending player declares no defender for the attacked province (3.2.1).
  */
 export type DeclareNoDefenders = Record<string, never>
@@ -328,6 +338,20 @@ export interface GainHonor {
    * Honor gained.
    */
   honor_gain: number
+}
+
+/**
+ * A player may declare an additional conflict of a type this round: one more conflict opportunity (Hida O-Ushi, Hisu Mori Toride, Shori, Suffer the Consequences, Courteous Scheming).
+ */
+export interface GrantConflictOpportunity {
+  /**
+   * Player who may declare the additional conflict.
+   */
+  target_player_id: string
+  /**
+   * Type of the additional conflict.
+   */
+  type: 'military' | 'political'
 }
 
 /**
@@ -1089,6 +1113,7 @@ export interface MessagePayloads {
   declare_defenders: DeclareDefenders
   declare_duel_statistic: DeclareDuelStatistic
   declare_glory_count: DeclareGloryCount
+  declare_next_conflict: DeclareNextConflict
   declare_no_defenders: DeclareNoDefenders
   declare_province_strength: DeclareProvinceStrength
   discard_card: DiscardCard
@@ -1103,6 +1128,7 @@ export interface MessagePayloads {
   fill_province: FillProvince
   gain_fate: GainFate
   gain_honor: GainHonor
+  grant_conflict_opportunity: GrantConflictOpportunity
   honor_character: HonorCharacter
   initiate_duel: InitiateDuel
   look_at_card: LookAtCard

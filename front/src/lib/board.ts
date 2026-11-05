@@ -490,13 +490,9 @@ export function switchableRings(game: GameView): Ring[] {
   )
 }
 
-/** the conflict types a player may still declare this round */
+/** the conflict types a player may still declare this round, the additional conflicts included */
 export function conflictsLeft(player: PlayerView): ConflictType[] {
-  if (player.conflict_opportunities <= 0) {
-    return []
-  }
-
-  return (['military', 'political'] as const).filter((type) => !player.declared_conflict_types.includes(type))
+  return player.declarable_conflict_types
 }
 
 /** a printed value: a number, or 0 for a dash or an X */

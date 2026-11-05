@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\GrantConflictOpportunity;
 use App\Message\InitiateDuel;
 
 /**
@@ -29,6 +30,6 @@ final readonly class CourteousScheming18 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [InitiateDuel::class];
+        return [GrantConflictOpportunity::class, InitiateDuel::class];
     }
 }

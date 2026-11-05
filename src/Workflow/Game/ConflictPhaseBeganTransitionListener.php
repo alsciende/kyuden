@@ -30,6 +30,7 @@ readonly class ConflictPhaseBeganTransitionListener
 
         $this->stateManager->withState($game, function (GameState $state): GameState {
             $state->lastConflictPlayerId = null;
+            $state->nextConflictPlayerId = null;
 
             return $state;
         });

@@ -98,11 +98,13 @@ export type BarStat =
   | 'conflict_discard'
   | 'first_player'
   | 'imperial_favor'
+  /** the conflicts the player may still declare */
+  | 'conflicts'
   /** the player themselves, their name in their bar: what they do with the game */
   | 'player'
 
 /** the values whose effects take no amount */
-export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor', 'player']
+export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor', 'conflicts', 'player']
 
 const SIDES: ConflictType[] = ['military', 'political']
 
@@ -214,6 +216,21 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
               label: `Claim it, ${side} side up`,
               payload: { ...target, side },
             }))
+      break
+    // an additional conflict of either type; declaring the next conflict out of order, with an opportunity left
+    case 'conflicts':
+      effects = [
+        ...SIDES.map((type): Effect => ({
+          type: 'grant_conflict_opportunity',
+          label: `An additional ${type} conflict`,
+          payload: { ...target, type },
+        })),
+        player.conflict_opportunities > 0 && {
+          type: 'declare_next_conflict',
+          label: 'Declare the next conflict',
+          payload: target,
+        },
+      ]
       break
     // the viewer's own name: conceding the game
     case 'player':

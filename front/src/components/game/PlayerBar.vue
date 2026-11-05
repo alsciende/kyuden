@@ -51,6 +51,7 @@ const TITLES: Record<BarStat, string> = {
   conflict_discard: 'Conflict discard pile',
   first_player: 'First player token',
   imperial_favor: 'Imperial Favor',
+  conflicts: 'Conflicts',
   player: 'Game',
 }
 
@@ -259,13 +260,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             ><span>{{ stat.label }}</span>
           </div>
         </template>
-        <div class="stat fixed">
+        <component
+          :is="game.spectating ? 'div' : 'button'"
+          :type="game.spectating ? undefined : 'button'"
+          class="stat"
+          :class="{ fixed: game.spectating, on: open === 'conflicts' }"
+          :aria-expanded="game.spectating ? undefined : open === 'conflicts'"
+          @click="game.spectating || toggle('conflicts', $event)"
+        >
           <b class="icon glyphs" role="img" :aria-label="conflictsAria">
             <span :class="{ used: !bar.conflictsLeft.includes('military') }">{{ CONFLICT_ICONS.military }}</span>
             <span :class="{ used: !bar.conflictsLeft.includes('political') }">{{ CONFLICT_ICONS.political }}</span>
           </b>
           <span>Conflicts</span>
-        </div>
+        </component>
         <div class="stat fixed">
           <b v-if="bar.rings.length" class="icon glyphs" role="group" :aria-label="ringsAria">
             <button

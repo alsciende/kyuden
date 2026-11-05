@@ -20,19 +20,21 @@ class DeclareConflictEnterListenerTest extends AbstractKernelTestCase
      *
      * @return list<string> the active player ids
      */
-    private function enter(?string $lastConflictPlayer, ?\Closure $jane = null, string $firstPlayer = 'john'): array
+    private function enter(?string $lastConflictPlayer, ?\Closure $jane = null, string $firstPlayer = 'john', ?string $nextConflictPlayer = null): array
     {
         $scenario = $this->scenario()
             ->atPlace('conflict_phase_action_window')
             ->withPlayer('john')
             ->withPlayer('jane', $jane)
             ->firstPlayer($firstPlayer)
-            ->withGameState(function (GameState $state, Scenario $scenario) use ($lastConflictPlayer): void {
+            ->withGameState(function (GameState $state, Scenario $scenario) use ($lastConflictPlayer, $nextConflictPlayer): void {
                 $state->lastConflictPlayerId = $lastConflictPlayer === null ? null : $scenario->player($lastConflictPlayer)->getId();
+                $state->nextConflictPlayerId = $nextConflictPlayer === null ? null : $scenario->player($nextConflictPlayer)->getId();
             })
             ->build();
 
         self::service(DeclareConflictEnterListener::class)(new EnterEvent($scenario->game(), new Marking()));
+        self::assertNull(self::service(GameStateManager::class)->getState($scenario->game())->nextConflictPlayerId);
 
         return array_map(
             fn (string $id): string => $scenario->game()->getPlayer($id)->getUserId(),
@@ -54,5 +56,15 @@ class DeclareConflictEnterListenerTest extends AbstractKernelTestCase
     public function testAPlayerWithNoConflictOpportunityLeftIsSkipped(): void
     {
         self::assertSame(['john'], $this->enter('john', fn (PlayerBuilder $p): PlayerBuilder => $p->conflictOpportunities(0)));
+    }
+
+    public function testAPlayerDeclaresTheNextConflictOutOfOrder(): void
+    {
+        self::assertSame(['john'], $this->enter('john', nextConflictPlayer: 'john'));
+    }
+
+    public function testTheNextConflictGoesOnInOrderWhenThatPlayerHasNoOpportunityLeft(): void
+    {
+        self::assertSame(['john'], $this->enter('john', fn (PlayerBuilder $p): PlayerBuilder => $p->conflictOpportunities(0), nextConflictPlayer: 'jane'));
     }
 }

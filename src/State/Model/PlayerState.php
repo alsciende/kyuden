@@ -59,6 +59,14 @@ class PlayerState
     private array $declaredConflictTypes = [];
 
     /**
+     * Types of the additional conflicts granted by card effects this round (GrantConflictOpportunity): each one lets the
+     * player declare one more conflict of that type.
+     *
+     * @var list<ConflictType>
+     */
+    private array $additionalConflictTypes = [];
+
+    /**
      * The player has passed during the current step. Reset when a step in which players can pass begins.
      */
     private bool $passed = false;
@@ -252,13 +260,63 @@ class PlayerState
     }
 
     /**
+     * @return list<ConflictType>
+     */
+    public function getAdditionalConflictTypes(): array
+    {
+        return $this->additionalConflictTypes;
+    }
+
+    /**
+     * @param list<ConflictType> $additionalConflictTypes
+     */
+    public function setAdditionalConflictTypes(array $additionalConflictTypes): self
+    {
+        $this->additionalConflictTypes = $additionalConflictTypes;
+
+        return $this;
+    }
+
+    /**
+     * An additional conflict of that type: one more conflict opportunity, and one more conflict of that type allowed.
+     */
+    public function grantConflictOpportunity(ConflictType $type): self
+    {
+        $this->conflictOpportunities++;
+        $this->additionalConflictTypes[] = $type;
+
+        return $this;
+    }
+
+    /**
+     * The player may declare a conflict of that type: an opportunity is left, and fewer conflicts of that type were
+     * declared than allowed (one, plus the additional conflicts of that type).
+     */
+    public function canDeclareConflict(ConflictType $type): bool
+    {
+        return $this->conflictOpportunities > 0
+            && $this->countOf($type, $this->declaredConflictTypes) <= $this->countOf($type, $this->additionalConflictTypes);
+    }
+
+    /**
+     * The types of the conflicts the player may still declare this round. Not a getter: the state is serialized
+     * through them.
+     *
+     * @return list<ConflictType>
+     */
+    public function declarableConflictTypes(): array
+    {
+        return array_values(array_filter(ConflictType::cases(), $this->canDeclareConflict(...)));
+    }
+
+    /**
      * Uses a conflict opportunity: to declare a conflict of that type, or to pass (no type).
      *
-     * @throws NoConflictOpportunityException if no opportunity is left, or a conflict of that type was declared
+     * @throws NoConflictOpportunityException if no opportunity is left, or no more conflict of that type is allowed
      */
     public function useConflictOpportunity(?ConflictType $type): self
     {
-        if ($this->conflictOpportunities <= 0 || in_array($type, $this->declaredConflictTypes, true)) {
+        if ($this->conflictOpportunities <= 0 || ($type instanceof ConflictType && ! $this->canDeclareConflict($type))) {
             throw new NoConflictOpportunityException($type);
         }
 
@@ -268,6 +326,14 @@ class PlayerState
         }
 
         return $this;
+    }
+
+    /**
+     * @param list<ConflictType> $types
+     */
+    private function countOf(ConflictType $type, array $types): int
+    {
+        return count(array_filter($types, fn (ConflictType $candidate): bool => $candidate === $type));
     }
 
     public function getGloryCount(): ?int
@@ -394,6 +460,7 @@ class PlayerState
         return $this->setFateCollected(false)
             ->setConflictOpportunities(self::CONFLICT_OPPORTUNITIES)
             ->setDeclaredConflictTypes([])
+            ->setAdditionalConflictTypes([])
             ->setGloryCount(null);
     }
 }

@@ -81,6 +81,8 @@ export interface PlayerView {
   fate_collected: boolean
   conflict_opportunities: number
   declared_conflict_types: ConflictType[]
+  /** the additional conflicts included */
+  declarable_conflict_types: ConflictType[]
   glory_count: number | null
   stacks: StackView[]
 }

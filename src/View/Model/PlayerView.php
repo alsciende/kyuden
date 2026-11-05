@@ -15,6 +15,7 @@ final readonly class PlayerView
 {
     /**
      * @param list<ConflictType> $declaredConflictTypes
+     * @param list<ConflictType> $declarableConflictTypes
      * @param list<StackView>    $stacks
      * @param list<ResolutionView> $resolutions
      */
@@ -55,6 +56,10 @@ final readonly class PlayerView
         public bool $fateCollected,
         public int $conflictOpportunities,
         public array $declaredConflictTypes,
+        /**
+         * The types of the conflicts the player may still declare this round, the additional conflicts included.
+         */
+        public array $declarableConflictTypes,
         public ?int $gloryCount,
         public array $stacks,
     ) {

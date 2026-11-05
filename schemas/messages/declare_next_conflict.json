@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "declare_next_conflict",
+    "description": "A player declares the next conflict of the phase, out of the order of the conflict opportunities, with one of their own (Breakthrough, Ivory Kingdoms Unicorn: its type is switched once declared, switch_conflict_type).",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player who declares the next conflict.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}

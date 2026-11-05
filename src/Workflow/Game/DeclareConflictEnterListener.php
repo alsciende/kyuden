@@ -13,7 +13,9 @@ use Symfony\Component\Workflow\Event\EnterEvent;
 
 /**
  * The next player in player order with a conflict opportunity left declares a conflict or passes (3.2): the first
- * player at the beginning of the phase, then the player after the one who used the last conflict opportunity.
+ * player at the beginning of the phase, then the player after the one who used the last conflict opportunity. A player
+ * that a card effect makes declare the next conflict (DeclareNextConflict) comes first, when they have an opportunity
+ * left; the order goes on after them.
  */
 #[AsEnterListener(workflow: 'game', place: 'declare_conflict')]
 readonly class DeclareConflictEnterListener
@@ -37,6 +39,14 @@ readonly class DeclareConflictEnterListener
         $candidateIds = $lastPlayerId === null
             ? [$firstPlayerId, ...$state->getPlayerIdsAfter($game->getPlayer($firstPlayerId))]
             : [...$state->getPlayerIdsAfter($game->getPlayer($lastPlayerId)), $lastPlayerId];
+        if ($state->nextConflictPlayerId !== null) {
+            $candidateIds = [$state->nextConflictPlayerId, ...$candidateIds];
+            $this->stateManager->withState($game, function (GameState $state): GameState {
+                $state->nextConflictPlayerId = null;
+
+                return $state;
+            });
+        }
 
         foreach ($candidateIds as $candidateId) {
             $candidate = $game->getPlayer($candidateId);

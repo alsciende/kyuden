@@ -52,6 +52,13 @@ class GameState
     public ?string $lastConflictPlayerId = null;
 
     /**
+     * Player who declares the next conflict, out of the order of the conflict opportunities, by a card effect
+     * (DeclareNextConflict: Breakthrough, Ivory Kingdoms Unicorn); null otherwise. Read and cleared when the next
+     * conflict opportunity begins.
+     */
+    public ?string $nextConflictPlayerId = null;
+
+    /**
      * Player who has the Imperial Favor, and the side it is set to; null while nobody has claimed it.
      */
     public ?string $imperialFavorHolderId = null;
