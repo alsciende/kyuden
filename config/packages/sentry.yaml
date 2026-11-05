@@ -5,6 +5,9 @@ when@prod:
             ignore_exceptions:
                 - 'Symfony\Component\ErrorHandler\Error\FatalError'
                 - 'Symfony\Component\Debug\Exception\FatalErrorException'
+                # unknown routes and methods (scanners probing /api/.env…)
+                - 'Symfony\Component\HttpKernel\Exception\NotFoundHttpException'
+                - 'Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException'
 
     monolog:
         handlers:
