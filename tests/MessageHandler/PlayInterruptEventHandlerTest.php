@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Enum\AbilityTiming;
 use App\Exception\Rules\NotInHandException;
 use App\Exception\Rules\NotOwnedCardException;
-use App\Message\PlayInterruptEvent;
 use App\MessageHandler\PlayInterruptEventHandler;
+use App\Message\PlayInterruptEvent;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -58,7 +60,10 @@ class PlayInterruptEventHandlerTest extends AbstractKernelTestCase
         $state = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
         self::assertFalse($state->isActivePlayer($scenario->player('jane')));
-        self::assertSame(1, self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertEquals(
+            [new Resolution($scenario->card('stay-your-hand')->getId(), AbilityTiming::Interrupt)],
+            self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getResolutions(),
+        );
     }
 
     public function testRejectsAnEventOfAnotherPlayer(): void

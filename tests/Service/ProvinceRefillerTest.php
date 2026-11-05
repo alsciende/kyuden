@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Enum\AbilityTiming;
 use App\Message\DiscardCard;
 use App\Message\EndResolution;
 use App\Message\PlayCharacterFromProvince;
@@ -81,7 +82,7 @@ class ProvinceRefillerTest extends AbstractKernelTestCase
 
     public function testWaitsForTheInterruptsAndReactionsToBeEnded(): void
     {
-        $scenario = $this->builder(fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))->persist();
+        $scenario = $this->builder(fn (PlayerBuilder $p): PlayerBuilder => $p->resolving(AbilityTiming::Reaction))->persist();
         $this->emptyProvince($scenario);
 
         self::service(ProvinceRefiller::class)->refillScheduled($scenario->game());

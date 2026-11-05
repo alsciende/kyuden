@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\Game;
+use App\Enum\AbilityTiming;
 use App\Enum\ConflictType;
 use App\Enum\StackType;
 use App\Enum\VictoryCondition;
-use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\NotActivePlayerException;
+use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Exception\Rules\ResolutionInProgressException;
+use App\MessageHandler\PassOpportunityHandler;
 use App\Message\EndResolution;
 use App\Message\PassOpportunity;
-use App\MessageHandler\PassOpportunityHandler;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -240,7 +241,7 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('reveal_honor_dials')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->resolving(AbilityTiming::Reaction))
             ->withPlayer('jane')
             ->activePlayers('john', 'jane')
             ->persist();

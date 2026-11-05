@@ -17,6 +17,7 @@ import { gameEnded, opponent, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
+import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
 import { SPECTATING } from '@/lib/spectating'
@@ -41,6 +42,11 @@ const { game, log, cards, spectators, loadError, error, sending, send, refresh, 
 provide(
   SPECTATING,
   computed(() => game.value?.spectating === true),
+)
+
+provide(
+  RESOLVING_CARDS,
+  computed(() => (game.value === null ? new Set<string>() : resolvingCardIds(game.value, cards))),
 )
 
 const SIDEBAR_WIDTH = 340

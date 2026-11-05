@@ -51,6 +51,7 @@ const TITLES: Record<BarStat, string> = {
   conflict_discard: 'Conflict discard pile',
   first_player: 'First player token',
   imperial_favor: 'Imperial Favor',
+  player: 'Game',
 }
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
@@ -157,6 +158,9 @@ const basicEffects = computed(() => {
 })
 
 function runEffect(effect: Effect): void {
+  if (effect.danger && !window.confirm(`${effect.label}?`)) {
+    return
+  }
   void run(effect.type, effect.payload as never)
 }
 
@@ -220,7 +224,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     :aria-label="game.spectating ? player.name : mine ? 'You' : 'Opponent'"
   >
     <div class="who">
-      <span class="name" :style="{ background: tint }">{{ player.name }}</span>
+      <button
+        v-if="mine && !game.spectating"
+        type="button"
+        class="name"
+        :class="{ on: open === 'player' }"
+        :style="{ background: tint }"
+        :aria-expanded="open === 'player'"
+        @click="toggle('player', $event)"
+      >
+        {{ player.name }}
+      </button>
+      <span v-else class="name" :style="{ background: tint }">{{ player.name }}</span>
       <span v-if="!game.spectating" class="caption">{{ mine ? 'You' : 'Opp.' }}</span>
     </div>
 
@@ -395,9 +410,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               :key="effect.type"
               type="button"
               class="effect"
-              :class="{ primary: index === 0 }"
+              :class="{ primary: index === 0 && !effect.danger, danger: effect.danger }"
               :disabled="sending"
-              @click="run(effect.type, effect.payload)"
+              @click="runEffect(effect)"
             >
               {{ effect.label }}
             </button>
@@ -745,6 +760,29 @@ button.badge.on {
 
 .effect:hover {
   background: var(--paper-2);
+}
+
+button.name {
+  font-family: var(--font-display);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.name:hover,
+button.name:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+button.name.on {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.effect.danger {
+  border-color: var(--seal);
+  color: var(--seal);
 }
 
 .effect.primary {

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Enum\AbilityTiming;
 use App\Exception\Rules\DuelInProgressException;
 use App\Exception\Rules\NothingToResolveException;
-use App\Message\EndResolution;
 use App\MessageHandler\EndResolutionHandler;
+use App\Message\EndResolution;
 use App\State\Manager\GameStateManager;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -90,13 +92,13 @@ class EndResolutionHandlerTest extends AbstractKernelTestCase
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john')
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->resolving(AbilityTiming::Reaction))
             ->activePlayer('john')
             ->persist();
 
         $this->end($scenario, 'jane');
 
-        self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->countInterruptsAndReactions());
         self::assertTrue($this->isActivePlayer($scenario, 'john'));
         self::assertFalse($this->isActivePlayer($scenario, 'jane'));
     }
@@ -105,7 +107,7 @@ class EndResolutionHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->acted()->resolvingInterruptsAndReactions(1))
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->acted()->resolving(AbilityTiming::Reaction))
             ->withPlayer('jane')
             ->activePlayer('john')
             ->persist();
@@ -113,18 +115,51 @@ class EndResolutionHandlerTest extends AbstractKernelTestCase
         $this->end($scenario, 'john');
 
         $state = $this->playerStateManager->getState($scenario->player('john'));
-        self::assertSame(0, $state->getResolvingInterruptsAndReactions());
+        self::assertSame(0, $state->countInterruptsAndReactions());
         self::assertTrue($state->hasActed());
         self::assertTrue($this->isActivePlayer($scenario, 'john'));
     }
 
+    public function testTheLastInterruptOrReactionEndsFirstAndTheActionEndsWithItsResolutions(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->acted()
+                ->resolving(AbilityTiming::Action, 'banzai')
+                ->resolving(AbilityTiming::Reaction, 'reaction')
+                ->resolving(AbilityTiming::Action, 'ability')
+                ->resolving(AbilityTiming::Interrupt, 'interrupt'))
+            ->withPlayer('jane')
+            ->activePlayer('john')
+            ->persist();
+
+        $this->end($scenario, 'john');
+        self::assertEquals(
+            [new Resolution('banzai', AbilityTiming::Action), new Resolution('reaction', AbilityTiming::Reaction), new Resolution('ability', AbilityTiming::Action)],
+            $this->playerStateManager->getState($scenario->player('john'))->getResolutions(),
+        );
+
+        $this->end($scenario, 'john');
+        self::assertEquals(
+            [new Resolution('banzai', AbilityTiming::Action), new Resolution('ability', AbilityTiming::Action)],
+            $this->playerStateManager->getState($scenario->player('john'))->getResolutions(),
+        );
+
+        $this->end($scenario, 'john');
+        $state = $this->playerStateManager->getState($scenario->player('john'));
+        self::assertSame([], $state->getResolutions());
+        self::assertFalse($state->hasActed());
+        self::assertTrue($this->isActivePlayer($scenario, 'jane'));
+    }
+
     public function testAnInterruptEndsDuringADuel(): void
     {
-        $scenario = $this->scenarioWithADuel(fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1));
+        $scenario = $this->scenarioWithADuel(fn (PlayerBuilder $p): PlayerBuilder => $p->resolving(AbilityTiming::Reaction));
 
         $this->end($scenario, 'jane');
 
-        self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertSame(0, $this->playerStateManager->getState($scenario->player('jane'))->countInterruptsAndReactions());
     }
 
     public function testAnActionDoesNotEndDuringADuel(): void

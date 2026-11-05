@@ -2,6 +2,8 @@
 import { computed, reactive, watch } from 'vue'
 
 import type { ConflictType, GameView, Send } from '@/api/game'
+import CardText from '@/components/game/CardText.vue'
+import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
   stepOf,
@@ -21,6 +23,7 @@ import {
   type Cards,
 } from '@/lib/board'
 import { CONFLICT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import { resolvingOf } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 
 /**
@@ -42,9 +45,20 @@ const opp = computed(() => opponent(props.game))
 
 const ended = computed(() => gameEnded(props.game))
 
+/** the event or the ability the viewer resolves: its text reminds them of the effect they apply */
+const resolving = computed(() => (ended.value ? null : resolvingOf(props.game, me.value, props.cards)))
+const resolvingCard = computed(() => {
+  const id = resolving.value?.current.cardId
+
+  return id === null || id === undefined ? null : (locate(props.game, id)?.card ?? null)
+})
+
 const status = computed(() => {
   if (ended.value) {
     return null
+  }
+  if (resolving.value !== null) {
+    return { mine: true, text: 'Apply this effect, then end it' }
   }
   if (me.value.acted || me.value.resolving_interrupts_and_reactions > 0) {
     return { mine: true, text: 'Resolve what you played, then end it' }
@@ -165,12 +179,6 @@ async function declareStrengths(): Promise<void> {
   }
 }
 
-function concede(): void {
-  if (window.confirm('Concede the game?')) {
-    void props.send('concede_game', { reason: null })
-  }
-}
-
 const toReveal = computed(() => provinceToReveal(props.game))
 
 const duel = computed(() => props.game.duel)
@@ -242,6 +250,32 @@ const nothing = computed(
       </p>
     </section>
 
+    <section v-if="resolving" class="resolving" aria-label="What you are resolving">
+      <div class="resolving-card">
+        <div class="resolving-head">
+          <GameCard
+            v-if="resolvingCard"
+            :card="resolvingCard"
+            :cards="cards"
+            mine
+            size="small"
+            :marks-resolution="false"
+          />
+          <div class="resolving-title">
+            <span class="label">{{ resolving.current.label }}</span>
+            <span class="name">{{ resolving.current.card.name }}</span>
+            <span v-if="resolving.current.where" class="where">{{ resolving.current.where }}</span>
+          </div>
+        </div>
+        <CardText
+          v-if="resolving.current.paragraphs.length > 0"
+          class="text"
+          :paragraphs="resolving.current.paragraphs"
+        />
+      </div>
+      <p v-if="resolving.then.length > 0" class="hint">Then: {{ resolving.then.join(', ') }}</p>
+    </section>
+
     <button
       v-if="available.has('end_resolution')"
       type="button"
@@ -249,8 +283,13 @@ const nothing = computed(
       :disabled="sending"
       @click="send('end_resolution')"
     >
-      End resolution
+      {{ resolving ? `Done with ${resolving.current.card.name}` : 'End resolution' }}
     </button>
+    <p v-if="resolving && available.has('end_resolution')" class="hint">
+      Apply it with the cards of the board.<template v-if="resolving.current.timing === 'action'">
+        Ending it gives the opportunity to the opponent.</template
+      >
+    </p>
 
     <button
       v-if="available.has('pass_opportunity')"
@@ -462,10 +501,6 @@ const nothing = computed(
     <p v-else-if="nothing && !status" class="hint">Nothing to do for now.</p>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
-
-    <button v-if="available.has('concede_game')" type="button" class="btn-link concede" @click="concede">
-      Concede the game
-    </button>
   </div>
 </template>
 
@@ -509,6 +544,56 @@ const nothing = computed(
 
 .status.mine .dot {
   background: var(--seal);
+}
+
+.resolving {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resolving-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: var(--card);
+}
+
+.resolving-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resolving-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.resolving-title .label {
+  color: var(--seal);
+}
+
+.resolving-title .name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.resolving-title .where {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.resolving-card .text {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
 }
 
 .result h2 {
@@ -656,12 +741,5 @@ const nothing = computed(
 .error {
   font-size: 13px;
   color: var(--seal);
-}
-
-.concede {
-  align-self: flex-start;
-  font-size: 13px;
-  color: var(--ink-3);
-  padding: 4px 0;
 }
 </style>

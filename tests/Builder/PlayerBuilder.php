@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Builder;
 
+use App\Enum\AbilityTiming;
 use App\Enum\ConflictType;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
-use App\State\Model\PlayerState;
 use App\Enum\StackType;
+use App\State\Model\PlayerState;
+use App\State\Model\Resolution;
 
 /**
  * Describes the board of one player. Nothing is created until GameBuilder::build() is called.
@@ -43,7 +45,10 @@ final class PlayerBuilder
 
     private bool $passed = false;
     private bool $acted = false;
-    private int $resolvingInterruptsAndReactions = 0;
+    /**
+     * @var list<Resolution>
+     */
+    private array $resolutions = [];
 
     private int $conflictOpportunities = PlayerState::CONFLICT_OPPORTUNITIES;
 
@@ -152,11 +157,13 @@ final class PlayerBuilder
     }
 
     /**
-     * Records interrupts and reactions the player has initiated, not ended yet.
+     * Records an event played or an ability triggered that the player resolves, not ended yet: an interrupt or a
+     * reaction, or with the timing of an action, a resolution of their action (with acted()). The card is given by its
+     * id: the cards of the scenario do not exist yet.
      */
-    public function resolvingInterruptsAndReactions(int $count): self
+    public function resolving(AbilityTiming $timing, string $cardId = 'resolved-card'): self
     {
-        $this->resolvingInterruptsAndReactions = $count;
+        $this->resolutions[] = new Resolution($cardId, $timing);
 
         return $this;
     }
@@ -368,9 +375,12 @@ final class PlayerBuilder
         return $this->acted;
     }
 
-    public function getResolvingInterruptsAndReactions(): int
+    /**
+     * @return list<Resolution>
+     */
+    public function getResolutions(): array
     {
-        return $this->resolvingInterruptsAndReactions;
+        return $this->resolutions;
     }
 
     /**

@@ -4,10 +4,13 @@ import { computed, ref } from 'vue'
 import type { Element, GameView, LoggedMessage, Send, SpectatorView } from '@/api/game'
 import EyeIcon from '@/components/EyeIcon.vue'
 import ActionPanel from '@/components/game/ActionPanel.vue'
+import CardName from '@/components/game/CardName.vue'
 import LogLine from '@/components/game/LogLine.vue'
+import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import { PHASES, playerById, rings, stepOf, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
+import { othersResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 import { vTip } from '@/lib/tooltip'
 import { spectatorsLabel } from '@/lib/watch'
@@ -35,6 +38,9 @@ const props = defineProps<{
 defineEmits<{ openLog: []; switchSides: []; leave: [] }>()
 
 const step = computed(() => stepOf(props.game.place, props.game.spectating))
+
+/** what the opponent resolves (every player, for a spectator): the viewer's own is in the panel of actions */
+const othersResolve = computed(() => othersResolving(props.game, props.cards))
 
 const audienceOpen = ref(false)
 const audienceLabel = computed(() => spectatorsLabel(props.spectators.length))
@@ -158,6 +164,17 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       :error="error"
       :send="send"
     />
+
+    <section v-if="othersResolve.length > 0" class="others-resolving" aria-label="What the other players resolve">
+      <p v-for="{ player, resolving } in othersResolve" :key="player.id" class="resolving-line">
+        <PlayerChip :player="player" :viewer-id="game.viewer_id" short />
+        <span
+          >resolves
+          <CardName :code="resolving.current.card.code" :above="false">{{ resolving.current.card.name }}</CardName
+          >.</span
+        >
+      </p>
+    </section>
 
     <section class="rings" aria-label="Rings">
       <div class="title">
@@ -341,6 +358,21 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.others-resolving {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resolving-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 14px;
 }
 
 .acting {

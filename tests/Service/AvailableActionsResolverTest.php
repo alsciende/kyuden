@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Game;
+use App\Enum\AbilityTiming;
 use App\Message\PlayerActionInterface;
 use App\Service\ActionMessageRegistry;
 use App\Service\AvailableActionsResolver;
@@ -93,7 +94,7 @@ class AvailableActionsResolverTest extends AbstractKernelTestCase
         $scenario = $this->scenario()
             ->atPlace('draw_phase_action_window')
             ->withPlayer('john')
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->resolvingInterruptsAndReactions(1))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->resolving(AbilityTiming::Reaction))
             ->activePlayer('john')
             ->build();
 

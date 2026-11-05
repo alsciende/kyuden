@@ -16,6 +16,7 @@ final readonly class PlayerView
     /**
      * @param list<ConflictType> $declaredConflictTypes
      * @param list<StackView>    $stacks
+     * @param list<ResolutionView> $resolutions
      */
     public function __construct(
         public string $id,
@@ -46,6 +47,11 @@ final readonly class PlayerView
          * Number of interrupts and reactions the player has initiated and has not ended yet.
          */
         public int $resolvingInterruptsAndReactions,
+        /**
+         * The events played and the abilities triggered the player resolves, in the order they were initiated: the
+         * last one is the one they end first.
+         */
+        public array $resolutions,
         public bool $fateCollected,
         public int $conflictOpportunities,
         public array $declaredConflictTypes,

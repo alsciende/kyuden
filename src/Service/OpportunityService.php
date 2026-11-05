@@ -17,6 +17,7 @@ use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\PlayerState;
+use App\State\Model\Resolution;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
@@ -95,13 +96,19 @@ readonly class OpportunityService
 
     /**
      * The active player has taken an action: they resolve it, then end it (EndResolution), which ends their
-     * opportunity to act. Taking other actions before ending it is allowed.
+     * opportunity to act. Taking other actions before ending it is allowed. An event played or an action ability
+     * triggered is recorded as a resolution of the action; a character or an attachment played is not.
      */
-    public function takeAction(Player $player): void
+    public function takeAction(Player $player, ?Resolution $resolution = null): void
     {
         $this->playerStateManager->withState(
             $player,
-            fn (PlayerState $state): PlayerState => $state->setActed(true),
+            function (PlayerState $state) use ($resolution): void {
+                $state->setActed(true);
+                if ($resolution instanceof Resolution) {
+                    $state->startResolution($resolution);
+                }
+            },
         );
     }
 
@@ -109,11 +116,11 @@ readonly class OpportunityService
      * The player has initiated an interrupt or a reaction, whether or not they have the opportunity to act: they
      * resolve it, then end it (EndResolution).
      */
-    public function startInterruptOrReaction(Player $player): void
+    public function startInterruptOrReaction(Player $player, Resolution $resolution): void
     {
         $this->playerStateManager->withState(
             $player,
-            fn (PlayerState $state): PlayerState => $state->setResolvingInterruptsAndReactions($state->getResolvingInterruptsAndReactions() + 1),
+            fn (PlayerState $state): PlayerState => $state->startResolution($resolution),
         );
     }
 
@@ -138,7 +145,7 @@ readonly class OpportunityService
     public function assertCanEndResolution(Game $game, Player $player): void
     {
         $state = $this->playerStateManager->getState($player);
-        if ($state->getResolvingInterruptsAndReactions() > 0) {
+        if ($state->countInterruptsAndReactions() > 0) {
             return;
         }
 
@@ -158,10 +165,10 @@ readonly class OpportunityService
      */
     public function endResolution(Game $game, Player $player): void
     {
-        if ($this->playerStateManager->getState($player)->getResolvingInterruptsAndReactions() > 0) {
+        if ($this->playerStateManager->getState($player)->countInterruptsAndReactions() > 0) {
             $this->playerStateManager->withState(
                 $player,
-                fn (PlayerState $state): PlayerState => $state->setResolvingInterruptsAndReactions($state->getResolvingInterruptsAndReactions() - 1),
+                fn (PlayerState $state): PlayerState => $state->endInterruptOrReaction(),
             );
 
             return;
@@ -169,7 +176,7 @@ readonly class OpportunityService
 
         $this->playerStateManager->withState(
             $player,
-            fn (PlayerState $state): PlayerState => $state->setActed(false),
+            fn (PlayerState $state): PlayerState => $state->endAction(),
         );
         $this->passToNextPlayer($game, $player);
     }

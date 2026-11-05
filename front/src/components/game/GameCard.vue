@@ -10,6 +10,7 @@ import ClanMon from '@/components/ClanMon.vue'
 import { hasSkill, printed, shownSkill, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS } from '@/lib/icons'
 import { hidePreview, showPreview } from '@/lib/preview'
+import { useResolvingCards } from '@/lib/resolutions'
 import { session } from '@/lib/session'
 
 /**
@@ -35,13 +36,26 @@ const props = withDefaults(
     showCost?: boolean
     /** the attachments of a character in play, which change its skills */
     attachments?: CardView[]
+    /** marked when a player resolves its event or its ability (false: the card shown beside what is resolved) */
+    marksResolution?: boolean
   }>(),
-  { size: 'normal', selected: false, muted: false, tag: null, showCost: false, attachments: () => [] },
+  {
+    size: 'normal',
+    selected: false,
+    muted: false,
+    tag: null,
+    showCost: false,
+    attachments: () => [],
+    marksResolution: true,
+  },
 )
 
 defineEmits<{ click: [] }>()
 
 const element = useTemplateRef<HTMLButtonElement>('element')
+
+const resolvingCardIds = useResolvingCards()
+const resolving = computed(() => props.marksResolution && resolvingCardIds.value.has(props.card.id))
 
 const printedCard = computed(() => (props.card.code === null ? undefined : props.cards[props.card.code]))
 const hidden = computed(() => props.card.code === null)
@@ -156,7 +170,7 @@ function enter(): void {
     ref="element"
     type="button"
     class="card"
-    :class="[size, { hidden, bowed, broken, secret, selected, muted, art: art !== null }]"
+    :class="[size, { hidden, bowed, broken, secret, selected, muted, resolving, art: art !== null }]"
     :aria-label="label"
     :aria-pressed="selected ? 'true' : undefined"
     @click="$emit('click')"
@@ -209,6 +223,7 @@ function enter(): void {
         ><span /><span class="corner">{{ corner }}</span></span
       >
     </template>
+    <span v-if="resolving" class="resolving-tag">Resolving</span>
     <span v-if="card.fate > 0" class="fate" aria-hidden="true">{{ card.fate }}</span>
     <span v-if="card.honor_tokens > 0" class="honor-tokens" :class="{ stacked: card.fate > 0 }" aria-hidden="true">{{
       card.honor_tokens
@@ -292,9 +307,26 @@ function enter(): void {
   opacity: 0.4;
 }
 
-.selected {
+.selected,
+.resolving {
   outline: 3px solid var(--seal);
   outline-offset: 3px;
+}
+
+.resolving-tag {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: -3px;
+  background: var(--seal);
+  color: var(--seal-ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .art {

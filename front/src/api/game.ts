@@ -1,4 +1,4 @@
-import { request, toProblem } from '@/api/client'
+import { request, toProblem, type AbilityTiming } from '@/api/client'
 import type { MessagePayloads, MessageType } from '@/api/messages'
 
 /**
@@ -51,6 +51,17 @@ export interface StackView {
   cards: CardView[] | null
 }
 
+/**
+ * An event played or an ability triggered that a player resolves: the card as the viewer sees it now (no id when they
+ * do not see its stack, no code when they do not see its face, neither once it no longer exists) and the timing it was
+ * played or triggered with.
+ */
+export interface ResolutionView {
+  card_id: string | null
+  code: string | null
+  timing: AbilityTiming
+}
+
 export interface PlayerView {
   id: string
   user_id: string
@@ -65,6 +76,8 @@ export interface PlayerView {
   passed: boolean
   acted: boolean
   resolving_interrupts_and_reactions: number
+  /** in the order they were initiated */
+  resolutions: ResolutionView[]
   fate_collected: boolean
   conflict_opportunities: number
   declared_conflict_types: ConflictType[]

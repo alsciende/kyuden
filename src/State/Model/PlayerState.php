@@ -70,10 +70,15 @@ class PlayerState
     private bool $acted = false;
 
     /**
-     * Interrupts and reactions the player has initiated and is resolving, whether or not they have the opportunity to
-     * act: each one ends with EndResolution, the last one initiated first. They do not use the opportunity to act.
+     * The events played and the abilities triggered that the player resolves, in the order they were initiated: those
+     * of their action, ended together with it, and the interrupts and reactions, whether or not they have the
+     * opportunity to act, each one ending with EndResolution, the last one initiated first (interrupts and reactions
+     * do not use the opportunity to act). Characters and attachments played are not resolutions: only `acted` records
+     * them.
+     *
+     * @var list<Resolution>
      */
-    private int $resolvingInterruptsAndReactions = 0;
+    private array $resolutions = [];
 
     /**
      * The player has conceded the game: they are eliminated.
@@ -304,16 +309,64 @@ class PlayerState
         return $this;
     }
 
-    public function getResolvingInterruptsAndReactions(): int
+    /**
+     * @return list<Resolution>
+     */
+    public function getResolutions(): array
     {
-        return $this->resolvingInterruptsAndReactions;
+        return $this->resolutions;
     }
 
-    public function setResolvingInterruptsAndReactions(int $resolvingInterruptsAndReactions): self
+    /**
+     * @param list<Resolution> $resolutions
+     */
+    public function setResolutions(array $resolutions): self
     {
-        $this->resolvingInterruptsAndReactions = max($resolvingInterruptsAndReactions, 0);
+        $this->resolutions = $resolutions;
 
         return $this;
+    }
+
+    public function startResolution(Resolution $resolution): self
+    {
+        $this->resolutions[] = $resolution;
+
+        return $this;
+    }
+
+    /**
+     * Number of interrupts and reactions the player has initiated and has not ended yet. Not prefixed with `get`, so
+     * that the serializer of the state does not take it for a property.
+     */
+    public function countInterruptsAndReactions(): int
+    {
+        return count(array_filter($this->resolutions, fn (Resolution $resolution): bool => $resolution->interruptOrReaction()));
+    }
+
+    /**
+     * Ends the last interrupt or reaction initiated.
+     */
+    public function endInterruptOrReaction(): self
+    {
+        foreach (array_reverse(array_keys($this->resolutions)) as $index) {
+            if ($this->resolutions[$index]->interruptOrReaction()) {
+                array_splice($this->resolutions, $index, 1);
+
+                break;
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Ends the action of the player, with the events and the action abilities resolved in it.
+     */
+    public function endAction(): self
+    {
+        $this->resolutions = array_values(array_filter($this->resolutions, fn (Resolution $resolution): bool => $resolution->interruptOrReaction()));
+
+        return $this->setActed(false);
     }
 
     /**
@@ -321,7 +374,7 @@ class PlayerState
      */
     public function isResolving(): bool
     {
-        return $this->acted || $this->resolvingInterruptsAndReactions > 0;
+        return $this->acted || $this->countInterruptsAndReactions() > 0;
     }
 
     public function isConceded(): bool

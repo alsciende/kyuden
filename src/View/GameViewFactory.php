@@ -15,9 +15,11 @@ use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\Resolution;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ResolutionView;
 use App\View\Model\SpecialActionView;
 use App\View\Model\StackView;
 
@@ -48,6 +50,7 @@ final readonly class GameViewFactory
     public function create(Game $game, ?Player $viewer): GameView
     {
         $state = $this->gameStateManager->getState($game);
+        $cards = $this->indexCards($game);
 
         return new GameView(
             id: $game->getId(),
@@ -57,7 +60,7 @@ final readonly class GameViewFactory
             playerIds: $state->playerIds,
             firstPlayerId: $state->firstPlayerId,
             activePlayerIds: $state->activePlayerIds,
-            players: array_values($game->getPlayers()->map(fn (Player $player): PlayerView => $this->createPlayerView($player, $viewer))->toArray()),
+            players: array_values($game->getPlayers()->map(fn (Player $player): PlayerView => $this->createPlayerView($player, $viewer, $cards))->toArray()),
             rings: $state->rings,
             conflict: $state->conflict,
             duel: $state->duel,
@@ -75,7 +78,10 @@ final readonly class GameViewFactory
         );
     }
 
-    private function createPlayerView(Player $player, ?Player $viewer): PlayerView
+    /**
+     * @param array<string, PhysicalCard> $cards the cards of the game by id
+     */
+    private function createPlayerView(Player $player, ?Player $viewer, array $cards): PlayerView
     {
         $state = $this->playerStateManager->getState($player);
         $isViewer = $player === $viewer;
@@ -97,12 +103,47 @@ final readonly class GameViewFactory
             strongholdProvinceId: $isViewer ? $state->getStrongholdProvinceId() : null,
             passed: $state->isPassed(),
             acted: $state->hasActed(),
-            resolvingInterruptsAndReactions: $state->getResolvingInterruptsAndReactions(),
+            resolvingInterruptsAndReactions: $state->countInterruptsAndReactions(),
+            resolutions: array_map(fn (Resolution $resolution): ResolutionView => $this->createResolutionView($resolution, $cards[$resolution->cardId] ?? null, $viewer), $state->getResolutions()),
             fateCollected: $state->isFateCollected(),
             conflictOpportunities: $state->getConflictOpportunities(),
             declaredConflictTypes: $state->getDeclaredConflictTypes(),
             gloryCount: $state->getGloryCount(),
             stacks: array_map(fn (Stack $stack): StackView => $this->createStackView($stack, $viewer), $stacks),
+        );
+    }
+
+    /**
+     * The cards of the game by id, read from the stacks loaded with the game.
+     *
+     * @return array<string, PhysicalCard>
+     */
+    private function indexCards(Game $game): array
+    {
+        $cards = [];
+        foreach ($game->getPlayers() as $player) {
+            foreach ($player->getStacks() as $stack) {
+                foreach ($stack->getCards() as $card) {
+                    $cards[$card->getId()] = $card;
+                }
+            }
+        }
+
+        return $cards;
+    }
+
+    private function createResolutionView(Resolution $resolution, ?PhysicalCard $card, ?Player $viewer): ResolutionView
+    {
+        if (! $card instanceof PhysicalCard) {
+            return new ResolutionView(null, null, $resolution->timing);
+        }
+
+        $stack = $card->getStack();
+
+        return new ResolutionView(
+            cardId: $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer) ? $card->getId() : null,
+            code: $this->visibility->isCardInStackVisibleTo($card, $stack, $viewer) ? $card->getLogicalCard()->getId() : null,
+            timing: $resolution->timing,
         );
     }
 

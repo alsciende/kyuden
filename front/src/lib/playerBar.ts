@@ -98,13 +98,16 @@ export type BarStat =
   | 'conflict_discard'
   | 'first_player'
   | 'imperial_favor'
+  /** the player themselves, their name in their bar: what they do with the game */
+  | 'player'
 
 /** the values whose effects take no amount */
-export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor']
+export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor', 'player']
 
 const SIDES: ConflictType[] = ['military', 'political']
 
-export type Effect = Message & { label: string }
+/** `danger`: an effect that cannot be undone (conceding), confirmed before it is sent */
+export type Effect = Message & { label: string; danger?: boolean }
 
 /**
  * The effects on a value of the bar of a player, applied with an amount; only those the engine makes available now.
@@ -211,6 +214,17 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
               label: `Claim it, ${side} side up`,
               payload: { ...target, side },
             }))
+      break
+    // the viewer's own name: conceding the game
+    case 'player':
+      effects = [
+        player.id === game.viewer_id && {
+          type: 'concede_game',
+          label: 'Concede',
+          payload: { reason: null },
+          danger: true,
+        },
+      ]
       break
   }
   const available = new Set(game.available_actions)

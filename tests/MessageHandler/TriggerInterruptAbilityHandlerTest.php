@@ -6,8 +6,8 @@ namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
 use App\Exception\Rules\NotControlledCardException;
-use App\Message\TriggerInterruptAbility;
 use App\MessageHandler\TriggerInterruptAbilityHandler;
+use App\Message\TriggerInterruptAbility;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -52,7 +52,7 @@ class TriggerInterruptAbilityHandlerTest extends AbstractKernelTestCase
         $state = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
         self::assertFalse($state->isActivePlayer($scenario->player('jane')));
-        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->countInterruptsAndReactions());
     }
 
     public function testRejectsACardInHand(): void

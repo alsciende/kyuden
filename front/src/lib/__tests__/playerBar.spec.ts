@@ -188,6 +188,20 @@ describe('playerEffects of the first player token', () => {
   })
 })
 
+describe('playerEffects of the player', () => {
+  it('lets the viewer concede the game from their own name, once the engine allows it', () => {
+    const me = player('me')
+    const opp = player('opp')
+    const view = game(me, opp, { available_actions: ['concede_game'] })
+
+    expect(playerEffects(view, me, 'player', 1)).toEqual([
+      { type: 'concede_game', label: 'Concede', payload: { reason: null }, danger: true },
+    ])
+    expect(playerEffects(view, opp, 'player', 1)).toEqual([])
+    expect(playerEffects({ ...view, available_actions: [] }, me, 'player', 1)).toEqual([])
+  })
+})
+
 describe('playerEffects of the Imperial Favor', () => {
   const me = player('me')
   const opp = player('opp')

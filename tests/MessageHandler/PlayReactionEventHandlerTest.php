@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
-use App\Message\PlayReactionEvent;
 use App\MessageHandler\PlayReactionEventHandler;
+use App\Message\PlayReactionEvent;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\Tests\AbstractKernelTestCase;
@@ -37,6 +37,6 @@ class PlayReactionEventHandlerTest extends AbstractKernelTestCase
         $state = self::service(GameStateManager::class)->getState($scenario->game());
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
         self::assertFalse($state->isActivePlayer($scenario->player('jane')));
-        self::assertSame(1, self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertSame(1, self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->countInterruptsAndReactions());
     }
 }

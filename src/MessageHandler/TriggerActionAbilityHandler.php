@@ -6,12 +6,14 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\AbilityTiming;
 use App\Message\TriggerActionAbility;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\AbilityService;
 use App\Service\OpportunityService;
+use App\State\Model\Resolution;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -45,8 +47,9 @@ final readonly class TriggerActionAbilityHandler implements PlayerActionHandlerI
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->assertAvailable($game, $player);
 
-        $this->abilityService->trigger($this->cardRepository->get($message->getCardId(), $game), $player);
+        $card = $this->cardRepository->get($message->getCardId(), $game);
+        $this->abilityService->trigger($card, $player);
 
-        $this->opportunityService->takeAction($player);
+        $this->opportunityService->takeAction($player, new Resolution($card->getId(), AbilityTiming::Action));
     }
 }

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
-use App\Message\TriggerReactionAbility;
+use App\Enum\AbilityTiming;
 use App\MessageHandler\TriggerReactionAbilityHandler;
+use App\Message\TriggerReactionAbility;
 use App\State\Manager\GameStateManager;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 
@@ -34,7 +36,8 @@ class TriggerReactionAbilityHandlerTest extends AbstractKernelTestCase
         self::assertTrue($state->isActivePlayer($scenario->player('john')));
         self::assertFalse($state->isActivePlayer($scenario->player('jane')));
         // jane ends the reaction once resolved, without using an opportunity to act
-        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->getResolvingInterruptsAndReactions());
+        self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->countInterruptsAndReactions());
         self::assertFalse($this->playerStateManager->getState($scenario->player('jane'))->hasActed());
+        self::assertEquals([new Resolution($gunso->getId(), AbilityTiming::Reaction)], $this->playerStateManager->getState($scenario->player('jane'))->getResolutions());
     }
 }

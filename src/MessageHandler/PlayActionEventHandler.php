@@ -13,6 +13,7 @@ use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\HandService;
 use App\Service\OpportunityService;
+use App\State\Model\Resolution;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -47,8 +48,9 @@ final readonly class PlayActionEventHandler implements PlayerActionHandlerInterf
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->assertAvailable($game, $player);
 
-        $this->handService->playEvent($this->cardRepository->get($message->getCardId(), $game), $player, $message->getCardCost(), AbilityTiming::Action);
+        $card = $this->cardRepository->get($message->getCardId(), $game);
+        $this->handService->playEvent($card, $player, $message->getCardCost(), AbilityTiming::Action);
 
-        $this->opportunityService->takeAction($player);
+        $this->opportunityService->takeAction($player, new Resolution($card->getId(), AbilityTiming::Action));
     }
 }

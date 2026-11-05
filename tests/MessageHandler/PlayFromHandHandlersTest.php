@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Enum\AbilityTiming;
 use App\Enum\Orientation;
 use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\NotActivePlayerException;
@@ -12,14 +13,15 @@ use App\Exception\Rules\NotInActionWindowException;
 use App\Exception\Rules\NotInHandException;
 use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
-use App\Message\PlayActionEvent;
-use App\Message\PlayAttachment;
-use App\Message\PlayCharacterFromHand;
 use App\MessageHandler\PlayActionEventHandler;
 use App\MessageHandler\PlayAttachmentHandler;
 use App\MessageHandler\PlayCharacterFromHandHandler;
+use App\Message\PlayActionEvent;
+use App\Message\PlayAttachment;
+use App\Message\PlayCharacterFromHand;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -72,6 +74,8 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getFate());
         self::assertSame(1, self::service(CardStateManager::class)->getState($scenario->card('ambusher'))->getFate());
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
+        // a character played is not a resolution: nothing tells the players which effect to apply
+        self::assertSame([], $this->playerStateManager->getState($scenario->player('john'))->getResolutions());
     }
 
     public function testACharacterIsPlayedIntoTheConflictOnItsControllersSide(): void
@@ -166,6 +170,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('banzai')->getCurrentPlace());
         self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
+        self::assertEquals([new Resolution($scenario->card('banzai')->getId(), AbilityTiming::Action)], $this->playerStateManager->getState($scenario->player('john'))->getResolutions());
     }
 
     public function testAnEventIsPlayedByAnActivePlayer(): void

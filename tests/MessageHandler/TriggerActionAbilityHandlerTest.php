@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Enum\AbilityTiming;
 use App\Enum\Orientation;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotControlledCardException;
 use App\Exception\Rules\NotInActionWindowException;
-use App\Message\TriggerActionAbility;
 use App\MessageHandler\TriggerActionAbilityHandler;
+use App\Message\TriggerActionAbility;
 use App\State\Manager\GameStateManager;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -64,6 +66,8 @@ class TriggerActionAbilityHandlerTest extends AbstractKernelTestCase
         self::assertTrue(self::service(GameStateManager::class)->getState($scenario->game())->isActivePlayer($scenario->player('john')));
         // the player ends their action instead of passing
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
+        // the players see which ability is being resolved
+        self::assertEquals([new Resolution($toturi->getId(), AbilityTiming::Action)], $this->playerStateManager->getState($scenario->player('john'))->getResolutions());
     }
 
     public function testAcceptsTheCardsWhoseAbilitiesCanBeUsed(): void

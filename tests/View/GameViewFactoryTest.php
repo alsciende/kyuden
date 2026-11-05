@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\View;
 
 use App\Entity\PhysicalCard;
+use App\Enum\AbilityTiming;
 use App\Enum\Clan;
 use App\Enum\Element;
 use App\Enum\Orientation;
@@ -12,6 +13,8 @@ use App\Enum\PersonalHonor;
 use App\Enum\Side;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
+use App\State\Model\PlayerState;
+use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -19,6 +22,7 @@ use App\View\GameViewFactory;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ResolutionView;
 use App\View\Model\StackView;
 
 class GameViewFactoryTest extends AbstractKernelTestCase
@@ -94,6 +98,38 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame(['01-fine-katana', '01-banzai'], array_map(fn (CardView $card): ?string => $card->code, $johnsHand->cards ?? []));
         self::assertSame(2, $janesViewOfJohnsHand->count);
         self::assertNull($janesViewOfJohnsHand->cards);
+    }
+
+    public function testTheResolutionsShowTheirCardsAsTheViewerSeesThemNow(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->hand(['banzai' => '01-banzai'])
+                ->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane')
+            ->build();
+        // an ability of Toturi, then an interrupt whose event has returned to the hand of john, then a card shuffled away
+        $this->playerStateManager->withState($scenario->player('john'), fn (PlayerState $state): PlayerState => $state->setResolutions([
+            new Resolution($scenario->card('toturi')->getId(), AbilityTiming::Action),
+            new Resolution($scenario->card('banzai')->getId(), AbilityTiming::Interrupt),
+            new Resolution('shuffled-away', AbilityTiming::Reaction),
+        ]));
+
+        $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
+        $janesView = $this->playerView($this->view($scenario, 'jane'), $scenario, 'john');
+
+        self::assertEquals([
+            new ResolutionView($scenario->card('toturi')->getId(), '01-akodo-toturi', AbilityTiming::Action),
+            new ResolutionView($scenario->card('banzai')->getId(), '01-banzai', AbilityTiming::Interrupt),
+            new ResolutionView(null, null, AbilityTiming::Reaction),
+        ], $johnsView->resolutions);
+        self::assertEquals([
+            new ResolutionView($scenario->card('toturi')->getId(), '01-akodo-toturi', AbilityTiming::Action),
+            new ResolutionView(null, null, AbilityTiming::Interrupt),
+            new ResolutionView(null, null, AbilityTiming::Reaction),
+        ], $janesView->resolutions);
+        self::assertSame(2, $janesView->resolvingInterruptsAndReactions);
     }
 
     public function testTheDecksAreHiddenFromEveryPlayer(): void
