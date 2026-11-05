@@ -47,7 +47,9 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: KYUDEN_VERSION=${{ github.ref_name }}
+          build-args: |
+            KYUDEN_VERSION=${{ github.ref_name }}
+            DISCORD_URL=${{ vars.DISCORD_URL }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app

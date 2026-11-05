@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import ProviderLogo from '@/components/ProviderLogo.vue'
+
 const version = import.meta.env.VITE_KYUDEN_VERSION ?? 'dev'
+// the invitation to the official Discord server, set when the web client is built: no link without it
+const discordUrl = import.meta.env.VITE_DISCORD_URL || null
 </script>
 
 <template>
@@ -8,6 +12,10 @@ const version = import.meta.env.VITE_KYUDEN_VERSION ?? 'dev'
     <nav class="links">
       <RouterLink :to="{ name: 'terms' }">Terms and conditions</RouterLink>
       <RouterLink :to="{ name: 'privacy' }">Privacy</RouterLink>
+      <a v-if="discordUrl" class="discord" :href="discordUrl" target="_blank" rel="noopener noreferrer">
+        <ProviderLogo provider="discord" :size="16" />
+        Discord
+      </a>
     </nav>
   </footer>
 </template>
@@ -31,6 +39,12 @@ const version = import.meta.env.VITE_KYUDEN_VERSION ?? 'dev'
 .footer a {
   color: var(--ink-3);
   text-underline-offset: 3px;
+}
+
+.discord {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .footer a:hover {

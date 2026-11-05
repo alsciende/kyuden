@@ -1,11 +1,13 @@
 services:
   database:
-    image: postgres:alpine
+    # the version pinned, as in production (docker/production/compose.yaml): the data of the volume is only read by its major version
+    image: postgres:18.6-alpine
     shm_size: 128mb
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-#    volumes:
-#      - database_data:/var/lib/postgresql/data:rw
+    # since PostgreSQL 18, the data lies in a directory of its major version under /var/lib/postgresql (PGDATA)
+    volumes:
+      - database_data:/var/lib/postgresql
     healthcheck:
       test: pg_isready -U postgres -d postgres
       interval: 10s
@@ -14,7 +16,7 @@ services:
 
   # the database of the tests (APP_ENV=test, .env.test), in memory: "make db-test" creates its schema and loads the fixtures
   database_test:
-    image: postgres:alpine
+    image: postgres:18.6-alpine
     shm_size: 128mb
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
@@ -70,6 +72,9 @@ services:
     env_file:
       - path: proxy.env
         required: false
+    environment:
+      # the invitation to the official Discord server, linked from the footer (from the shell or the .env of compose)
+      VITE_DISCORD_URL: ${DISCORD_URL:-}
     command: sh -c 'npm install && npm run dev'
 
   mailer:

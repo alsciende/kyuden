@@ -12,7 +12,10 @@ RUN npm ci
 COPY front/ ./
 # the release shown by the web client (the git tag, set by release.yml)
 ARG KYUDEN_VERSION=dev
-RUN VITE_KYUDEN_VERSION="$KYUDEN_VERSION" npm run build
+# the invitation to the official Discord server, linked from the footer (the variable DISCORD_URL of the repository in
+# release.yml): no link when empty
+ARG DISCORD_URL=
+RUN VITE_KYUDEN_VERSION="$KYUDEN_VERSION" VITE_DISCORD_URL="$DISCORD_URL" npm run build
 
 FROM dunglas/frankenphp:1-php8.5-alpine AS app
 
