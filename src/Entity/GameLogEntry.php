@@ -39,9 +39,7 @@ class GameLogEntry
     /**
      * @var array<string, array<string, mixed>>
      */
-    #[ORM\Column(type: Types::JSON, options: [
-        'jsonb' => true,
-    ])]
+    #[ORM\Column(type: 'jsonb')]
     private array $params;
 
     /**
