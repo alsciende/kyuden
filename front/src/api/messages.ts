@@ -287,13 +287,19 @@ export type EndDuel = Record<string, never>
 export type EndResolution = Record<string, never>
 
 /**
- * Puts the top card of the dynasty deck of its owner face down on a province, for the effects that fill a province: a province a dynasty card has left (played, discarded) is refilled by the engine.
+ * Puts the top card of the dynasty deck of its owner on a province, face down or face up, for the effects that fill a province or add a card to it (Rally, City of the Rich Frog, refilling a province face up): a province a dynasty card has left (played, discarded) is refilled face down by the engine, unless an effect has filled it before.
+ *
+ * The province can belong to any player, and hold cards already: the engine does not apply card effects.
  */
 export interface FillProvince {
   /**
-   * Province to fill.
+   * Province to fill (not the stronghold province).
    */
   province_id: string
+  /**
+   * Whether the card is put face up; face down by default.
+   */
+  face_up?: boolean
 }
 
 /**
@@ -674,6 +680,26 @@ export interface PointAtCard {
    * Card to point at.
    */
   card_id: string
+}
+
+/**
+ * Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses, Governor's Spy), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PutCardIntoProvince {
+  /**
+   * Dynasty card in a dynasty deck, a dynasty discard pile, a province or in play.
+   */
+  card_id: string
+  /**
+   * Province of the owner of the card the card is put into (the stronghold province included), not the one it is in.
+   */
+  province_id: string
+  /**
+   * Whether the card is put face up; face down otherwise.
+   */
+  face_up: boolean
 }
 
 /**
@@ -1100,6 +1126,7 @@ export interface MessagePayloads {
   play_interrupt_event: PlayInterruptEvent
   play_reaction_event: PlayReactionEvent
   point_at_card: PointAtCard
+  put_card_into_province: PutCardIntoProvince
   put_card_on_deck: PutCardOnDeck
   put_character_into_play: PutCharacterIntoPlay
   put_holding_into_province: PutHoldingIntoProvince

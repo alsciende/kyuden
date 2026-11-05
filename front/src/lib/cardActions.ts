@@ -1,7 +1,7 @@
 import type { AbilityTiming, Card } from '@/api/client'
-import type { GameView } from '@/api/game'
+import type { GameView, PlayerView } from '@/api/game'
 import type { Message, MessagePayloads, MessageType } from '@/api/messages'
-import { locate, stacksOf, type Cards, type Located } from '@/lib/board'
+import { locate, provinces, stacksOf, type Cards, type Located } from '@/lib/board'
 
 /**
  * What a player can do with a card, from where it is and from the actions the engine makes available now. Board
@@ -59,6 +59,8 @@ export interface CardMenu {
   moveStatusToken: boolean
   /** the dynasty cards of the other provinces of its owner a dynasty card can be switched with, by an effect */
   switchWith: ProvinceChoice[]
+  /** the provinces of its owner a dynasty card can be put into, by an effect (Logistics, The Receding Tide) */
+  putIntoProvince: ProvinceChoice[]
 }
 
 export interface ProvinceChoice {
@@ -87,6 +89,33 @@ const EVENT_TYPES: Record<AbilityTiming, PlayTypes['event']> = {
 
 function cardOf(cards: Cards, code: string | null): Card | undefined {
   return code === null ? undefined : cards[code]
+}
+
+/**
+ * The provinces of a player a dynasty card can be put into by an effect (`put_card_into_province`), the stronghold
+ * province included, but the one it is in: by their province card.
+ */
+export function provinceChoices(
+  player: PlayerView,
+  cards: Cards,
+  exceptStackId: string | null = null,
+): ProvinceChoice[] {
+  return provinces(player).flatMap((province, index) => {
+    if (province.province === null || province.stack.id === exceptStackId) {
+      return []
+    }
+    const name = cardOf(cards, province.province.code)?.name
+
+    return [
+      {
+        id: province.province.id,
+        name:
+          province.stronghold === null
+            ? (name ?? `Province ${index + 1}`)
+            : `${name ?? 'Stronghold province'} (stronghold)`,
+      },
+    ]
+  })
 }
 
 /**
@@ -165,6 +194,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     moveAttachment: false,
     moveStatusToken: false,
     switchWith: [],
+    putIntoProvince: [],
   }
   const special = new Set(game.special_actions.map((action) => action.type))
   // the payload is the card by default, for the messages whose payload is a card only; a special action goes apart
@@ -258,6 +288,13 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
             }))
     })
   }
+  // a dynasty card put into another province of its owner, by an effect: from a province (Logistics), the discard
+  // pile (Miya Satoshi) or play (The Receding Tide)
+  const intoProvince = () => {
+    if (view.side === 'dynasty' && available.has('put_card_into_province')) {
+      menu.putIntoProvince = provinceChoices(located.player, cards, stack.id)
+    }
+  }
   // placing or discarding a status token by an effect, without honoring nor dishonoring the card: special actions,
   // offered apart; on a character in play or a province (an honored token on a province is the players' business)
   const statusTokens = () => {
@@ -326,13 +363,14 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         }
         statusTokens()
         honorTokens()
-        if ((stack.cards?.length ?? 0) <= 1) {
-          add(menu.state, 'fill_province', 'Fill this province', { province_id: id })
-        }
+        // whatever lies on it already (Rally, City of the Rich Frog)
+        add(menu.state, 'fill_province', 'Fill this province', { province_id: id, face_up: false })
+        add(menu.state, 'fill_province', 'Fill this province faceup', { province_id: id, face_up: true })
       } else if (!faceUp) {
         add(menu.state, 'reveal_dynasty_card', 'Turn it face up')
         lookAt()
         switchWith()
+        intoProvince()
         toDeck()
         discard()
       } else {
@@ -351,6 +389,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         putIntoPlay()
         if (view.side === 'dynasty') {
           switchWith()
+          intoProvince()
         } else {
           // an attachment on the province
           moveAttachment()
@@ -372,6 +411,11 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         bowOrReady()
       } else if (game.place === 'choose_stronghold') {
         add(menu.state, 'choose_stronghold_province', 'Put it under your stronghold')
+      } else if (view.side === 'dynasty') {
+        // a dynasty card moved onto the stronghold province (Recalled Defenses)
+        intoProvince()
+        toDeck()
+        discard()
       } else if (faceUp) {
         abilities()
         breakProvince()
@@ -429,6 +473,9 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       if (under !== null) {
         moveAttachment()
       }
+      if (under === null) {
+        intoProvince()
+      }
       add(menu.removals, 'return_card_to_hand', 'Return to hand')
       sacrifice()
       toDeck()
@@ -452,6 +499,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
             : [{ id: provinceCard.id, name: cardOf(cards, provinceCard.code)?.name ?? `Province ${index + 1}` }]
         })
       }
+      intoProvince()
       toDeck()
       break
 

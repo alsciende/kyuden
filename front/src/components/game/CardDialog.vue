@@ -149,6 +149,20 @@ function putIntoProvince(): void {
   }
 }
 
+// a dynasty card put into another province of its owner, face up unless the player says otherwise
+const targetProvinceId = ref<string | null>(null)
+const targetFaceUp = ref(true)
+
+function putCardIntoProvince(): void {
+  if (targetProvinceId.value !== null) {
+    void run('put_card_into_province', {
+      card_id: view.value.id,
+      province_id: targetProvinceId.value,
+      face_up: targetFaceUp.value,
+    })
+  }
+}
+
 function runAction(action: SimpleAction): void {
   void run(action.type, action.payload as never)
 }
@@ -275,6 +289,8 @@ const specials = computed(() => specialActions(props.game, props.cards))
 const HINTS: Partial<Record<string, string>> = {
   put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
   put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
+  put_card_into_province: 'The cards of the province stay there; a province it leaves empty is refilled.',
+  fill_province: 'The top card of the dynasty deck, beside the cards already there.',
   place_status_token: 'It is neither honored nor dishonored; opposed tokens are both discarded.',
   discard_status_token: 'It is neither honored nor dishonored.',
   move_status_token: 'Neither is honored nor dishonored; opposed tokens are both discarded.',
@@ -288,6 +304,7 @@ const specialGroups = computed(() =>
     ...(props.menu.intoProvince.length ? ['put_holding_into_province'] : []),
     ...(props.menu.moveAttachment && hosts.value.length ? ['move_attachment'] : []),
     ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
+    ...(props.menu.putIntoProvince.length ? ['put_card_into_province'] : []),
     ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
   ]),
 )
@@ -612,6 +629,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 </label>
               </fieldset>
               <button type="submit" class="btn btn-ghost" :disabled="sending || switchId === null">Switch them</button>
+            </form>
+
+            <form
+              v-if="group.form && group.type === 'put_card_into_province'"
+              class="group"
+              @submit.prevent="putCardIntoProvince"
+            >
+              <fieldset class="choices">
+                <legend class="label">Put it into a province</legend>
+                <label v-for="province in menu.putIntoProvince" :key="province.id" class="choice">
+                  <input v-model="targetProvinceId" type="radio" name="target-province" :value="province.id" />
+                  {{ province.name }}
+                </label>
+              </fieldset>
+              <label class="choice"> <input v-model="targetFaceUp" type="checkbox" /> Face up </label>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || targetProvinceId === null">
+                Put it there
+              </button>
             </form>
             <span v-if="HINTS[group.type]" class="hint">{{ HINTS[group.type] }}</span>
             <span v-if="group.sources" class="source">{{ group.sources }}</span>

@@ -6,8 +6,8 @@ namespace App\CardScript;
 
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
-use App\Message\FillProvince;
 use App\Message\LookAtCards;
+use App\Message\PutCardIntoProvince;
 
 /**
  * Educated Heimin.
@@ -23,6 +23,6 @@ final readonly class EducatedHeimin29 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [FillProvince::class, LookAtCards::class];
+        return [LookAtCards::class, PutCardIntoProvince::class];
     }
 }

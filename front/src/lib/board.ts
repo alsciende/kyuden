@@ -70,7 +70,7 @@ export interface Province {
   stack: StackView
   /** the province card, at the bottom of its stack */
   province: CardView | null
-  /** the dynasty cards on the province (the stronghold on the stronghold province) */
+  /** the cards on the province, from the bottom: dynasty cards, attachments (not the stronghold) */
   cards: CardView[]
   /** the stronghold, on the stronghold province */
   stronghold: CardView | null
@@ -79,7 +79,8 @@ export interface Province {
 
 /**
  * The provinces of a player, the regular ones first and the stronghold province last. In the stronghold province
- * stack, the stronghold is at the bottom and the province above it.
+ * stack, the stronghold is at the bottom, the province above it, then the cards put on it (Recalled Defenses); during
+ * setup, the provinces not chosen yet are there too, not cards on it.
  */
 export function provinces(player: PlayerView): Province[] {
   const regular = stacksOf(player, 'regular_province').map((stack): Province => {
@@ -91,12 +92,21 @@ export function provinces(player: PlayerView): Province[] {
   if (strongholdStack === undefined) {
     return regular
   }
-  const [stronghold = null, province = null] = cardsOf(strongholdStack)
+  const [stronghold = null, province = null, ...others] = cardsOf(strongholdStack)
+  const cards = others.filter((card) => card.side !== 'province')
 
   return [
     ...regular,
-    { stack: strongholdStack, province, cards: [], stronghold, broken: province?.orientation === 'upside_down' },
+    { stack: strongholdStack, province, cards, stronghold, broken: province?.orientation === 'upside_down' },
   ]
+}
+
+/**
+ * What lies on a province, the top first, as its list shows it: the cards on it, then the stronghold on the stronghold
+ * province, which the board shows on top of them.
+ */
+export function provinceCards(province: Province): CardView[] {
+  return [...province.cards].reverse().concat(province.stronghold === null ? [] : [province.stronghold])
 }
 
 /** the provinces a player may put under their stronghold, during setup */

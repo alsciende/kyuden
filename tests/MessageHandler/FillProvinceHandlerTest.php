@@ -27,12 +27,13 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
             ->persist();
     }
 
-    private function fill(Scenario $scenario, string $sender = 'john'): void
+    private function fill(Scenario $scenario, string $sender = 'john', bool $faceUp = false): void
     {
         self::service(FillProvinceHandler::class)(new FillProvince(
             $scenario->game()->getId(),
             $scenario->player($sender)->getId(),
             $scenario->card('province')->getId(),
+            $faceUp,
         ));
     }
 
@@ -88,19 +89,32 @@ class FillProvinceHandlerTest extends AbstractKernelTestCase
         self::assertSame(DynastyCard::STATE_PROVINCE_FACEDOWN, $scenario->card('toturi')->getCurrentPlace());
     }
 
-    public function testRejectsAProvinceWithADynastyCardOnIt(): void
+    public function testAProvinceIsFilledFaceUp(): void
     {
+        $scenario = $this->scenarioAt('conflict_action_window');
+
+        $this->fill($scenario, faceUp: true);
+
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEUP, $scenario->card('toturi')->getCurrentPlace());
+        self::assertSame(["Akodo Toturi is put faceup into john's province"], $this->logLines($scenario->game(), $scenario->player('jane')));
+    }
+
+    public function testACardIsAddedToAProvinceThatHoldsOne(): void
+    {
+        // Rally: the top card of the deck is added to the province, faceup
         $scenario = $this->scenario()
-            ->atPlace('play_cards_from_provinces')
+            ->atPlace('reveal_facedown_dynasty_cards')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
-                ->province('01-entrenched-position', as: 'province', dynasty: '01-akodo-toturi')
-                ->dynastyDeck(['01-doji-hotaru']))
+                ->province('01-entrenched-position', as: 'province', dynasty: '01-akodo-toturi', dynastyAs: 'toturi', dynastyFaceup: true)
+                ->dynastyDeck(['hotaru' => '01-doji-hotaru']))
             ->withPlayer('jane')
             ->persist();
 
-        $this->expectException(CannotFillProvinceException::class);
+        $this->fill($scenario, faceUp: true);
 
-        $this->fill($scenario);
+        $cards = $scenario->card('province')->getStack()->getOrderedCards();
+        self::assertSame([$scenario->card('province'), $scenario->card('toturi'), $scenario->card('hotaru')], $cards);
+        self::assertSame(DynastyCard::STATE_PROVINCE_FACEUP, $scenario->card('hotaru')->getCurrentPlace());
     }
 
     public function testRejectsTheStrongholdProvince(): void

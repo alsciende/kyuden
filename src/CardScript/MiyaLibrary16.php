@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
+use App\Message\PutCardIntoProvince;
 use App\Message\PutCardOnDeck;
 
 /**
@@ -30,6 +31,6 @@ final readonly class MiyaLibrary16 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, PutCardOnDeck::class];
+        return [LookAtCards::class, PutCardIntoProvince::class, PutCardOnDeck::class];
     }
 }

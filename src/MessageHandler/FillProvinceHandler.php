@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
-use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\Player;
@@ -20,10 +19,10 @@ use App\Service\ProvinceRefiller;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Puts the top card of the dynasty deck face down on the province (ProvinceRefiller): during setup, and for the effects
- * that fill a province. A province a dynasty card has left is refilled by the engine. Accepted in any game place; the
- * player does not need to be the active player. Only a regular province without a dynasty card on it can be filled: no
- * dynasty card goes on the stronghold province.
+ * Puts the top card of the dynasty deck on the province, face down or face up (ProvinceRefiller): during setup, and for
+ * the effects that fill a province or add a card to it (Rally, City of the Rich Frog). A province a dynasty card has
+ * left is refilled by the engine. Accepted in any game place, from any player of the game, on any regular province,
+ * whatever the cards on it: the stronghold province is not filled.
  */
 #[AsMessageHandler]
 final readonly class FillProvinceHandler implements PlayerActionHandlerInterface
@@ -52,18 +51,11 @@ final readonly class FillProvinceHandler implements PlayerActionHandlerInterface
             throw new WrongCardTypeException($province, Type::Province);
         }
 
-        $stack = $province->getStack();
-        if ($stack->getType() !== StackType::RegularProvince) {
+        if ($province->getStack()->getType() !== StackType::RegularProvince) {
             throw new CannotFillProvinceException($province, 'it is the stronghold province');
         }
 
-        foreach ($stack->getCards() as $card) {
-            if ($card instanceof DynastyCard) {
-                throw new CannotFillProvinceException($province, 'a dynasty card is already on it');
-            }
-        }
-
         // the province is filled from the deck of its owner
-        $this->provinceRefiller->fill($province);
+        $this->provinceRefiller->fill($province, $message->isFaceUp());
     }
 }

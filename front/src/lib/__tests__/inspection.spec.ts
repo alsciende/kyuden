@@ -107,6 +107,27 @@ describe('inspectionActions', () => {
     expect(types).toEqual(['put_card_on_deck', 'put_card_on_deck', 'shuffle_into_deck', 'reveal_card', 'discard_card'])
   })
 
+  it('puts a card of the dynasty deck into a province of its owner, face up or face down', () => {
+    const provinces = [
+      { id: 'p1', name: 'Pilgrimage' },
+      { id: 'p2', name: 'Shameful Display (stronghold)' },
+    ]
+    const dynasty = { ...deck, stackType: 'dynasty_draw_deck' as const }
+    const puts = inspectionActions(dynasty, deck.cards[0]!, 'me', 'dynasty', provinces).filter(
+      (action) => action.type === 'put_card_into_province',
+    )
+
+    expect(puts.map((action) => [action.label, action.payload])).toEqual([
+      ['Into Pilgrimage, faceup', { card_id: 'c1', province_id: 'p1', face_up: true }],
+      ['Into Pilgrimage, facedown', { card_id: 'c1', province_id: 'p1', face_up: false }],
+      ['Into Shameful Display (stronghold), faceup', { card_id: 'c1', province_id: 'p2', face_up: true }],
+      ['Into Shameful Display (stronghold), facedown', { card_id: 'c1', province_id: 'p2', face_up: false }],
+    ])
+    expect(
+      inspectionActions(deck, deck.cards[0]!, 'me', 'conflict', provinces).map((action) => action.type),
+    ).not.toContain('put_card_into_province')
+  })
+
   it('leaves a province where it is', () => {
     expect(inspectionActions({ ...deck, stackType: 'regular_province' }, deck.cards[0]!, 'me', 'province')).toEqual([])
   })

@@ -9,6 +9,7 @@ import {
   locate,
   provinceStrength,
   provinceToReveal,
+  provinceCards,
   provinces,
   rings,
   shownSkill,
@@ -47,6 +48,33 @@ describe('provinces', () => {
 
     expect(regular).toMatchObject({ province: raid, cards: [samurai], stronghold: null, broken: false })
     expect(strongholdProvince).toMatchObject({ province: garden, cards: [], stronghold, broken: true })
+  })
+
+  it('reads the cards put on the stronghold province, but not the provinces still to choose during setup', () => {
+    const stronghold = card('stronghold')
+    const garden = card('garden')
+    const scout = card('samurai', { side: 'dynasty' })
+    const setup = player('me', [stack('stronghold_province', [stronghold, garden, card('raid', { side: 'province' })])])
+    const later = player('me', [stack('stronghold_province', [stronghold, garden, scout])])
+
+    expect(provinces(setup)[0]).toMatchObject({ province: garden, cards: [] })
+    expect(provinces(later)[0]).toMatchObject({ province: garden, cards: [scout], stronghold })
+  })
+
+  it('lists what lies on a province, the top first, the stronghold last', () => {
+    const samurai = card('samurai')
+    const marketplace = card('raid', { side: 'dynasty' })
+    const stronghold = card('stronghold')
+    const scout = card('samurai', { side: 'dynasty' })
+    const me = player('me', [
+      stack('regular_province', [card('raid'), marketplace, samurai]),
+      stack('stronghold_province', [stronghold, card('garden'), scout]),
+    ])
+
+    const [regular, strongholdProvince] = provinces(me)
+
+    expect(provinceCards(regular!)).toEqual([samurai, marketplace])
+    expect(provinceCards(strongholdProvince!)).toEqual([scout, stronghold])
   })
 })
 

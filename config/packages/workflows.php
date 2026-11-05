@@ -258,6 +258,12 @@ return App::config([
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceDown,
                     ]),
+                    // a province filled faceup by an effect (FillProvince: Rally, A Season of War)
+                    WorkflowConfig::transition('draw_card_faceup', DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEUP, [
+                        'log' => '{card} is put faceup into {to}',
+                        'stack' => StackType::RegularProvince,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
                     WorkflowConfig::transition('turn_faceup', DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, [
                         'log' => '{card} is turned faceup in {from}',
                         'orientation' => Orientation::FaceUp,
@@ -287,6 +293,18 @@ return App::config([
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceUp,
+                    ]),
+                    // a card put into a province by an effect (PutCardIntoProvince), from its deck, its discard pile,
+                    // another province or play: the province is the `stack` of the context
+                    WorkflowConfig::transition('move_to_province_faceup', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_PROVINCE_FACEUP, [
+                        'log' => '{card} is put from {from} into {to}',
+                        'stack' => StackType::RegularProvince,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    WorkflowConfig::transition('move_to_province_facedown', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_PROVINCE_FACEDOWN, [
+                        'log' => '{card} is put facedown from {from} into {to}',
+                        'stack' => StackType::RegularProvince,
+                        'orientation' => Orientation::FaceDown,
                     ]),
                     // a card switched with a card of another province (SwitchProvinceCards), keeping its orientation: the
                     // province is the `stack` of the context

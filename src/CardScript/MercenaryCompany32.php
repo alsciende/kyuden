@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\FillProvince;
 use App\Message\MoveFate;
 
 /**
@@ -29,6 +30,6 @@ final readonly class MercenaryCompany32 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [MoveFate::class];
+        return [FillProvince::class, MoveFate::class];
     }
 }

@@ -1,12 +1,17 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "fill_province",
-    "description": "Puts the top card of the dynasty deck of its owner face down on a province, for the effects that fill a province: a province a dynasty card has left (played, discarded) is refilled by the engine.",
+    "description": "Puts the top card of the dynasty deck of its owner on a province, face down or face up, for the effects that fill a province or add a card to it (Rally, City of the Rich Frog, refilling a province face up): a province a dynasty card has left (played, discarded) is refilled face down by the engine, unless an effect has filled it before.\n\nThe province can belong to any player, and hold cards already: the engine does not apply card effects.",
     "type": "object",
     "properties": {
         "province_id": {
-            "description": "Province to fill.",
+            "description": "Province to fill (not the stronghold province).",
             "type": "string"
+        },
+        "face_up": {
+            "description": "Whether the card is put face up; face down by default.",
+            "type": "boolean",
+            "default": false
         }
     },
     "required": [

@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 
 import type { CardView, GameView, Send, Side } from '@/api/game'
 import GameCard from '@/components/game/GameCard.vue'
-import type { Cards } from '@/lib/board'
+import { playerById, type Cards } from '@/lib/board'
+import { provinceChoices } from '@/lib/cardActions'
 import {
   inspectionActions,
   lostInTheShuffle,
@@ -77,12 +78,25 @@ function viewOf(card: InspectedCard): CardView {
   }
 }
 
+/** the provinces of the owner of the cards, which a card of their dynasty deck can be put into */
+const ownerProvinces = computed(() => {
+  const owner = playerById(props.game, props.inspection.ownerId)
+
+  return owner === undefined ? [] : provinceChoices(owner, props.cards)
+})
+
 const selected = computed(() => props.inspection.cards.find((card) => card.id === selectedId.value) ?? null)
 const selectedIndex = computed(() => props.inspection.cards.findIndex((card) => card.id === selectedId.value))
 const actions = computed(() =>
   selected.value === null
     ? []
-    : inspectionActions(props.inspection, selected.value, props.game.viewer_id, props.cards[selected.value.code]?.side)
+    : inspectionActions(
+        props.inspection,
+        selected.value,
+        props.game.viewer_id,
+        props.cards[selected.value.code]?.side,
+        ownerProvinces.value,
+      )
         .filter((action) => !(action.type === 'reveal_card' && revealed.has(action.payload.card_id)))
         .filter((action) => props.game.available_actions.includes(action.type)),
 )

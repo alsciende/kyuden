@@ -17,7 +17,8 @@ use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * Fills the provinces with the top card of the dynasty deck of their owner, face down.
+ * Fills the provinces with the top card of the dynasty deck of their owner, face down (face up for the effects that
+ * fill a province face up: FillProvince).
  * An empty deck is replaced by the shuffled discard pile (DrawDeckService); when the discard pile is empty too, the
  * province stays empty.
  *
@@ -87,14 +88,18 @@ readonly class ProvinceRefiller
         }
     }
 
-    public function fill(PhysicalCard $province): void
+    /**
+     * Puts the top card of the dynasty deck of the owner of the province on it, face down unless `$faceUp`, whatever
+     * the cards already on it.
+     */
+    public function fill(PhysicalCard $province, bool $faceUp = false): void
     {
         $card = $this->drawDeckService->getTopCard($province->getPlayer(), StackType::DynastyDrawDeck);
         if (! $card instanceof DynastyCard) {
             return;
         }
 
-        $this->dynastyCardStateMachine->apply($card, 'draw_card', [
+        $this->dynastyCardStateMachine->apply($card, $faceUp ? 'draw_card_faceup' : 'draw_card', [
             'stack' => $province->getStack(),
         ]);
     }

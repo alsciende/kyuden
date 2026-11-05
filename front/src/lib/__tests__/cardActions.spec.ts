@@ -188,12 +188,23 @@ describe('cardMenu', () => {
     expect(cardMenu(view, holdings, shown.id)!.removals.map((action) => action.type)).toEqual(['discard_card'])
   })
 
-  it('fills an empty province', () => {
+  it('fills a province face down or face up, whatever lies on it already', () => {
     const raid = card('raid')
-    const view = game(player('me', [stack('regular_province', [raid])]), player('opp'), { available_actions: EFFECTS })
+    const rallied = card('raid')
+    const view = game(
+      player('me', [stack('regular_province', [raid]), stack('regular_province', [rallied, card('scout')])]),
+      player('opp'),
+      { available_actions: EFFECTS },
+    )
+    const fills = [
+      { type: 'fill_province', label: 'Fill this province', payload: { province_id: raid.id, face_up: false } },
+      { type: 'fill_province', label: 'Fill this province faceup', payload: { province_id: raid.id, face_up: true } },
+    ]
 
-    expect(cardMenu(view, cards, raid.id)!.state).toEqual([
-      { type: 'fill_province', label: 'Fill this province', payload: { province_id: raid.id } },
+    expect(cardMenu(view, cards, raid.id)!.state).toEqual(fills)
+    expect(cardMenu(view, cards, rallied.id)!.state.map((action) => action.type)).toEqual([
+      'fill_province',
+      'fill_province',
     ])
   })
 
@@ -545,6 +556,59 @@ describe('cardMenu', () => {
       { id: hidden.id, name: 'Facedown card (raid)' },
       { id: kaezin.id, name: 'kaezin (province 3)' },
     ])
+  })
+
+  it('puts a dynasty card into another province of its owner, the stronghold province included', () => {
+    const scout = card('scout', { side: 'dynasty' })
+    const keeper = card('kaezin', { side: 'dynasty' })
+    const toturi = card('toturi', { side: 'dynasty' })
+    const katana = card('ancestral', { side: 'conflict' })
+    const raid = card('raid', { side: 'province' })
+    const hidden = card(null, { side: 'province', orientation: 'face_down' })
+    const shameful = card('raid', { side: 'province' })
+    const view = game(
+      player('me', [
+        stack('regular_province', [raid, scout]),
+        stack('regular_province', [hidden]),
+        stack('stronghold_province', [card('stronghold', { side: 'stronghold' }), shameful]),
+        stack('dynasty_discard_pile', [keeper]),
+        stack('in_play', [toturi, katana]),
+      ]),
+      player('opp'),
+      { available_actions: ['put_card_into_province'] },
+    )
+
+    expect(cardMenu(view, cards, scout.id)!.putIntoProvince).toEqual([
+      { id: hidden.id, name: 'Province 2' },
+      { id: shameful.id, name: 'raid (stronghold)' },
+    ])
+    expect(cardMenu(view, cards, keeper.id)!.putIntoProvince.map((choice) => choice.id)).toEqual([
+      raid.id,
+      hidden.id,
+      shameful.id,
+    ])
+    expect(cardMenu(view, cards, toturi.id)!.putIntoProvince).toHaveLength(3)
+    expect(cardMenu(view, cards, katana.id)!.putIntoProvince).toEqual([])
+    expect(cardMenu(view, cards, raid.id)!.putIntoProvince).toEqual([])
+  })
+
+  it('offers a dynasty card moved onto the stronghold province as a dynasty card, not as the province', () => {
+    const scout = card('scout', { side: 'dynasty' })
+    const raid = card('raid', { side: 'province' })
+    const view = game(
+      player('me', [
+        stack('regular_province', [raid]),
+        stack('stronghold_province', [card('stronghold', { side: 'stronghold' }), card('raid'), scout]),
+      ]),
+      player('opp'),
+      { available_actions: ['put_card_into_province', 'discard_card', 'break_province'] },
+    )
+
+    const menu = cardMenu(view, cards, scout.id)!
+
+    expect(menu.putIntoProvince).toEqual([{ id: raid.id, name: 'raid' }])
+    expect(menu.removals.map((action) => action.type)).toEqual(['discard_card'])
+    expect(menu.state).toEqual([])
   })
 
   it('does not point at a card when the action is not available', () => {
