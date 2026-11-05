@@ -11,8 +11,16 @@ import './styles/base.css'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+import { followRefusedTokens } from './lib/session'
 import { followTheme } from './lib/theme'
 import { router } from './router'
 
 followTheme()
+// an account whose token is refused signs in again, then comes back to the page it was on
+followRefusedTokens(() => {
+  const current = router.currentRoute.value
+  if (current.name !== 'login') {
+    void router.push({ name: 'login', query: current.name === 'landing' ? {} : { next: current.fullPath } })
+  }
+})
 createApp(App).use(router).mount('#app')

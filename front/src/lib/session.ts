@@ -11,6 +11,7 @@ import {
   deleteSession,
   fetchSelf,
   fetchSelfGames,
+  onRefusedToken,
   updateSelf,
   type Account,
   type BotGame,
@@ -273,6 +274,24 @@ export async function refreshSession(): Promise<Session | null> {
     }
     throw error
   }
+}
+
+/**
+ * Forgets the session the API no longer knows (its token refused: revoked, or forgotten by a database created again),
+ * so that the visitor comes back as a newcomer instead of a page that cannot load; an account is told (`onAccountLost`)
+ * to sign in again. A token the session no longer holds (signed out, another account since) changes nothing.
+ */
+export function followRefusedTokens(onAccountLost: () => void): void {
+  onRefusedToken((token) => {
+    const current = loadSession()
+    if (current === null || current.token !== token) {
+      return
+    }
+    saveSession(null)
+    if (current.username !== null) {
+      onAccountLost()
+    }
+  })
 }
 
 function withSelf(current: Session, self: Self): Session {

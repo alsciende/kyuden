@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fetchSelfGames, onRefusedToken } from '@/api/client'
 import { CLANS } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 import {
   chooseCardDisplay,
   chooseTheme,
   deleteAccount,
+  followRefusedTokens,
   loadSession,
   preferClan,
   rename,
@@ -356,5 +358,70 @@ describe('suggestedClan', () => {
 
     expect((await suggestedClan(() => 0)).id).toBe('crab')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('followRefusedTokens', () => {
+  const fetchMock = vi.fn<typeof fetch>()
+  const onAccountLost = vi.fn()
+
+  function storeSession(username: string | null, token = 'l5r_stored'): void {
+    localStorage.setItem('kyuden.session', JSON.stringify({ userId: 'user-1', name: 'Hida Takeshi', username, token }))
+    session.value = loadSession()
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.stubGlobal('fetch', fetchMock)
+    followRefusedTokens(onAccountLost)
+  })
+
+  afterEach(() => {
+    onRefusedToken(null)
+    fetchMock.mockReset()
+    onAccountLost.mockReset()
+    vi.unstubAllGlobals()
+  })
+
+  const refused = () => json(401, { type: 'unauthorized', detail: 'Invalid access token.' })
+
+  it('forgets an account whose token is refused, and tells it to sign in again', async () => {
+    storeSession('takeshi')
+    fetchMock.mockResolvedValueOnce(refused())
+
+    await expect(fetchSelfGames('l5r_stored')).rejects.toMatchObject({ status: 401 })
+
+    expect(loadSession()).toBeNull()
+    expect(session.value).toBeNull()
+    expect(onAccountLost).toHaveBeenCalledOnce()
+  })
+
+  it('forgets a guest whose token is refused, who comes back as a newcomer', async () => {
+    storeSession(null)
+    fetchMock.mockResolvedValueOnce(refused())
+
+    await expect(fetchSelfGames('l5r_stored')).rejects.toMatchObject({ status: 401 })
+
+    expect(session.value).toBeNull()
+    expect(onAccountLost).not.toHaveBeenCalled()
+  })
+
+  it('keeps the session when another token is refused', async () => {
+    storeSession('takeshi')
+    fetchMock.mockResolvedValueOnce(refused())
+
+    await expect(fetchSelfGames('l5r_other')).rejects.toMatchObject({ status: 401 })
+
+    expect(session.value?.token).toBe('l5r_stored')
+    expect(onAccountLost).not.toHaveBeenCalled()
+  })
+
+  it('keeps the session when the API fails otherwise', async () => {
+    storeSession('takeshi')
+    fetchMock.mockResolvedValueOnce(json(403, { type: 'forbidden', detail: 'Forbidden.' }))
+
+    await expect(fetchSelfGames('l5r_stored')).rejects.toMatchObject({ status: 403 })
+
+    expect(session.value?.token).toBe('l5r_stored')
   })
 })

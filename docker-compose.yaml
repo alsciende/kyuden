@@ -43,6 +43,10 @@ services:
     environment:
       # the key of the tokens of the Mercure hub (Caddyfile), the MERCURE_JWT_SECRET of Symfony (.env)
       MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
+      # the services of the stack are reached directly, whatever proxy the Docker client gives the containers
+      # (~/.docker/config.json): FrankenPHP sends the web client to node through the proxy otherwise (a 502)
+      NO_PROXY: localhost,127.0.0.1,node,database,database_test,mailer
+      no_proxy: localhost,127.0.0.1,node,database,database_test,mailer
     # FrankenPHP: Symfony, the Mercure hub and the web client (sent to the node service)
     ports:
       - 8080:80

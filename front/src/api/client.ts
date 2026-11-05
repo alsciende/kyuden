@@ -197,6 +197,17 @@ interface RequestOptions {
   token?: string | null
 }
 
+/** told of each token the API refuses (401) */
+let refusedTokenListener: ((token: string) => void) | null = null
+
+/**
+ * Tells the listener of each token the API refuses (a 401 to a request sent with it): a token revoked, or forgotten
+ * by a database created again. Null stops telling.
+ */
+export function onRefusedToken(listener: ((token: string) => void) | null): void {
+  refusedTokenListener = listener
+}
+
 export async function request<T>(path: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) {
@@ -213,6 +224,9 @@ export async function request<T>(path: string, { method = 'GET', body, token }: 
   })
 
   if (!response.ok) {
+    if (response.status === 401 && token) {
+      refusedTokenListener?.(token)
+    }
     throw await toProblem(response)
   }
 
