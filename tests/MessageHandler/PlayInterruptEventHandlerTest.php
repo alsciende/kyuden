@@ -6,8 +6,6 @@ namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Enum\AbilityTiming;
-use App\Exception\Rules\NotInHandException;
-use App\Exception\Rules\NotOwnedCardException;
 use App\MessageHandler\PlayInterruptEventHandler;
 use App\Message\PlayInterruptEvent;
 use App\State\Manager\GameStateManager;
@@ -66,21 +64,17 @@ class PlayInterruptEventHandlerTest extends AbstractKernelTestCase
         );
     }
 
-    public function testRejectsAnEventOfAnotherPlayer(): void
+    public function testAnEventIsPlayedFromADiscardPile(): void
     {
         $scenario = $this->scenarioDuringADuel();
-
-        $this->expectException(NotOwnedCardException::class);
-
-        $this->play($scenario, card: 'banzai');
-    }
-
-    public function testRejectsAnEventThatIsNotInHand(): void
-    {
-        $scenario = $this->scenarioDuringADuel();
-
-        $this->expectException(NotInHandException::class);
 
         $this->play($scenario, card: 'discarded');
+
+        self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('discarded')->getCurrentPlace());
+        self::assertSame(2, self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getFate());
+        self::assertEquals(
+            [new Resolution($scenario->card('discarded')->getId(), AbilityTiming::Interrupt)],
+            self::service(PlayerStateManager::class)->getState($scenario->player('jane'))->getResolutions(),
+        );
     }
 }

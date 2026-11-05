@@ -84,7 +84,7 @@ mcp:
                 The engine enforces the flow of the game (rounds, phases, steps, who may act), not the text of the
                 cards. You are the one who applies the rules of the cards, like a player at a table:
 
-                - Playing a card: send the action (play_character_from_hand, play_attachment, play_action_event,
+                - Playing a card: send the action (play_character, play_attachment, play_action_event,
                   trigger_action_ability…), then apply its costs and its effects yourself with the board manipulations
                   (bow_card, lose_honor, gain_honor, honor_character, move_to_conflict, draw_conflict_cards,
                   discard_card…), then end it with end_resolution. Pay costs as printed: the engine does not check them.

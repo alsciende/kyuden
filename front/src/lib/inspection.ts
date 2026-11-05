@@ -1,6 +1,7 @@
 import type { LoggedMessage, LogParam, StackType } from '@/api/game'
 import type { Message } from '@/api/messages'
-import type { ProvinceChoice } from '@/lib/cardActions'
+import type { Card } from '@/api/client'
+import { playActions, type PlayAction, type ProvinceChoice } from '@/lib/cardActions'
 
 /**
  * The cards a player looks at or reveals (`look_at_cards`, `look_at_card`, `reveal_cards`, `reveal_card`): the engine
@@ -154,4 +155,13 @@ export function inspectionActions(
  */
 export function lostInTheShuffle(inspection: Inspection, action: InspectionAction): boolean {
   return action.type === 'shuffle_into_deck' && DECKS.includes(inspection.stackType)
+}
+
+/**
+ * The ways a card of a deck looked at or revealed is played, as if it were in hand (Artisan Academy, Pillow Book,
+ * Infiltrator, Kyuden Hida…: the engine does not check the effect allowing it): the card of an opponent too, under the
+ * control of the viewer.
+ */
+export function inspectionPlays(inspection: Inspection, card: Card | undefined, available: Set<string>): PlayAction[] {
+  return DECKS.includes(inspection.stackType) ? playActions(card, available) : []
 }

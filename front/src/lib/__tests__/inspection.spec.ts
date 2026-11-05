@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import type { LoggedMessage } from '@/api/game'
-import { inspectionActions, inspectionsOf, lostInTheShuffle, type Inspection } from '@/lib/inspection'
+import { inspectionActions, inspectionPlays, inspectionsOf, lostInTheShuffle, type Inspection } from '@/lib/inspection'
+
+import { printed } from './gameFixture'
 
 const looked: LoggedMessage = {
   version: 7,
@@ -139,5 +141,21 @@ describe('inspectionActions', () => {
 
     expect(lostInTheShuffle(deck, shuffle!)).toBe(true)
     expect(lostInTheShuffle({ ...deck, stackType: 'hand' }, shuffle!)).toBe(false)
+  })
+})
+
+describe('inspectionPlays', () => {
+  const banzai = printed('banzai', { type: 'event', cost: 1, ability_timings: ['action'] })
+
+  it('plays a card of a deck as if it were in hand', () => {
+    // Artisan Academy, Pillow Book, Infiltrator (a deck of the opponent too)
+    expect(inspectionPlays({ ...deck, ownerId: 'opp' }, banzai, new Set(['play_action_event']))).toEqual([
+      { type: 'play_action_event', kind: 'event', label: 'Play this event', cost: 1 },
+    ])
+  })
+
+  it('plays nothing out of a deck, nor without the opportunity to act', () => {
+    expect(inspectionPlays({ ...deck, stackType: 'hand' }, banzai, new Set(['play_action_event']))).toEqual([])
+    expect(inspectionPlays(deck, banzai, new Set())).toEqual([])
   })
 })

@@ -142,6 +142,47 @@ describe('cardMenu', () => {
     ])
   })
 
+  it('plays a character of a province with play_character outside the dynasty phase', () => {
+    // Prepared Ambush, Wind's Path: during a conflict, into it
+    const shown = card('scout', { side: 'dynasty' })
+    const view = game(player('me', [stack('regular_province', [card('raid'), shown])]), player('opp'), {
+      available_actions: [...EFFECTS, 'play_character'],
+    })
+
+    expect(cardMenu(view, cards, shown.id)!.plays).toEqual([
+      { type: 'play_character', kind: 'character', label: 'Play this character', cost: 1 },
+    ])
+  })
+
+  it('plays a card of a discard pile, of the opponent too', () => {
+    // Kunshu, Guidance of the Ancestors, Gateway to Meido
+    const banzai = card('banzai')
+    const katana = card('katana')
+    const scout = card('scout', { side: 'dynasty' })
+    const academy = card('academy', { side: 'dynasty' })
+    const view = game(
+      player('me', [stack('dynasty_discard_pile', [scout, academy])]),
+      player('opp', [stack('conflict_discard_pile', [banzai, katana])]),
+      { available_actions: [...EFFECTS, 'play_action_event', 'play_attachment', 'play_character'] },
+    )
+    const withKatana = { ...cards, katana: printed('katana', { type: 'attachment', cost: 0 }) }
+
+    expect(cardMenu(view, withKatana, banzai.id)!.plays.map((action) => action.type)).toEqual(['play_action_event'])
+    expect(cardMenu(view, withKatana, katana.id)!.plays.map((action) => action.type)).toEqual(['play_attachment'])
+    expect(cardMenu(view, withKatana, scout.id)!.plays.map((action) => action.type)).toEqual(['play_character'])
+    // a holding is not played
+    expect(cardMenu(view, withKatana, academy.id)!.plays).toEqual([])
+  })
+
+  it('does not play a card of a discard pile without the opportunity to act', () => {
+    const banzai = card('banzai')
+    const view = game(player('me', [stack('conflict_discard_pile', [banzai])]), player('opp'), {
+      available_actions: EFFECTS,
+    })
+
+    expect(cardMenu(view, cards, banzai.id)!.plays).toEqual([])
+  })
+
   it('discards a duplicate of a unique character in play, from hand or a province, to place fate on it', () => {
     const inPlay = card('toturi')
     const inHand = card('toturi-2')

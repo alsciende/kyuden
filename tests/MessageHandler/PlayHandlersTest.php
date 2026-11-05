@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Entity\CardTypes\DynastyCard;
 use App\Enum\AbilityTiming;
 use App\Enum\Orientation;
+use App\Enum\StackType;
 use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
-use App\Exception\Rules\NotInHandException;
+use App\Exception\Rules\NotPlayableException;
 use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\MessageHandler\PlayActionEventHandler;
 use App\MessageHandler\PlayAttachmentHandler;
-use App\MessageHandler\PlayCharacterFromHandHandler;
+use App\MessageHandler\PlayCharacterHandler;
 use App\Message\PlayActionEvent;
 use App\Message\PlayAttachment;
-use App\Message\PlayCharacterFromHand;
+use App\Message\PlayCharacter;
+use App\Service\ControlService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Model\Resolution;
@@ -27,9 +30,9 @@ use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 
 /**
- * Characters, attachments and events played from hand.
+ * Characters, attachments and events played during an action window, from hand or from elsewhere.
  */
-class PlayFromHandHandlersTest extends AbstractKernelTestCase
+class PlayHandlersTest extends AbstractKernelTestCase
 {
     private function scenarioAt(string $place, bool $conflict = false): Scenario
     {
@@ -39,13 +42,18 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
                 ->fate(5)
                 ->hand(['ambusher' => '01-hiruma-ambusher', 'katana' => '01-fine-katana', 'banzai' => '01-banzai', 'stay-your-hand' => '16-stay-your-hand'])
                 ->conflictDiscardPile(['discarded-ambusher' => '01-hiruma-ambusher'])
+                ->conflictDeck(['deck-banzai' => '01-banzai', 'top-katana' => '01-fine-katana'])
+                ->dynastyDeck(['deck-gunso' => '01-akodo-gunso'])
+                ->dynastyDiscardPile(['discarded-whisperer' => '01-doji-whisperer'])
+                ->province('01-the-art-of-peace', as: 'own-province', dynasty: '01-matsu-berserker', dynastyAs: 'berserker', dynastyFaceup: true)
                 ->inPlay(['toturi' => '01-akodo-toturi']))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->conflictDiscardPile(['jane-katana' => '01-fine-katana', 'jane-banzai' => '01-banzai'])
                 ->inPlay(['spear' => '01-master-of-the-spear'])
                 ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceUp))
             ->activePlayer('john');
         if ($conflict) {
-            $builder->conflict('jane', 'province', defenders: []);
+            $builder->conflict('john', 'province');
         }
 
         return $builder->persist();
@@ -53,7 +61,7 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
 
     private function playCharacter(Scenario $scenario, string $card = 'ambusher', bool $intoConflict = false): void
     {
-        self::service(PlayCharacterFromHandHandler::class)(new PlayCharacterFromHand(
+        self::service(PlayCharacterHandler::class)(new PlayCharacter(
             $scenario->game()->getId(),
             $scenario->player('john')->getId(),
             $scenario->card($card)->getId(),
@@ -116,13 +124,56 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         $this->playCharacter($scenario);
     }
 
-    public function testRejectsACardThatIsNotInHand(): void
+    public function testACharacterIsPlayedFromADiscardPile(): void
     {
         $scenario = $this->scenarioAt('draw_phase_action_window');
 
-        $this->expectException(NotInHandException::class);
-
         $this->playCharacter($scenario, 'discarded-ambusher');
+
+        self::assertSame(ConflictCard::STATE_IN_PLAY, $scenario->card('discarded-ambusher')->getCurrentPlace());
+        self::assertSame(2, $this->playerStateManager->getState($scenario->player('john'))->getFate());
+    }
+
+    public function testADynastyCharacterIsPlayedFromAProvinceDuringAConflict(): void
+    {
+        // Prepared Ambush, Wind's Path: the province is refilled once the action is ended
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->playCharacter($scenario, 'berserker', intoConflict: true);
+
+        self::assertSame(DynastyCard::STATE_IN_PLAY, $scenario->card('berserker')->getCurrentPlace());
+        $state = self::service(GameStateManager::class)->getState($scenario->game());
+        self::assertSame([$scenario->card('berserker')->getId()], $state->currentConflict()->attackerIds);
+        self::assertSame([$scenario->card('own-province')->getStack()->getId()], $state->provincesToRefill);
+    }
+
+    public function testADynastyCharacterIsPlayedFromADeck(): void
+    {
+        // Third Whisker Warrens
+        $scenario = $this->scenarioAt('draw_phase_action_window');
+
+        $this->playCharacter($scenario, 'deck-gunso');
+
+        self::assertSame(DynastyCard::STATE_IN_PLAY, $scenario->card('deck-gunso')->getCurrentPlace());
+    }
+
+    public function testADynastyCharacterIsPlayedFromADiscardPile(): void
+    {
+        // Gateway to Meido
+        $scenario = $this->scenarioAt('draw_phase_action_window');
+
+        $this->playCharacter($scenario, 'discarded-whisperer');
+
+        self::assertSame(DynastyCard::STATE_IN_PLAY, $scenario->card('discarded-whisperer')->getCurrentPlace());
+    }
+
+    public function testRejectsACharacterInPlay(): void
+    {
+        $scenario = $this->scenarioAt('draw_phase_action_window');
+
+        $this->expectException(NotPlayableException::class);
+
+        $this->playCharacter($scenario, 'toturi');
     }
 
     public function testRejectsACardOfAnotherType(): void
@@ -151,6 +202,40 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
+    public function testAnAttachmentOfTheOpponentIsPlayedUnderTheControlOfThePlayer(): void
+    {
+        // Kunshu: an attachment of the conflict discard pile of the opponent
+        $scenario = $this->scenarioAt('draw_phase_action_window');
+
+        self::service(PlayAttachmentHandler::class)(new PlayAttachment(
+            $scenario->game()->getId(),
+            $scenario->player('john')->getId(),
+            $scenario->card('jane-katana')->getId(),
+            $scenario->card('toturi')->getId(),
+            0,
+        ));
+
+        self::assertSame($scenario->card('toturi')->getStack(), $scenario->card('jane-katana')->getStack());
+        self::assertSame($scenario->player('jane'), $scenario->card('jane-katana')->getPlayer());
+        self::assertSame($scenario->player('john'), self::service(ControlService::class)->getController($scenario->card('jane-katana')));
+    }
+
+    public function testAnAttachmentIsPlayedFromADeck(): void
+    {
+        // Pillow Book, Artisan Academy: the top card of the deck
+        $scenario = $this->scenarioAt('draw_phase_action_window');
+
+        self::service(PlayAttachmentHandler::class)(new PlayAttachment(
+            $scenario->game()->getId(),
+            $scenario->player('john')->getId(),
+            $scenario->card('top-katana')->getId(),
+            $scenario->card('toturi')->getId(),
+            0,
+        ));
+
+        self::assertSame($scenario->card('toturi')->getStack(), $scenario->card('top-katana')->getStack());
+    }
+
     private function playEvent(Scenario $scenario, string $player = 'john', string $card = 'banzai'): void
     {
         self::service(PlayActionEventHandler::class)(new PlayActionEvent(
@@ -171,6 +256,30 @@ class PlayFromHandHandlersTest extends AbstractKernelTestCase
         self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
         self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
         self::assertEquals([new Resolution($scenario->card('banzai')->getId(), AbilityTiming::Action)], $this->playerStateManager->getState($scenario->player('john'))->getResolutions());
+    }
+
+    public function testAnEventIsPlayedFromADeck(): void
+    {
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->playEvent($scenario, card: 'deck-banzai');
+
+        self::assertSame(ConflictCard::STATE_DISCARD_PILE, $scenario->card('deck-banzai')->getCurrentPlace());
+        self::assertSame($scenario->player('john')->getUniqueStack(StackType::ConflictDiscardPile), $scenario->card('deck-banzai')->getStack());
+    }
+
+    public function testAnEventOfTheOpponentGoesToTheDiscardPileOfItsOwner(): void
+    {
+        // Kunshu, Bayushi Kachiko: from the conflict discard pile of the opponent, back on top of it
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->playEvent($scenario, card: 'jane-banzai');
+
+        $discardPile = $scenario->player('jane')->getUniqueStack(StackType::ConflictDiscardPile);
+        self::assertSame($discardPile, $scenario->card('jane-banzai')->getStack());
+        self::assertSame($scenario->card('jane-banzai'), $discardPile->getTopCards(1)[0]);
+        self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('john'))->hasActed());
     }
 
     public function testAnEventIsPlayedByAnActivePlayer(): void

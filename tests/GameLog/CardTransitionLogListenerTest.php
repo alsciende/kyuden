@@ -52,6 +52,7 @@ class CardTransitionLogListenerTest extends AbstractKernelTestCase
         $scenario = $this->scenarioWithCards();
 
         $this->apply($scenario, 'katana', 'play_card', [
+            'player' => $scenario->player('john'),
             'stack' => $scenario->card('spear')->getStack(),
         ]);
 

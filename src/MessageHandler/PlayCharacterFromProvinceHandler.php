@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\MessageHandler;
 
+use App\Entity\CardTypes\DynastyCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Event\FatePlacedOnCardEvent;
 use App\Event\FateSpentEvent;
 use App\Exception\Rules\NotActivePlayerException;
+use App\Exception\Rules\NotInProvinceException;
 use App\Exception\Rules\NotOwnedCardException;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\PlayCharacterFromProvince;
@@ -75,6 +77,10 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
             throw new WrongCardTypeException($card, Type::Character);
         }
 
+        if ($card->getCurrentPlace() !== DynastyCard::STATE_PROVINCE_FACEUP) {
+            throw new NotInProvinceException($card);
+        }
+
         $this->playerStateManager->withState(
             $player,
             fn (PlayerState $state): PlayerState => $state->spendFate($message->getCardCost() + $message->getFateCost()),
@@ -83,8 +89,9 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
             $this->eventDispatcher->dispatch(new FateSpentEvent($game, $player, $message->getCardCost() + $message->getFateCost()));
         }
         $province = $card->getStack();
-        // fails unless the card is face up in a province
-        $this->dynastyCardStateMachine->apply($card, 'play');
+        $this->dynastyCardStateMachine->apply($card, 'play', [
+            'player' => $player,
+        ]);
         $this->cardStateManager->withState(
             $card,
             fn (CardState $state): CardState => $state->incrementFate($message->getFate()),

@@ -2,8 +2,9 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } from 'vue'
 
 import type { ConflictType, GameView, PayloadArgs, Send } from '@/api/game'
-import type { MessageType } from '@/api/messages'
+import type { Message, MessageType } from '@/api/messages'
 import ActionIcon from '@/components/ActionIcon.vue'
+import PlayForm from '@/components/game/PlayForm.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import { actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
@@ -173,16 +174,11 @@ async function run<T extends MessageType>(type: T, ...payload: PayloadArgs<T>): 
   }
 }
 
-// playing the card: what the player pays
-const play = reactive({ cost: 0, fate: 0, intoConflict: false, target: null as string | null })
+// playing the card (PlayForm)
 const playing = ref<PlayAction | null>(null)
 
-function startPlay(action: PlayAction): void {
-  playing.value = action
-  play.cost = action.cost
-  play.fate = 0
-  play.intoConflict = false
-  play.target = null
+function confirmPlay(message: Message): void {
+  void run(message.type, message.payload as never)
 }
 
 /** the characters an attachment may go on */
@@ -195,39 +191,6 @@ const targets = computed(() =>
     })),
   ),
 )
-
-const viewerInConflict = computed(
-  () =>
-    conflict.value !== null &&
-    [conflict.value.attacking_player_id, conflict.value.defending_player_id].includes(props.game.viewer_id),
-)
-
-function confirmPlay(): void {
-  const action = playing.value!
-  const card_id = view.value.id
-  switch (action.kind) {
-    case 'from_province':
-      void run(action.type, { card_id, card_cost: play.cost, fate_cost: play.fate, fate: play.fate })
-      break
-    case 'from_hand':
-      void run(action.type, {
-        card_id,
-        card_cost: play.cost,
-        fate_cost: play.fate,
-        fate: play.fate,
-        into_conflict: play.intoConflict,
-      })
-      break
-    case 'attachment':
-      if (play.target !== null) {
-        void run(action.type, { card_id, target_card_id: play.target, card_cost: play.cost })
-      }
-      break
-    case 'event':
-      void run(action.type, { card_id, card_cost: play.cost })
-      break
-  }
-}
 
 // recording the current skills of a character
 const character = computed(() =>
@@ -412,43 +375,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               type="button"
               class="btn btn-primary"
               :disabled="sending"
-              @click="startPlay(action)"
+              @click="playing = action"
             >
               {{ action.label }}
             </button>
           </template>
-          <form v-else class="form" @submit.prevent="confirmPlay">
-            <span class="label">{{ playing.label }}</span>
-            <label class="field-row">
-              <span>Cost</span>
-              <input v-model.number="play.cost" class="number" type="number" min="0" />
-            </label>
-            <label v-if="playing.kind === 'from_province' || playing.kind === 'from_hand'" class="field-row">
-              <span>Fate placed on it</span>
-              <input v-model.number="play.fate" class="number" type="number" min="0" />
-            </label>
-            <label v-if="playing.kind === 'from_hand' && viewerInConflict" class="check">
-              <input v-model="play.intoConflict" type="checkbox" /> Into the conflict
-            </label>
-            <fieldset v-if="playing.kind === 'attachment'" class="choices">
-              <legend class="label">Attach it to</legend>
-              <label v-for="target in targets" :key="target.id" class="choice">
-                <input v-model="play.target" type="radio" name="target" :value="target.id" />
-                {{ target.name }} <span class="whose">{{ target.mine ? 'yours' : "opponent's" }}</span>
-              </label>
-            </fieldset>
-            <span class="hint">You pay {{ play.cost + (playing.kind.startsWith('from') ? play.fate : 0) }} fate.</span>
-            <div class="row two">
-              <button type="button" class="btn btn-ghost" @click="playing = null">Back</button>
-              <button
-                type="submit"
-                class="btn btn-primary"
-                :disabled="sending || (playing.kind === 'attachment' && play.target === null)"
-              >
-                Play
-              </button>
-            </div>
-          </form>
+          <PlayForm
+            v-else
+            :action="playing"
+            :card-id="view.id"
+            :game="game"
+            :cards="cards"
+            :sending="sending"
+            @play="confirmPlay"
+            @back="playing = null"
+          />
         </div>
 
         <div v-if="menu.state.length" class="group">

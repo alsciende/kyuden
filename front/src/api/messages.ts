@@ -583,11 +583,11 @@ export interface PlaceStatusToken {
 }
 
 /**
- * The active player plays an action event from hand during an action window and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions, then ends their action (`end_resolution`), which ends their opportunity to act. Interrupt and reaction events are played with `play_interrupt_event` and `play_reaction_event`.
+ * The active player plays an action event during an action window and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it (Kyuden Isawa, Kunshu, Artisan Academy…): an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends their action (`end_resolution`), which ends their opportunity to act. Interrupt and reaction events are played with `play_interrupt_event` and `play_reaction_event`.
  */
 export interface PlayActionEvent {
   /**
-   * Action event in the hand of the player.
+   * Action event played: in a hand, a conflict deck or a conflict discard pile.
    */
   card_id: string
   /**
@@ -597,11 +597,11 @@ export interface PlayActionEvent {
 }
 
 /**
- * The active player plays an attachment from hand during an action window and attaches it to a card in play (a character of any player, or a province). The player says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.
+ * The active player plays an attachment during an action window and attaches it to a card in play (a character of any player, or a province). From their hand, or from elsewhere when a card allows it (Guidance of the Ancestors, Kunshu, Infiltrator…): an attachment of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player controls the attachment, whoever owns it. The player says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.
  */
 export interface PlayAttachment {
   /**
-   * Attachment in the hand of the player.
+   * Attachment played: in a hand, a conflict deck or a conflict discard pile.
    */
   card_id: string
   /**
@@ -615,13 +615,13 @@ export interface PlayAttachment {
 }
 
 /**
- * The active player plays a character from hand during an action window, at home or, during a conflict in which they take part, into the conflict on their side.
+ * The active player plays a character during an action window, at home or, during a conflict in which they take part, into the conflict on their side. From their hand, or from elsewhere when a card allows it (Prepared Ambush, Gateway to Meido, Artisan Academy…): a conflict character of a hand, a conflict deck (a card looked at) or a conflict discard pile, a dynasty character face up in a province, of a dynasty deck (a card looked at) or of a dynasty discard pile, of any player. The player controls the character, whoever owns it. During the dynasty phase, characters are played from provinces with `play_character_from_province`.
  *
  * The player says what they pay, since card effects may modify costs: `card_cost` for the card, `fate_cost` for the additional fate, and `fate` is the number of fate placed on the character. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.
  */
-export interface PlayCharacterFromHand {
+export interface PlayCharacter {
   /**
-   * Character in the hand of the player.
+   * Character played: in a hand, a deck or a discard pile, or face up in a province.
    */
   card_id: string
   /**
@@ -667,11 +667,11 @@ export interface PlayCharacterFromProvince {
 }
 
 /**
- * A player plays an interrupt event from hand before its triggering condition resolves, whether or not they have the opportunity to act (e.g. Stay Your Hand during a duel initiated by an opponent), and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and reaction events are played with `play_action_event` and `play_reaction_event`.
+ * A player plays an interrupt event before its triggering condition resolves, whether or not they have the opportunity to act (e.g. Stay Your Hand during a duel initiated by an opponent), and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and reaction events are played with `play_action_event` and `play_reaction_event`.
  */
 export interface PlayInterruptEvent {
   /**
-   * Interrupt event in the hand of the player.
+   * Interrupt event played: in a hand, a conflict deck or a conflict discard pile.
    */
   card_id: string
   /**
@@ -681,11 +681,11 @@ export interface PlayInterruptEvent {
 }
 
 /**
- * A player plays a reaction event from hand after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.
+ * A player plays a reaction event after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.
  */
 export interface PlayReactionEvent {
   /**
-   * Reaction event in the hand of the player.
+   * Reaction event played: in a hand, a conflict deck or a conflict discard pile.
    */
   card_id: string
   /**
@@ -1147,7 +1147,7 @@ export interface MessagePayloads {
   place_status_token: PlaceStatusToken
   play_action_event: PlayActionEvent
   play_attachment: PlayAttachment
-  play_character_from_hand: PlayCharacterFromHand
+  play_character: PlayCharacter
   play_character_from_province: PlayCharacterFromProvince
   play_interrupt_event: PlayInterruptEvent
   play_reaction_event: PlayReactionEvent

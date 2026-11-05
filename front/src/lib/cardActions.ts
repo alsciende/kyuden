@@ -13,7 +13,7 @@ export type SimpleAction = Message & { label: string }
 /** the messages playing a card, by the way it is played */
 interface PlayTypes {
   from_province: 'play_character_from_province'
-  from_hand: 'play_character_from_hand'
+  character: 'play_character'
   attachment: 'play_attachment'
   event: 'play_action_event' | 'play_interrupt_event' | 'play_reaction_event'
 }
@@ -89,6 +89,44 @@ const EVENT_TYPES: Record<AbilityTiming, PlayTypes['event']> = {
 
 function cardOf(cards: Cards, code: string | null): Card | undefined {
   return code === null ? undefined : cards[code]
+}
+
+/**
+ * The ways a card is played in an action window, from its hand or from elsewhere: a deck, a discard pile, a province
+ * (Kunshu, Artisan Academy, Prepared Ambush…: the engine does not check the effect allowing it), whoever owns it. A
+ * character in a province is played with `play_character_from_province` during the dynasty phase, with
+ * `play_character` in the other action windows; an event with the message of each of its timings.
+ */
+export function playActions(card: Card | undefined, available: Set<string>, inProvince = false): PlayAction[] {
+  const cost = card?.cost ?? 0
+  switch (card?.type) {
+    case 'character':
+      if (inProvince && available.has('play_character_from_province')) {
+        return [{ type: 'play_character_from_province', kind: 'from_province', label: 'Play this character', cost }]
+      }
+
+      return available.has('play_character')
+        ? [{ type: 'play_character', kind: 'character', label: 'Play this character', cost }]
+        : []
+    case 'attachment':
+      return available.has('play_attachment')
+        ? [{ type: 'play_attachment', kind: 'attachment', label: 'Attach it', cost }]
+        : []
+    case 'event': {
+      const timings = card.ability_timings ?? []
+
+      return timings
+        .filter((timing) => available.has(EVENT_TYPES[timing]))
+        .map((timing) => ({
+          type: EVENT_TYPES[timing],
+          kind: 'event',
+          label: timings.length === 1 ? 'Play this event' : `Play it as ${timing === 'action' ? 'an' : 'a'} ${timing}`,
+          cost,
+        }))
+    }
+    default:
+      return []
+  }
 }
 
 /**
@@ -324,24 +362,10 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     const timings = abilityTimings(located, cards)
     timings.forEach((timing) => add(menu.abilities, ABILITY_TYPES[timing], abilityLabel(timing, timings.length)))
   }
-  const cost = card?.cost ?? 0
 
   switch (stack.type) {
     case 'hand':
-      if (card?.type === 'character' && available.has('play_character_from_hand')) {
-        menu.plays.push({ type: 'play_character_from_hand', kind: 'from_hand', label: 'Play this character', cost })
-      } else if (card?.type === 'attachment' && available.has('play_attachment')) {
-        menu.plays.push({ type: 'play_attachment', kind: 'attachment', label: 'Attach it', cost })
-      } else if (card?.type === 'event') {
-        const timings = card.ability_timings ?? []
-        for (const timing of timings) {
-          if (available.has(EVENT_TYPES[timing])) {
-            const label =
-              timings.length === 1 ? 'Play this event' : `Play it as ${timing === 'action' ? 'an' : 'a'} ${timing}`
-            menu.plays.push({ type: EVENT_TYPES[timing], kind: 'event', label, cost })
-          }
-        }
-      }
+      menu.plays = playActions(card, available)
       if (menu.mine) {
         add(menu.state, 'reveal_card', 'Reveal it')
       }
@@ -374,13 +398,9 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         toDeck()
         discard()
       } else {
-        if (card?.type === 'character' && available.has('play_character_from_province')) {
-          menu.plays.push({
-            type: 'play_character_from_province',
-            kind: 'from_province',
-            label: 'Play this character',
-            cost,
-          })
+        if (card?.type === 'character') {
+          // during a conflict too (Prepared Ambush, Wind's Path)
+          menu.plays = playActions(card, available, true)
         }
         // a character has abilities once in play; a holding has them in its province
         if (card?.type !== 'character') {
@@ -483,12 +503,18 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       break
 
     case 'conflict_discard_pile':
+      // Kunshu, Guidance of the Ancestors, Exposed Courtyard
+      menu.plays = playActions(card, available)
       putIntoPlay()
       add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
       toDeck()
       break
 
     case 'dynasty_discard_pile':
+      // Gateway to Meido
+      if (card?.type === 'character') {
+        menu.plays = playActions(card, available)
+      }
       putIntoPlay()
       if (card?.type === 'holding' && available.has('put_holding_into_province')) {
         menu.intoProvince = stacksOf(located.player, 'regular_province').flatMap((province, index) => {

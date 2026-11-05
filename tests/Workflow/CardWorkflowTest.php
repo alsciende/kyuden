@@ -75,7 +75,9 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $scenario = $this->scenarioWithCardsToPlay();
         $spear = $scenario->card('spear');
 
-        self::service(Registry::class)->get($spear)->apply($spear, 'play_card');
+        self::service(Registry::class)->get($spear)->apply($spear, 'play_card', [
+            'player' => $scenario->player('john'),
+        ]);
 
         self::assertSame(StackType::InPlay, $spear->getStack()->getType());
         self::assertSame([$spear], $spear->getStack()->getCards()->getValues());
@@ -91,6 +93,7 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $stack = $scenario->card('oathkeeper')->getStack();
 
         self::service(Registry::class)->get($katana)->apply($katana, 'play_card', [
+            'player' => $scenario->player('john'),
             'stack' => $stack,
         ]);
 
@@ -107,6 +110,7 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $stack = $scenario->card('province')->getStack();
 
         self::service(Registry::class)->get($katana)->apply($katana, 'play_card', [
+            'player' => $scenario->player('john'),
             'stack' => $stack,
         ]);
 
@@ -123,7 +127,9 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('needs a target stack');
 
-        self::service(Registry::class)->get($katana)->apply($katana, 'play_card');
+        self::service(Registry::class)->get($katana)->apply($katana, 'play_card', [
+            'player' => $scenario->player('john'),
+        ]);
     }
 
     public function testPlayingACharacterRejectsATargetStack(): void
@@ -135,6 +141,7 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $this->expectExceptionMessage('enters play in a new stack');
 
         self::service(Registry::class)->get($spear)->apply($spear, 'play_card', [
+            'player' => $scenario->player('john'),
             'stack' => $scenario->card('oathkeeper')->getStack(),
         ]);
     }

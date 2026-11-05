@@ -21,7 +21,7 @@ use App\Message\LoseFate;
 use App\Message\LoseHonor;
 use App\Message\PlayActionEvent;
 use App\Message\PlayAttachment;
-use App\Message\PlayCharacterFromHand;
+use App\Message\PlayCharacter;
 use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayInterruptEvent;
 use App\Message\PlayReactionEvent;
@@ -67,7 +67,7 @@ class MessageConstraintsTest extends AbstractKernelTestCase
         yield 'negative interrupt event cost' => [new PlayInterruptEvent('g', 'p', 'c', -1), ['cardCost']];
         yield 'negative reaction event cost' => [new PlayReactionEvent('g', 'p', 'c', -1), ['cardCost']];
         yield 'negative attachment cost' => [new PlayAttachment('g', 'p', 'c', 't', -1), ['cardCost']];
-        yield 'negative costs from hand' => [new PlayCharacterFromHand('g', 'p', 'c', -1, -1, -1, false), ['cardCost', 'fateCost', 'fate']];
+        yield 'negative costs from hand' => [new PlayCharacter('g', 'p', 'c', -1, -1, -1, false), ['cardCost', 'fateCost', 'fate']];
         yield 'negative costs from province' => [new PlayCharacterFromProvince('g', 'p', 'c', -1, -1, -1), ['cardCost', 'fateCost', 'fate']];
         yield 'no defender declared' => [new DeclareDefenders('g', 'p', []), ['defenderIds']];
         yield 'a defender declared' => [new DeclareDefenders('g', 'p', ['c']), []];

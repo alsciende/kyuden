@@ -24,7 +24,7 @@ use App\Message\MoveToConflict;
 use App\Message\PlaceHonorTokens;
 use App\Message\PlaceStatusToken;
 use App\Message\PlayActionEvent;
-use App\Message\PlayCharacterFromHand;
+use App\Message\PlayCharacter;
 use App\Message\RemoveFate;
 use App\Message\RemoveHonorTokens;
 use App\Message\ResetCharacterSkill;
@@ -153,7 +153,7 @@ class MessageLogTest extends AbstractKernelTestCase
 
         $this->messageBus->dispatch(new PlayActionEvent($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('banzai')->getId(), 1));
 
-        self::assertSame(['john spends 1 fate', 'john plays Banzai!', "Banzai! is discarded from john's hand"], $this->janesLog($scenario));
+        self::assertSame(['john spends 1 fate', 'john plays Banzai!', "Banzai! is put from john's hand into john's conflict discard pile"], $this->janesLog($scenario));
     }
 
     public function testAPlayerRunningOutOfCardsLosesHonorAndShufflesTheirDiscardPile(): void
@@ -218,7 +218,7 @@ class MessageLogTest extends AbstractKernelTestCase
 
         $this->messageBus->dispatch(new MoveToConflict($gameId, $john, $scenario->card('hotaru')->getId()));
         $this->messageBus->dispatch(new MoveHome($gameId, $john, $scenario->card('toturi')->getId()));
-        $this->messageBus->dispatch(new PlayCharacterFromHand($gameId, $john, $scenario->card('spear')->getId(), 2, 1, 1, true));
+        $this->messageBus->dispatch(new PlayCharacter($gameId, $john, $scenario->card('spear')->getId(), 2, 1, 1, true));
 
         self::assertSame([
             'Doji Hotaru moves to the conflict',

@@ -2,11 +2,14 @@
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 
 import type { CardView, GameView, Send, Side } from '@/api/game'
+import type { Message } from '@/api/messages'
 import GameCard from '@/components/game/GameCard.vue'
+import PlayForm from '@/components/game/PlayForm.vue'
 import { playerById, type Cards } from '@/lib/board'
-import { provinceChoices } from '@/lib/cardActions'
+import { provinceChoices, type PlayAction } from '@/lib/cardActions'
 import {
   inspectionActions,
+  inspectionPlays,
   lostInTheShuffle,
   type InspectedCard,
   type Inspection,
@@ -18,7 +21,8 @@ import { hidePreview } from '@/lib/preview'
  * The cards the player looks at or reveals, in a window of their own over the board: nothing else can be done while it
  * is open. The player chooses a card and what to do with it (its hand, its deck, its discard pile…), as the effect
  * says, then closes the window, which ends the look: the engine records nothing, the cards are out of sight again.
- * Each card shows what it has become; those left stay where they are.
+ * Each card shows what it has become; those left stay where they are. A card of a deck can be played from there
+ * (Artisan Academy, Pillow Book, Infiltrator…), with the form of the card opened.
  */
 const props = defineProps<{
   game: GameView
@@ -100,6 +104,13 @@ const actions = computed(() =>
         .filter((action) => !(action.type === 'reveal_card' && revealed.has(action.payload.card_id)))
         .filter((action) => props.game.available_actions.includes(action.type)),
 )
+/** the ways the selected card is played, from a deck */
+const plays = computed(() =>
+  selected.value === null
+    ? []
+    : inspectionPlays(props.inspection, props.cards[selected.value.code], new Set(props.game.available_actions)),
+)
+const playing = ref<PlayAction | null>(null)
 const primary = computed(() => actions.value.filter((action) => action.primary))
 const moves = computed(() => actions.value.filter((action) => !action.primary && !action.danger))
 const removals = computed(() => actions.value.filter((action) => action.danger))
@@ -112,6 +123,21 @@ function nameOf(card: InspectedCard): string {
 function select(card: InspectedCard): void {
   if (!(card.id in done)) {
     selectedId.value = card.id
+    playing.value = null
+  }
+}
+
+/** the card has gone somewhere: the next one left is selected */
+function moved(card: InspectedCard, what: string): void {
+  done[card.id] = what
+  playing.value = null
+  selectedId.value = props.inspection.cards.find((other) => !(other.id in done))?.id ?? null
+}
+
+async function play(message: Message): Promise<void> {
+  const card = selected.value
+  if (card !== null && (await props.send(message.type, message.payload as never))) {
+    moved(card, 'Played')
   }
 }
 
@@ -125,13 +151,14 @@ async function run(action: InspectionAction): Promise<void> {
 
     return
   }
-  done[card.id] = action.done
   if (lostInTheShuffle(props.inspection, action)) {
     for (const other of props.inspection.cards) {
-      done[other.id] ??= 'Lost in the shuffle'
+      if (other.id !== card.id) {
+        done[other.id] ??= 'Lost in the shuffle'
+      }
     }
   }
-  selectedId.value = props.inspection.cards.find((other) => !(other.id in done))?.id ?? null
+  moved(card, action.done)
 }
 
 function close(): void {
@@ -188,7 +215,29 @@ onBeforeUnmount(hidePreview)
               <span class="label">Selected · #{{ selectedIndex + 1 }}</span>
               <span class="name">{{ nameOf(selected) }}</span>
             </div>
-            <div v-if="primary.length || moves.length" class="actions">
+            <PlayForm
+              v-if="playing"
+              :action="playing"
+              :card-id="selected.id"
+              :game="game"
+              :cards="cards"
+              :sending="sending"
+              @play="play"
+              @back="playing = null"
+            />
+            <div v-else-if="plays.length" class="actions">
+              <button
+                v-for="action in plays"
+                :key="action.type"
+                type="button"
+                class="action primary"
+                :disabled="sending"
+                @click="playing = action"
+              >
+                {{ action.label }}
+              </button>
+            </div>
+            <div v-if="!playing && (primary.length || moves.length)" class="actions">
               <button
                 v-for="action in primary"
                 :key="action.label"
@@ -212,7 +261,7 @@ onBeforeUnmount(hidePreview)
                 </button>
               </div>
             </div>
-            <div v-if="removals.length" class="removals">
+            <div v-if="!playing && removals.length" class="removals">
               <button
                 v-for="action in removals"
                 :key="action.label"
@@ -224,7 +273,9 @@ onBeforeUnmount(hidePreview)
                 {{ action.label }}
               </button>
             </div>
-            <p v-if="!actions.length" class="hint">Nothing to do with this card: it stays where it is.</p>
+            <p v-if="!actions.length && !plays.length" class="hint">
+              Nothing to do with this card: it stays where it is.
+            </p>
           </template>
           <template v-else>
             <span class="label">Selected</span>

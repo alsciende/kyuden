@@ -1,11 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "play_attachment",
-    "description": "The active player plays an attachment from hand during an action window and attaches it to a card in play (a character of any player, or a province). The player says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.",
+    "description": "The active player plays an attachment during an action window and attaches it to a card in play (a character of any player, or a province). From their hand, or from elsewhere when a card allows it (Guidance of the Ancestors, Kunshu, Infiltrator…): an attachment of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player controls the attachment, whoever owns it. The player says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.",
     "type": "object",
     "properties": {
         "card_id": {
-            "description": "Attachment in the hand of the player.",
+            "description": "Attachment played: in a hand, a conflict deck or a conflict discard pile.",
             "type": "string"
         },
         "target_card_id": {

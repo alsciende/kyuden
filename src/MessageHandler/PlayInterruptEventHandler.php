@@ -11,7 +11,7 @@ use App\Message\PlayInterruptEvent;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
-use App\Service\HandService;
+use App\Service\PlayService;
 use App\Service\OpportunityService;
 use App\State\Model\Resolution;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -29,7 +29,7 @@ final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInt
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
-        private HandService $handService,
+        private PlayService $playService,
         private OpportunityService $opportunityService,
     ) {
     }
@@ -38,7 +38,6 @@ final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInt
     public function assertAvailable(Game $game, Player $player): void
     {
         // accepted in any game place, from any player of the game
-        $this->handService->assertEventInHand($player, AbilityTiming::Interrupt);
     }
 
     public function __invoke(PlayInterruptEvent $message): void
@@ -48,7 +47,7 @@ final readonly class PlayInterruptEventHandler implements PlayerActionHandlerInt
         $this->assertAvailable($game, $player);
 
         $card = $this->cardRepository->get($message->getCardId(), $game);
-        $this->handService->playEvent($card, $player, $message->getCardCost(), AbilityTiming::Interrupt);
+        $this->playService->playEvent($card, $player, $message->getCardCost(), AbilityTiming::Interrupt);
 
         $this->opportunityService->startInterruptOrReaction($player, new Resolution($card->getId(), AbilityTiming::Interrupt));
     }

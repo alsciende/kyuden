@@ -191,9 +191,18 @@ return App::config([
                         'stack' => StackType::Hand,
                         'orientation' => Orientation::FaceUp,
                     ]),
-                    WorkflowConfig::transition('play_card', [ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_IN_PLAY, [
-                        'log' => '{owner} plays {card} from {from} into {to}',
+                    // a character or an attachment played (PlayCharacter, PlayAttachment), from its hand or from elsewhere,
+                    // by the `player` of the context, whoever owns it
+                    WorkflowConfig::transition('play_card', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_IN_PLAY, [
+                        'log' => '{player} plays {card} from {from} into {to}',
                         'stack' => StackType::InPlay,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
+                    // an event played (PlayActionEvent, PlayInterruptEvent, PlayReactionEvent), from its hand or from
+                    // elsewhere: it goes to the discard pile of its owner
+                    WorkflowConfig::transition('play_event', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_DISCARD_PILE, [
+                        'log' => '{card} is put from {from} into {to}',
+                        'stack' => StackType::ConflictDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // a character put into play by an effect, without being played (PutCharacterIntoPlay)
@@ -272,8 +281,10 @@ return App::config([
                         'log' => '{card} is turned facedown in {from}',
                         'orientation' => Orientation::FaceDown,
                     ]),
-                    WorkflowConfig::transition('play', DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, [
-                        'log' => '{owner} plays {card} from {from} into {to}',
+                    // a character played (PlayCharacterFromProvince, PlayCharacter), from a province or from elsewhere, by
+                    // the `player` of the context, whoever owns it
+                    WorkflowConfig::transition('play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_IN_PLAY, [
+                        'log' => '{player} plays {card} from {from} into {to}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),

@@ -9,9 +9,11 @@ use App\Attribute\Description;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * The active player plays an attachment from hand during an action window and attaches it to a card in play (a
- * character of any player, or a province). The player says what they pay (`cardCost`), since card effects may modify
- * costs.
+ * The active player plays an attachment during an action window and attaches it to a card in play (a character of any
+ * player, or a province). From their hand, or from elsewhere when a card allows it (Guidance of the Ancestors,
+ * Kunshu, Infiltrator…): an attachment of a hand, a conflict deck (a card looked at) or a conflict discard pile, of
+ * any player. The player controls the attachment, whoever owns it. The player says what they pay (`cardCost`), since
+ * card effects may modify costs.
  * The player resolves what follows with other actions, then ends their action (`EndResolution`), which ends
  * their opportunity to act.
  */
@@ -21,7 +23,7 @@ final readonly class PlayAttachment implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
-        #[Description('Attachment in the hand of the player.')]
+        #[Description('Attachment played: in a hand, a conflict deck or a conflict discard pile.')]
         private string $cardId,
         #[Description('Character in play or province the attachment goes on.')]
         private string $targetCardId,

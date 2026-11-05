@@ -19,7 +19,7 @@ use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use Symfony\Component\Workflow\Exception\NotEnabledTransitionException;
+use App\Exception\Rules\NotInProvinceException;
 
 class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
 {
@@ -132,7 +132,7 @@ class PlayCharacterFromProvinceHandlerTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenarioAtPlayCardsFromProvinces(faceup: false);
 
-        $this->expectException(NotEnabledTransitionException::class);
+        $this->expectException(NotInProvinceException::class);
 
         $this->play($scenario, 'toturi');
     }
