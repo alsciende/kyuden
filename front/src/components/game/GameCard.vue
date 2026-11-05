@@ -27,7 +27,7 @@ const props = withDefaults(
     cards: Cards
     /** the card belongs to the viewer: its image is shown above it */
     mine: boolean
-    size?: 'small' | 'normal'
+    size?: 'small' | 'normal' | 'large'
     selected?: boolean
     muted?: boolean
     /** a word on the card, e.g. what it does in the conflict */
@@ -196,7 +196,7 @@ function enter(): void {
       </span>
     </template>
     <template v-else-if="hidden">
-      <ClanMon :src="enso" :size="size === 'small' ? 30 : 44" color="#a89c88" />
+      <ClanMon :src="enso" :size="size === 'small' ? 30 : size === 'large' ? 72 : 44" color="#a89c88" />
     </template>
     <template v-else>
       <span class="name">{{ printedCard?.name ?? '…' }}</span>
@@ -273,6 +273,25 @@ function enter(): void {
 
 .small .kind {
   display: none;
+}
+
+/* sized by its container (--large-w), the text scaled with it */
+.large {
+  --w: var(--large-w, 160px);
+  --h: calc(var(--w) * 118 / 84);
+  padding: calc(var(--w) * 0.08);
+}
+
+.large .name {
+  font-size: calc(var(--w) * 0.14);
+}
+
+.large .kind {
+  font-size: calc(var(--w) * 0.075);
+}
+
+.large .stats {
+  font-size: calc(var(--w) * 0.11);
 }
 
 .bowed {

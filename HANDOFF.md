@@ -98,7 +98,6 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 
 ### Web client
 
-- Choosing the stronghold province: the five provinces larger and centered.
 - Dedicated layouts for the remaining steps (see the limitations), and a component test of `GameView`.
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
 - Accounts: list and edit their decks.

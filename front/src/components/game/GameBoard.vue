@@ -177,16 +177,17 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   <main class="board" :class="mode">
     <!-- setup: the province under the stronghold -->
     <template v-if="mode === 'stronghold'">
-      <section class="zone" aria-label="Your provinces">
+      <section class="zone pick" aria-label="Your provinces">
         <span class="label"
           ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · choose the province under your stronghold</span
         >
-        <div class="row">
+        <div class="pick-row">
           <GameCard
             v-if="stronghold"
             :card="stronghold"
             :cards="cards"
             :mine="true"
+            size="large"
             @click="emit('open', stronghold.id)"
           />
           <span class="divider" aria-hidden="true" />
@@ -196,6 +197,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
             :card="card"
             :cards="cards"
             :mine="true"
+            size="large"
             @click="emit('open', card.id)"
           />
         </div>
@@ -501,6 +503,28 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
+}
+
+/* the choice of the stronghold province: six cards, as large as the board allows */
+.pick {
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  container-type: size;
+}
+
+.pick-row {
+  /* six cards and the divider across (six gaps), a card and its label down */
+  --large-w: clamp(84px, min((100cqw - 6 * 20px - 1px) / 6, (100cqh - 80px) * 84 / 118), 220px);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.pick-row .divider {
+  margin: 0;
 }
 
 .dimmed {
