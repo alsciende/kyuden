@@ -14,6 +14,8 @@ use App\Repository\GameRepository;
 use App\Service\AvailableActionsResolver;
 use App\Service\Bot\BotStrategy;
 use App\Service\Bot\HouseBot;
+use App\Task\PlayHouseBotTurn;
+use App\Task\PlayHouseBotTurnHandler;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use Doctrine\ORM\EntityManagerInterface;
@@ -63,20 +65,65 @@ class HouseBotTest extends AbstractKernelTestCase
         self::assertSame(0, self::service(HouseBot::class)->play($gameId));
     }
 
-    public function testPlaysInTheGamesChangedDuringTheRequest(): void
+    private function botGame(): Game
     {
-        $gameId = $this->scenario()
+        return $this->scenario()
             ->atPlace('choose_stronghold')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::LION_STARTER_DECK))
             ->withPlayer('kyuden-bot', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::CRAB_STARTER_DECK))
             ->persist()
-            ->game()
-            ->getId();
-        $houseBot = self::service(HouseBot::class);
-        $houseBot->schedule($gameId);
+            ->game();
+    }
 
-        self::assertSame(1, $houseBot->playScheduledGames());
-        self::assertSame(0, $houseBot->playScheduledGames());
+    public function testAMessageOfTheOpponentSendsTheTurnOfTheBotToTheWorker(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('choose_stronghold')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->strongholdProvince('01-entrenched-position', as: 'province', chosen: false))
+            ->withPlayer('kyuden-bot', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::CRAB_STARTER_DECK))
+            ->persist();
+        $gameId = $scenario->game()->getId();
+
+        $this->messageBus->dispatch(new ChooseStrongholdProvince($gameId, $scenario->player('john')->getId(), $scenario->card('province')->getId()));
+
+        self::assertEquals([new PlayHouseBotTurn($gameId)], $this->sentTasks());
+        // the worker plays it
+        self::assertNull($this->playerStateManager->getState($this->botPlayer($gameId))->getStrongholdProvinceId());
+    }
+
+    public function testItsOwnActionsSendNoTurn(): void
+    {
+        $gameId = $this->botGame()->getId();
+
+        self::assertSame(1, self::service(HouseBot::class)->play($gameId));
+        self::assertSame([], $this->sentTasks());
+    }
+
+    public function testIsWokenInTheGamesItPlaysUntilTheyEnd(): void
+    {
+        $houseBot = self::service(HouseBot::class);
+        $ended = $this->scenario()->atPlace(Game::STATE_ENDED)->withPlayer('john')->withPlayer('kyuden-bot')->persist()->game();
+        $withoutBot = $this->scenario()->atPlace('choose_stronghold')->withPlayer('john')->withPlayer('jane')->persist()->game();
+
+        $houseBot->wake($ended->getId());
+        $houseBot->wake($withoutBot->getId());
+        $houseBot->wake('unknown-game');
+        self::assertSame([], $this->sentTasks());
+
+        $gameId = $this->botGame()->getId();
+        $houseBot->wake($gameId);
+        $houseBot->wake($gameId);
+        // every message sends its turn: the worker may have played the first one already
+        self::assertEquals([new PlayHouseBotTurn($gameId), new PlayHouseBotTurn($gameId)], $this->sentTasks());
+    }
+
+    public function testTheWorkerPlaysTheTurn(): void
+    {
+        $gameId = $this->botGame()->getId();
+
+        self::service(PlayHouseBotTurnHandler::class)(new PlayHouseBotTurn($gameId));
+
+        self::assertNotNull($this->playerStateManager->getState($this->botPlayer($gameId))->getStrongholdProvinceId());
     }
 
     private function failingBus(int $failures): FailingBus
@@ -86,6 +133,9 @@ class HouseBotTest extends AbstractKernelTestCase
 
     private function houseBot(MessageBusInterface $bus): HouseBot
     {
+        $taskBus = self::getContainer()->get('task.bus');
+        self::assertInstanceOf(MessageBusInterface::class, $taskBus);
+
         return new HouseBot(
             'kyuden-bot',
             self::service(BotStrategy::class),
@@ -94,6 +144,7 @@ class HouseBotTest extends AbstractKernelTestCase
             self::service(ManagerRegistry::class),
             self::service(AvailableActionsResolver::class),
             $bus,
+            $taskBus,
             new NullLogger(),
         );
     }
@@ -158,27 +209,5 @@ class HouseBotTest extends AbstractKernelTestCase
 
         self::assertSame(0, $this->houseBot($bus)->play($gameId));
         self::assertCount(3, $bus->messages);
-    }
-
-    public function testIsWokenInTheGamesItPlaysUntilTheyEnd(): void
-    {
-        $scenario = $this->scenario()
-            ->atPlace('choose_stronghold')
-            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::LION_STARTER_DECK))
-            ->withPlayer('kyuden-bot', fn (PlayerBuilder $p): PlayerBuilder => $p->fromStarterDeck(AppFixtures::CRAB_STARTER_DECK))
-            ->persist();
-        $houseBot = self::service(HouseBot::class);
-
-        $houseBot->wake($scenario->game());
-        self::assertSame(1, $houseBot->playScheduledGames());
-
-        $ended = $this->scenario()
-            ->atPlace(Game::STATE_ENDED)
-            ->withPlayer('john')
-            ->withPlayer('kyuden-bot')
-            ->persist();
-        $houseBot->wake($ended->game());
-        $houseBot->wake($this->scenario()->atPlace('choose_stronghold')->withPlayer('john')->withPlayer('jane')->persist()->game());
-        self::assertSame(0, $houseBot->playScheduledGames());
     }
 }

@@ -47,7 +47,7 @@ After changing a workflow, compare `bin/console workflow:dump <name>` before and
 - Build the game state a test needs with `$this->scenario()` (`tests/Builder/GameBuilder.php`) instead of dispatching the actions leading to it. Once the game has started, the player order is the declaration order of the players. It writes the game place directly, puts cards directly in their stacks (unless stated: face down in decks and provinces except the stronghold, face up elsewhere), and exposes players and cards by alias through `Scenario`. `build()` keeps everything in memory; `persist()` flushes, for handlers that load entities by id.
 - Test at the narrowest level: guards with `Registry::get($game)->can()`, listeners and handlers by invoking them directly (no auto transitions), the message bus only to check automatic transitions.
 - `tests/MessageHandler/MessageHandlerTest.php` is the single end-to-end setup scenario, kept as a safety net.
-- A request of the test client (`KernelBrowser`) ends with `kernel.terminate`: in a game of the house bot (`kyuden-bot`), the bot plays then.
+- The tasks of the worker (`src/Task`) are not handled in the tests (the transport `async` is in memory): read them with `$this->sentTasks()`, then invoke their handler. In a game of the house bot (`kyuden-bot`), the bot only plays when a test invokes it (`HouseBot::play()`, or the handler of `PlayHouseBotTurn`).
 - The web client is tested with Vitest, in `front/src/**/__tests__`, next to the code.
 
 ## Conventions

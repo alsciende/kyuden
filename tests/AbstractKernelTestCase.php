@@ -26,8 +26,10 @@ use App\View\GameLogViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\Before;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\ExceptionInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 use Symfony\Component\Uid\Uuid;
 
 abstract class AbstractKernelTestCase extends KernelTestCase
@@ -85,6 +87,19 @@ abstract class AbstractKernelTestCase extends KernelTestCase
         self::assertInstanceOf($id, $service);
 
         return $service;
+    }
+
+    /**
+     * The tasks sent to the worker (TaskInterface), in their order: the transport async is in memory in the tests.
+     *
+     * @return list<object>
+     */
+    protected function sentTasks(): array
+    {
+        $transport = static::getContainer()->get('messenger.transport.async');
+        self::assertInstanceOf(InMemoryTransport::class, $transport);
+
+        return array_values(array_map(fn (Envelope $envelope): object => $envelope->getMessage(), $transport->getSent()));
     }
 
     /**

@@ -8,6 +8,7 @@ use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Task\PlayHouseBotTurn;
 use App\Tests\AbstractKernelTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
@@ -65,9 +66,8 @@ class ApiBotGamesControllerTest extends AbstractKernelTestCase
         self::assertSame(['john', 'kyuden-bot'], array_map(fn (Player $player): string => $player->getUserId(), $players));
         self::assertSame($data['player_id'], $players[0]->getId());
         self::assertSame(AppFixtures::CRAB_STARTER_DECK, $players[0]->getDeck()->getId());
-        // the bot has played once the response was sent, john has not
-        self::assertNotNull($this->playerStateManager->getState($players[1])->getStrongholdProvinceId());
-        self::assertNull($this->playerStateManager->getState($players[0])->getStrongholdProvinceId());
+        // the bot plays in the worker
+        self::assertEquals([new PlayHouseBotTurn($data['game_id'])], $this->sentTasks());
     }
 
     public function testRejectsADeckTheUserCannotUse(): void

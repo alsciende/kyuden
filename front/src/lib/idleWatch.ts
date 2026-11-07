@@ -1,6 +1,6 @@
 /**
  * How long a game may stay at the same version before its player reads it again, in milliseconds: a notification of
- * the hub may be lost, and reading a game of the house bot makes it play a turn it has not played.
+ * the hub may be lost.
  */
 export const IDLE_DELAY = 15_000
 

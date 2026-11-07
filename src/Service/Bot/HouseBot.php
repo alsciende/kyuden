@@ -15,35 +15,35 @@ use App\Message\PassOpportunity;
 use App\Middleware\Stamp\ExpectedVersionStamp;
 use App\Repository\GameRepository;
 use App\Service\AvailableActionsResolver;
+use App\Task\PlayHouseBotTurn;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * The bot of the platform (user HOUSE_BOT_ID), which plays the introductory games (POST /api/bot-games). It plays in
- * the request of the message that gave it something to do, once the response is sent (kernel.terminate): the player
- * gets the response at once and sees the moves of the bot through the notifications of the game.
+ * the worker, out of the requests: once a message has changed a game it plays (HouseBotMiddleware), its turn is sent to
+ * the worker (PlayHouseBotTurn), which plays it at once (the transport is woken by LISTEN/NOTIFY). The player gets the
+ * response at once and sees the moves of the bot through the notifications of the game.
  *
- * The games a message has changed are scheduled by HouseBotMiddleware. The bot plays its actions one at a time, through
- * the bus like any player, until it has nothing to do (BotStrategy). Before dispatching, the entity manager is cleared
- * so that GameLockMiddleware loads the game again, and the version the bot decided on is expected
- * (ExpectedVersionStamp): an action of the opponent in between makes the bot decide again.
+ * The bot plays its actions one at a time, through the bus like any player, until it has nothing to do (BotStrategy).
+ * Before dispatching, the entity manager is cleared so that GameLockMiddleware loads the game again, and the version the
+ * bot decided on is expected (ExpectedVersionStamp): an action of the opponent in between makes the bot decide again.
+ * Its own actions send no turn: it plays until it has nothing to do.
  *
- * Its opponent never waits for it in vain. Reading the game schedules the bot too (ApiGamesController), so that a turn
- * lost with its request (a restart, a timeout) is played once the opponent reads the game again. A failure of the bot (a
- * bug of the strategy, an action the engine refuses) makes it do nothing in the step if it can (pass), else concede: the
- * reason of the concession is the failure, for the developers only.
+ * Its opponent never waits for it in vain: a turn waits in the transport while the worker is stopped, and a worker
+ * killed while playing it plays it again once started. A failure of the bot (a bug of the strategy, an action the
+ * engine refuses) makes it do nothing in the step if it can (pass), else concede: the reason of the concession is the
+ * failure, for the developers only.
  *
- * Mutable (the scheduled games of the request): reset between requests.
+ * Mutable (the game it is playing): reset between the messages of the worker.
  */
 final class HouseBot implements ResetInterface
 {
     /**
-     * At most this many actions per request, so that a strategy that never runs out of actions stops.
+     * At most this many actions per turn, so that a strategy that never runs out of actions stops.
      */
     public const int MAX_ACTIONS = 100;
 
@@ -53,9 +53,9 @@ final class HouseBot implements ResetInterface
     private const array FALLBACK_ACTIONS = ['pass_opportunity', 'end_resolution', 'pass_conflict', 'declare_no_defenders'];
 
     /**
-     * @var array<string, true> ids of the games changed during the request
+     * The game the bot is playing, whose changes send no turn.
      */
-    private array $scheduledGameIds = [];
+    private ?string $playingGameId = null;
 
     public function __construct(
         private readonly string $houseBotId,
@@ -65,6 +65,7 @@ final class HouseBot implements ResetInterface
         private readonly ManagerRegistry $managerRegistry,
         private readonly AvailableActionsResolver $availableActionsResolver,
         private readonly MessageBusInterface $bus,
+        private readonly MessageBusInterface $taskBus,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -74,43 +75,23 @@ final class HouseBot implements ResetInterface
         return $this->houseBotId;
     }
 
-    public function schedule(string $gameId): void
-    {
-        $this->scheduledGameIds[$gameId] = true;
-    }
-
     /**
-     * Schedules a game the bot plays and that has not ended: it may have something to do in it.
-     */
-    public function wake(Game $game): void
-    {
-        if ($game->getCurrentPlace() !== Game::STATE_ENDED && $this->findPlayer($game) instanceof Player) {
-            $this->schedule($game->getId());
-        }
-    }
-
-    #[AsEventListener(KernelEvents::TERMINATE)]
-    public function onTerminate(): void
-    {
-        $this->playScheduledGames();
-    }
-
-    /**
-     * Plays in the games changed during the request, including by the bot itself.
+     * A message has changed the game: sends the turn of the bot to the worker if it plays the game, which has not ended,
+     * and is not playing it already. The game is the one the message has just loaded (the identity map): no query.
      *
-     * @return int the number of actions sent
+     * Every message sends its turn, none is skipped as a duplicate: the worker may play the turn of a first message
+     * before a second one of the same request is handled.
      */
-    public function playScheduledGames(): int
+    public function wake(string $gameId): void
     {
-        $actions = 0;
-        while ($this->scheduledGameIds !== [] && $actions < self::MAX_ACTIONS) {
-            $gameId = array_key_first($this->scheduledGameIds);
-            unset($this->scheduledGameIds[$gameId]);
-            $actions += $this->play($gameId, self::MAX_ACTIONS - $actions);
+        if ($gameId === $this->playingGameId) {
+            return;
         }
-        $this->scheduledGameIds = [];
 
-        return $actions;
+        $game = $this->gameRepository->find($gameId);
+        if ($game instanceof Game && $game->getCurrentPlace() !== Game::STATE_ENDED && $this->findPlayer($game) instanceof Player) {
+            $this->taskBus->dispatch(new PlayHouseBotTurn($gameId));
+        }
     }
 
     /**
@@ -118,10 +99,20 @@ final class HouseBot implements ResetInterface
      *
      * @return int the number of actions sent
      */
-    public function play(string $gameId, int $maxActions = self::MAX_ACTIONS): int
+    public function play(string $gameId): int
+    {
+        $this->playingGameId = $gameId;
+        try {
+            return $this->playUntilDone($gameId);
+        } finally {
+            $this->playingGameId = null;
+        }
+    }
+
+    private function playUntilDone(string $gameId): int
     {
         $actions = 0;
-        while ($actions < $maxActions) {
+        while ($actions < self::MAX_ACTIONS) {
             $game = $this->gameRepository->find($gameId);
             $player = $game instanceof Game ? $this->findPlayer($game) : null;
             if (! $game instanceof Game || ! $player instanceof Player) {
@@ -239,6 +230,6 @@ final class HouseBot implements ResetInterface
     #[\Override]
     public function reset(): void
     {
-        $this->scheduledGameIds = [];
+        $this->playingGameId = null;
     }
 }

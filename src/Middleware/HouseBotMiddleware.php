@@ -11,8 +11,8 @@ use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 
 /**
- * Once a message is handled, tells the house bot that its game has changed: the bot may have something to do in it,
- * once the response is sent (HouseBot).
+ * Once a message is handled (after the commit: first of the bus), tells the house bot that its game has changed: the
+ * bot may have something to do in it, which the worker plays (HouseBot::wake()).
  */
 readonly class HouseBotMiddleware implements MiddlewareInterface
 {
@@ -27,7 +27,7 @@ readonly class HouseBotMiddleware implements MiddlewareInterface
         $envelope = $stack->next()->handle($envelope, $stack);
         $message = $envelope->getMessage();
         if ($message instanceof ActionInterface) {
-            $this->houseBot->schedule($message->getGameId());
+            $this->houseBot->wake($message->getGameId());
         }
 
         return $envelope;
