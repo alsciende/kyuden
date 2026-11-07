@@ -127,6 +127,34 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * The games that have started and not ended, unchanged since the time given and read by none of their players since
+     * (Player::lastSeenAt, never written for a player who never reads it: the house bot), as their id and version: no
+     * game is loaded, so that a message can then be dispatched on it (GameLockMiddleware).
+     *
+     * @return list<array{id: string, version: int}>
+     */
+    public function findLeftSince(\DateTimeImmutable $since): array
+    {
+        $seen = $this->getEntityManager()->createQueryBuilder()
+            ->select('1')
+            ->from(Player::class, 'seen')
+            ->where('seen.game = g')
+            ->andWhere('seen.lastSeenAt >= :since');
+
+        /** @var list<array{id: string, version: int}> */
+        return $this->createQueryBuilder('g')
+            ->select('g.id', 'g.version')
+            ->where('g.currentPlace NOT IN (:places)')
+            ->andWhere('g.updatedAt < :since')
+            ->andWhere('NOT EXISTS (' . $seen->getDQL() . ')')
+            ->setParameter('places', ['join_game', Game::STATE_ENDED])
+            ->setParameter('since', $since, 'datetime_immutable')
+            ->orderBy('g.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /**
      * The games that have started and not ended, with their players and their users, in a single query; the last
      * started first (the latest arrival of their players).
      *

@@ -59,7 +59,7 @@ services:
   worker:
     image: ghcr.io/alsciende/kyuden-app:${KYUDEN_VERSION:?}
     restart: unless-stopped
-    command: ["bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=256M"]
+    command: ["bin/console", "messenger:consume", "async", "scheduler_default", "--bus=task.bus", "--time-limit=3600", "--memory-limit=256M"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-kyuden}:${POSTGRES_PASSWORD:?}@database:5432/${POSTGRES_DB:-kyuden}?serverVersion=18&charset=utf8
       # the hub of the application, on its port that the host does not publish (app/Caddyfile)

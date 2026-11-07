@@ -14,7 +14,7 @@ import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
-import { gameEnded, opponent, viewer, victoryText } from '@/lib/board'
+import { gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
@@ -167,9 +167,7 @@ function switchRing(element: Element): void {
 
 const ended = computed(() => game.value !== null && gameEnded(game.value) && !game.value.spectating)
 const result = computed(() =>
-  game.value === null
-    ? null
-    : { victory: game.value.winner_id === game.value.viewer_id, text: victoryText(game.value) },
+  game.value === null ? null : { title: resultTitle(game.value), text: victoryText(game.value) },
 )
 
 const guest = computed(() => (isGuest(session.value) ? session.value : null))
@@ -281,7 +279,7 @@ const problem = computed(() => {
     <div v-if="ended && result" class="ended" role="dialog" aria-labelledby="game-result">
       <div class="ended-content">
         <ClanMon :src="enso" :size="96" color="var(--on-veil)" />
-        <h1 id="game-result">{{ result.victory ? 'Victory' : 'Defeat' }}</h1>
+        <h1 id="game-result">{{ result.title }}</h1>
         <p v-if="result.text">{{ result.text }}</p>
         <!-- a guest is invited to keep their name: the introductory game is over -->
         <div v-if="guest" class="invitation">

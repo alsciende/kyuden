@@ -39,6 +39,7 @@
         "symfony/property-info": "*",
         "symfony/rate-limiter": "*",
         "symfony/runtime": "*",
+        "symfony/scheduler": "8.1.*",
         "symfony/security-bundle": "*",
         "symfony/serializer": "*",
         "symfony/string": "*",

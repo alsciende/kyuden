@@ -9,7 +9,8 @@ use App\Entity\Player;
 use App\GameLog\GameLog;
 
 /**
- * A player no longer plays the game, and their opponent has ended it (ClaimAbandonment).
+ * A player no longer plays the game, and their opponent has ended it (ClaimAbandonment), or the platform has, every
+ * player having left it (EndAbandonedGame).
  */
 #[GameLog('{player} has abandoned the game')]
 final readonly class GameAbandonedEvent implements GameEventInterface

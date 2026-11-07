@@ -97,4 +97,22 @@ class VictoryServiceTest extends AbstractKernelTestCase
         self::assertSame($scenario->player('jane'), $victory?->winner);
         self::assertSame(VictoryCondition::StrongholdProvinceBroken, $victory->condition);
     }
+
+    public function testNobodyWinsAGameEveryPlayerHasAbandoned(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(25))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honor(10))
+            ->build();
+        foreach (['john', 'jane'] as $alias) {
+            $this->playerStateManager->withState($scenario->player($alias), fn (PlayerState $state): PlayerState => $state->setAbandoned(true));
+        }
+
+        $victory = $this->findVictory($scenario);
+
+        self::assertNotNull($victory);
+        self::assertNull($victory->winner);
+        self::assertSame(VictoryCondition::Abandonment, $victory->condition);
+    }
 }

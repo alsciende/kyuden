@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\GameEndedWithoutWinnerEvent;
 use App\Event\GameWonEvent;
 use App\Service\VictoryService;
 use App\State\Manager\GameStateManager;
@@ -14,7 +15,8 @@ use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
 /**
- * Records the winner and the victory condition; no player has the opportunity to act anymore.
+ * Records the winner (none when every player has abandoned the game) and the victory condition; no player has the
+ * opportunity to act anymore.
  */
 #[AsTransitionListener(workflow: 'game', transition: 'end_game')]
 readonly class EndGameTransitionListener
@@ -35,12 +37,14 @@ readonly class EndGameTransitionListener
 
         $victory = $this->victoryService->findVictory($game) ?? throw new \LogicException('No player has met a victory condition.');
         $this->stateManager->withState($game, function (GameState $state) use ($victory): GameState {
-            $state->winnerId = $victory->winner->getId();
+            $state->winnerId = $victory->winner?->getId();
             $state->victoryCondition = $victory->condition;
             $state->activePlayerIds = [];
 
             return $state;
         });
-        $this->eventDispatcher->dispatch(new GameWonEvent($game, $victory->winner, $victory->condition));
+        $this->eventDispatcher->dispatch($victory->winner === null
+            ? new GameEndedWithoutWinnerEvent($game, $victory->condition)
+            : new GameWonEvent($game, $victory->winner, $victory->condition));
     }
 }

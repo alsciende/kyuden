@@ -19,6 +19,7 @@ import {
   sideSkill,
   skillOf,
   strongholdFate,
+  resultTitle,
   victoryText,
   viewer,
   type Cards,
@@ -214,7 +215,7 @@ const nothing = computed(
 <template>
   <div class="actions">
     <div v-if="ended" class="result">
-      <h2>{{ game.winner_id === me.id ? 'Victory' : 'Defeat' }}</h2>
+      <h2>{{ resultTitle(game) }}</h2>
       <p v-if="game.victory_condition">{{ victoryText(game) }}</p>
     </div>
 

@@ -19,6 +19,7 @@ use App\State\Model\PlayerState;
  * the game (their opponent ended it once they stopped playing), has no honor or whose stronghold province is broken
  * is eliminated, and the last player not eliminated wins. A player who has conceded or abandoned cannot win. When
  * several players meet a condition at once, the first player wins if they meet one, otherwise the next one in player order.
+ * A game every player has abandoned (the platform ended it, EndAbandonedGame) ends without a winner.
  */
 readonly class VictoryService
 {
@@ -43,6 +44,11 @@ readonly class VictoryService
             if ($condition instanceof VictoryCondition) {
                 $eliminations[$player->getId()] = $condition;
             }
+        }
+
+        $abandoned = array_filter($eliminations, fn (VictoryCondition $condition): bool => $condition === VictoryCondition::Abandonment);
+        if (count($abandoned) === count($players)) {
+            return new Victory(null, VictoryCondition::Abandonment);
         }
 
         foreach ($players as $player) {

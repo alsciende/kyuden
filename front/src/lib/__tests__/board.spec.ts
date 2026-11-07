@@ -18,6 +18,7 @@ import {
   stepOf,
   strongholdFate,
   switchableRings,
+  resultTitle,
   victoryText,
   visibleCodes,
 } from '@/lib/board'
@@ -314,6 +315,16 @@ describe('the state of the game', () => {
     expect(ended('me', 'stronghold_province_broken')).toBe("You broke the opponent's stronghold province.")
     expect(ended('opp', 'concession')).toBe('You conceded.')
     expect(ended('me', 'abandonment')).toBe('The opponent stopped playing: you ended the game.')
+  })
+
+  it('tells that nobody wins a game every player has left', () => {
+    const ended = (winner_id: string | null) =>
+      game(player('me'), player('opp'), { place: 'game_ended', winner_id, victory_condition: 'abandonment' })
+
+    expect(resultTitle(ended('me'))).toBe('Victory')
+    expect(resultTitle(ended('opp'))).toBe('Defeat')
+    expect(resultTitle(ended(null))).toBe('No winner')
+    expect(victoryText(ended(null))).toBe('Nobody played for an hour: the game ended without a winner.')
   })
 
   it('names the step of the round of a place', () => {

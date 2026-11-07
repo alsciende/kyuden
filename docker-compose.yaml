@@ -74,7 +74,7 @@ services:
       - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
     user: www-data
     restart: unless-stopped
-    command: ["bin/console", "messenger:consume", "async", "-vv", "--time-limit=3600"]
+    command: ["bin/console", "messenger:consume", "async", "scheduler_default", "--bus=task.bus", "-vv", "--time-limit=3600"]
     environment:
       # the hub of the symfony service (its Caddyfile), signed with the same key
       MERCURE_URL: http://symfony/.well-known/mercure
