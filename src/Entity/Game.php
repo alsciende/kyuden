@@ -49,6 +49,12 @@ class Game implements StatefulInterface
     private int $version = 0;
 
     /**
+     * When the last message was handled on the game (its version changed); null before the first one.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    /**
      * Serialized state of the random engine, written back before each flush.
      */
     #[ORM\Column(type: Types::TEXT)]
@@ -144,6 +150,18 @@ class Game implements StatefulInterface
     public function incrementVersion(): int
     {
         return ++$this->version;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
     }
 
     /**

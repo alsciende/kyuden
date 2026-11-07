@@ -220,8 +220,9 @@ class ApiGamesControllerTest extends AbstractKernelTestCase
         self::assertInstanceOf(Profile::class, $profile);
         $collector = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $collector);
-        // the access token with its user, the game, then the spectators who have stopped reading it
-        self::assertSame(3, $collector->getQueryCount());
+        // the access token with its user, the game, the spectators who have stopped reading it, then the presence of
+        // the player (PlayerPresence)
+        self::assertSame(4, $collector->getQueryCount());
     }
 
     public function testAGuestWhoIsNotAPlayerOfTheGameCannotReadIt(): void

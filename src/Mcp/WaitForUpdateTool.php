@@ -7,6 +7,7 @@ namespace App\Mcp;
 use App\Controller\ApiGamesController;
 use App\Service\GameUpdateWaiter;
 use App\Repository\GameRepository;
+use App\Service\Abandonment\PlayerPresence;
 use App\View\GameLogViewFactory;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
@@ -28,6 +29,7 @@ final readonly class WaitForUpdateTool
         private GameLogViewFactory $gameLogViewFactory,
         private NormalizerInterface $normalizer,
         private Security $security,
+        private PlayerPresence $playerPresence,
     ) {
     }
 
@@ -60,6 +62,7 @@ final readonly class WaitForUpdateTool
         $userId = $this->security->getUser()?->getUserIdentifier();
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $userId) {
+                $this->playerPresence->see($player);
                 $this->gameUpdateWaiter->wait($game, $since, $timeout);
 
                 $log = $this->normalizer->normalize($this->gameLogViewFactory->create($game, $player, $since));

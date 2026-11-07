@@ -8,13 +8,14 @@ use App\Entity\Event;
 use App\Message\ActionInterface;
 use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
- * Record the message as an Event after its handling, and increment the version of the game.
+ * Record the message as an Event after its handling, increment the version of the game and note when it changed.
  */
 readonly class EventRecordingMiddleware implements MiddlewareInterface
 {
@@ -22,6 +23,7 @@ readonly class EventRecordingMiddleware implements MiddlewareInterface
         private EntityManagerInterface $entityManager,
         private SerializerInterface $serializer,
         private GameRepository $gameRepository,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -48,5 +50,6 @@ readonly class EventRecordingMiddleware implements MiddlewareInterface
         $payload = $this->serializer->serialize($action, 'json');
 
         $this->entityManager->persist(new Event($game, $game->incrementVersion(), $name, $payload));
+        $game->setUpdatedAt($this->clock->now());
     }
 }

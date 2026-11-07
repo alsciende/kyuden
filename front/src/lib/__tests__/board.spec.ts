@@ -313,6 +313,7 @@ describe('the state of the game', () => {
     expect(ended('opp', 'honor_loss')).toBe('You have no honor left.')
     expect(ended('me', 'stronghold_province_broken')).toBe("You broke the opponent's stronghold province.")
     expect(ended('opp', 'concession')).toBe('You conceded.')
+    expect(ended('me', 'abandonment')).toBe('The opponent stopped playing: you ended the game.')
   })
 
   it('names the step of the round of a place', () => {

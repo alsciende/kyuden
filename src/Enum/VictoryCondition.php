@@ -19,4 +19,7 @@ enum VictoryCondition: string
 
     /** The opponent of the winner has conceded the game. */
     case Concession = 'concession';
+
+    /** The opponent of the winner has stopped playing: the winner has ended the game (AbandonmentService). */
+    case Abandonment = 'abandonment';
 }

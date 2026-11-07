@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Entity\User;
 use App\Repository\GameRepository;
+use App\Service\Abandonment\PlayerPresence;
 use App\Service\GameUpdateWaiter;
 use App\Service\Spectating\SpectatorRegistry;
 use App\View\GameInProgressViewFactory;
@@ -56,6 +57,7 @@ class ApiGamesController extends AbstractController
         private readonly Discovery $discovery,
         private readonly SpectatorRegistry $spectatorRegistry,
         private readonly GameInProgressViewFactory $gameInProgressViewFactory,
+        private readonly PlayerPresence $playerPresence,
     ) {
     }
 
@@ -167,13 +169,15 @@ class ApiGamesController extends AbstractController
 
     /**
      * The user reads the game: as its player, or as a spectator (null) when they may watch it (who watches it then),
-     * else not at all (false). Whoever reads it removes the spectators who have stopped reading it.
+     * else not at all (false). Whoever reads it removes the spectators who have stopped reading it; a player reading it
+     * still follows it (PlayerPresence).
      */
     private function read(Game $game, User $user): Player|false|null
     {
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $user->getId()) {
                 $this->spectatorRegistry->prune($game);
+                $this->playerPresence->see($player);
 
                 return $player;
             }

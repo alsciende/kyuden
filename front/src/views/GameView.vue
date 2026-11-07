@@ -13,6 +13,7 @@ import InspectionWindow from '@/components/game/InspectionWindow.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
+import { ABANDONMENT } from '@/lib/abandonment'
 import { gameEnded, opponent, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf } from '@/lib/inspection'
@@ -35,14 +36,32 @@ import { useGame } from '@/lib/useGame'
  */
 const route = useRoute()
 const router = useRouter()
-const { game, log, cards, spectators, loadError, error, sending, send, refresh, switchSides } = useGame(
-  String(route.params.id),
-)
+const {
+  game,
+  log,
+  cards,
+  spectators,
+  loadError,
+  error,
+  sending,
+  send,
+  refresh,
+  switchSides,
+  abandoned,
+  waitForOpponent,
+  endAbandonedGame,
+} = useGame(String(route.params.id))
 
 provide(
   SPECTATING,
   computed(() => game.value?.spectating === true),
 )
+
+provide(ABANDONMENT, {
+  asked: abandoned,
+  end: () => void endAbandonedGame(),
+  wait: waitForOpponent,
+})
 
 provide(
   RESOLVING_CARDS,

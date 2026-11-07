@@ -53,6 +53,14 @@ class Player implements StatefulInterface
     private int $joinRank = 0;
 
     /**
+     * When the player last read the game (its view, its log…), at most every PlayerPresence::REFRESH seconds; null
+     * until they read it. Not part of the state: it is not a fact of the game (no event, no version), only whether
+     * they still follow it (AbandonmentService).
+     */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $lastSeenAt = null;
+
+    /**
      * @var ArrayCollection<int, PhysicalCard>
      */
     #[ORM\OneToMany(mappedBy: 'player', targetEntity: PhysicalCard::class, fetch: 'LAZY', orphanRemoval: true)]
@@ -175,6 +183,18 @@ class Player implements StatefulInterface
     public function setJoinRank(int $joinRank): static
     {
         $this->joinRank = $joinRank;
+
+        return $this;
+    }
+
+    public function getLastSeenAt(): ?\DateTimeImmutable
+    {
+        return $this->lastSeenAt;
+    }
+
+    public function setLastSeenAt(?\DateTimeImmutable $lastSeenAt): static
+    {
+        $this->lastSeenAt = $lastSeenAt;
 
         return $this;
     }

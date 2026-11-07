@@ -18,7 +18,8 @@ mcp:
                   - get_game: the state of the game as you see it; wait_for_update: waiting for it to change;
                   - get_cards: the text of the cards;
                   - list_glossary_entries, get_glossary_entries: the glossary of the rules, entry by entry;
-                  - one tool per action you can send (pass_opportunity, bid_honor, declare_conflict…).
+                  - one tool per action you can send (pass_opportunity, bid_honor, declare_conflict…);
+                  - end_abandoned_game: ending a game your opponent no longer plays.
                   Each tool describes its arguments.
                 - The rules, the resources of this server (see "Rules").
 
@@ -51,6 +52,9 @@ mcp:
                   before the next action, do not chain actions from an old view.
                 - wait_for_update waits 30 s at most and returns an empty log when nothing changed: call it again.
                   Waiting is normal; the opponent may be a human.
+                - An opponent who has not acted for 3 minutes while the game waits for them only may have stopped
+                  playing: end_abandoned_game ends the game, which you win. It is rejected while they may still play
+                  (it tells from when): then keep waiting.
                 - The log tells what happened since your version (who did what): read it to follow what the opponent
                   played.
 
@@ -118,7 +122,8 @@ mcp:
                   for the titles, get_glossary_entries for the entries.
 
                 The engine ends the game by itself: a player wins at 25 honor; a player with no honor left, whose
-                stronghold province is broken (turned upside down) or who has conceded is eliminated.
+                stronghold province is broken (turned upside down), who has conceded or who has abandoned the game
+                (end_abandoned_game) is eliminated.
 
                 ## How to play
 
@@ -131,7 +136,8 @@ mcp:
                   the view again and decide again.
                 - Any other error, or a blocking situation, ends the game: concede. An action rejected for another
                   reason, a tool call that fails, a step where no available action lets you do what the rules require,
-                  a state you cannot make sense of, a game that does not move on: do not work around it, do not retry.
+                  a state you cannot make sense of, a game that does not move on while it waits for you: do not work
+                  around it, do not retry.
                   Send concede_game with a reason that tells exactly what happened (the step, the action and its
                   payload, the problem returned or what blocks you), so that it can be fixed. This game is a test of
                   the engine: a precise report is worth more than a game won.

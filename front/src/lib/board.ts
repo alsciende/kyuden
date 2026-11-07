@@ -407,6 +407,10 @@ export function victoryText(game: GameView): string {
       return won ? "You broke the opponent's stronghold province." : 'The opponent broke your stronghold province.'
     case 'concession':
       return won ? 'The opponent conceded.' : 'You conceded.'
+    case 'abandonment':
+      return won
+        ? 'The opponent stopped playing: you ended the game.'
+        : 'You stopped playing: the opponent ended the game.'
     default:
       return ''
   }

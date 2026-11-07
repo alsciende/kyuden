@@ -2,6 +2,7 @@
 import { computed, reactive, watch } from 'vue'
 
 import type { ConflictType, GameView, Send } from '@/api/game'
+import AbandonmentPrompt from '@/components/game/AbandonmentPrompt.vue'
 import CardText from '@/components/game/CardText.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
@@ -218,6 +219,8 @@ const nothing = computed(
     </div>
 
     <div v-if="status" class="status" :class="{ mine: status.mine }"><span class="dot" />{{ status.text }}</div>
+
+    <AbandonmentPrompt v-if="!ended" :sending="sending" />
 
     <section v-if="duel" class="duel" aria-label="Duel">
       <span class="label">{{ DUEL_TYPES[duel.type] }} duel</span>

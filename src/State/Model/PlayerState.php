@@ -93,6 +93,11 @@ class PlayerState
      */
     private bool $conceded = false;
 
+    /**
+     * The player has stopped playing, and their opponent has ended the game (ClaimAbandonment): they are eliminated.
+     */
+    private bool $abandoned = false;
+
     public function setStrongholdProvinceId(?string $strongholdProvinceId): void
     {
         $this->strongholdProvinceId = $strongholdProvinceId;
@@ -451,6 +456,18 @@ class PlayerState
     public function setConceded(bool $conceded): self
     {
         $this->conceded = $conceded;
+
+        return $this;
+    }
+
+    public function isAbandoned(): bool
+    {
+        return $this->abandoned;
+    }
+
+    public function setAbandoned(bool $abandoned): self
+    {
+        $this->abandoned = $abandoned;
 
         return $this;
     }

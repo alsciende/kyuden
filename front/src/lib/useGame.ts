@@ -1,7 +1,9 @@
-import { onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 
 import { ApiProblem, fetchCard } from '@/api/client'
 import {
+  claimAbandonment,
+  fetchAbandonment,
   fetchGame,
   fetchLog,
   fetchSpectators,
@@ -16,6 +18,7 @@ import {
   type SpectatorView,
 } from '@/api/game'
 import type { MessagePayloads, MessageType } from '@/api/messages'
+import { isAsked, noPrompt, waitLonger, type AbandonmentPrompt } from '@/lib/abandonment'
 import { gameEnded, visibleCodes, type Cards } from '@/lib/board'
 import { follow } from '@/lib/hub'
 import { idleWatch } from '@/lib/idleWatch'
@@ -34,6 +37,9 @@ function codesOf(param: LogParam): string[] {
  * A game followed by its player: its view and its log, read again whenever the Mercure hub announces a change (or once
  * it has not changed for a while: a notification may be lost, and reading a game of the house bot makes it play a turn
  * it has not played), the cards it shows as printed, and the messages the player sends.
+ *
+ * While the game stays the same, the player reads whether their opponent has abandoned it: they are then asked whether
+ * to end it, which they win, or to wait longer (see lib/abandonment).
  *
  * An account that does not play the game watches it: the engine sends it what is public only, and it sends nothing. It
  * watches from the side of a player (the first in player order), and switches sides. The spectators of the game are
@@ -54,6 +60,10 @@ export function useGame(gameId: string) {
   /** why the last message was rejected */
   const error = ref<string | null>(null)
   const sending = ref(false)
+  const abandonment = ref<AbandonmentPrompt>(noPrompt())
+  /** when the abandonment was last read: the question depends on the time */
+  const readAt = ref(Date.now())
+  const abandoned = computed(() => isAsked(abandonment.value, readAt.value))
 
   let unfollow: (() => void) | null = null
   let refreshing: Promise<void> | null = null
@@ -89,10 +99,16 @@ export function useGame(gameId: string) {
     try {
       const loaded = await fetchGame(session.token, gameId)
       const seen = seenFrom(loaded, seat.value)
+      const changed = loaded.version !== game.value?.version
       if (gameEnded(seen)) {
         idle.stop()
-      } else if (loaded.version !== game.value?.version) {
+      } else if (changed) {
         idle.touch()
+      }
+      if (gameEnded(seen) || seen.spectating || changed) {
+        abandonment.value = noPrompt()
+      } else {
+        void readAbandonment()
       }
       data.value = loaded
       game.value = seen
@@ -112,6 +128,44 @@ export function useGame(gameId: string) {
         throw problem
       }
     }
+  }
+
+  /** whether the opponent has abandoned the game, which has not changed for a while */
+  async function readAbandonment(): Promise<void> {
+    try {
+      const view = await fetchAbandonment(session!.token, gameId)
+      abandonment.value = { ...abandonment.value, view }
+      readAt.value = Date.now()
+    } catch {
+      // read again while the game stays the same
+    }
+  }
+
+  /** the player waits longer for their opponent */
+  function waitForOpponent(): void {
+    abandonment.value = waitLonger(abandonment.value, Date.now())
+  }
+
+  /** the player ends the game their opponent has abandoned */
+  async function endAbandonedGame(): Promise<void> {
+    if (session === null || game.value === null || game.value.spectating) {
+      return
+    }
+    sending.value = true
+    error.value = null
+    try {
+      await claimAbandonment(session.token, gameId)
+    } catch (problem) {
+      if (!(problem instanceof ApiProblem)) {
+        throw problem
+      }
+      // the opponent has acted or read the game meanwhile
+      error.value = [409, 412].includes(problem.status) ? 'Your opponent is back: the game goes on.' : problem.detail
+    } finally {
+      abandonment.value = noPrompt()
+      sending.value = false
+    }
+    await refresh()
   }
 
   async function readSpectators(): Promise<void> {
@@ -214,7 +268,22 @@ export function useGame(gameId: string) {
     void leave()
   })
 
-  return { session, game, log, cards, spectators, loadError, error, sending, send, refresh, switchSides }
+  return {
+    session,
+    game,
+    log,
+    cards,
+    spectators,
+    loadError,
+    error,
+    sending,
+    send,
+    refresh,
+    switchSides,
+    abandoned,
+    waitForOpponent,
+    endAbandonedGame,
+  }
 }
 
 export type GameContext = ReturnType<typeof useGame>

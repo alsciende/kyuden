@@ -53,4 +53,19 @@ class PlayerRepository extends ServiceEntityRepository
 
         return is_string($playerId) ? $playerId : null;
     }
+
+    /**
+     * The player reads the game now: written unless they were seen after the threshold, so that frequent reads write
+     * seldom. A single statement, outside of any transaction of the game (it does not lock it).
+     */
+    public function see(string $playerId, \DateTimeImmutable $now, \DateTimeImmutable $threshold): void
+    {
+        $this->getEntityManager()->createQuery(
+            'UPDATE ' . Player::class . ' p SET p.lastSeenAt = :now WHERE p.id = :id AND (p.lastSeenAt IS NULL OR p.lastSeenAt < :threshold)',
+        )
+            ->setParameter('now', $now, 'datetime_immutable')
+            ->setParameter('threshold', $threshold, 'datetime_immutable')
+            ->setParameter('id', $playerId)
+            ->execute();
+    }
 }

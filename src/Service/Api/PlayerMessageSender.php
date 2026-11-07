@@ -11,6 +11,7 @@ use App\Exception\Data\GameMismatchException;
 use App\Exception\Data\NotFoundException;
 use App\Exception\Data\WorkflowException;
 use App\Exception\Rules\RulesException;
+use App\Message\ActionInterface;
 use App\Middleware\Stamp\ExpectedVersionStamp;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
@@ -61,16 +62,31 @@ final readonly class PlayerMessageSender
         }
 
         try {
-            $this->bus->dispatch(
-                $this->messageFactory->create($type, $payload, $gameId, $playerId),
-                $expectedVersion === null ? [] : [new ExpectedVersionStamp($expectedVersion)],
-            );
+            $message = $this->messageFactory->create($type, $payload, $gameId, $playerId);
+        } catch (\Throwable $throwable) {
+            throw $this->toProblem($throwable);
+        }
+
+        return $this->dispatch($message, $expectedVersion);
+    }
+
+    /**
+     * Dispatches a message of a player; nothing of its game may be loaded (GameLockMiddleware).
+     *
+     * @return int the version of the game once the message is handled
+     *
+     * @throws ApiProblemException
+     */
+    public function dispatch(ActionInterface $message, ?int $expectedVersion = null): int
+    {
+        try {
+            $this->bus->dispatch($message, $expectedVersion === null ? [] : [new ExpectedVersionStamp($expectedVersion)]);
         } catch (\Throwable $throwable) {
             throw $this->toProblem($throwable instanceof HandlerFailedException ? $throwable->getPrevious() ?? $throwable : $throwable);
         }
 
         // the game is now loaded: locked by the handling of the message
-        return $this->gameRepository->get($gameId)->getVersion();
+        return $this->gameRepository->get($message->getGameId())->getVersion();
     }
 
     private function toProblem(\Throwable $throwable): ApiProblemException

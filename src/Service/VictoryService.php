@@ -15,10 +15,10 @@ use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 
 /**
- * Stronghold format victory conditions: a player with 25 or more honor wins; a player who has conceded, has no honor or
- * whose stronghold province is broken is eliminated, and the last player not eliminated wins. A player who has
- * conceded cannot win. When several players meet a
- * condition at once, the first player wins if they meet one, otherwise the next one in player order.
+ * Stronghold format victory conditions: a player with 25 or more honor wins; a player who has conceded, has abandoned
+ * the game (their opponent ended it once they stopped playing), has no honor or whose stronghold province is broken
+ * is eliminated, and the last player not eliminated wins. A player who has conceded or abandoned cannot win. When
+ * several players meet a condition at once, the first player wins if they meet one, otherwise the next one in player order.
  */
 readonly class VictoryService
 {
@@ -47,8 +47,8 @@ readonly class VictoryService
 
         foreach ($players as $player) {
             $honor = $this->playerStateManager->getState($player)->getHonor();
-            $conceded = ($eliminations[$player->getId()] ?? null) === VictoryCondition::Concession;
-            if ($honor !== null && $honor >= PlayerState::MAXIMUM_HONOR && ! $conceded) {
+            $left = in_array($eliminations[$player->getId()] ?? null, [VictoryCondition::Concession, VictoryCondition::Abandonment], true);
+            if ($honor !== null && $honor >= PlayerState::MAXIMUM_HONOR && ! $left) {
                 return new Victory($player, VictoryCondition::HonorWin);
             }
 
@@ -69,6 +69,10 @@ readonly class VictoryService
         $state = $this->playerStateManager->getState($player);
         if ($state->isConceded()) {
             return VictoryCondition::Concession;
+        }
+
+        if ($state->isAbandoned()) {
+            return VictoryCondition::Abandonment;
         }
 
         $honor = $state->getHonor();

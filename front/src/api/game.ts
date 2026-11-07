@@ -249,6 +249,25 @@ export function fetchLog(token: string, gameId: string, since: number): Promise<
   return request<GameLog>(`/api/games/${encodeURIComponent(gameId)}/log?since=${since}`, { token })
 }
 
+/** whether the player may end a game their opponent no longer plays (`GET /api/games/{id}/abandonment`) */
+export interface AbandonmentView {
+  /** the players the game waits for, in player order */
+  awaited_player_ids: string[]
+  /** from when the player may end the game if it does not change; null when it does not wait for their opponent */
+  claimable_at: string | null
+  /** the player may end the game now: their opponent has abandoned it */
+  claimable: boolean
+}
+
+export function fetchAbandonment(token: string, gameId: string): Promise<AbandonmentView> {
+  return request<AbandonmentView>(`/api/games/${encodeURIComponent(gameId)}/abandonment`, { token })
+}
+
+/** the player ends the game their opponent has abandoned, and wins: refused (409) while the opponent may still play */
+export function claimAbandonment(token: string, gameId: string): Promise<void> {
+  return request<void>(`/api/games/${encodeURIComponent(gameId)}/abandonment`, { method: 'POST', token })
+}
+
 /**
  * Sends a message of the player, rejected (412) if the game has changed since the version the player has seen.
  */

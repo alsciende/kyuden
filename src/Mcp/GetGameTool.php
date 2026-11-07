@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mcp;
 
 use App\Repository\GameRepository;
+use App\Service\Abandonment\PlayerPresence;
 use App\View\GameViewFactory;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Exception\ToolCallException;
@@ -23,6 +24,7 @@ final readonly class GetGameTool
         private GameViewFactory $gameViewFactory,
         private NormalizerInterface $normalizer,
         private Security $security,
+        private PlayerPresence $playerPresence,
     ) {
     }
 
@@ -48,6 +50,7 @@ final readonly class GetGameTool
         $userId = $this->security->getUser()?->getUserIdentifier();
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $userId) {
+                $this->playerPresence->see($player);
                 $view = $this->normalizer->normalize($this->gameViewFactory->create($game, $player));
                 \assert(\is_array($view));
 
