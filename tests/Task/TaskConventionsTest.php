@@ -36,7 +36,9 @@ class TaskConventionsTest extends TestCase
         foreach ($handlers as $handler) {
             $type = $handler->getMethod('__invoke')->getParameters()[0]->getType();
             self::assertInstanceOf(\ReflectionNamedType::class, $type);
-            $tasks[$type->getName()][] = $handler;
+            $task = $type->getName();
+            self::assertTrue(class_exists($task), "{$handler->getName()} handles {$task}, which is not a class");
+            $tasks[$task][] = $handler;
         }
 
         return $tasks;
