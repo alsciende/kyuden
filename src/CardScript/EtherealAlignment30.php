@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\CardScript;
 
+use App\Entity\Game;
+use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\RemoveFromGame;
 
 /**
  * Ethereal Alignment.
@@ -21,5 +24,11 @@ final readonly class EtherealAlignment30 extends AbstractCardScript
     public function getAbilityTimings(): array
     {
         return [AbilityTiming::Interrupt];
+    }
+
+    #[\Override]
+    public function getSpecialActions(PhysicalCard $card, Game $game): array
+    {
+        return [RemoveFromGame::class];
     }
 }

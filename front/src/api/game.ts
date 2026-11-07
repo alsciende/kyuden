@@ -23,6 +23,10 @@ export type StackType =
   | 'hand'
   | 'regular_province'
   | 'in_play'
+  /** a pile of each player, created by the first card removed from the game */
+  | 'removed_from_game'
+  /** the cards placed under a card (`host_id`), out of play */
+  | 'underneath'
 
 export interface CardView {
   id: string
@@ -49,6 +53,8 @@ export interface StackView {
   count: number
   /** from the bottom to the top; null when the viewer only sees the number of cards */
   cards: CardView[] | null
+  /** the card the cards of an `underneath` stack lie under; null for any other stack */
+  host_id: string | null
 }
 
 /**

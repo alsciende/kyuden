@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
+use App\Message\PlaceCardUnder;
+use App\Message\RemoveFromGame;
 use App\Message\ShuffleConflictDeck;
 
 /**
@@ -30,6 +32,6 @@ final readonly class DaidojiUji37 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, ShuffleConflictDeck::class];
+        return [LookAtCards::class, PlaceCardUnder::class, RemoveFromGame::class, ShuffleConflictDeck::class];
     }
 }

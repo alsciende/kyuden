@@ -82,9 +82,32 @@ describe('inspectionActions', () => {
       ['put_card_on_deck', 'On top of the deck'],
       ['put_card_on_deck', 'At the bottom'],
       ['shuffle_into_deck', 'Shuffle into the deck'],
+      ['remove_from_game', 'Remove from the game'],
+      ['remove_from_game', 'Remove from the game, facedown'],
       ['reveal_card', 'Reveal it'],
       ['discard_card', 'Discard'],
     ])
+  })
+
+  it('removes a card of the deck of the opponent from the game face down, or places it under a card of the viewer', () => {
+    const actions = inspectionActions(
+      { ...deck, ownerId: 'opp' },
+      deck.cards[0]!,
+      'me',
+      'conflict',
+      [],
+      [{ id: 'uji', name: 'Daidoji Uji', where: 'in play', group: 'yours' }],
+    )
+
+    expect(actions.find((action) => action.label === 'Remove from the game, facedown')?.payload).toEqual({
+      card_id: 'c1',
+      face_down: true,
+    })
+    expect(actions.find((action) => action.type === 'place_card_under')).toMatchObject({
+      label: 'Under Daidoji Uji, facedown',
+      done: 'Under Daidoji Uji',
+      payload: { card_id: 'c1', host_card_id: 'uji', face_down: true },
+    })
   })
 
   it("adds a card of the opponent's deck to their hand, and does not reveal what is revealed", () => {
@@ -106,7 +129,15 @@ describe('inspectionActions', () => {
       'conflict',
     ).map((action) => action.type)
 
-    expect(types).toEqual(['put_card_on_deck', 'put_card_on_deck', 'shuffle_into_deck', 'reveal_card', 'discard_card'])
+    expect(types).toEqual([
+      'put_card_on_deck',
+      'put_card_on_deck',
+      'shuffle_into_deck',
+      'remove_from_game',
+      'remove_from_game',
+      'reveal_card',
+      'discard_card',
+    ])
   })
 
   it('puts a card of the dynasty deck into a province of its owner, face up or face down', () => {

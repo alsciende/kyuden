@@ -17,6 +17,8 @@ const STACK_NAMES: Record<StackType, string> = {
   hand: 'hand',
   regular_province: 'province',
   in_play: 'play',
+  removed_from_game: 'cards removed from the game',
+  underneath: 'cards under a card',
 }
 
 export function paramText(param: LogParam, game: GameView, cards: Cards): string {

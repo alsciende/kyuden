@@ -45,6 +45,16 @@ const attachedTo = computed(() => {
   return under.code ? (props.cards[under.code]?.name ?? null) : null
 })
 
+/** the card it lies under, for a card of an `underneath` stack */
+const placedUnder = computed(() => {
+  const host = props.menu.located.host
+  if (host === null) {
+    return null
+  }
+  const hostName = (host.code !== null && props.cards[host.code]?.name) || 'a face-down card'
+
+  return `Under ${hostName}${view.value.orientation === 'face_down' ? ', face down' : ''}`
+})
 const attachments = computed(() =>
   props.menu.located.stack.type === 'in_play' && props.menu.located.under === null
     ? (props.menu.located.stack.cards ?? []).slice(1).map((card) => (card.code ? props.cards[card.code]?.name : null))
@@ -61,6 +71,9 @@ const tags = computed(() => {
   }
   if (props.menu.located.stack.type === 'in_play') {
     tags.push(card.orientation === 'sideways' ? 'Bowed' : 'Ready')
+  }
+  if (props.menu.located.stack.type === 'removed_from_game') {
+    tags.push('Removed from the game')
   }
   if (card.orientation === 'face_down' && card.code !== null) {
     tags.push('Face down')
@@ -164,6 +177,26 @@ function putCardIntoProvince(): void {
   }
 }
 
+// the card placed under another card, face down unless the player says otherwise: the cards of the viewer first, their
+// provinces and the cards of the opponent on demand
+const underHostId = ref<string | null>(null)
+const underFaceDown = ref(true)
+const allHosts = ref(false)
+const shownHosts = computed(() => {
+  const yours = props.menu.placeUnder.filter((host) => host.group === 'yours')
+
+  return allHosts.value || yours.length === 0 ? props.menu.placeUnder : yours
+})
+const underHostName = computed(() => props.menu.placeUnder.find((host) => host.id === underHostId.value)?.name)
+function placeUnder(): void {
+  if (underHostId.value !== null) {
+    void run('place_card_under', {
+      card_id: view.value.id,
+      host_card_id: underHostId.value,
+      face_down: underFaceDown.value,
+    })
+  }
+}
 function runAction(action: SimpleAction): void {
   void run(action.type, action.payload as never)
 }
@@ -259,6 +292,9 @@ const HINTS: Partial<Record<string, string>> = {
   move_status_token: 'Neither is honored nor dishonored; opposed tokens are both discarded.',
   place_honor_tokens: 'A counter on the card, from the token pool: no player gains nor loses honor.',
   remove_honor_tokens: 'Back to the token pool: no player gains nor loses honor.',
+  remove_from_game: 'Face down, only you know it; it may still be played or put into play from there.',
+  place_card_under:
+    'Out of play; discarded once the card it lies under leaves its place. Face down, its owner knows it.',
 }
 
 const specialGroups = computed(() =>
@@ -269,6 +305,7 @@ const specialGroups = computed(() =>
     ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
     ...(props.menu.putIntoProvince.length ? ['put_card_into_province'] : []),
     ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
+    ...(props.menu.placeUnder.length ? ['place_card_under'] : []),
   ]),
 )
 
@@ -333,8 +370,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <figure class="figure">
       <img v-if="menu.card?.image_url" class="image" :src="menu.card.image_url" :alt="name" />
       <div v-else class="image blank">{{ name }}</div>
-      <figcaption v-if="attachedTo || attachments.length" class="caption">
-        <template v-if="attachedTo">Attached to {{ attachedTo }}</template>
+      <figcaption v-if="placedUnder || attachedTo || attachments.length" class="caption">
+        <template v-if="placedUnder">{{ placedUnder }}</template>
+        <template v-else-if="attachedTo">Attached to {{ attachedTo }}</template>
         <template v-else>Attached: {{ attachments.filter(Boolean).join(', ') }}</template>
       </figcaption>
     </figure>
@@ -587,6 +625,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <label class="choice"> <input v-model="targetFaceUp" type="checkbox" /> Face up </label>
               <button type="submit" class="btn btn-ghost" :disabled="sending || targetProvinceId === null">
                 Put it there
+              </button>
+            </form>
+            <form v-if="group.form && group.type === 'place_card_under'" class="group" @submit.prevent="placeUnder">
+              <fieldset class="choices">
+                <legend class="label">Place it under</legend>
+                <label v-for="host in shownHosts" :key="host.id" class="choice">
+                  <input v-model="underHostId" type="radio" name="under-host" :value="host.id" />
+                  {{ host.name }}
+                  <span class="whose">{{ host.group === 'opponent' ? `opponent's, ${host.where}` : host.where }}</span>
+                </label>
+              </fieldset>
+              <button
+                v-if="shownHosts.length < menu.placeUnder.length"
+                type="button"
+                class="btn-link"
+                @click="allHosts = true"
+              >
+                Your provinces and Opp.'s cards
+              </button>
+              <label class="choice"> <input v-model="underFaceDown" type="checkbox" /> Face down </label>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || underHostId === null">
+                {{ underHostName ? `Place it under ${underHostName}` : 'Place it there' }}
               </button>
             </form>
             <span v-if="HINTS[group.type]" class="hint">{{ HINTS[group.type] }}</span>

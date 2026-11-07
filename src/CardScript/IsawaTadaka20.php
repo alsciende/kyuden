@@ -9,6 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\MoveStatusToken;
+use App\Message\RemoveFromGame;
 
 /**
  * Isawa Tadaka.
@@ -30,6 +31,6 @@ final readonly class IsawaTadaka20 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, MoveStatusToken::class];
+        return [LookAtCards::class, MoveStatusToken::class, RemoveFromGame::class];
     }
 }

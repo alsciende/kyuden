@@ -14,7 +14,7 @@ import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
-import { gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
+import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
@@ -22,6 +22,7 @@ import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
 import { SPECTATING } from '@/lib/spectating'
+import { CARDS_UNDER } from '@/lib/underneath'
 import { hideTooltip } from '@/lib/tooltip'
 import { useGame } from '@/lib/useGame'
 
@@ -62,6 +63,11 @@ provide(ABANDONMENT, {
   end: () => void endAbandonedGame(),
   wait: waitForOpponent,
 })
+
+provide(
+  CARDS_UNDER,
+  computed(() => (game.value === null ? new Map() : cardsUnder(game.value))),
+)
 
 provide(
   RESOLVING_CARDS,

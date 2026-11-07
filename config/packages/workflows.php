@@ -184,7 +184,7 @@ return App::config([
             ],
             'conflict_card' => WorkflowConfig::cardWorkflow(
                 ConflictCard::class,
-                [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE],
+                [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH],
                 [
                     WorkflowConfig::transition('draw_card', ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, [
                         'log' => '{owner} draws {card}',
@@ -193,25 +193,25 @@ return App::config([
                     ]),
                     // a character or an attachment played (PlayCharacter, PlayAttachment), from its hand or from elsewhere,
                     // by the `player` of the context, whoever owns it
-                    WorkflowConfig::transition('play_card', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_IN_PLAY, [
+                    WorkflowConfig::transition('play_card', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH], ConflictCard::STATE_IN_PLAY, [
                         'log' => '{player} plays {card} from {from} into {to}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // an event played (PlayActionEvent, PlayInterruptEvent, PlayReactionEvent), from its hand or from
                     // elsewhere: it goes to the discard pile of its owner
-                    WorkflowConfig::transition('play_event', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_DISCARD_PILE, [
+                    WorkflowConfig::transition('play_event', [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH], ConflictCard::STATE_DISCARD_PILE, [
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::ConflictDiscardPile,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // a character put into play by an effect, without being played (PutCharacterIntoPlay)
-                    WorkflowConfig::transition('put_into_play', [ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_IN_PLAY, [
+                    WorkflowConfig::transition('put_into_play', [ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH], ConflictCard::STATE_IN_PLAY, [
                         'log' => '{card} is put into play from {from}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
-                    WorkflowConfig::transition('discard_card', [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY], ConflictCard::STATE_DISCARD_PILE, [
+                    WorkflowConfig::transition('discard_card', [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH], ConflictCard::STATE_DISCARD_PILE, [
                         'log' => '{card} is discarded from {from}',
                         'stack' => StackType::ConflictDiscardPile,
                         'orientation' => Orientation::FaceUp,
@@ -231,8 +231,8 @@ return App::config([
                         'stack' => StackType::ConflictDrawDeck,
                         'orientation' => Orientation::FaceDown,
                     ]),
-                    // a card searched for in a deck, or taken back from the discard pile (AddCardToHand)
-                    WorkflowConfig::transition('add_to_hand', [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE], ConflictCard::STATE_HAND, [
+                    // a card searched for in a deck, taken back from the discard pile or from out of play (AddCardToHand)
+                    WorkflowConfig::transition('add_to_hand', [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH], ConflictCard::STATE_HAND, [
                         'log' => '{card} is added from {from} to {to}',
                         'stack' => StackType::Hand,
                         'orientation' => Orientation::FaceUp,
@@ -250,9 +250,14 @@ return App::config([
                         'orientation' => Orientation::FaceUp,
                     ]),
                     ...WorkflowConfig::putOnDeck(
-                        [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE],
+                        [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH],
                         ConflictCard::STATE_DRAW_DECK,
                         StackType::ConflictDrawDeck,
+                    ),
+                    ...WorkflowConfig::setAside(
+                        [ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_HAND, ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_DISCARD_PILE],
+                        ConflictCard::STATE_REMOVED_FROM_GAME,
+                        ConflictCard::STATE_UNDERNEATH,
                     ),
                     ...WorkflowConfig::bowAndReady(ConflictCard::STATE_IN_PLAY),
                     ...WorkflowConfig::triggerAbility(ConflictCard::STATE_IN_PLAY),
@@ -260,7 +265,7 @@ return App::config([
             ),
             'dynasty_card' => WorkflowConfig::cardWorkflow(
                 DynastyCard::class,
-                [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE],
+                [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH],
                 [
                     WorkflowConfig::transition('draw_card', DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, [
                         'log' => '{card} is put facedown into {to}',
@@ -283,13 +288,13 @@ return App::config([
                     ]),
                     // a character played (PlayCharacterFromProvince, PlayCharacter), from a province or from elsewhere, by
                     // the `player` of the context, whoever owns it
-                    WorkflowConfig::transition('play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_IN_PLAY, [
+                    WorkflowConfig::transition('play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_IN_PLAY, [
                         'log' => '{player} plays {card} from {from} into {to}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // a character put into play by an effect, without being played (PutCharacterIntoPlay)
-                    WorkflowConfig::transition('put_into_play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_IN_PLAY, [
+                    WorkflowConfig::transition('put_into_play', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_IN_PLAY, [
                         'log' => '{card} is put into play from {from}',
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
@@ -298,21 +303,21 @@ return App::config([
                     WorkflowConfig::transition('take_control', DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_IN_PLAY, [
                         'log' => '{controller} takes control of {card}',
                     ]),
-                    // a holding put into play in a province by an effect (PutHoldingIntoProvince): the province is the
-                    // `stack` of the context
-                    WorkflowConfig::transition('put_into_province', DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_PROVINCE_FACEUP, [
+                    // a holding put into play in a province by an effect (PutHoldingIntoProvince), from the discard pile or
+                    // from out of play (Kaiu Shihobu): the province is the `stack` of the context
+                    WorkflowConfig::transition('put_into_province', [DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_PROVINCE_FACEUP, [
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceUp,
                     ]),
                     // a card put into a province by an effect (PutCardIntoProvince), from its deck, its discard pile,
-                    // another province or play: the province is the `stack` of the context
-                    WorkflowConfig::transition('move_to_province_faceup', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_PROVINCE_FACEUP, [
+                    // another province, play or out of play: the province is the `stack` of the context
+                    WorkflowConfig::transition('move_to_province_faceup', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_PROVINCE_FACEUP, [
                         'log' => '{card} is put from {from} into {to}',
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceUp,
                     ]),
-                    WorkflowConfig::transition('move_to_province_facedown', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE], DynastyCard::STATE_PROVINCE_FACEDOWN, [
+                    WorkflowConfig::transition('move_to_province_facedown', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_PROVINCE_FACEDOWN, [
                         'log' => '{card} is put facedown from {from} into {to}',
                         'stack' => StackType::RegularProvince,
                         'orientation' => Orientation::FaceDown,
@@ -330,7 +335,7 @@ return App::config([
                         'orientation' => Orientation::FaceDown,
                     ]),
                     // from a province: a card discarded from a broken province, or during the fate phase
-                    WorkflowConfig::transition('discard_card', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY], DynastyCard::STATE_DISCARD_PILE, [
+                    WorkflowConfig::transition('discard_card', [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_DISCARD_PILE, [
                         'log' => '{card} is discarded from {from}',
                         'stack' => StackType::DynastyDiscardPile,
                         'orientation' => Orientation::FaceUp,
@@ -354,9 +359,14 @@ return App::config([
                         'orientation' => Orientation::FaceDown,
                     ]),
                     ...WorkflowConfig::putOnDeck(
-                        [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE],
+                        [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH],
                         DynastyCard::STATE_DRAW_DECK,
                         StackType::DynastyDrawDeck,
+                    ),
+                    ...WorkflowConfig::setAside(
+                        [DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_PROVINCE_FACEDOWN, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_DISCARD_PILE],
+                        DynastyCard::STATE_REMOVED_FROM_GAME,
+                        DynastyCard::STATE_UNDERNEATH,
                     ),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_IN_PLAY),
                     // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerAbilityGuardListener)

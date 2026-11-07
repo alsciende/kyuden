@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
+use App\Message\PlaceCardUnder;
 use App\Message\PutHoldingIntoProvince;
 use App\Message\RevealCards;
 use App\Message\ShuffleDynastyDeck;
@@ -32,6 +33,6 @@ final readonly class KaiuShihobu26 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, PutHoldingIntoProvince::class, RevealCards::class, ShuffleDynastyDeck::class];
+        return [LookAtCards::class, PlaceCardUnder::class, PutHoldingIntoProvince::class, RevealCards::class, ShuffleDynastyDeck::class];
     }
 }

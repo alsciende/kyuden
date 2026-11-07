@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { Cards, Character } from '@/lib/board'
 import GameCard from '@/components/game/GameCard.vue'
+import UnderPile from '@/components/game/UnderPile.vue'
 
 /**
  * Characters with their attachments, tucked under them, after the cards of the default slot (e.g. the contested
- * province). In a selection, the characters that can be chosen are the
+ * province), with the cards placed under them (`UnderPile.vue`). In a selection, the characters that can be chosen are the
  * targets of the click; the others are dimmed.
  */
 withDefaults(
@@ -38,27 +39,37 @@ function click(id: string, selectable: string[] | null): void {
   <div class="characters" :class="size">
     <slot />
     <div v-for="character in characters" :key="character.stack.id" class="unit">
-      <GameCard
-        :card="character.card"
-        :cards="cards"
-        :mine="mine"
-        :size="size"
-        :attachments="character.attachments"
-        :selected="selectedIds.includes(character.card.id)"
-        :muted="selectable !== null && !selectable.includes(character.card.id)"
-        :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"
-        @click="click(character.card.id, selectable)"
-      />
-      <GameCard
+      <UnderPile :host="character.card" :cards="cards" :mine="mine" :size="size" @open="emit('open', $event)">
+        <GameCard
+          :card="character.card"
+          :cards="cards"
+          :mine="mine"
+          :size="size"
+          :attachments="character.attachments"
+          :selected="selectedIds.includes(character.card.id)"
+          :muted="selectable !== null && !selectable.includes(character.card.id)"
+          :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"
+          @click="click(character.card.id, selectable)"
+        />
+      </UnderPile>
+      <UnderPile
         v-for="attachment in character.attachments"
         :key="attachment.id"
-        class="attachment"
-        :card="attachment"
+        :host="attachment"
         :cards="cards"
         :mine="mine"
         size="small"
-        @click="emit('open', attachment.id)"
-      />
+        @open="emit('open', $event)"
+      >
+        <GameCard
+          class="attachment"
+          :card="attachment"
+          :cards="cards"
+          :mine="mine"
+          size="small"
+          @click="emit('open', attachment.id)"
+        />
+      </UnderPile>
     </div>
     <p v-if="characters.length === 0" class="none">No character</p>
   </div>

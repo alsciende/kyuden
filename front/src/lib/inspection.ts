@@ -1,7 +1,7 @@
 import type { LoggedMessage, LogParam, StackType } from '@/api/game'
 import type { Message } from '@/api/messages'
 import type { Card } from '@/api/client'
-import { playActions, type PlayAction, type ProvinceChoice } from '@/lib/cardActions'
+import { playActions, type HostChoice, type PlayAction, type ProvinceChoice } from '@/lib/cardActions'
 
 /**
  * The cards a player looks at or reveals (`look_at_cards`, `look_at_card`, `reveal_cards`, `reveal_card`): the engine
@@ -87,10 +87,12 @@ const DECKS: StackType[] = ['conflict_draw_deck', 'dynasty_draw_deck']
  * What can be done with a card looked at or revealed, from where it is: added to its owner's hand (a conflict card of
  * a deck), put on top of its deck or at its bottom, shuffled into it, put into a province of its owner, face up or
  * face down (a card of the dynasty deck: Walking the Way), discarded, and, once looked at, revealed to the opponent (it
- * can still be acted on then). A province looked at stays where it is: nothing to do.
+ * can still be acted on then), removed from the game, face up or face down (Stolen Secrets), placed face down under a
+ * card of the viewer (Kaiu Shihobu, Daidoji Uji). A province looked at stays where it is: nothing to do.
  *
  * @param side the side of the card (`conflict`, `dynasty`, `province`…), from the cards as printed
  * @param provinces the provinces of the owner of the card
+ * @param hosts the cards of the viewer it can be placed under (`hostChoices()`)
  */
 export function inspectionActions(
   inspection: Inspection,
@@ -98,6 +100,7 @@ export function inspectionActions(
   viewerId: string,
   side: string | null | undefined,
   provinces: ProvinceChoice[] = [],
+  hosts: HostChoice[] = [],
 ): InspectionAction[] {
   if (side === 'province') {
     return []
@@ -141,6 +144,22 @@ export function inspectionActions(
         })
       }
     }
+  }
+  for (const face_down of [false, true]) {
+    actions.push({
+      type: 'remove_from_game',
+      label: `Remove from the game${face_down ? ', facedown' : ''}`,
+      done: 'Removed from the game',
+      payload: { ...payload, face_down },
+    })
+  }
+  for (const host of hosts) {
+    actions.push({
+      type: 'place_card_under',
+      label: `Under ${host.name}, facedown`,
+      done: `Under ${host.name}`,
+      payload: { ...payload, host_card_id: host.id, face_down: true },
+    })
   }
   if (inspection.mode === 'look') {
     actions.push({ type: 'reveal_card', label: 'Reveal it', done: 'Revealed', stays: true, payload })

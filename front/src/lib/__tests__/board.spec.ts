@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  cardsUnder,
+  setAsideNote,
   nameOf,
   charactersInPlay,
   conflictResolved,
@@ -23,7 +25,7 @@ import {
   visibleCodes,
 } from '@/lib/board'
 
-import { card, game, player, printed, stack } from './gameFixture'
+import { card, game, player, printed, stack, underneath } from './gameFixture'
 
 const cards = {
   samurai: printed('samurai', { military: '2', political: '1', glory: 1 }),
@@ -96,6 +98,38 @@ describe('characters', () => {
     expect(locate(view, katana.id)).toMatchObject({ card: katana, under: samurai })
     expect(locate(view, samurai.id)).toMatchObject({ card: samurai, under: null })
     expect(locate(view, 'unknown')).toBeUndefined()
+  })
+})
+
+describe('the cards set aside', () => {
+  it('reads the cards under each card, the last placed first, with how they lie', () => {
+    const kaezin = card('kaezin')
+    const first = card('a', { orientation: 'face_down' })
+    const last = card('b')
+    const hidden = card(null, { orientation: 'face_down' })
+    const scout = card('scout')
+    const view = game(
+      player('me', [stack('in_play', [kaezin]), underneath(kaezin, [first, last])]),
+      player('opp', [stack('in_play', [scout]), underneath(scout, [hidden])]),
+    )
+
+    const under = cardsUnder(view)
+
+    expect(under.get(kaezin.id)).toEqual([
+      { card: last, note: 'Face up' },
+      { card: first, note: 'Face down, only you know it' },
+    ])
+    expect(under.get(scout.id)).toEqual([{ card: hidden, note: 'Face down' }])
+    expect(locate(view, first.id)?.host).toBe(kaezin)
+    expect(locate(view, kaezin.id)?.host).toBeNull()
+  })
+
+  it("tells whose card a card removed from the game is, when it is not the player's of the pile", () => {
+    const stolen = card('banzai', { orientation: 'face_down', controller_id: 'opp' })
+    const view = game(player('me', [stack('removed_from_game', [stolen])]), player('opp'))
+
+    expect(setAsideNote(view, stolen, 'me')).toBe("Face down, only you know it · Opp.'s card")
+    expect(setAsideNote(view, card('scout', { controller_id: 'me' }), 'opp')).toBe('Your card')
   })
 })
 

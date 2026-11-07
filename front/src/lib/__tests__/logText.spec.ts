@@ -49,6 +49,23 @@ describe('entryText', () => {
     expect(text).toBe("Kakita Kaezin moves from the opponent's hand for the Void ring: 2, ?")
   })
 
+  it('names the cards set aside and the card a card is placed under', () => {
+    const text = entryText(
+      {
+        template: '{card} is placed facedown from {from} under {host}',
+        params: {
+          card: { type: 'card', id: 'c', code: 'kaezin' },
+          from: { type: 'stack', stack_type: 'removed_from_game', player_id: 'me', id: 's' },
+          host: { type: 'card', id: 'h', code: null },
+        },
+      },
+      view,
+      cards,
+    )
+
+    expect(text).toBe('Kakita Kaezin is placed facedown from your cards removed from the game under a hidden card')
+  })
+
   it('names the players to a spectator, in the third person', () => {
     const watched = game(player('me', [], { name: 'Doji Akiko' }), player('opp', [], { name: 'Matsu Kenji' }), {
       spectating: true,

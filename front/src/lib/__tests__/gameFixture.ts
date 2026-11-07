@@ -26,8 +26,18 @@ export function card(code: string | null, changes: Partial<CardView> = {}): Card
   }
 }
 
-export function stack(type: StackType, cards: CardView[] | null, id = `${type}-${++next}`): StackView {
-  return { id, type, count: cards?.length ?? 0, cards }
+export function stack(
+  type: StackType,
+  cards: CardView[] | null,
+  id = `${type}-${++next}`,
+  hostId: string | null = null,
+): StackView {
+  return { id, type, count: cards?.length ?? 0, cards, host_id: hostId }
+}
+
+/** the cards under a card */
+export function underneath(host: CardView, cards: CardView[] | null): StackView {
+  return stack('underneath', cards, undefined, host.id)
 }
 
 export function player(id: string, stacks: StackView[] = [], changes: Partial<PlayerView> = {}): PlayerView {

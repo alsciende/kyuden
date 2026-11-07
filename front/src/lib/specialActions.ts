@@ -17,6 +17,8 @@ const WHERE: Partial<Record<StackView['type'], string>> = {
   role: 'your role',
   conflict_discard_pile: 'in your conflict discard pile',
   dynasty_discard_pile: 'in your dynasty discard pile',
+  removed_from_game: 'removed from the game',
+  underneath: 'under a card',
 }
 
 /** a card of the viewer needing a special action */

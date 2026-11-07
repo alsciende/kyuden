@@ -6,7 +6,7 @@ import type { Message } from '@/api/messages'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayForm from '@/components/game/PlayForm.vue'
 import { playerById, type Cards } from '@/lib/board'
-import { provinceChoices, type PlayAction } from '@/lib/cardActions'
+import { hostChoices, provinceChoices, type PlayAction } from '@/lib/cardActions'
 import {
   inspectionActions,
   inspectionPlays,
@@ -90,6 +90,12 @@ const ownerProvinces = computed(() => {
 })
 
 const selected = computed(() => props.inspection.cards.find((card) => card.id === selectedId.value) ?? null)
+/** the cards of the viewer the selected card can be placed under */
+const hosts = computed(() =>
+  selected.value === null
+    ? []
+    : hostChoices(props.game, props.cards, selected.value.id).filter((host) => host.group !== 'opponent'),
+)
 const selectedIndex = computed(() => props.inspection.cards.findIndex((card) => card.id === selectedId.value))
 const actions = computed(() =>
   selected.value === null
@@ -100,6 +106,7 @@ const actions = computed(() =>
         props.game.viewer_id,
         props.cards[selected.value.code]?.side,
         ownerProvinces.value,
+        hosts.value,
       )
         .filter((action) => !(action.type === 'reveal_card' && revealed.has(action.payload.card_id)))
         .filter((action) => props.game.available_actions.includes(action.type)),

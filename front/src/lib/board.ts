@@ -138,6 +138,8 @@ export interface Located {
   card: CardView
   /** the card a card is attached to, or the province a dynasty card is on */
   under: CardView | null
+  /** the card it lies under, for a card of an `underneath` stack */
+  host: CardView | null
 }
 
 export function locate(game: GameView, cardId: string): Located | undefined {
@@ -149,12 +151,56 @@ export function locate(game: GameView, cardId: string): Located | undefined {
         continue
       }
       const under = (stack.type === 'in_play' || stack.type === 'regular_province') && index > 0 ? cards[0]! : null
+      const host = stack.host_id === null ? null : (locate(game, stack.host_id)?.card ?? null)
 
-      return { player, stack, card: cards[index]!, under }
+      return { player, stack, card: cards[index]!, under, host }
     }
   }
 
   return undefined
+}
+
+/** a card under another card, with how it lies for the viewer (`setAsideNote()`) */
+export interface UnderCard {
+  card: CardView
+  note: string
+}
+
+/** the cards under each card (`underneath` stacks), by the id of the card they lie under: the last placed first */
+export function cardsUnder(game: GameView): Map<string, UnderCard[]> {
+  const under = new Map<string, UnderCard[]>()
+  for (const player of game.players) {
+    for (const stack of stacksOf(player, 'underneath')) {
+      if (stack.host_id !== null && (stack.cards?.length ?? 0) > 0) {
+        under.set(
+          stack.host_id,
+          [...stack.cards!].reverse().map((card) => ({ card, note: setAsideNote(game, card, player.id) || 'Face up' })),
+        )
+      }
+    }
+  }
+
+  return under
+}
+
+/**
+ * How a card set aside (removed from the game, under a card) lies, for the viewer: face down, and whose card it is when
+ * it is not the player's whose stack holds it (a card of the opponent removed by the viewer, Stolen Secrets).
+ */
+export function setAsideNote(game: GameView, card: CardView, holderId: string): string {
+  const notes: string[] = []
+  if (card.orientation === 'face_down') {
+    notes.push(
+      card.code === null ? 'Face down' : holderId === game.viewer_id ? 'Face down, only you know it' : 'Face down',
+    )
+  }
+  if (card.controller_id !== holderId && card.controller_id !== '') {
+    const owner = nameOf(game, playerById(game, card.controller_id))
+    notes.push(owner === 'You' ? 'your card' : `${owner}'s card`)
+  }
+  const text = notes.join(' · ')
+
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 export type Phase = 'setup' | 'dynasty' | 'draw' | 'conflict' | 'fate'

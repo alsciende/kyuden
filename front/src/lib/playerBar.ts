@@ -24,6 +24,9 @@ export interface PlayerBar {
   hand: number
   conflictDeck: number
   conflictDiscard: CardView[]
+  /** the cards the player has removed from the game, the last removed first (theirs, or a card of the opponent they
+   * removed face down) */
+  removed: CardView[]
   firstPlayer: boolean
   /** the player holds the Imperial Favor */
   favor: boolean
@@ -53,6 +56,7 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
     hand: stackOf(player, 'hand')?.count ?? 0,
     conflictDeck: stackOf(player, 'conflict_draw_deck')?.count ?? 0,
     conflictDiscard: [...cardsOf(stackOf(player, 'conflict_discard_pile'))].reverse(),
+    removed: [...cardsOf(stackOf(player, 'removed_from_game'))].reverse(),
     firstPlayer: player.id === game.first_player_id,
     favor: game.imperial_favor_holder_id === player.id,
     notes: [
@@ -96,6 +100,8 @@ export type BarStat =
   | 'conflict_deck'
   | 'dynasty_discard'
   | 'conflict_discard'
+  /** the cards removed from the game */
+  | 'removed'
   | 'first_player'
   | 'imperial_favor'
   /** the conflicts the player may still declare */

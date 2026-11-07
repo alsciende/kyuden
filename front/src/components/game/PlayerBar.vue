@@ -5,7 +5,7 @@ import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from 
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
 import SpecialEffects from '@/components/game/SpecialEffects.vue'
-import { nameOf as playerName, type Cards } from '@/lib/board'
+import { nameOf as playerName, setAsideNote, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat, type Effect } from '@/lib/playerBar'
@@ -16,7 +16,8 @@ import { vTip } from '@/lib/tooltip'
 /**
  * The bar of a player, above the board for the opponent and below it for the viewer: the player (their name on the tint
  * of their clan, honor, fate, conflicts left, claimed rings), their dynasty cards (intact provinces, deck, discard
- * pile) and their conflict cards (hand, deck, discard pile). A click on a value opens a popover with the effects on it,
+ * pile) and their conflict cards (hand, deck, discard pile), then the cards they have removed from the game, once there
+ * are some (mockup: screen 1 of `LdtL4NT1SnDLTzRZpz376x`). A click on a value opens a popover with the effects on it,
  * or the cards of a discard pile, which open like the cards of the board; a click on a claimed ring opens its window,
  * as in the bar on the right.
  */
@@ -49,6 +50,7 @@ const TITLES: Record<BarStat, string> = {
   conflict_deck: 'Conflict deck',
   dynasty_discard: 'Dynasty discard pile',
   conflict_discard: 'Conflict discard pile',
+  removed: 'Removed from the game',
   first_player: 'First player token',
   imperial_favor: 'Imperial Favor',
   conflicts: 'Conflicts',
@@ -90,6 +92,10 @@ const conflict = computed((): Stat[] => [
 const sections = computed(() => [
   { name: 'Dynasty', stats: dynasty.value },
   { name: 'Conflict', stats: conflict.value },
+  // a pile few games use: shown once it has cards
+  ...(bar.value.removed.length
+    ? [{ name: 'Removed', stats: [{ key: 'removed', label: 'Cards', value: bar.value.removed.length } as Stat] }]
+    : []),
 ])
 
 const conflictsAria = computed(() => `Conflicts left: ${bar.value.conflictsLeft.join(' and ') || 'none'}`)
@@ -171,6 +177,8 @@ const pile = computed((): CardView[] | null => {
       return bar.value.dynastyDiscard
     case 'conflict_discard':
       return bar.value.conflictDiscard
+    case 'removed':
+      return bar.value.removed
     default:
       return null
   }
@@ -182,6 +190,11 @@ function nameOf(card: CardView): string {
 
 function typeOf(card: CardView): string {
   return (card.code !== null && props.cards[card.code]?.type) || card.side
+}
+
+/** how a card removed from the game lies: face down, a card of the opponent */
+function noteOf(card: CardView): string {
+  return open.value === 'removed' ? setAsideNote(props.game, card, props.player.id) : ''
 }
 
 function openCard(id: string): void {
@@ -386,7 +399,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
         <template v-if="pile">
           <template v-if="pile.length">
-            <span class="hint">Top first · click a card to open it</span>
+            <span class="hint"
+              >{{ open === 'removed' ? 'Last removed first' : 'Top first' }} · click a card to open it</span
+            >
             <div class="pile">
               <button
                 v-for="card in pile"
@@ -397,7 +412,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 @mouseenter="showPreview(card.code, $event.currentTarget as HTMLElement, position === 'bottom')"
                 @mouseleave="hidePreview"
               >
-                <span class="pile-name">{{ nameOf(card) }}</span
+                <span class="pile-text"
+                  ><span class="pile-name">{{ nameOf(card) }}</span
+                  ><span v-if="noteOf(card)" class="pile-note">{{ noteOf(card) }}</span></span
                 ><span class="pile-type">{{ typeOf(card) }}</span>
               </button>
             </div>
@@ -841,6 +858,16 @@ button.name.on {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
+}
+
+.pile-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.pile-note {
+  font-size: 12px;
+  color: var(--ink-2);
 }
 
 .pile-type {

@@ -16,8 +16,12 @@ final class PlannedStack
      */
     public array $cards = [];
 
+    /**
+     * @param string|null $host alias of the card the cards of an Underneath stack are under
+     */
     public function __construct(
         public readonly StackType $type,
+        public readonly ?string $host = null,
     ) {
     }
 }

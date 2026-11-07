@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { cardMenu } from '@/lib/cardActions'
+import { cardMenu, hostChoices } from '@/lib/cardActions'
 
-import { card, game, player, printed, stack } from './gameFixture'
+import { card, game, player, printed, stack, underneath } from './gameFixture'
 
 const EFFECTS = [
   'bow_card',
@@ -657,5 +657,119 @@ describe('cardMenu', () => {
     const view = game(player('me', [stack('in_play', [kaezin])]), player('opp'), { available_actions: EFFECTS })
 
     expect(cardMenu(view, cards, kaezin.id)!.point).toBeNull()
+  })
+
+  it('removes a card from the game, face up or face down, apart with the special actions', () => {
+    const banzai = card('banzai')
+    const view = game(player('me', [stack('hand', [banzai])]), player('opp'), {
+      available_actions: ['remove_from_game'],
+      special_actions: [{ type: 'remove_from_game', card_ids: [] }],
+    })
+
+    expect(cardMenu(view, cards, banzai.id)!.more).toEqual([
+      { type: 'remove_from_game', label: 'Remove it from the game', payload: { card_id: banzai.id, face_down: false } },
+      {
+        type: 'remove_from_game',
+        label: 'Remove it from the game face down',
+        payload: { card_id: banzai.id, face_down: true },
+      },
+    ])
+  })
+
+  it('places a card under the cards of both players, those of the viewer first, but not under itself', () => {
+    const kaezin = card('kaezin')
+    const ancestral = card('ancestral')
+    const academy = card('academy', { side: 'dynasty' })
+    const raid = card('raid', { side: 'province' })
+    const stronghold = card('stronghold', { side: 'stronghold' })
+    const scout = card('scout')
+    const view = game(
+      player('me', [
+        stack('in_play', [kaezin, ancestral]),
+        stack('regular_province', [raid, academy]),
+        stack('stronghold_province', [stronghold, card('raid', { id: 'sp' })]),
+      ]),
+      player('opp', [stack('in_play', [scout])]),
+      { available_actions: ['place_card_under'] },
+    )
+
+    expect(hostChoices(view, cards, kaezin.id).map((host) => [host.name, host.where, host.group])).toEqual([
+      ['ancestral', 'attached to kaezin', 'yours'],
+      ['academy', 'in raid', 'yours'],
+      ['Stronghold', 'stronghold', 'yours'],
+      ['raid', 'province', 'provinces'],
+      ['raid', 'stronghold province', 'provinces'],
+      ['scout', 'in play', 'opponent'],
+    ])
+    expect(cardMenu(view, cards, kaezin.id)!.placeUnder.map((host) => host.id)).not.toContain(kaezin.id)
+  })
+
+  it('does not place a card under the card it lies under, nor without the action', () => {
+    const kaezin = card('kaezin')
+    const banzai = card('banzai', { orientation: 'face_down' })
+    const view = game(player('me', [stack('in_play', [kaezin]), underneath(kaezin, [banzai])]), player('opp'), {
+      available_actions: ['place_card_under'],
+    })
+
+    expect(cardMenu(view, cards, banzai.id)!.placeUnder).toEqual([])
+    expect(cardMenu({ ...view, available_actions: [] }, cards, kaezin.id)!.placeUnder).toEqual([])
+  })
+
+  it('plays a card under a card, puts it into a hand, a deck or the discard pile, or removes it from the game', () => {
+    const kaezin = card('kaezin')
+    const banzai = card('banzai', { orientation: 'face_down' })
+    const view = game(player('me', [stack('in_play', [kaezin]), underneath(kaezin, [banzai])]), player('opp'), {
+      available_actions: [
+        'play_action_event',
+        'add_card_to_hand',
+        'put_card_on_deck',
+        'discard_card',
+        'remove_from_game',
+        'place_card_under',
+      ],
+      special_actions: [
+        { type: 'remove_from_game', card_ids: [] },
+        { type: 'place_card_under', card_ids: [] },
+      ],
+    })
+
+    const menu = cardMenu(view, cards, banzai.id)!
+
+    expect(menu.located.host).toBe(kaezin)
+    expect(menu.plays.map((action) => action.type)).toEqual(['play_action_event'])
+    expect(menu.removals.map((action) => action.label)).toEqual([
+      'Add it to your hand',
+      'Put on top of its deck',
+      'Put at the bottom of its deck',
+      'Discard',
+    ])
+    expect(menu.more.map((action) => action.type)).toEqual(['remove_from_game', 'remove_from_game'])
+  })
+
+  it('puts a character removed from the game into play, and a holding into a province, but does not remove them again', () => {
+    const scout = card('scout', { side: 'dynasty' })
+    const academy = card('academy', { side: 'dynasty' })
+    const raid = card('raid', { side: 'province' })
+    const view = game(
+      player('me', [stack('regular_province', [raid]), stack('removed_from_game', [scout, academy])]),
+      player('opp'),
+      {
+        available_actions: [
+          'play_character',
+          'put_character_into_play',
+          'put_holding_into_province',
+          'remove_from_game',
+        ],
+        special_actions: [
+          { type: 'put_character_into_play', card_ids: [] },
+          { type: 'remove_from_game', card_ids: [] },
+        ],
+      },
+    )
+
+    const character = cardMenu(view, cards, scout.id)!
+    expect(character.plays.map((action) => action.type)).toEqual(['play_character'])
+    expect(character.more.map((action) => action.type)).toEqual(['put_character_into_play'])
+    expect(cardMenu(view, cards, academy.id)!.intoProvince).toEqual([{ id: raid.id, name: 'raid' }])
   })
 })

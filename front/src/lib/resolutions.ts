@@ -72,6 +72,10 @@ function whereIs(game: GameView, cardId: string | null): string | null {
       return located.card.side === 'stronghold' ? 'Stronghold' : 'Stronghold province'
     case 'role':
       return 'Role'
+    case 'removed_from_game':
+      return 'Removed from the game'
+    case 'underneath':
+      return 'Under a card'
     default:
       return null
   }

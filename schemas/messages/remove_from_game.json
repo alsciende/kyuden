@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "remove_from_game",
+    "description": "Removes a card from the game, e.g. to resolve an effect (Karmic Balance, Shadow Step, Stolen Secrets, Trading on the Sand Road): from a deck, a hand, play, a province, a discard pile or from under a card, out of play until an effect brings it back: it is then played (`play_character`, `play_attachment`, the events), put into play (`put_character_into_play`), into a province (`put_card_into_province`), into a hand (`add_card_to_hand`), discarded or put into a deck. Face up, it goes to the cards removed from the game of its owner, which every player sees; face down, to those of the sender, who alone knows it. A card leaving play leaves its attachments, tokens and the conflict; a province left without dynasty card is refilled.\n\nThe card can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Conflict or dynasty card to remove from the game.",
+            "type": "string"
+        },
+        "face_down": {
+            "description": "Whether the card is removed face down, known to the sender only; face up otherwise.",
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "card_id",
+        "face_down"
+    ],
+    "additionalProperties": false
+}

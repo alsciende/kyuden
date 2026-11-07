@@ -26,7 +26,8 @@ use Symfony\Component\Workflow\WorkflowInterface;
 /**
  * Rules about playing a card during an action window (PlayCharacter, PlayAttachment and the events), from its hand or
  * from elsewhere: a card of any player, from a hand, a deck or a discard pile (a conflict card), from a province face
- * up, a deck or a discard pile (a dynasty character). The engine does not check the effect allowing it (Artisan
+ * up, a deck or a discard pile (a dynasty character), or from out of play (removed from the game, under a card: Stolen
+ * Secrets, Daidoji Uji, Back-Alley Hideaway). The engine does not check the effect allowing it (Artisan
  * Academy, Kunshu, Prepared Ambush…): the player playing it controls it, and an event goes to the discard pile of its
  * owner.
  */
@@ -36,8 +37,8 @@ readonly class PlayService
      * The places a card is played from, by class.
      */
     private const array PLAYABLE_PLACES = [
-        ConflictCard::class => [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE],
-        DynastyCard::class => [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE],
+        ConflictCard::class => [ConflictCard::STATE_HAND, ConflictCard::STATE_DRAW_DECK, ConflictCard::STATE_DISCARD_PILE, ConflictCard::STATE_REMOVED_FROM_GAME, ConflictCard::STATE_UNDERNEATH],
+        DynastyCard::class => [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH],
     ];
 
     public function __construct(

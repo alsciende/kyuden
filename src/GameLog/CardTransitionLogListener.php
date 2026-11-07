@@ -19,7 +19,8 @@ use Symfony\Component\Workflow\Event\LeaveEvent;
  * - `owner`: the player owning the card;
  * - `from`, `to`: the stacks the card leaves and goes to (the same for a transition that does not move it);
  * - `controller`: the player given in the `controller` key of the transition context, if any (take_control);
- * - `player`: the player given in the `player` key of the transition context, if any (the player playing the card).
+ * - `player`: the player given in the `player` key of the transition context, if any (the player playing the card);
+ * - `host`: the card it goes under, when it goes to an Underneath stack (place_under).
  *
  * Written when the card leaves its place, before the consequences of the transition (LeavePlayListener), which write
  * their own entries: the position the card goes to is read from the metadata of the transition, as
@@ -59,6 +60,8 @@ final readonly class CardTransitionLogListener
         $toOwner = $to?->getPlayer() ?? $card->getPlayer();
 
         $game = $card->getGame();
+        // the card it goes under (place_under)
+        $host = $to?->getHost();
         $controller = $event->getContext()['controller'] ?? null;
         // the player playing the card, whoever owns it
         $player = $event->getContext()['player'] ?? null;
@@ -73,9 +76,24 @@ final readonly class CardTransitionLogListener
             'owner' => $card->getPlayer(),
             'from' => $from,
             'to' => LogParam::stackOf($toType, $toOwner, $to),
+            ...($host instanceof PhysicalCard ? ['host' => $this->cardParam($host, $host->getStack())] : []),
             ...($controller instanceof Player ? ['controller' => $controller] : []),
             ...($player instanceof Player ? ['player' => $player] : []),
         ]);
+    }
+
+    /**
+     * A card that stays where it is, as the players see it there.
+     */
+    private function cardParam(PhysicalCard $card, Stack $stack): LogParam
+    {
+        $game = $card->getGame();
+
+        return LogParam::card(
+            $card,
+            $this->gameLogger->playersWhere($game, fn (Player $viewer): bool => $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer)),
+            $this->gameLogger->playersWhere($game, fn (Player $viewer): bool => $this->visibility->isCardInStackVisibleTo($card, $stack, $viewer)),
+        );
     }
 
     /**

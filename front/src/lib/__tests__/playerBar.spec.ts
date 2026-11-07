@@ -24,6 +24,15 @@ describe('playerBar', () => {
     expect(bar.dynastyDiscard).toEqual([])
   })
 
+  it('reads the cards removed from the game, the last removed first', () => {
+    const first = card('first')
+    const last = card('last', { orientation: 'face_down', controller_id: 'opp' })
+    const me = player('me', [stack('removed_from_game', [first, last])])
+
+    expect(playerBar(game(me, player('opp')), me).removed).toEqual([last, first])
+    expect(playerBar(game(player('me'), player('opp')), player('me')).removed).toEqual([])
+  })
+
   it('counts the intact provinces', () => {
     const me = player('me', [
       stack('regular_province', [card('raid')]),

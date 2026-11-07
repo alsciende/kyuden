@@ -133,6 +133,42 @@ final class WorkflowConfig
     }
 
     /**
+     * A card set aside out of play, face up or face down, from the places given: removed from the game (`remove_from_game`,
+     * `remove_from_game_facedown`: RemoveFromGame), or placed under a card (`place_under`, `place_under_facedown`:
+     * PlaceCardUnder), from the places given or from the other out-of-play place. The target stack is the `stack` of the
+     * context: the RemovedFromGame stack of a player, the Underneath stack of a card (whose host the log names).
+     *
+     * @param list<string> $from
+     *
+     * @return list<TransitionConfig>
+     */
+    public static function setAside(array $from, string $removedFromGame, string $underneath): array
+    {
+        return [
+            self::transition('remove_from_game', [...$from, $underneath], $removedFromGame, [
+                'log' => '{card} is removed from the game from {from}',
+                'stack' => StackType::RemovedFromGame,
+                'orientation' => Orientation::FaceUp,
+            ]),
+            self::transition('remove_from_game_facedown', [...$from, $underneath], $removedFromGame, [
+                'log' => '{card} is removed from the game facedown from {from}',
+                'stack' => StackType::RemovedFromGame,
+                'orientation' => Orientation::FaceDown,
+            ]),
+            self::transition('place_under', [...$from, $removedFromGame], $underneath, [
+                'log' => '{card} is placed from {from} under {host}',
+                'stack' => StackType::Underneath,
+                'orientation' => Orientation::FaceUp,
+            ]),
+            self::transition('place_under_facedown', [...$from, $removedFromGame], $underneath, [
+                'log' => '{card} is placed facedown from {from} under {host}',
+                'stack' => StackType::Underneath,
+                'orientation' => Orientation::FaceDown,
+            ]),
+        ];
+    }
+
+    /**
      * Places from which the abilities of a card can be used (TriggerActionAbility, TriggerReactionAbility): the card
      * stays where it is.
      *

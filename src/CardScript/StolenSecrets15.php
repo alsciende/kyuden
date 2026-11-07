@@ -9,6 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\LookAtCards;
 use App\Message\PutCardOnDeck;
+use App\Message\RemoveFromGame;
 
 /**
  * Stolen Secrets.
@@ -30,6 +31,6 @@ final readonly class StolenSecrets15 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, PutCardOnDeck::class];
+        return [LookAtCards::class, PutCardOnDeck::class, RemoveFromGame::class];
     }
 }

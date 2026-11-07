@@ -15,8 +15,9 @@ use App\Enum\StackType;
  * The visibility rules of the cards, shared by the view of the game (GameViewFactory) and its log. They only depend on
  * the state, never on the game place:
  * - decks are hidden from every player, the hand from the opponents: the cards in them, ids included, are hidden;
- * - a face-down card is hidden from every player, except a face-down province from its owner: its id is known, not its
- *   code;
+ * - a face-down card is hidden from every player, except a face-down province from its owner, and a card set aside face
+ *   down (removed from the game, under a card) from the player of its stack, who put it there or holds the card it is
+ *   under: its id is known, not its code;
  * - everything else is public.
  *
  * A viewer who is not a player of the game (null: a spectator) only sees what is public.
@@ -44,7 +45,9 @@ final readonly class Visibility
     public function isCardVisibleTo(PhysicalCard $card, StackType $type, Player $owner, Orientation $orientation, ?Player $viewer): bool
     {
         return $this->isStackVisibleTo($type, $owner, $viewer)
-            && ($orientation !== Orientation::FaceDown || ($card instanceof ProvinceCard && $card->getPlayer() === $viewer));
+            && ($orientation !== Orientation::FaceDown
+                || ($card instanceof ProvinceCard && $card->getPlayer() === $viewer)
+                || ($type->isSetAside() && $owner === $viewer));
     }
 
     public function isCardInStackVisibleTo(PhysicalCard $card, Stack $stack, ?Player $viewer): bool

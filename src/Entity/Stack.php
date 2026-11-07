@@ -34,12 +34,25 @@ class Stack
     #[ORM\Column(enumType: StackType::class)]
     private StackType $type;
 
-    public function __construct(string $id, Player $player, StackType $type)
+    /**
+     * The card the cards of an Underneath stack are under; null for the other stacks. The stack is removed when its host
+     * leaves its place (App\Workflow\HostLeaveListener), so that a host is never deleted (a shuffle) while it has one.
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?PhysicalCard $host;
+
+    public function __construct(string $id, Player $player, StackType $type, ?PhysicalCard $host = null)
     {
+        if (($type === StackType::Underneath) !== ($host instanceof PhysicalCard)) {
+            throw new \LogicException('A stack has a host card if and only if it holds the cards under it.');
+        }
+
         $this->id = $id;
         $this->player = $player;
         $this->player->getStacks()->add($this);
         $this->type = $type;
+        $this->host = $host;
         $this->cards = new ArrayCollection();
     }
 
@@ -142,5 +155,10 @@ class Stack
     public function getType(): StackType
     {
         return $this->type;
+    }
+
+    public function getHost(): ?PhysicalCard
+    {
+        return $this->host;
     }
 }

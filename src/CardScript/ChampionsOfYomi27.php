@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\PutCharacterIntoPlay;
+use App\Message\RemoveFromGame;
 
 /**
  * Champions of Yomi.
@@ -29,6 +30,6 @@ final readonly class ChampionsOfYomi27 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [PutCharacterIntoPlay::class];
+        return [PutCharacterIntoPlay::class, RemoveFromGame::class];
     }
 }

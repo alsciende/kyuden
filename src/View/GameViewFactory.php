@@ -173,6 +173,7 @@ final readonly class GameViewFactory
             type: u($stack->getType()->name)->snake()->toString(),
             count: $stack->getCards()->count(),
             cards: $hidden ? null : array_map(fn (PhysicalCard $card): CardView => $this->createCardView($card, $viewer), $stack->getOrderedCards()),
+            hostId: $stack->getHost()?->getId(),
         );
     }
 

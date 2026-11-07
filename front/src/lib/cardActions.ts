@@ -1,7 +1,7 @@
 import type { AbilityTiming, Card } from '@/api/client'
 import type { GameView, PlayerView } from '@/api/game'
 import type { Message, MessagePayloads, MessageType } from '@/api/messages'
-import { locate, provinces, stacksOf, type Cards, type Located } from '@/lib/board'
+import { charactersInPlay, locate, provinces, stacksOf, type Cards, type Located } from '@/lib/board'
 
 /**
  * What a player can do with a card, from where it is and from the actions the engine makes available now. Board
@@ -61,6 +61,18 @@ export interface CardMenu {
   switchWith: ProvinceChoice[]
   /** the provinces of its owner a dynasty card can be put into, by an effect (Logistics, The Receding Tide) */
   putIntoProvince: ProvinceChoice[]
+  /** the cards it can be placed under, by an effect (Back-Alley Hideaway, Under Siege) */
+  placeUnder: HostChoice[]
+}
+
+/** a card another card can be placed under: in play, a holding face up in a province, a province, a stronghold */
+export interface HostChoice {
+  id: string
+  name: string
+  /** where it is: in play, attached to…, in a province… */
+  where: string
+  /** the cards of the viewer but their provinces, offered first; then their provinces, then those of the opponent */
+  group: 'yours' | 'provinces' | 'opponent'
 }
 
 export interface ProvinceChoice {
@@ -197,6 +209,78 @@ function copyInPlay(located: Located, cards: Cards, card: Card | undefined): str
     })?.id
 }
 
+/**
+ * The cards a card can be placed under (`place_card_under`), of both players: a character or an attachment in play, a
+ * dynasty card face up in a province, a province, a stronghold; not the card itself nor the card it already lies under.
+ */
+export function hostChoices(
+  game: GameView,
+  cards: Cards,
+  cardId: string,
+  currentHostId: string | null = null,
+): HostChoice[] {
+  const nameOf = (code: string | null, fallback: string) => cardOf(cards, code)?.name ?? fallback
+  const excluded = new Set([cardId, currentHostId])
+
+  return game.players
+    .flatMap((player): HostChoice[] => {
+      const mine = player.id === game.viewer_id
+      const group = mine ? 'yours' : 'opponent'
+      const inPlay = charactersInPlay(player).flatMap((character) => {
+        const name = nameOf(character.card.code, 'Character')
+
+        return [
+          { id: character.card.id, name, where: 'in play', group },
+          ...character.attachments.map((attachment) => ({
+            id: attachment.id,
+            name: nameOf(attachment.code, 'Attachment'),
+            where: `attached to ${name}`,
+            group,
+          })),
+        ]
+      })
+      const onProvinces = provinces(player).flatMap((province) => {
+        const provinceName =
+          province.province === null
+            ? 'Province'
+            : nameOf(province.province.code, province.province.code === null ? 'Face-down province' : 'Province')
+        const faceUp = province.cards
+          .filter((card) => card.side === 'dynasty' && card.orientation === 'face_up')
+          .map((card) => ({ id: card.id, name: nameOf(card.code, 'Card'), where: `in ${provinceName}`, group }))
+
+        return [
+          ...(province.stronghold === null
+            ? []
+            : [
+                {
+                  id: province.stronghold.id,
+                  name: nameOf(province.stronghold.code, 'Stronghold'),
+                  where: 'stronghold',
+                  group,
+                },
+              ]),
+          ...faceUp,
+          ...(province.province === null
+            ? []
+            : [
+                {
+                  id: province.province.id,
+                  name: provinceName,
+                  where: province.stronghold === null ? 'province' : 'stronghold province',
+                  group: mine ? 'provinces' : 'opponent',
+                },
+              ]),
+        ]
+      })
+
+      return [...inPlay, ...onProvinces] as HostChoice[]
+    })
+    .filter((choice) => !excluded.has(choice.id))
+    .sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group))
+}
+
+const GROUPS: HostChoice['group'][] = ['yours', 'provinces', 'opponent']
+
 function abilityLabel(timing: AbilityTiming, count: number): string {
   return count === 1 ? 'Activate its ability' : `Activate its ${timing}`
 }
@@ -233,6 +317,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     moveStatusToken: false,
     switchWith: [],
     putIntoProvince: [],
+    placeUnder: [],
   }
   const special = new Set(game.special_actions.map((action) => action.type))
   // the payload is the card by default, for the messages whose payload is a card only; a special action goes apart
@@ -296,6 +381,35 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           controller_id,
         })
       }
+    }
+  }
+  // set aside by an effect: removed from the game (Shadow Step, Stolen Secrets), face up or face down
+  const removeFromGame = () => {
+    add(menu.more, 'remove_from_game', 'Remove it from the game', { card_id: id, face_down: false })
+    add(menu.more, 'remove_from_game', 'Remove it from the game face down', { card_id: id, face_down: true })
+  }
+  // placed under another card by an effect (Back-Alley Hideaway, Under Siege): the card is chosen in a form
+  const placeUnder = () => {
+    if (available.has('place_card_under')) {
+      menu.placeUnder = hostChoices(game, cards, id, located.host?.id ?? null)
+    }
+  }
+  const setAside = () => {
+    if (stack.type !== 'removed_from_game') {
+      removeFromGame()
+    }
+    placeUnder()
+  }
+  // a holding into a province of its owner, by an effect (Rebuild, Kaiu Shihobu)
+  const holdingIntoProvince = () => {
+    if (card?.type === 'holding' && available.has('put_holding_into_province')) {
+      menu.intoProvince = stacksOf(located.player, 'regular_province').flatMap((province, index) => {
+        const provinceCard = (province.cards ?? [])[0]
+
+        return provinceCard === undefined
+          ? []
+          : [{ id: provinceCard.id, name: cardOf(cards, provinceCard.code)?.name ?? `Province ${index + 1}` }]
+      })
     }
   }
   const moveAttachment = () => {
@@ -370,6 +484,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         add(menu.state, 'reveal_card', 'Reveal it')
       }
       putIntoPlay()
+      setAside()
       discardDuplicate()
       toDeck()
       discard()
@@ -395,6 +510,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         lookAt()
         switchWith()
         intoProvince()
+        setAside()
         toDeck()
         discard()
       } else {
@@ -418,6 +534,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           honorTokens()
           sacrifice()
         }
+        setAside()
         discardDuplicate()
         toDeck()
         discard()
@@ -434,6 +551,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       } else if (view.side === 'dynasty') {
         // a dynasty card moved onto the stronghold province (Recalled Defenses)
         intoProvince()
+        setAside()
         toDeck()
         discard()
       } else if (faceUp) {
@@ -496,6 +614,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       if (under === null) {
         intoProvince()
       }
+      setAside()
       add(menu.removals, 'return_card_to_hand', 'Return to hand')
       sacrifice()
       toDeck()
@@ -507,6 +626,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       menu.plays = playActions(card, available)
       putIntoPlay()
       add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
+      setAside()
       toDeck()
       break
 
@@ -516,17 +636,27 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         menu.plays = playActions(card, available)
       }
       putIntoPlay()
-      if (card?.type === 'holding' && available.has('put_holding_into_province')) {
-        menu.intoProvince = stacksOf(located.player, 'regular_province').flatMap((province, index) => {
-          const provinceCard = (province.cards ?? [])[0]
-
-          return provinceCard === undefined
-            ? []
-            : [{ id: provinceCard.id, name: cardOf(cards, provinceCard.code)?.name ?? `Province ${index + 1}` }]
-        })
-      }
+      holdingIntoProvince()
       intoProvince()
+      setAside()
       toDeck()
+      break
+
+    case 'removed_from_game':
+    case 'underneath':
+      // set aside by an effect, then played (Back-Alley Hideaway, Stolen Secrets), put into play (Shadow Step), into a
+      // province (Kaiu Shihobu) or into a hand (Under Siege): whoever owns it, the engine does not check the effect
+      lookAt()
+      menu.plays = playActions(card, available)
+      putIntoPlay()
+      holdingIntoProvince()
+      intoProvince()
+      setAside()
+      if (view.side === 'conflict') {
+        add(menu.removals, 'add_card_to_hand', menu.mine ? 'Add it to your hand' : "Put it into Opp.'s hand")
+      }
+      toDeck()
+      discard()
       break
 
     default:

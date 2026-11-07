@@ -328,7 +328,8 @@ final class GameBuilder
 
         $strongholdProvinceId = null;
         foreach ($builder->getStacks() as $plannedStack) {
-            $stack = $uniqueStacks[$plannedStack->type->value] ?? $this->createStack($player, $plannedStack->type);
+            $host = $plannedStack->host === null ? null : ($this->builtCards[$plannedStack->host] ?? throw new \OutOfBoundsException("No card aliased '{$plannedStack->host}'."));
+            $stack = $uniqueStacks[$plannedStack->type->value] ?? $this->createStack($player, $plannedStack->type, $host);
             foreach ($plannedStack->cards as $plannedCard) {
                 $card = $this->createCard($player, $stack, $plannedCard);
                 if ($plannedCard->chosenStrongholdProvince) {
@@ -391,9 +392,9 @@ final class GameBuilder
         });
     }
 
-    private function createStack(Player $player, StackType $type): Stack
+    private function createStack(Player $player, StackType $type, ?PhysicalCard $host = null): Stack
     {
-        $stack = new Stack(Uuid::v4()->toString(), $player, $type);
+        $stack = new Stack(Uuid::v4()->toString(), $player, $type, $host);
         $this->builtStacks[] = $stack;
 
         return $stack;
@@ -406,7 +407,8 @@ final class GameBuilder
     {
         return match ($stack->getType()) {
             StackType::ConflictDrawDeck, StackType::DynastyDrawDeck, StackType::StrongholdProvince, StackType::RegularProvince => null,
-            StackType::ConflictDiscardPile, StackType::DynastyDiscardPile, StackType::Role, StackType::Hand, StackType::InPlay => Orientation::FaceUp,
+            StackType::ConflictDiscardPile, StackType::DynastyDiscardPile, StackType::Role, StackType::Hand, StackType::InPlay,
+            StackType::RemovedFromGame, StackType::Underneath => Orientation::FaceUp,
         };
     }
 

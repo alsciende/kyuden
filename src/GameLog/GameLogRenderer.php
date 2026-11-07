@@ -46,6 +46,8 @@ final readonly class GameLogRenderer
                     'dynasty_draw_deck' => 'dynasty deck',
                     'regular_province' => 'province',
                     'in_play' => 'play area',
+                    'removed_from_game' => 'cards removed from the game',
+                    'underneath' => 'cards under a card',
                     default => u(is_string($param['stack_type'] ?? null) ? $param['stack_type'] : '')->replace('_', ' ')->toString(),
                 },
             ),

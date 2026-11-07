@@ -304,6 +304,37 @@ final class PlayerBuilder
         return $this;
     }
 
+    /**
+     * Cards removed from the game, in the stack of this player (face down: whose face only this player sees).
+     *
+     * @param array<array-key, string> $codes
+     */
+    public function removedFromGame(array $codes, bool $faceDown = false): self
+    {
+        $stack = $this->stack(StackType::RemovedFromGame);
+        foreach ($codes as $as => $code) {
+            $stack->cards[] = new PlannedCard($code, is_string($as) ? $as : null, $faceDown ? Orientation::FaceDown : Orientation::FaceUp);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Cards under a card of this player declared before (its alias).
+     *
+     * @param array<array-key, string> $codes
+     */
+    public function underneath(string $host, array $codes, bool $faceDown = false): self
+    {
+        $stack = new PlannedStack(StackType::Underneath, $host);
+        foreach ($codes as $as => $code) {
+            $stack->cards[] = new PlannedCard($code, is_string($as) ? $as : null, $faceDown ? Orientation::FaceDown : Orientation::FaceUp);
+        }
+        $this->stacks[] = $stack;
+
+        return $this;
+    }
+
     public function getDeckId(): ?string
     {
         return $this->deckId;

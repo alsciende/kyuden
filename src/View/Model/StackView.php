@@ -11,13 +11,15 @@ final readonly class StackView
 {
     /**
      * @param string               $type  snake case name of the StackType
-     * @param list<CardView>|null $cards from the bottom to the top; null when the stack is hidden
+     * @param list<CardView>|null $cards   from the bottom to the top; null when the stack is hidden
+     * @param string|null         $hostId the card the cards of an Underneath stack are under; null for the others
      */
     public function __construct(
         public string $id,
         public string $type,
         public int $count,
         public ?array $cards,
+        public ?string $hostId = null,
     ) {
     }
 }

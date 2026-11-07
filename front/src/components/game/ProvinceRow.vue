@@ -5,14 +5,17 @@ import type { CardView, GameView, PlayerView } from '@/api/game'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import GameCard from '@/components/game/GameCard.vue'
+import UnderPile from '@/components/game/UnderPile.vue'
 import { printed, provinceCards, provinces, type Cards } from '@/lib/board'
 import { hidePreview, showPreview } from '@/lib/preview'
+import { useCardsUnder } from '@/lib/underneath'
 
 /**
  * The provinces of a player, each with what lies on it (dynasty cards, the stronghold) above its name: the card on top,
  * and, when there are several (Rally, a holding beside a card, a card put onto the stronghold province), the depth of
  * the others behind it and a badge with their number, which opens their list, the top first; a card of the list opens
- * like a card of the board. In a selection, the provinces that can be chosen are the targets of the click.
+ * like a card of the board. The cards placed under the card on top or under the province (`UnderPile.vue`) show below
+ * that card, or by a badge on the name of the province. In a selection, the provinces that can be chosen are the targets of the click.
  */
 const props = withDefaults(
   defineProps<{
@@ -30,6 +33,7 @@ const props = withDefaults(
 const emit = defineEmits<{ open: [id: string]; select: [id: string] }>()
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
+const cardsUnder = useCardsUnder()
 
 const list = computed(() =>
   provinces(props.player).map((province) => {
@@ -52,6 +56,8 @@ const list = computed(() =>
       several: stack.length > 1 && props.selectable === null,
       /** the outlines drawn behind the card on top, two at most */
       depth: Math.min(stack.length - 1, 2),
+      /** cards lie under the card on top: their edges below it, its name further down */
+      carrying: top !== null && cardsUnder.value.has(top.id),
     }
   }),
 )
@@ -121,7 +127,7 @@ function clickProvince(id: string, selectable: boolean): void {
 
 <template>
   <div class="provinces" :class="size">
-    <div v-for="item in list" :key="item.province.stack.id" class="province">
+    <div v-for="item in list" :key="item.province.stack.id" class="province" :class="{ carrying: item.carrying }">
       <div class="slot">
         <span
           v-for="layer in item.depth"
@@ -141,39 +147,56 @@ function clickProvince(id: string, selectable: boolean): void {
         >
           +{{ item.stack.length - 1 }}
         </button>
-        <GameCard
+        <UnderPile
           v-if="item.top"
-          :card="item.top"
+          :host="item.top"
           :cards="cards"
           :mine="mine"
           :size="size"
-          :muted="selectable !== null"
-          show-cost
-          @click="emit('open', item.top.id)"
-        />
+          @open="emit('open', $event)"
+        >
+          <GameCard
+            :card="item.top"
+            :cards="cards"
+            :mine="mine"
+            :size="size"
+            :muted="selectable !== null"
+            show-cost
+            @click="emit('open', item.top.id)"
+          />
+        </UnderPile>
         <span v-else class="empty" aria-hidden="true" />
       </div>
-      <button
+      <UnderPile
         v-if="item.card"
-        type="button"
-        class="tag"
-        :class="{
-          hidden: item.hidden,
-          broken: item.province.broken,
-          selectable: item.selectable,
-          selected: item.card.id === selectedId,
-          muted: selectable !== null && !item.selectable,
-        }"
-        :aria-pressed="item.selectable ? item.card.id === selectedId : undefined"
-        @click="clickProvince(item.card.id, item.selectable)"
-        @mouseenter="showPreview(item.card.code, $event.currentTarget as HTMLElement, mine)"
-        @mouseleave="hidePreview"
+        :host="item.card"
+        :cards="cards"
+        :mine="mine"
+        :size="size"
+        :edges="false"
+        @open="emit('open', $event)"
       >
-        <span class="tag-name">{{ item.name }}</span>
-        <span v-if="item.province.broken" class="tag-value">Broken</span>
-        <span v-else-if="item.strength !== null" class="tag-value">{{ item.strength }}</span>
-        <span v-if="item.stronghold" class="visually-hidden">(stronghold province)</span>
-      </button>
+        <button
+          type="button"
+          class="tag"
+          :class="{
+            hidden: item.hidden,
+            broken: item.province.broken,
+            selectable: item.selectable,
+            selected: item.card.id === selectedId,
+            muted: selectable !== null && !item.selectable,
+          }"
+          :aria-pressed="item.selectable ? item.card.id === selectedId : undefined"
+          @click="clickProvince(item.card.id, item.selectable)"
+          @mouseenter="showPreview(item.card.code, $event.currentTarget as HTMLElement, mine)"
+          @mouseleave="hidePreview"
+        >
+          <span class="tag-name">{{ item.name }}</span>
+          <span v-if="item.province.broken" class="tag-value">Broken</span>
+          <span v-else-if="item.strength !== null" class="tag-value">{{ item.strength }}</span>
+          <span v-if="item.stronghold" class="visually-hidden">(stronghold province)</span>
+        </button>
+      </UnderPile>
       <template v-if="openId === item.province.stack.id">
         <div class="backdrop" @click="close" />
         <div
@@ -412,6 +435,11 @@ function clickProvince(id: string, selectable: boolean): void {
 
 .small .province {
   width: 81px;
+}
+
+/* room for the edges of the cards under the card on top, and its badge */
+.province.carrying {
+  gap: 20px;
 }
 
 .slot {
