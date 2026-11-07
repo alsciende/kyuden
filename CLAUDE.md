@@ -9,9 +9,10 @@
 
 ## Commands
 
-Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which serves Symfony, embeds the Mercure hub and sends the rest to the service `node`, the Vite server of the web client `front/`) through the Makefile:
+Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which serves Symfony, embeds the Mercure hub and sends the rest to the service `node`, the Vite server of the web client `front/`; service `worker`: the tasks of `src/Task`) through the Makefile:
 
 - `make up` / `make down` / `make build` / `make sh`
+- `make worker-restart` / `make worker-logs`: the worker (service `worker`, `messenger:consume async`: the tasks of `src/Task`) keeps the code it has loaded: restart it after changing a task or what it runs
 - `make db`: drop and recreate the schema, then load fixtures (packs, cards, starter decks, users)
 - `make db-test`: the same on the test database (service `database_test`, in memory: run it again after restarting the service)
 - `make test`: clears the cache of Symfony (`make clear-cache`), then PHPUnit on the test database (`make test-php`), then Vitest (`make front-test`); PHPUnit fails on a deprecation caused by `src/`

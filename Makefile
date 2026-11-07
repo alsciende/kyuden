@@ -26,6 +26,13 @@ up:
 down:
 	docker compose down --remove-orphans
 
+# the worker keeps the code it has loaded
+worker-restart:
+	docker compose restart worker
+
+worker-logs:
+	docker compose logs --follow worker
+
 sql:
 	$(EXEC) -it database psql -U postgres
 

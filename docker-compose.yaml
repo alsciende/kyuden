@@ -63,6 +63,34 @@ services:
         condition: service_healthy
     entrypoint: '/var/www/html/docker/dev/symfony/entrypoint.sh'
 
+  # the worker: the tasks of the application (src/Task), from the image of the symfony service. It keeps the code it has
+  # loaded: "make worker-restart" after changing a task or what it runs; it starts again after an hour, or after a crash
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/dev/symfony/Dockerfile
+    # a cache of its own, in memory like the one of the symfony service
+    tmpfs:
+      - /var/www/html/var/cache:uid=82,gid=82,mode=0755,size=512m
+    user: www-data
+    restart: unless-stopped
+    command: ["bin/console", "messenger:consume", "async", "-vv", "--time-limit=3600"]
+    environment:
+      # the hub of the symfony service (its Caddyfile), signed with the same key
+      MERCURE_URL: http://symfony/.well-known/mercure
+      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
+      NO_PROXY: localhost,127.0.0.1,symfony,node,database,database_test,mailer
+      no_proxy: localhost,127.0.0.1,symfony,node,database,database_test,mailer
+    volumes:
+      - .:/var/www/html
+    # the healthcheck of the image is the one of FrankenPHP, which the worker does not run
+    healthcheck:
+      disable: true
+    # once FrankenPHP serves (its entrypoint installs the dependencies first)
+    depends_on:
+      symfony:
+        condition: service_healthy
+
   # the web client (front/): the Vite development server, behind FrankenPHP (symfony service)
   node:
     image: node:24-alpine

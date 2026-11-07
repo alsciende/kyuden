@@ -35,9 +35,13 @@ set_version "$tag"
 # the release that does not start leaves .env as it was
 trap 'echo "deployment of $tag failed, KYUDEN_VERSION=$previous restored" >&2; set_version "$previous"' ERR
 
-# the application only: the database keeps its image
-docker compose pull app
-docker compose up --detach --no-deps --force-recreate app
+# the application and its worker only: the database keeps its image. The worker of the previous release stops first (it
+# finishes the task it handles), so that its code does not run on the database the new release migrates; the new one
+# starts once the application is healthy
+docker compose pull app worker
+docker compose stop worker
+docker compose up --detach --no-deps --force-recreate --wait app
+docker compose up --detach --no-deps --force-recreate worker
 trap - ERR
 
 docker image prune --force

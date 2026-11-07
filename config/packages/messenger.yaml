@@ -4,11 +4,16 @@ framework:
 
         transports:
             # https://symfony.com/doc/current/messenger.html#transport-configuration
+            # the tasks of the worker (messenger:consume async): a table of PostgreSQL, the worker woken at once by
+            # LISTEN/NOTIFY (use_notify)
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
                     use_notify: true
                     check_delayed_interval: 60000
+                    # a message whose worker was killed while handling it is handled again after 5 minutes (1 hour by
+                    # default)
+                    redeliver_timeout: 300
                 retry_strategy:
                     max_retries: 3
                     multiplier: 2
@@ -20,7 +25,8 @@ framework:
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
 
-            # Route your messages to the transports
+            # the tasks of the worker (src/Task)
+            App\Task\TaskInterface: async
 
         default_bus: default.bus
 
@@ -43,3 +49,19 @@ framework:
                     - 'App\Middleware\WorkflowTransitionMiddleware'
             # bus without middlewares to use in the message handlers
             transition.bus:
+            # the tasks of the worker (src/Task), sent to the transport async: none of the middlewares of the actions,
+            # whose transaction would hold the lock of a game for the whole task (a task dispatches actions on
+            # default.bus)
+            task.bus:
+                middleware:
+                    # the worker runs for an hour: its connection may have been closed meanwhile
+                    - doctrine_ping_connection
+
+when@test:
+    framework:
+        messenger:
+            # the tasks are not handled in the tests: a test reads what was sent (InMemoryTransport) and invokes the
+            # handler of the task
+            transports:
+                async: 'in-memory://'
+                failed: 'in-memory://'

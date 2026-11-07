@@ -53,6 +53,34 @@ services:
       database:
         condition: service_healthy
 
+  # the worker: the tasks of the application (src/Task), from the same image; it starts once the application has brought
+  # the database up to date (its entrypoint runs the migrations for FrankenPHP only), and stops after an hour (or 256 MB)
+  # to be started again, the message being handled finished first (SIGTERM)
+  worker:
+    image: ghcr.io/alsciende/kyuden-app:${KYUDEN_VERSION:?}
+    restart: unless-stopped
+    command: ["bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=256M"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kyuden}:${POSTGRES_PASSWORD:?}@database:5432/${POSTGRES_DB:-kyuden}?serverVersion=18&charset=utf8
+      # the hub of the application, on its port that the host does not publish (app/Caddyfile)
+      MERCURE_URL: http://app:8000/.well-known/mercure
+      MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:?}
+      SERVER_NAME: ${SERVER_NAME:-:80}
+    volumes:
+      - type: bind
+        source: ./symfony.env
+        target: /var/www/html/.env
+        read_only: true
+        bind:
+          create_host_path: false
+    stop_grace_period: 30s
+    # the healthcheck of the image is the one of FrankenPHP, which the worker does not run
+    healthcheck:
+      disable: true
+    depends_on:
+      app:
+        condition: service_healthy
+
 volumes:
   database_data:
   caddy_data:

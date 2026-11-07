@@ -55,10 +55,10 @@
 	}
 }
 
-# the Mercure hub, as Symfony publishes to it (MERCURE_URL), in the container only; a configuration has a single hub, and
-# the site above is another server (another port): it proxies the browsers here
+# the Mercure hub, as Symfony publishes to it (MERCURE_URL): the application in its container, the worker from its own
+# (compose.yaml: the port is not published on the host); a configuration has a single hub, and the site above is another
+# server (another port): it proxies the browsers here
 http://:8000 {
-	bind 127.0.0.1
 
 	mercure {
 		transport bolt {
