@@ -160,9 +160,9 @@ Once a player reveals an honor bid, the dial is placed next to the player's stro
 The player with the higher honor bid must give an amount of honor to the player with the lower honor bid that is equal to the difference between the two bids. If the bids are equal, no honor is transferred during this step.
 
 - In the enlightenment format, all three players compare their honor bids with one another for the purposes of transferring honor.
-- h If each player selects a different number on their honor dial, the player who selects the highest number gives honor to the player who selects the lowest number. The amount of honor given is equal to the difference between the numbers those two players select. The player whose number is in between the other two does not gain or lose honor.
-- h If two players select the same number and the remaining player selects a number that is higher than that selected by their two opponents, the player that selected the higher number gives honor to both opponents. The amount of honor given is equal to the difference between the two numbers selected, divided as evenly as possible between the two players that selected the same number. If any honor remains to be given after dividing the honor as evenly as possible, the player giving the honor selects which opponent the remaining honor is given to.
-- h If two players select the same number and the remaining player selects a number that is lower than that selected by their two opponents, the player that selected the
+  - If each player selects a different number on their honor dial, the player who selects the highest number gives honor to the player who selects the lowest number. The amount of honor given is equal to the difference between the numbers those two players select. The player whose number is in between the other two does not gain or lose honor.
+  - If two players select the same number and the remaining player selects a number that is higher than that selected by their two opponents, the player that selected the higher number gives honor to both opponents. The amount of honor given is equal to the difference between the two numbers selected, divided as evenly as possible between the two players that selected the same number. If any honor remains to be given after dividing the honor as evenly as possible, the player giving the honor selects which opponent the remaining honor is given to.
+  - If two players select the same number and the remaining player selects a number that is lower than that selected by their two opponents, the player that selected the
 
 lower number takes honor from both opponents. The total amount of honor taken is equal to the difference between the two numbers selected, divided as evenly as possible between the two players that selected the same number. If any honor remains to be taken after dividing it as evenly as possible, the player receiving the honor selects which opponent to take the remaining honor from.
 
@@ -206,9 +206,9 @@ A conflict cannot be declared against a player's stronghold province in the stro
 
 If a player selects an unclaimed ring with fate on it to become the contested ring, that fate is moved from the ring to the attacking player's fate pool. In the team conquest format, this fate is given to one player on an attacking team, and cannot be distributed among the players on that team.
 
-- h In the enlightenment format, a player can only declare a conflict using a ring in their personal unclaimed ring pool or the common unclaimed ring pool.
+  - In the enlightenment format, a player can only declare a conflict using a ring in their personal unclaimed ring pool or the common unclaimed ring pool.
 - Declare which ready characters (under their control) are being committed as attackers. The attacking player may declare any number of eligible characters under their control as attackers. Slide these characters toward the center of the play area, away from the attacking player's home area. At least one character must be declared as an attacker at this time in order to initiate a conflict. If any of the attackers have the covert keyword, the targets for covert are chosen at this time.
-- h In the team conquest format, each player on the attacking team may declare attackers in the same conflict, and those characters participate on the same side together.
+  - In the team conquest format, each player on the attacking team may declare attackers in the same conflict, and those characters participate on the same side together.
 
 Each of the above items are considered to be performed simultaneously. If any of the above cannot be completed, the conflict cannot be initiated.
 
@@ -284,9 +284,9 @@ Void : Choose a character and remove 1 fate from it.
 If the defending player or no player won the conflict, nothing happens during this step.
 
 - When playing the skirmish format, the following three rings have the following effects instead:
-- h Air : Take 1 honor from your opponent.
-- h Earth : Either draw 1 card from your conflict deck or discard 1 random card from your opponent's hand.
-- h Water : Choose a character in any player's home area with 1 or fewer fate on it and either ready or bow it.
+  - Air : Take 1 honor from your opponent.
+  - Earth : Either draw 1 card from your conflict deck or discard 1 random card from your opponent's hand.
+  - Water : Choose a character in any player's home area with 1 or fewer fate on it and either ready or bow it.
 - In the team conquest format, the Air and Earth ring effects may only be resolved against the opponent whose province is being attacked, and only a single player on the attacking team may receive the ring's effect.
 
 ## 3.2.7.  Claim ring
@@ -405,7 +405,7 @@ To initiate a duel, the player resolving the card ability must choose two charac
 - One character must be controlled by the player whose card ability initiates the duel, and one character must be controlled by an opponent of that player.
 - If a duel is initiated during a conflict, both characters chosen must be participating.
 - If a duel is initiated by an ability on a character card, that character is automatically involved in the duel. Some abilities use the phrase 'this character initiates' as a reminder of this. That character is not considered to be chosen as a target of the duel, as it is already involved.
-- h During a conflict, a duel can only be initiated by an ability on a character card if that character is participating in the conflict.
+  - During a conflict, a duel can only be initiated by an ability on a character card if that character is participating in the conflict.
 
 If this process is completed, a duel has been initiated. Otherwise, the duel fails to initiate and cannot resolve.
 

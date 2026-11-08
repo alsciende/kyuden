@@ -24,8 +24,8 @@ import {
   viewer,
   type Cards,
 } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
-import { resolvingOf } from '@/lib/resolutions'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import { resolvingOf, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 
 /**
@@ -55,12 +55,22 @@ const resolvingCard = computed(() => {
   return id === null || id === undefined ? null : (locate(props.game, id)?.card ?? null)
 })
 
+/** the effect of the contested ring, when the viewer resolves it: shown like the effect of a card */
+const ringEffect = computed(() => {
+  const current = ended.value ? null : ringResolving(props.game)
+
+  return current?.player.id === me.value.id ? current : null
+})
+
 const status = computed(() => {
   if (ended.value) {
     return null
   }
   if (resolving.value !== null) {
     return { mine: true, text: 'Apply this effect, then end it' }
+  }
+  if (ringEffect.value !== null) {
+    return { mine: true, text: 'Resolve this effect, then end it' }
   }
   if (me.value.acted || me.value.resolving_interrupts_and_reactions > 0) {
     return { mine: true, text: 'Resolve what you played, then end it' }
@@ -280,6 +290,22 @@ const nothing = computed(
       <p v-if="resolving.then.length > 0" class="hint">Then: {{ resolving.then.join(', ') }}</p>
     </section>
 
+    <section v-if="ringEffect" class="resolving" aria-label="The ring effect you are resolving">
+      <div class="resolving-card">
+        <div class="resolving-head">
+          <span class="ring-seal" aria-hidden="true"
+            ><span class="icon">{{ ELEMENT_ICONS[ringEffect.element] }}</span></span
+          >
+          <div class="resolving-title">
+            <span class="label">Ring effect</span>
+            <span class="name">{{ ringEffect.name }}</span>
+            <span class="where">Contested ring</span>
+          </div>
+        </div>
+        <p class="text ring-text">{{ ringEffect.text }}</p>
+      </div>
+    </section>
+
     <button
       v-if="available.has('end_resolution')"
       type="button"
@@ -302,7 +328,11 @@ const nothing = computed(
       :disabled="sending"
       @click="send('pass_opportunity')"
     >
-      Pass <span v-if="passBonus" class="aside">· {{ passBonus }}</span>
+      <!-- 3.2.6: the attacker may resolve the ring effect, then ends it; the engine waits for them as for a pass -->
+      <template v-if="ringEffect">Done with the {{ ringEffect.name }}</template>
+      <template v-else
+        >Pass <span v-if="passBonus" class="aside">· {{ passBonus }}</span></template
+      >
     </button>
 
     <form
@@ -598,6 +628,26 @@ const nothing = computed(
 .resolving-card .text {
   padding-top: 10px;
   border-top: 1px solid var(--line);
+}
+
+.ring-seal {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--seal);
+  border-radius: 50%;
+  color: var(--seal);
+  font-size: 22px;
+}
+
+.ring-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .result h2 {

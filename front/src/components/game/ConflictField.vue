@@ -16,13 +16,13 @@ import {
   viewer,
   type Cards,
 } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { vTip } from '@/lib/tooltip'
 
 /**
  * The conflict being resolved: the contested ring, the participating characters of the opponent above those of the
  * viewer, the contested province first in the row of the defender, and the skill of each side (declared, else computed from the cards). Once its result is
- * determined: the winner, the broken province, then the effect of the ring. A click on the icon of the type or of the
+ * determined: the winner and the broken province (the effect of the ring is in the panel of actions). A click on the icon of the type or of the
  * contested ring opens a popup to switch it, to resolve an effect.
  */
 const props = defineProps<{ game: GameView; cards: Cards }>()
@@ -134,22 +134,6 @@ const result = computed(() => {
   return { text, note, mine: winner === me.value.id }
 })
 
-/** the effect of the ring, once the attacker may resolve it */
-const ringEffect = computed(() => {
-  if (props.game.place !== 'resolve_ring_effects') {
-    return null
-  }
-  const attackerWon = conflict.value.winner_id === conflict.value.attacking_player_id
-  let who = 'The attacker did not win the conflict: no ring effect.'
-  if (attackerWon) {
-    who = attacking.value
-      ? 'You may resolve it: click the cards or open the player it concerns, then pass.'
-      : 'The opponent may resolve it.'
-  }
-
-  return { text: RING_EFFECTS[conflict.value.ring], who, active: attackerWon }
-})
-
 const outcome = computed(() => {
   const attacker = attacking.value ? bottom.value : top.value
   const defender = attacking.value ? top.value : bottom.value
@@ -252,12 +236,6 @@ const outcome = computed(() => {
             </template>
           </div>
         </template>
-      </div>
-
-      <div v-if="ringEffect" class="effect" :class="{ inactive: !ringEffect.active }">
-        <span class="label">{{ ELEMENT_NAMES[conflict.ring] }} ring effect</span>
-        <p class="effect-text">{{ ringEffect.text }}</p>
-        <p class="effect-who">{{ ringEffect.who }}</p>
       </div>
 
       <div class="side">
@@ -501,31 +479,6 @@ h2 {
   font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
-}
-
-.effect {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 18px;
-  border-left: 3px solid var(--seal);
-  background: var(--paper-2);
-}
-
-.effect.inactive {
-  border-left-color: var(--line);
-  color: var(--ink-3);
-}
-
-.effect-text {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.effect-who {
-  font-size: 13px;
-  color: var(--ink-2);
 }
 
 .note {

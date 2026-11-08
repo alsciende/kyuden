@@ -1,9 +1,10 @@
 import { computed, inject, type ComputedRef, type InjectionKey } from 'vue'
 
 import type { AbilityTiming, Card } from '@/api/client'
-import type { GameView, PlayerView, ResolutionView } from '@/api/game'
-import { locate, type Cards } from '@/lib/board'
+import type { Element, GameView, PlayerView, ResolutionView } from '@/api/game'
+import { locate, playerById, type Cards } from '@/lib/board'
 import { emphasized, parseCardText, type TextSegment } from '@/lib/cardText'
+import { ELEMENT_NAMES, RING_EFFECTS } from '@/lib/icons'
 
 /**
  * The events played and the abilities triggered that a player resolves (`resolutions` of their view), shown to remind
@@ -115,6 +116,41 @@ export function resolvingOf(game: GameView, player: PlayerView, cards: Cards): R
   return {
     current,
     then: others.map((resolution) => (resolution.code === null ? undefined : cards[resolution.code]?.name) ?? 'a card'),
+  }
+}
+
+/** the effect of the contested ring, resolved by the attacker who won the conflict */
+export interface RingResolving {
+  player: PlayerView
+  element: Element
+  /** e.g. "Air ring" */
+  name: string
+  text: string
+}
+
+/**
+ * The effect of the contested ring the attacking player resolves, shown where the effects of the cards are: the game
+ * only stays in `resolve_ring_effects` when the attacker won the conflict, until they pass.
+ */
+export function ringResolving(game: GameView): RingResolving | null {
+  const conflict = game.conflict
+  if (
+    game.place !== 'resolve_ring_effects' ||
+    conflict === null ||
+    !game.active_player_ids.includes(conflict.attacking_player_id)
+  ) {
+    return null
+  }
+  const player = playerById(game, conflict.attacking_player_id)
+  if (player === undefined) {
+    return null
+  }
+
+  return {
+    player,
+    element: conflict.ring,
+    name: `${ELEMENT_NAMES[conflict.ring]} ring`,
+    text: RING_EFFECTS[conflict.ring],
   }
 }
 

@@ -10,7 +10,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import { PHASES, playerById, rings, stepOf, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
-import { othersResolving } from '@/lib/resolutions'
+import { othersResolving, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 import { vTip } from '@/lib/tooltip'
 import { spectatorsLabel } from '@/lib/watch'
@@ -41,6 +41,13 @@ const step = computed(() => stepOf(props.game.place, props.game.spectating))
 
 /** what the opponent resolves (every player, for a spectator): the viewer's own is in the panel of actions */
 const othersResolve = computed(() => othersResolving(props.game, props.cards))
+
+/** the effect of the contested ring the opponent resolves (the attacker, for a spectator) */
+const othersRing = computed(() => {
+  const ring = ringResolving(props.game)
+
+  return ring !== null && (props.game.spectating || ring.player.id !== props.game.viewer_id) ? ring : null
+})
 
 const audienceOpen = ref(false)
 const audienceLabel = computed(() => spectatorsLabel(props.spectators.length))
@@ -165,13 +172,23 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       :send="send"
     />
 
-    <section v-if="othersResolve.length > 0" class="others-resolving" aria-label="What the other players resolve">
+    <section
+      v-if="othersResolve.length > 0 || othersRing"
+      class="others-resolving"
+      aria-label="What the other players resolve"
+    >
       <p v-for="{ player, resolving } in othersResolve" :key="player.id" class="resolving-line">
         <PlayerChip :player="player" :viewer-id="game.viewer_id" short />
         <span
           >resolves
           <CardName :code="resolving.current.card.code" :above="false">{{ resolving.current.card.name }}</CardName
           >.</span
+        >
+      </p>
+      <p v-if="othersRing" class="resolving-line">
+        <PlayerChip :player="othersRing.player" :viewer-id="game.viewer_id" short />
+        <span
+          >resolves the <span v-tip="othersRing.text" class="ring-name">{{ othersRing.name }}</span> effect.</span
         >
       </p>
     </section>
@@ -364,6 +381,12 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.ring-name {
+  text-decoration: underline;
+  text-decoration-color: var(--ink-3);
+  text-underline-offset: 3px;
 }
 
 .resolving-line {

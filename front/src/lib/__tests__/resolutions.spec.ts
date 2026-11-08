@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ResolutionView } from '@/api/game'
-import { endingOrder, othersResolving, resolvingCardIds, resolvingOf } from '@/lib/resolutions'
+import { endingOrder, othersResolving, resolvingCardIds, resolvingOf, ringResolving } from '@/lib/resolutions'
 
 import { card, game, player, printed, stack } from './gameFixture'
 
@@ -121,5 +121,23 @@ describe('othersResolving and resolvingCardIds', () => {
 
   it('marks on the board the card each player resolves now', () => {
     expect(resolvingCardIds(both(false), cards)).toEqual(new Set(['kuwanan', 'gift']))
+  })
+})
+
+describe('ringResolving', () => {
+  it('shows the effect of the contested ring while the attacker resolves it', () => {
+    const current = { ...view(), place: 'resolve_ring_effects', active_player_ids: ['me'] }
+
+    expect(ringResolving(current)).toMatchObject({
+      player: { id: 'me' },
+      element: 'fire',
+      name: 'Fire ring',
+      text: 'Honor or dishonor a character.',
+    })
+  })
+
+  it('shows nothing once the attacker has passed, nor in another step', () => {
+    expect(ringResolving({ ...view(), place: 'resolve_ring_effects', active_player_ids: [] })).toBeNull()
+    expect(ringResolving({ ...view(), active_player_ids: ['me'] })).toBeNull()
   })
 })

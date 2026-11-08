@@ -319,8 +319,8 @@ const STEPS: Record<string, Step> = {
   resolve_ring_effects: {
     phase: 'conflict',
     title: 'Ring effects',
-    help: 'The attacker resolves the effect of the contested ring if they won, then passes.',
-    hint: 'Apply the effect with the cards and players it concerns: click them.',
+    help: 'The attacker may resolve the effect of the contested ring, then ends it.',
+    hint: 'You may resolve it: apply it with the cards and players it concerns, or end it without resolving it.',
   },
   react_to_ring_claim: {
     phase: 'conflict',
