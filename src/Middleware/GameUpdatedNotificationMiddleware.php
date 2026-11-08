@@ -6,6 +6,7 @@ namespace App\Middleware;
 
 use App\Message\ActionInterface;
 use App\Message\JoinGame;
+use App\Middleware\Stamp\ReplayStamp;
 use App\Notification\GameStartedNotification;
 use App\Notification\GameUpdatedNotification;
 use App\Notifier\NotifierInterface;
@@ -18,7 +19,7 @@ use Symfony\Component\Messenger\Middleware\StackInterface;
 /**
  * Notifies the players and the spectators that the game has changed, once the transaction is committed: a player
  * reading the game on notification sees the new version. Once the last player has joined a game, it has started: every player is also told
- * on their topic, so that a user matched by the queue finds their game.
+ * on their topic, so that a user matched by the queue finds their game. A replay (ReplayStamp) is not notified.
  */
 readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
 {
@@ -35,7 +36,7 @@ readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
         $envelope = $stack->next()->handle($envelope, $stack);
 
         $message = $envelope->getMessage();
-        if ($message instanceof ActionInterface) {
+        if ($message instanceof ActionInterface && $envelope->last(ReplayStamp::class) === null) {
             $game = $this->gameRepository->get($message->getGameId());
             $this->notifier->notify(new GameUpdatedNotification($game, $this->spectatorRegistry->getSpectatorIds($game)));
             if ($message instanceof JoinGame && $game->getCurrentPlace() !== 'join_game') {

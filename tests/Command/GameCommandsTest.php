@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Entity\Game;
 use App\Entity\PhysicalCard;
+use App\Enum\VictoryCondition;
+use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
+use App\Tests\Builder\Scenario;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -30,6 +34,51 @@ class GameCommandsTest extends AbstractKernelTestCase
         self::assertStringContainsString('draw_phase_action_window', $display);
         self::assertStringContainsString('[john]', $display);
         self::assertStringContainsString('[jane]', $display);
+    }
+
+    public function testListsTheGamesOfAUser(): void
+    {
+        $theirs = $this->scenario()->atPlace('draw_phase_action_window')->withPlayer('john')->withPlayer('jane')->persist();
+        $others = $this->scenario()->atPlace('draw_phase_action_window')->withPlayer('jane')->withPlayer('sally')->persist();
+        $tester = $this->tester('app:game:list');
+
+        $tester->execute(['--user' => 'john']);
+
+        $display = $tester->getDisplay();
+        self::assertStringContainsString($theirs->game()->getId(), $display);
+        self::assertStringNotContainsString($others->game()->getId(), $display);
+        // with all the players of their games
+        self::assertStringContainsString('[jane]', $display);
+    }
+
+    public function testListsTheGamesThatHaveEndedWithTheirWinner(): void
+    {
+        $ended = $this->scenario()
+            ->atPlace(Game::STATE_ENDED)
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->withGameState(function (GameState $state, Scenario $scenario): void {
+                $state->winnerId = $scenario->player('john')->getId();
+                $state->victoryCondition = VictoryCondition::Concession;
+            })
+            ->persist();
+        $tester = $this->tester('app:game:list');
+
+        $tester->execute([]);
+        self::assertStringNotContainsString($ended->game()->getId(), $tester->getDisplay());
+
+        $tester->execute(['--ended' => true]);
+        $display = $tester->getDisplay();
+        self::assertStringContainsString($ended->game()->getId(), $display);
+        self::assertStringContainsString('Winner', $display);
+        self::assertStringContainsString("{$ended->player('john')->getUser()->getName()} (concession)", $display);
+    }
+
+    public function testAnUnknownUserIsAnError(): void
+    {
+        $this->expectExceptionMessage('User nobody not found.');
+
+        $this->tester('app:game:list')->execute(['--user' => 'nobody']);
     }
 
     public function testListsTheCardsOfAGameInAPlaceForAPlayer(): void

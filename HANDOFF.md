@@ -96,7 +96,7 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 
 ### Web client
 
-- Discarding conflict cards at any time, as a basic action.
+- The trash button (Discard) of a card is not clear enough.
 - A player cannot tell which of their provinces are revealed.
 - The attachments shown on a character hide its political skill: show them below the card of the character.
 - The honor bids cannot be seen during the conflict phase.

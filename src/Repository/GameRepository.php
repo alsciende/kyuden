@@ -162,17 +162,35 @@ class GameRepository extends ServiceEntityRepository
      */
     public function findInProgress(): array
     {
-        /** @var list<Game> $games */
-        $games = $this->createQueryBuilder('g')
+        return $this->findStarted();
+    }
+
+    /**
+     * The games that have started, those that have ended too when asked, of every user or of the user given, with
+     * their players and their users, in a single query; the last started first (the latest arrival of their players).
+     *
+     * @return list<Game>
+     */
+    public function findStarted(bool $ended = false, ?string $userId = null): array
+    {
+        $query = $this->createQueryBuilder('g')
             ->addSelect('p', 'u')
             ->join('g.players', 'p')
             ->join('p.user', 'u')
             ->where('g.currentPlace NOT IN (:places)')
-            ->setParameter('places', ['join_game', Game::STATE_ENDED])
+            ->setParameter('places', $ended ? ['join_game'] : ['join_game', Game::STATE_ENDED])
             ->orderBy('g.id', \SortDirection::Ascending)
-            ->addOrderBy('p.joinRank', \SortDirection::Ascending)
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('p.joinRank', \SortDirection::Ascending);
+        if ($userId !== null) {
+            $plays = $this->getEntityManager()->createQueryBuilder()
+                ->select('1')
+                ->from(Player::class, 'mine')
+                ->where('mine.game = g')
+                ->andWhere('IDENTITY(mine.user) = :user');
+            $query->andWhere($query->expr()->exists($plays->getDQL()))->setParameter('user', $userId);
+        }
+        /** @var list<Game> $games */
+        $games = $query->getQuery()->getResult();
 
         $startedAt = fn (Game $game): int => max(array_map(
             fn (Player $player): int => $player->getJoinDate()->getTimestamp(),

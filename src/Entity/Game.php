@@ -190,11 +190,19 @@ class Game implements StatefulInterface
      */
     public function generateId(): string
     {
-        $bytes = $this->getRandomizer()->getBytes(16) ^ substr(hash('sha256', $this->id, true), 0, 16);
+        $bytes = $this->getRandomizer()->getBytes(16) ^ self::idSalt($this->id);
         $bytes[6] = chr(ord($bytes[6]) & 0x0F | 0x40);
         $bytes[8] = chr(ord($bytes[8]) & 0x3F | 0x80);
 
         return Uuid::fromBinary($bytes)->toRfc4122();
+    }
+
+    /**
+     * The 16 bytes salting the ids a game generates (generateId()).
+     */
+    public static function idSalt(string $gameId): string
+    {
+        return substr(hash('sha256', $gameId, true), 0, 16);
     }
 
     #[ORM\PreFlush]

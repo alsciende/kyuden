@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Event;
 use App\Message\ActionInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\StampInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class EventPlayer
@@ -26,7 +27,7 @@ readonly class EventPlayer
      * @param string $name    class of the message
      * @param string $payload JSON content of the message
      */
-    public function play(string $name, string $payload): void
+    public function play(string $name, string $payload, StampInterface ...$stamps): void
     {
         $message = $this->serializer->deserialize(
             data: $payload,
@@ -38,6 +39,6 @@ readonly class EventPlayer
             throw new \LogicException("Event payload class {$name} does not implement " . ActionInterface::class);
         }
 
-        $this->bus->dispatch($message);
+        $this->bus->dispatch($message, $stamps);
     }
 }

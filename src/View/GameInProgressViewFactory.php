@@ -25,11 +25,14 @@ final readonly class GameInProgressViewFactory
     }
 
     /**
-     * @return list<GameInProgressView> the last started first
+     * @param list<Game>|null $games the games to show, with their players and users (GameRepository::findStarted()),
+     *                               the games in progress by default
+     *
+     * @return list<GameInProgressView> in the order of the games, the last started first by default
      */
-    public function createAll(): array
+    public function createAll(?array $games = null): array
     {
-        $games = $this->gameRepository->findInProgress();
+        $games ??= $this->gameRepository->findInProgress();
         $gameIds = array_map(fn (Game $game): string => $game->getId(), $games);
         $clans = $this->gameRepository->findStrongholdClans($gameIds);
         $spectators = $this->spectatorRegistry->count($gameIds);
