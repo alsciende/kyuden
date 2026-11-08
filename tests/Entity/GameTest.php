@@ -24,7 +24,24 @@ class GameTest extends AbstractKernelTestCase
         $game2 = new Game('game2', self::SEED);
 
         self::assertSame($game1->getRandomizer()->getInt(0, 1000), $game2->getRandomizer()->getInt(0, 1000));
+    }
+
+    public function testTwoGamesWithTheSameIdAndSeedGenerateTheSameIds(): void
+    {
+        $game1 = new Game('game', self::SEED);
+        $game2 = new Game('game', self::SEED);
+
         self::assertSame($game1->generateId(), $game2->generateId());
+    }
+
+    public function testTheIdsAreSaltedByTheIdOfTheGame(): void
+    {
+        $game1 = new Game('game1', self::SEED);
+        $game2 = new Game('game2', self::SEED);
+
+        self::assertNotSame($game1->generateId(), $game2->generateId());
+        // the salt changes the ids only: both generators go on with the same draws
+        self::assertSame($game1->getRandomizer()->getInt(0, 1000), $game2->getRandomizer()->getInt(0, 1000));
     }
 
     public function testAssertsTheGameIsInOneOfThePlaces(): void

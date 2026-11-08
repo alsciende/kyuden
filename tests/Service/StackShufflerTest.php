@@ -97,7 +97,8 @@ class StackShufflerTest extends AbstractKernelTestCase
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->dynastyDeck(self::DECK))
             ->withPlayer('jane');
         if ($seed !== null) {
-            $builder->seed($seed);
+            // the ids depend on the id of the game too
+            $builder->seed($seed)->gameId('shuffled-game');
         }
 
         return $persist ? $builder->persist() : $builder->build();

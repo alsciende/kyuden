@@ -183,11 +183,14 @@ class Game implements StatefulInterface
     }
 
     /**
-     * A new random id (UUID v4) drawn from the random generator of the game.
+     * A new random id (UUID v4) drawn from the random generator of the game, salted by the id of the game.
+     *
+     * The salt keeps two games with the same seed (a game and its replay) from creating the same ids, while they
+     * consume their generators the same way: they draw the same values otherwise.
      */
     public function generateId(): string
     {
-        $bytes = $this->getRandomizer()->getBytes(16);
+        $bytes = $this->getRandomizer()->getBytes(16) ^ substr(hash('sha256', $this->id, true), 0, 16);
         $bytes[6] = chr(ord($bytes[6]) & 0x0F | 0x40);
         $bytes[8] = chr(ord($bytes[8]) & 0x3F | 0x80);
 

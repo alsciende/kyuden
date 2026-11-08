@@ -96,6 +96,10 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 
 ### Web client
 
+- Discarding conflict cards at any time, as a basic action.
+- A player cannot tell which of their provinces are revealed.
+- The attachments shown on a character hide its political skill: show them below the card of the character.
+- The honor bids cannot be seen during the conflict phase.
 - Dedicated layouts for the remaining steps (see the limitations), and a component test of `GameView`.
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
 - Accounts: list and edit their decks.

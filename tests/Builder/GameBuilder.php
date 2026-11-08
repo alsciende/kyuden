@@ -62,6 +62,11 @@ final class GameBuilder
     private ?string $seed = null;
 
     /**
+     * Id of the game, random by default; it salts the ids the game generates.
+     */
+    private ?string $gameId = null;
+
+    /**
      * @var list<string>
      */
     private array $activePlayers = [];
@@ -129,6 +134,13 @@ final class GameBuilder
     public function seed(string $seed): self
     {
         $this->seed = $seed;
+
+        return $this;
+    }
+
+    public function gameId(string $gameId): self
+    {
+        $this->gameId = $gameId;
 
         return $this;
     }
@@ -243,7 +255,7 @@ final class GameBuilder
         $this->builtUsers = [];
         $this->builtCards = [];
 
-        $game = new Game(Uuid::v4()->toString(), $this->seed ?? random_bytes(32));
+        $game = new Game($this->gameId ?? Uuid::v4()->toString(), $this->seed ?? random_bytes(32));
         $game->setCurrentPlace($this->place);
 
         $players = [];
