@@ -70,6 +70,31 @@ class CardInspectionHandlersTest extends AbstractKernelTestCase
         self::assertSame(["jane reveals Ornate Fan, Fine Katana, Banzai! from john's conflict deck"], $this->logLines($scenario->game(), $scenario->player('john')));
     }
 
+    public function testThePlayerLooksAtTheCardsInTheProvincesOfTheOpponent(): void
+    {
+        // Governor's Spy: every dynasty card, face up or face down, province by province; not the provinces themselves
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-the-art-of-peace', dynasty: '01-doji-whisperer', dynastyFaceup: true, orientation: Orientation::FaceUp)
+                ->province('01-pilgrimage', dynasty: '01-brash-samurai')
+                ->province('01-night-raid'))
+            ->persist();
+
+        self::service(LookAtCardsHandler::class)(new LookAtCards($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId(), HiddenPile::Provinces));
+
+        self::assertSame([
+            "john looks at Doji Whisperer in jane's province",
+            "john looks at Brash Samurai in jane's province",
+        ], $this->logLines($scenario->game(), $scenario->player('john')));
+        // nobody sees a face-down dynasty card, its owner included
+        self::assertSame([
+            "john looks at Doji Whisperer in jane's province",
+            "john looks at a facedown card in jane's province",
+        ], $this->logLines($scenario->game(), $scenario->player('jane')));
+    }
+
     public function testThePlayerLooksAtAFacedownProvinceOfTheOpponent(): void
     {
         $scenario = $this->scenarioWithDecks();

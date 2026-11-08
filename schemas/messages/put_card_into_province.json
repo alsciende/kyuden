@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "put_card_into_province",
-    "description": "Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses, Governor's Spy), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.\n\nThe card can belong to any player: the engine does not apply card effects.",
+    "description": "Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.\n\nThe card can belong to any player: the engine does not apply card effects.",
     "type": "object",
     "properties": {
         "card_id": {

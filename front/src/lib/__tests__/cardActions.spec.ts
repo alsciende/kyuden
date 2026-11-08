@@ -478,6 +478,23 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, broken.id)!.state).toEqual([])
   })
 
+  it('turns a face-up province that is not broken facedown, of either player', () => {
+    const raid = card('raid', { side: 'province' })
+    const broken = card('raid', { side: 'province', orientation: 'upside_down' })
+    const hidden = card(null, { side: 'province', orientation: 'face_down' })
+    const view = game(
+      player('me', [stack('regular_province', [broken]), stack('regular_province', [hidden])]),
+      player('opp', [stack('regular_province', [raid])]),
+      { available_actions: ['turn_province_facedown'] },
+    )
+
+    expect(cardMenu(view, cards, raid.id)!.state).toEqual([
+      { type: 'turn_province_facedown', label: 'Turn it facedown', payload: { card_id: raid.id } },
+    ])
+    expect(cardMenu(view, cards, broken.id)!.state).toEqual([])
+    expect(cardMenu(view, cards, hidden.id)!.state).toEqual([])
+  })
+
   it('moves an attachment in play', () => {
     const kaezin = card('kaezin')
     const katana = card('katana')

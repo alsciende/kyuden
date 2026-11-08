@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\HiddenPile;
+use App\Enum\StackType;
 use App\Event\CardsLookedAtEvent;
 use App\Event\CardsRevealedEvent;
 use App\GameLog\GameLogger;
@@ -30,18 +32,53 @@ final readonly class CardInspector
     }
 
     /**
-     * The top cards of a deck, the top card first, or the cards of a hand: every card unless a quantity is given.
-     *
-     * @return list<PhysicalCard>
+     * The player looks at cards of a hidden pile of the owner: one entry in the log per stack.
      */
-    public function cardsOf(Player $owner, HiddenPile $pile, ?int $quantity): array
+    public function lookAtPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity): void
     {
+        foreach ($this->stacksOf($owner, $pile, $quantity) as [$stack, $cards]) {
+            $this->lookAt($player, $stack, $cards);
+        }
+    }
+
+    /**
+     * The player reveals cards of a hidden pile of the owner: one entry in the log per stack.
+     */
+    public function revealPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity): void
+    {
+        foreach ($this->stacksOf($owner, $pile, $quantity) as [$stack, $cards]) {
+            $this->reveal($player, $stack, $cards);
+        }
+    }
+
+    /**
+     * The top cards of a deck, the top card first, or the cards of a hand: every card unless a quantity is given; the
+     * dynasty cards of each province holding some, from the bottom of the province (the quantity does not apply).
+     *
+     * @return list<array{Stack, list<PhysicalCard>}>
+     */
+    private function stacksOf(Player $owner, HiddenPile $pile, ?int $quantity): array
+    {
+        if ($pile === HiddenPile::Provinces) {
+            $stacks = [];
+            foreach ($owner->getStacks(StackType::RegularProvince) as $province) {
+                $cards = array_values(array_filter($province->getOrderedCards(), fn (PhysicalCard $card): bool => $card instanceof DynastyCard));
+                if ($cards !== []) {
+                    $stacks[] = [$province, $cards];
+                }
+            }
+
+            return $stacks;
+        }
+
         $stack = $owner->getUniqueStack($pile->stackType());
         $count = $quantity ?? $stack->getCards()->count();
-
-        return $pile === HiddenPile::Hand
+        $cards = $pile === HiddenPile::Hand
             ? array_slice($stack->getOrderedCards(), 0, $count)
             : $stack->getTopCards($count);
+
+        // an empty pile still writes its entry: the players read that there was nothing to see
+        return [[$stack, $cards]];
     }
 
     /**

@@ -21,6 +21,7 @@ use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\LessThan;
 use Symfony\Component\Validator\Constraints\LessThanOrEqual;
 use Symfony\Component\Validator\Constraints\Range;
+use Symfony\Component\Validator\Constraints\Unique;
 use Symfony\Component\Validator\Mapping\ClassMetadataInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -199,6 +200,8 @@ readonly class MessageSchemaFactory
                 is_int(...),
             ),
             $constraint instanceof Count => array_filter(['minItems' => $constraint->min, 'maxItems' => $constraint->max], is_int(...)),
+            // every item once, compared as they are
+            $constraint instanceof Unique && $constraint->fields === [] && $constraint->normalizer === null => ['uniqueItems' => true],
             $constraint instanceof Length => array_filter(['minLength' => $constraint->min, 'maxLength' => $constraint->max], is_int(...)),
             default => throw new \LogicException(sprintf('Constraint %s of %s has no JSON schema.', $constraint::class, $where)),
         };

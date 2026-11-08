@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\FillProvince;
+use App\Message\TurnProvinceFacedown;
 
 /**
  * Hidden Mountain Pass.
@@ -29,6 +30,6 @@ final readonly class HiddenMountainPass32 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [FillProvince::class];
+        return [FillProvince::class, TurnProvinceFacedown::class];
     }
 }

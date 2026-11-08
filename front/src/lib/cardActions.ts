@@ -419,6 +419,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
   const breakProvince = () => {
     if (view.orientation === 'face_up') {
       add(menu.state, 'break_province', 'Break it', { province_id: id })
+      // unbroken (Kitsuki Yaruma, Untamed Steppe); the engine does not check Eminent
+      add(menu.state, 'turn_province_facedown', 'Turn it facedown')
     }
   }
   // the dynasty cards of the other provinces of its owner (Borderlands Fortifications)

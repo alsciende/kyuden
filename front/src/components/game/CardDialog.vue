@@ -10,6 +10,7 @@ import { actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
 import { CONFLICT_ICONS } from '@/lib/icons'
+import { provinceCardsCount } from '@/lib/redistribution'
 import { groupSpecial, neededCount, specialActions } from '@/lib/specialActions'
 import { vTip } from '@/lib/tooltip'
 
@@ -282,6 +283,30 @@ function challenge(): void {
 // the special actions: a click, or one of the forms
 const specials = computed(() => specialActions(props.game, props.cards))
 
+// the cards of the provinces of a player looked at, then redistributed in the window (Governor's Spy): offered on the
+// cards that need it, the look being on a player, not on the card
+const redistributes = computed(
+  () =>
+    props.game.available_actions.includes('look_at_cards') &&
+    specials.value.sourcesOf('redistribute_province_cards').some((source) => source.id === view.value.id),
+)
+const redistributionTargets = computed(() =>
+  [...props.game.players]
+    .sort((a, b) => Number(a.id === props.game.viewer_id) - Number(b.id === props.game.viewer_id))
+    .map((player) => ({
+      id: player.id,
+      name: player.id === props.game.viewer_id ? 'You' : 'Opp.',
+      ...provinceCardsCount(player),
+    })),
+)
+const redistributionTargetId = ref<string | null>(redistributionTargets.value[0]?.id ?? null)
+
+function lookAtProvinces(): void {
+  if (redistributionTargetId.value !== null) {
+    void run('look_at_cards', { target_player_id: redistributionTargetId.value, stack: 'provinces' })
+  }
+}
+
 const HINTS: Partial<Record<string, string>> = {
   put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
   put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
@@ -295,6 +320,9 @@ const HINTS: Partial<Record<string, string>> = {
   remove_from_game: 'Face down, only you know it; it may still be played or put into play from there.',
   place_card_under:
     'Out of play; discarded once the card it lies under leaves its place. Face down, its owner knows it.',
+  redistribute_province_cards:
+    'You look at every card of these provinces, then choose where each one goes. They are all put back face down.',
+  turn_province_facedown: 'It keeps its cards and its tokens. An Eminent province cannot be turned facedown.',
 }
 
 const specialGroups = computed(() =>
@@ -306,6 +334,7 @@ const specialGroups = computed(() =>
     ...(props.menu.putIntoProvince.length ? ['put_card_into_province'] : []),
     ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
     ...(props.menu.placeUnder.length ? ['place_card_under'] : []),
+    ...(redistributes.value ? ['redistribute_province_cards'] : []),
   ]),
 )
 
@@ -647,6 +676,33 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <label class="choice"> <input v-model="underFaceDown" type="checkbox" /> Face down </label>
               <button type="submit" class="btn btn-ghost" :disabled="sending || underHostId === null">
                 {{ underHostName ? `Place it under ${underHostName}` : 'Place it there' }}
+              </button>
+            </form>
+            <form
+              v-if="group.form && group.type === 'redistribute_province_cards'"
+              class="group"
+              @submit.prevent="lookAtProvinces"
+            >
+              <span class="label">Redistribute the cards of the provinces</span>
+              <fieldset class="choices">
+                <legend class="label">Of the provinces of</legend>
+                <label v-for="target in redistributionTargets" :key="target.id" class="choice">
+                  <input
+                    v-model="redistributionTargetId"
+                    type="radio"
+                    name="redistribution-target"
+                    :value="target.id"
+                  />
+                  {{ target.name }}
+                  <span class="whose">
+                    {{ target.cards }} card{{ target.cards === 1 ? '' : 's' }} in {{ target.provinces }} province{{
+                      target.provinces === 1 ? '' : 's'
+                    }}
+                  </span>
+                </label>
+              </fieldset>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || redistributionTargetId === null">
+                Look at them
               </button>
             </form>
             <span v-if="HINTS[group.type]" class="hint">{{ HINTS[group.type] }}</span>

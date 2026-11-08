@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import type { LoggedMessage } from '@/api/game'
-import { inspectionActions, inspectionPlays, inspectionsOf, lostInTheShuffle, type Inspection } from '@/lib/inspection'
+import {
+  inspectionActions,
+  inspectionPlays,
+  inspectionsOf,
+  isRedistribution,
+  lostInTheShuffle,
+  type Inspection,
+} from '@/lib/inspection'
 
 import { printed } from './gameFixture'
 
@@ -29,6 +36,7 @@ const looked: LoggedMessage = {
 
 const deck: Inspection = {
   version: 7,
+  type: 'look_at_cards',
   mode: 'look',
   stackType: 'conflict_draw_deck',
   ownerId: 'me',
@@ -69,7 +77,33 @@ describe('inspectionsOf', () => {
       ],
     }
 
-    expect(inspectionsOf([revealed], 'me')).toEqual([{ ...deck, mode: 'reveal', cards: [{ id: 'c3', code: 'fan' }] }])
+    expect(inspectionsOf([revealed], 'me')).toEqual([
+      { ...deck, type: 'reveal_card', mode: 'reveal', cards: [{ id: 'c3', code: 'fan' }] },
+    ])
+  })
+
+  it('sees the cards of the provinces of a player together, to redistribute them', () => {
+    const entry = (id: string, code: string, province: string) => ({
+      ...looked.entries[0]!,
+      params: {
+        player: { type: 'player' as const, id: 'me' },
+        cards: { type: 'list' as const, items: [{ type: 'card' as const, id, code }] },
+        stack: { type: 'stack' as const, stack_type: 'regular_province' as const, player_id: 'opp', id: province },
+      },
+    })
+    const provinces: LoggedMessage = { ...looked, entries: [entry('a', 'asami', 'p1'), entry('b', 'scout', 'p2')] }
+
+    const [inspection, ...others] = inspectionsOf([provinces], 'me')
+
+    expect(others).toEqual([])
+    expect(inspection).toMatchObject({
+      stackType: 'regular_province',
+      ownerId: 'opp',
+      cards: [{ id: 'a' }, { id: 'b' }],
+    })
+    expect(isRedistribution(inspection!)).toBe(true)
+    expect(isRedistribution(deck)).toBe(false)
+    expect(isRedistribution({ ...inspection!, type: 'look_at_card' })).toBe(false)
   })
 })
 

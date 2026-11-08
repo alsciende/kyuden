@@ -1,0 +1,35 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "redistribute_province_cards",
+    "description": "Puts dynasty cards of the provinces of a player back into their provinces face down, each into the province given, so that no other player can tell where each card went (Governor's Spy: once `look_at_cards` on the provinces). The face-up cards are first turned face down where they are; then every card is picked up and put back with a new id, as after a shuffle. The log tells the other players that the provinces were redistributed, not where each card went. A province left without a card is refilled once the effect is resolved.\n\nThe cards can belong to any player: the engine does not apply card effects (nor \"each province ends up with at least one card\").",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose provinces they are.",
+            "type": "string"
+        },
+        "card_ids": {
+            "description": "Dynasty cards in regular provinces of the target, face up or face down.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "province_ids": {
+            "description": "Regular province of the target each card goes into, in the order of `cardIds`.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "target_player_id",
+        "card_ids",
+        "province_ids"
+    ],
+    "additionalProperties": false
+}

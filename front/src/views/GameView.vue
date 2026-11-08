@@ -10,13 +10,14 @@ import CardPreview from '@/components/game/CardPreview.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
 import GameSidebar from '@/components/game/GameSidebar.vue'
 import InspectionWindow from '@/components/game/InspectionWindow.vue'
+import RedistributionWindow from '@/components/game/RedistributionWindow.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
-import { inspectionsOf } from '@/lib/inspection'
+import { inspectionsOf, isRedistribution } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
@@ -315,8 +316,19 @@ const problem = computed(() => {
       @close="openCardId = null"
     />
     <LogDrawer v-if="logOpen" :game="game" :cards="cards" :log="log" @close="logOpen = false" />
+    <RedistributionWindow
+      v-if="inspection && isRedistribution(inspection)"
+      :key="`redistribution-${inspection.version}`"
+      :game="game"
+      :cards="cards"
+      :inspection="inspection"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      @close="closeInspection"
+    />
     <InspectionWindow
-      v-if="inspection"
+      v-else-if="inspection"
       :key="inspection.version"
       :game="game"
       :cards="cards"

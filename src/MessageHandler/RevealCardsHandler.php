@@ -13,7 +13,7 @@ use App\Service\CardInspector;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
- * Accepted in any game place and from any player of the game, on the deck or the hand of any player: the engine does
+ * Accepted in any game place and from any player of the game, on the deck, the hand or the provinces of any player: the engine does
  * not apply card effects, which decide who reveals what.
  */
 #[AsMessageHandler]
@@ -39,10 +39,6 @@ final readonly class RevealCardsHandler implements PlayerActionHandlerInterface
         $this->assertAvailable($game, $player);
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
-        $this->cardInspector->reveal(
-            $player,
-            $target->getUniqueStack($message->getStack()->stackType()),
-            $this->cardInspector->cardsOf($target, $message->getStack(), $message->getQuantity()),
-        );
+        $this->cardInspector->revealPile($player, $target, $message->getStack(), $message->getQuantity());
     }
 }

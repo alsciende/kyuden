@@ -399,19 +399,19 @@ export interface LookAtCard {
 }
 
 /**
- * The sender looks at cards some players do not see: the top cards of a deck (`quantity`, the whole deck by default) or a hand, of any player, e.g. to resolve an effect (Shrewd Yasuki, Agasha Swordsmith, Kitsuki Investigator). The log gives the cards to the sender only (the others read how many cards and where): the sender then resolves the effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`, `reveal_card`). Nothing is recorded: the cards are out of sight again afterwards.
+ * The sender looks at cards some players do not see: the top cards of a deck (`quantity`, the whole deck by default), a hand or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (Shrewd Yasuki, Agasha Swordsmith, Kitsuki Investigator, Governor's Spy). The log gives the cards to the sender only (the others read how many cards and where): the sender then resolves the effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`, `reveal_card`, `redistribute_province_cards`). Nothing is recorded: the cards are out of sight again afterwards.
  */
 export interface LookAtCards {
   /**
-   * Player whose deck or hand it is.
+   * Player whose deck, hand or provinces it is.
    */
   target_player_id: string
   /**
-   * Deck or hand.
+   * Deck, hand, or the dynasty cards in the provinces.
    */
-  stack: 'conflict_deck' | 'dynasty_deck' | 'hand'
+  stack: 'conflict_deck' | 'dynasty_deck' | 'hand' | 'provinces'
   /**
-   * Number of cards from the top of a deck; the whole stack by default.
+   * Number of cards from the top of a deck; the whole stack by default; not for the provinces.
    */
   quantity?: number | null
 }
@@ -727,7 +727,7 @@ export interface PointAtCard {
 }
 
 /**
- * Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses, Governor's Spy), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.
+ * Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.
  *
  * The card can belong to any player: the engine does not apply card effects.
  */
@@ -808,6 +808,30 @@ export interface ReadyCard {
    * Bowed card to ready.
    */
   card_id: string
+}
+
+/**
+ * Puts dynasty cards of the provinces of a player back into their provinces face down, each into the province given, so that no other player can tell where each card went (Governor's Spy: once `look_at_cards` on the provinces). The face-up cards are first turned face down where they are; then every card is picked up and put back with a new id, as after a shuffle. The log tells the other players that the provinces were redistributed, not where each card went. A province left without a card is refilled once the effect is resolved.
+ *
+ * The cards can belong to any player: the engine does not apply card effects (nor "each province ends up with at least one card").
+ */
+export interface RedistributeProvinceCards {
+  /**
+   * Player whose provinces they are.
+   */
+  target_player_id: string
+  /**
+   * Dynasty cards in regular provinces of the target, face up or face down.
+   *
+   * @minItems 1
+   */
+  card_ids: string[]
+  /**
+   * Regular province of the target each card goes into, in the order of `cardIds`.
+   *
+   * @minItems 1
+   */
+  province_ids: string[]
 }
 
 /**
@@ -893,19 +917,19 @@ export interface RevealCard {
 }
 
 /**
- * The sender reveals cards some players do not see to every player: the top cards of a deck (`quantity`, the whole deck by default) or a hand, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy). The log gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
+ * The sender reveals cards some players do not see to every player: the top cards of a deck (`quantity`, the whole deck by default), a hand or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy). The log gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
  */
 export interface RevealCards {
   /**
-   * Player whose deck or hand it is.
+   * Player whose deck, hand or provinces it is.
    */
   target_player_id: string
   /**
-   * Deck or hand.
+   * Deck, hand, or the dynasty cards in the provinces.
    */
-  stack: 'conflict_deck' | 'dynasty_deck' | 'hand'
+  stack: 'conflict_deck' | 'dynasty_deck' | 'hand' | 'provinces'
   /**
-   * Number of cards from the top of a deck; the whole stack by default.
+   * Number of cards from the top of a deck; the whole stack by default; not for the provinces.
    */
   quantity?: number | null
 }
@@ -1133,6 +1157,18 @@ export interface TriggerReactionAbility {
   card_id: string
 }
 
+/**
+ * Turns an unbroken face-up province face down, of any player, e.g. to resolve an effect (Kitsuki Yaruma, Saadiyah al-Mozedu, Untamed Steppe, Traveling Philosopher, Hidden Mountain Pass). The province keeps what lies on it: its cards, its tokens. An Eminent province cannot be turned face down: the engine does not check it.
+ *
+ * The province can belong to any player: the engine does not apply card effects.
+ */
+export interface TurnProvinceFacedown {
+  /**
+   * Unbroken face-up province, of any player.
+   */
+  card_id: string
+}
+
 /** the payload of each type of message */
 export interface MessagePayloads {
   add_card_to_hand: AddCardToHand
@@ -1194,6 +1230,7 @@ export interface MessagePayloads {
   put_character_into_play: PutCharacterIntoPlay
   put_holding_into_province: PutHoldingIntoProvince
   ready_card: ReadyCard
+  redistribute_province_cards: RedistributeProvinceCards
   remove_fate: RemoveFate
   remove_from_game: RemoveFromGame
   remove_honor_tokens: RemoveHonorTokens
@@ -1219,6 +1256,7 @@ export interface MessagePayloads {
   trigger_action_ability: TriggerActionAbility
   trigger_interrupt_ability: TriggerInterruptAbility
   trigger_reaction_ability: TriggerReactionAbility
+  turn_province_facedown: TurnProvinceFacedown
 }
 
 export type MessageType = keyof MessagePayloads

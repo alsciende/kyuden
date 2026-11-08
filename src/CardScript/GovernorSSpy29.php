@@ -7,9 +7,8 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\LookAtCard;
-use App\Message\PutCardIntoProvince;
-use App\Message\SwitchProvinceCards;
+use App\Message\LookAtCards;
+use App\Message\RedistributeProvinceCards;
 
 /**
  * Governor's Spy.
@@ -31,6 +30,6 @@ final readonly class GovernorSSpy29 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCard::class, PutCardIntoProvince::class, SwitchProvinceCards::class];
+        return [LookAtCards::class, RedistributeProvinceCards::class];
     }
 }

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "turn_province_facedown",
+    "description": "Turns an unbroken face-up province face down, of any player, e.g. to resolve an effect (Kitsuki Yaruma, Saadiyah al-Mozedu, Untamed Steppe, Traveling Philosopher, Hidden Mountain Pass). The province keeps what lies on it: its cards, its tokens. An Eminent province cannot be turned face down: the engine does not check it.\n\nThe province can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Unbroken face-up province, of any player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

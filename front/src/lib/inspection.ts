@@ -26,6 +26,8 @@ export interface InspectedCard {
 export interface Inspection {
   /** the version of the game the message led to */
   version: number
+  /** the message: `look_at_cards`, `look_at_card`… */
+  type: string
   mode: InspectionMode
   /** where the cards are: a deck (from its top), a hand, a province */
   stackType: StackType
@@ -43,7 +45,10 @@ function cardsOf(param: LogParam | undefined): InspectedCard[] {
   )
 }
 
-/** the cards the viewer has looked at or revealed in these messages, the oldest first */
+/**
+ * The cards the viewer has looked at or revealed in these messages, the oldest first: one inspection per entry, but
+ * the provinces of a player, one entry each (`look_at_cards` on the provinces), seen together.
+ */
 export function inspectionsOf(messages: LoggedMessage[], viewerId: string): Inspection[] {
   return messages.flatMap((message) => {
     const mode = MODES[message.type]
@@ -51,24 +56,40 @@ export function inspectionsOf(messages: LoggedMessage[], viewerId: string): Insp
       return []
     }
 
-    return message.entries.flatMap((entry) => {
+    const inspections: Inspection[] = []
+    for (const entry of message.entries) {
       const params = Array.isArray(entry.params) ? {} : entry.params
       const stack = params.stack
       if (stack?.type !== 'stack' || params.cards?.type !== 'list') {
-        return []
+        continue
       }
+      const cards = cardsOf(params.cards)
+      const previous = inspections.at(-1)
+      if (
+        stack.stack_type === 'regular_province' &&
+        previous?.stackType === 'regular_province' &&
+        previous.ownerId === stack.player_id
+      ) {
+        previous.cards.push(...cards)
+        continue
+      }
+      inspections.push({
+        version: message.version,
+        type: message.type,
+        mode,
+        stackType: stack.stack_type,
+        ownerId: stack.player_id,
+        cards,
+      })
+    }
 
-      return [
-        {
-          version: message.version,
-          mode,
-          stackType: stack.stack_type,
-          ownerId: stack.player_id,
-          cards: cardsOf(params.cards),
-        },
-      ]
-    })
+    return inspections
   })
+}
+
+/** the cards of the provinces of a player looked at (Governor's Spy): the window redistributes them */
+export function isRedistribution(inspection: Inspection): boolean {
+  return inspection.type === 'look_at_cards' && inspection.stackType === 'regular_province'
 }
 
 export type InspectionAction = Message & {
