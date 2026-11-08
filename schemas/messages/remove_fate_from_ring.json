@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "remove_fate_from_ring",
+    "description": "Removes fate from a ring and returns it to the general token pool (e.g. \"remove 1 fate from each unclaimed ring\": Written in the Stars). Fate taken into a fate pool comes from a ring with move_fate.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Ring the fate is removed from.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        },
+        "amount": {
+            "description": "Fate removed.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+        }
+    },
+    "required": [
+        "ring",
+        "amount"
+    ],
+    "additionalProperties": false
+}

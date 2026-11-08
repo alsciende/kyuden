@@ -69,11 +69,11 @@ export interface ClaimImperialFavor {
 }
 
 /**
- * The target player claims a ring that nobody has claimed, unclaimed or contested, e.g. to resolve an effect (Display of Power): it goes to their claimed ring pool, with the fate on it. The ring is claimed in `conflict_type`, by default the type of the conflict being resolved; outside of a conflict, `conflict_type` is required. A contested ring claimed this way is not claimed again by the winner of the conflict.
+ * The target player claims a ring they have not claimed, e.g. to resolve an effect: unclaimed or contested (Display of Power), or taken from the claimed ring pool of another player (Roving Michibiku). It goes to their claimed ring pool, with the fate on it. The ring is claimed in `conflict_type`, by default the type of the conflict it was claimed in (a ring taken), else the type of the conflict being resolved; outside of a conflict, `conflict_type` is required for a ring nobody has claimed. A contested ring claimed this way is not claimed again by the winner of the conflict.
  */
 export interface ClaimRing {
   /**
-   * Ring to claim, unclaimed or contested.
+   * Ring to claim: unclaimed, contested or claimed by another player.
    */
   ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
   /**
@@ -81,7 +81,7 @@ export interface ClaimRing {
    */
   target_player_id: string
   /**
-   * Type of the conflict the ring is claimed in; by default, the type of the conflict being resolved.
+   * Type of the conflict the ring is claimed in; by default, the type it was claimed in (taken from another player), else the type of the conflict being resolved.
    */
   conflict_type?: 'military' | 'political' | null
 }
@@ -571,6 +571,20 @@ export interface PlaceFate {
 }
 
 /**
+ * Places fate from the general token pool on a ring (e.g. "place 1 fate on each unclaimed ring": Written in the Stars, Fuchi Mura). Fate taken from a fate pool goes to a ring with move_fate.
+ */
+export interface PlaceFateOnRing {
+  /**
+   * Ring the fate is placed on.
+   */
+  ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
+  /**
+   * Fate placed.
+   */
+  amount: number
+}
+
+/**
  * Places honor tokens from the general token pool on a province or a holding face up in a province (Fortified Assembly, Public Forum, Distinguished Dojo, Endless Archives). These are counters, not status tokens: the honor of the players does not change. The tokens of a holding return to the general token pool when it leaves play.
  *
  * The card can belong to any player: the engine does not apply card effects.
@@ -851,6 +865,20 @@ export interface RemoveFate {
 }
 
 /**
+ * Removes fate from a ring and returns it to the general token pool (e.g. "remove 1 fate from each unclaimed ring": Written in the Stars). Fate taken into a fate pool comes from a ring with move_fate.
+ */
+export interface RemoveFateFromRing {
+  /**
+   * Ring the fate is removed from.
+   */
+  ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
+  /**
+   * Fate removed.
+   */
+  amount: number
+}
+
+/**
  * Removes a card from the game, e.g. to resolve an effect (Karmic Balance, Shadow Step, Stolen Secrets, Trading on the Sand Road): from a deck, a hand, play, a province, a discard pile or from under a card, out of play until an effect brings it back: it is then played (`play_character`, `play_attachment`, the events), put into play (`put_character_into_play`), into a province (`put_card_into_province`), into a hand (`add_card_to_hand`), discarded or put into a deck. Face up, it goes to the cards removed from the game of its owner, which every player sees; face down, to those of the sender, who alone knows it. A card leaving play leaves its attachments, tokens and the conflict; a province left without dynasty card is refilled.
  *
  * The card can belong to any player: the engine does not apply card effects.
@@ -904,6 +932,16 @@ export interface ReturnCardToHand {
    * Card in play to return to its owner's hand.
    */
   card_id: string
+}
+
+/**
+ * Returns a claimed ring to the unclaimed ring pool, with the fate on it (Deduction, Overlooked Community, Severed from the Stream: one message per ring). The contested ring is not returned: it stays the ring of the conflict until the conflict ends; a ring claimed as the conflict resolves is returned once claimed (Henshin Mysteries).
+ */
+export interface ReturnRing {
+  /**
+   * Ring to return, in the claimed ring pool of a player.
+   */
+  ring: 'air' | 'earth' | 'fire' | 'void' | 'water'
 }
 
 /**
@@ -1216,6 +1254,7 @@ export interface MessagePayloads {
   pass_opportunity: PassOpportunity
   place_card_under: PlaceCardUnder
   place_fate: PlaceFate
+  place_fate_on_ring: PlaceFateOnRing
   place_honor_tokens: PlaceHonorTokens
   place_status_token: PlaceStatusToken
   play_action_event: PlayActionEvent
@@ -1232,10 +1271,12 @@ export interface MessagePayloads {
   ready_card: ReadyCard
   redistribute_province_cards: RedistributeProvinceCards
   remove_fate: RemoveFate
+  remove_fate_from_ring: RemoveFateFromRing
   remove_from_game: RemoveFromGame
   remove_honor_tokens: RemoveHonorTokens
   reset_character_skill: ResetCharacterSkill
   return_card_to_hand: ReturnCardToHand
+  return_ring: ReturnRing
   reveal_card: RevealCard
   reveal_cards: RevealCards
   reveal_dynasty_card: RevealDynastyCard

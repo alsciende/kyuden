@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\DiscardStatusToken;
+use App\Message\ReturnRing;
 
 /**
  * Overlooked Community.
@@ -29,6 +30,6 @@ final readonly class OverlookedCommunity36 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [DiscardStatusToken::class];
+        return [DiscardStatusToken::class, ReturnRing::class];
     }
 }

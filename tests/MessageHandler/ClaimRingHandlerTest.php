@@ -28,7 +28,7 @@ class ClaimRingHandlerTest extends AbstractKernelTestCase
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceUp))
             ->ring(Element::Fire, fate: 2)
-            ->ring(Element::Water, claimedBy: 'jane');
+            ->ring(Element::Water, fate: 1, claimedBy: 'jane', claimedIn: ConflictType::Political);
         if ($conflict) {
             $builder->conflict('john', 'province', attackers: ['toturi'], ring: Element::Air, type: ConflictType::Political);
         }
@@ -36,13 +36,13 @@ class ClaimRingHandlerTest extends AbstractKernelTestCase
         return $builder->persist();
     }
 
-    private function claim(Scenario $scenario, Element $ring, ?ConflictType $conflictType = null): void
+    private function claim(Scenario $scenario, Element $ring, ?ConflictType $conflictType = null, string $target = 'jane'): void
     {
         self::service(ClaimRingHandler::class)(new ClaimRing(
             $scenario->game()->getId(),
             $scenario->player('john')->getId(),
             $ring,
-            $scenario->player('jane')->getId(),
+            $scenario->player($target)->getId(),
             $conflictType,
         ));
     }
@@ -90,5 +90,27 @@ class ClaimRingHandlerTest extends AbstractKernelTestCase
         $this->expectException(RingAlreadyClaimedException::class);
 
         $this->claim($scenario, Element::Water);
+    }
+
+    public function testTakesARingFromAnotherPlayerInTheTypeItWasClaimedIn(): void
+    {
+        $scenario = $this->scenarioWithRings(conflict: false);
+
+        $this->claim($scenario, Element::Water, target: 'john');
+
+        $ring = $this->ring($scenario, Element::Water);
+        self::assertSame($scenario->player('john')->getId(), $ring->claimedById);
+        self::assertSame(ConflictType::Political, $ring->claimedConflictType);
+        self::assertSame(1, $ring->fate);
+        self::assertSame(['john takes the water ring from jane'], $this->logLines($scenario->game(), $scenario->player('jane')));
+    }
+
+    public function testTakesARingFromAnotherPlayerInTheTypeGiven(): void
+    {
+        $scenario = $this->scenarioWithRings();
+
+        $this->claim($scenario, Element::Water, ConflictType::Military, target: 'john');
+
+        self::assertSame(ConflictType::Military, $this->ring($scenario, Element::Water)->claimedConflictType);
     }
 }

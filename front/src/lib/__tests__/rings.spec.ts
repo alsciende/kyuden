@@ -90,8 +90,32 @@ describe('ringEffects', () => {
     ])
   })
 
-  it('does not claim a claimed ring, and offers only the available actions', () => {
-    expect(ringEffects(view(), 'earth', 1).map((effect) => effect.label)).toEqual(['Place 1 from your pool'])
+  it('takes a ring the opponent has claimed, or returns it, in the type it was claimed in', () => {
+    const all = view({ available_actions: ['claim_ring', 'return_ring', 'move_fate'] })
+
+    expect(ringEffects(all, 'earth', 1).map((effect) => [effect.label, effect.payload])).toEqual([
+      ['Take it', { ring: 'earth', target_player_id: 'me' }],
+      ['Return it to the unclaimed pool', { ring: 'earth' }],
+      ['Place 1 from your pool', { source: 'player', source_id: 'me', target: 'ring', target_id: 'earth', amount: 1 }],
+    ])
+    expect(ringEffects(all, 'void', 1).map((effect) => effect.label)).toEqual([
+      'Opp. takes it',
+      'Return it to the unclaimed pool',
+      'Place 1 from your pool',
+    ])
+  })
+
+  it('places fate from the token pool and removes the fate on a ring', () => {
+    const all = view({ available_actions: ['place_fate_on_ring', 'remove_fate_from_ring'] })
+
+    expect(ringEffects(all, 'water', 2).map((effect) => [effect.label, effect.payload])).toEqual([
+      ['Remove 2 fate', { ring: 'water', amount: 2 }],
+      ['Place 2 from the token pool', { ring: 'water', amount: 2 }],
+    ])
+    expect(ringEffects(all, 'fire', 1).map((effect) => effect.label)).toEqual(['Place 1 from the token pool'])
+  })
+
+  it('offers only the available actions', () => {
     expect(ringEffects(view({ available_actions: [] }), 'air', 1)).toEqual([])
   })
 })

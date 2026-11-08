@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "place_fate_on_ring",
+    "description": "Places fate from the general token pool on a ring (e.g. \"place 1 fate on each unclaimed ring\": Written in the Stars, Fuchi Mura). Fate taken from a fate pool goes to a ring with move_fate.",
+    "type": "object",
+    "properties": {
+        "ring": {
+            "description": "Ring the fate is placed on.",
+            "type": "string",
+            "enum": [
+                "air",
+                "earth",
+                "fire",
+                "void",
+                "water"
+            ]
+        },
+        "amount": {
+            "description": "Fate placed.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+        }
+    },
+    "required": [
+        "ring",
+        "amount"
+    ],
+    "additionalProperties": false
+}

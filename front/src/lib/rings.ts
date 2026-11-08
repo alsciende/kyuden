@@ -4,7 +4,8 @@ import type { Effect } from '@/lib/playerBar'
 
 /**
  * The window of a ring, opened from the bar: where the ring is, and the effects on it the engine does not apply itself
- * (claim it, switch it with another ring, move fate from or to it), for the costs and effects of the cards.
+ * (claim it, take it, return it, switch it with another ring, place, remove or move fate), for the costs and effects of
+ * the cards.
  */
 
 /** who holds a ring in their claimed ring pool, null for the unclaimed ring pool or the contested ring */
@@ -39,8 +40,9 @@ export function ringsToSwitchWith(game: GameView, element: Element): Ring[] {
 
 /**
  * The effects on a ring, with an amount of fate: claiming a ring nobody has claimed (in the type of the conflict being
- * resolved, else in the type chosen), taking the fate on it, placing fate on it from the fate pool of the viewer; only
- * those the engine makes available now.
+ * resolved, else in the type chosen), taking a ring the other player has claimed (in the type it was claimed in),
+ * returning a claimed ring to the unclaimed pool, taking the fate on it, removing it to the general token pool, placing
+ * fate on it from the fate pool of the viewer or from the general token pool; only those the engine makes available now.
  */
 export function ringEffects(game: GameView, element: Element, amount: number): Effect[] {
   const ring = game.rings[element]
@@ -60,18 +62,37 @@ export function ringEffects(game: GameView, element: Element, amount: number): E
       game.conflict === null
         ? [claim(viewer, 'Claim it, military', 'military'), claim(viewer, 'Claim it, political', 'political')]
         : [claim(viewer, 'Claim it'), opponent && claim(opponent.id, 'Opp. claims it')]
+  } else if (ring.claimed_by_id === viewer) {
+    claims = [opponent && claim(opponent.id, 'Opp. takes it')]
+  } else {
+    claims = [claim(viewer, 'Take it')]
   }
   const effects: (Effect | undefined | false)[] = [
     ...claims,
+    ring.claimed_by_id !== null && {
+      type: 'return_ring',
+      label: 'Return it to the unclaimed pool',
+      payload: { ring: element },
+    },
     ring.fate > 0 && {
       type: 'move_fate',
       label: `Take ${amount} fate`,
       payload: { source: 'ring', source_id: element, target: 'player', target_id: viewer, amount },
     },
+    ring.fate > 0 && {
+      type: 'remove_fate_from_ring',
+      label: `Remove ${amount} fate`,
+      payload: { ring: element, amount },
+    },
     {
       type: 'move_fate',
       label: `Place ${amount} from your pool`,
       payload: { source: 'player', source_id: viewer, target: 'ring', target_id: element, amount },
+    },
+    {
+      type: 'place_fate_on_ring',
+      label: `Place ${amount} from the token pool`,
+      payload: { ring: element, amount },
     },
   ]
   const available = new Set(game.available_actions)

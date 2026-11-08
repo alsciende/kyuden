@@ -7,7 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\MoveFate;
+use App\Message\PlaceFateOnRing;
 
 /**
  * Fuchi Mura.
@@ -29,6 +29,6 @@ final readonly class FuchiMura25 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [MoveFate::class];
+        return [PlaceFateOnRing::class];
     }
 }

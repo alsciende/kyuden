@@ -8,7 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
-use App\Message\MoveFate;
+use App\Message\PlaceFateOnRing;
 
 /**
  * Taoist Adept.
@@ -30,6 +30,6 @@ final readonly class TaoistAdept25 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [InitiateDuel::class, MoveFate::class];
+        return [InitiateDuel::class, PlaceFateOnRing::class];
     }
 }

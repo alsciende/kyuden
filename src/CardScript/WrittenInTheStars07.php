@@ -7,7 +7,8 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\MoveFate;
+use App\Message\PlaceFateOnRing;
+use App\Message\RemoveFateFromRing;
 
 /**
  * Written in the Stars.
@@ -29,6 +30,6 @@ final readonly class WrittenInTheStars07 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [MoveFate::class];
+        return [PlaceFateOnRing::class, RemoveFateFromRing::class];
     }
 }

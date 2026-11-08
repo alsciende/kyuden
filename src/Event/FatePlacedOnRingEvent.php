@@ -9,7 +9,8 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * Fate has been placed on an unclaimed ring during the fate phase.
+ * Fate has been placed on a ring from the general token pool: on each unclaimed ring during the fate phase, or by an
+ * effect (PlaceFateOnRing).
  */
 #[GameLog('{amount} fate is placed on {ring}')]
 final readonly class FatePlacedOnRingEvent implements GameEventInterface
