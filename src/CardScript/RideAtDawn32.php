@@ -7,7 +7,6 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\DiscardRandomCardFromHand;
 use App\Message\FillProvince;
 
 /**
@@ -30,6 +29,6 @@ final readonly class RideAtDawn32 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [DiscardRandomCardFromHand::class, FillProvince::class];
+        return [FillProvince::class];
     }
 }

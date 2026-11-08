@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\CardScript;
 
-use App\Entity\Game;
-use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\DiscardRandomCardFromHand;
 
 /**
  * Seppun Hidden Guard.
@@ -24,11 +21,5 @@ final readonly class SeppunHiddenGuard16 extends AbstractCardScript
     public function getAbilityTimings(): array
     {
         return [AbilityTiming::Interrupt];
-    }
-
-    #[\Override]
-    public function getSpecialActions(PhysicalCard $card, Game $game): array
-    {
-        return [DiscardRandomCardFromHand::class];
     }
 }
