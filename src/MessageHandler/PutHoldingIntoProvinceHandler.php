@@ -22,8 +22,9 @@ use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
  * Accepted in any game place and from any player of the game, on any holding: the engine does not apply card effects.
- * The `put_into_province` transition fails for a holding that is not in a dynasty discard pile. The province is a
- * regular province of the owner of the holding, broken or not: no dynasty card goes on the stronghold province.
+ * The `put_into_province` transition fails for a holding that is neither in a dynasty deck, a dynasty discard pile nor
+ * set aside. The province is a regular province of the owner of the holding, broken or not: no dynasty card goes on the
+ * stronghold province.
  */
 #[AsMessageHandler]
 final readonly class PutHoldingIntoProvinceHandler implements PlayerActionHandlerInterface

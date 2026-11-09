@@ -55,6 +55,8 @@ export interface CardMenu {
   intoProvince: ProvinceChoice[]
   /** an attachment in play can be moved to another character, by an effect */
   moveAttachment: boolean
+  /** an attachment out of play can be put into play attached to a character, by an effect (Time for War, Niten) */
+  attachIntoPlay: boolean
   /** the status token of a character in play can be moved to another character, by an effect */
   moveStatusToken: boolean
   /** the dynasty cards of the other provinces of its owner a dynasty card can be switched with, by an effect */
@@ -143,15 +145,21 @@ export function playActions(card: Card | undefined, available: Set<string>, inPr
 
 /**
  * The provinces of a player a dynasty card can be put into by an effect (`put_card_into_province`), the stronghold
- * province included, but the one it is in: by their province card.
+ * province included unless `regularOnly` (a holding: `put_holding_into_province`), but the one it is in: by their
+ * province card.
  */
 export function provinceChoices(
   player: PlayerView,
   cards: Cards,
   exceptStackId: string | null = null,
+  regularOnly = false,
 ): ProvinceChoice[] {
   return provinces(player).flatMap((province, index) => {
-    if (province.province === null || province.stack.id === exceptStackId) {
+    if (
+      province.province === null ||
+      province.stack.id === exceptStackId ||
+      (regularOnly && province.stronghold !== null)
+    ) {
       return []
     }
     const name = cardOf(cards, province.province.code)?.name
@@ -314,6 +322,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     more: [],
     intoProvince: [],
     moveAttachment: false,
+    attachIntoPlay: false,
     moveStatusToken: false,
     switchWith: [],
     putIntoProvince: [],
@@ -382,6 +391,10 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         })
       }
     }
+  }
+  // an attachment put into play by an effect, attached to a character chosen in a form
+  const attachIntoPlay = () => {
+    menu.attachIntoPlay = card?.type === 'attachment' && available.has('put_attachment_into_play')
   }
   // set aside by an effect: removed from the game (Shadow Step, Stolen Secrets), face up or face down
   const removeFromGame = () => {
@@ -486,6 +499,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         add(menu.state, 'reveal_card', 'Reveal it')
       }
       putIntoPlay()
+      attachIntoPlay()
       setAside()
       discardDuplicate()
       toDeck()
@@ -627,6 +641,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       // Kunshu, Guidance of the Ancestors, Exposed Courtyard
       menu.plays = playActions(card, available)
       putIntoPlay()
+      attachIntoPlay()
       add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
       setAside()
       toDeck()
@@ -646,11 +661,13 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
 
     case 'removed_from_game':
     case 'underneath':
-      // set aside by an effect, then played (Back-Alley Hideaway, Stolen Secrets), put into play (Shadow Step), into a
-      // province (Kaiu Shihobu) or into a hand (Under Siege): whoever owns it, the engine does not check the effect
+      // set aside by an effect, then played (Back-Alley Hideaway, Stolen Secrets), put into play (Shadow Step, an
+      // attachment too), into a province (Kaiu Shihobu) or into a hand (Under Siege): whoever owns it, the engine does
+      // not check the effect
       lookAt()
       menu.plays = playActions(card, available)
       putIntoPlay()
+      attachIntoPlay()
       holdingIntoProvince()
       intoProvince()
       setAside()

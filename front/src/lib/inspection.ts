@@ -104,9 +104,23 @@ export type InspectionAction = Message & {
 
 const DECKS: StackType[] = ['conflict_draw_deck', 'dynasty_draw_deck']
 
+/** what a card of a deck can be put into play as, by an effect */
+export interface IntoPlay {
+  /** the type of the card as printed: a character, an attachment, a holding */
+  type: string | null | undefined
+  /** whether the controller of the card (the viewer for a card of the opponent) takes part in the conflict */
+  conflict: boolean
+  /** the characters in play an attachment can go on */
+  characters: { id: string; name: string; mine: boolean }[]
+  /** the regular provinces of the owner a holding can go into */
+  provinces: ProvinceChoice[]
+}
+
 /**
  * What can be done with a card looked at or revealed, from where it is: added to its owner's hand (a conflict card of
- * a deck), put on top of its deck or at its bottom, shuffled into it, put into a province of its owner, face up or
+ * a deck), put into play by an effect from a deck (a character, at home or into the conflict: Favorable Dealbroker,
+ * Shinjo Altansarnai; an attachment on a character: Illustrious Forge; a holding into a province: Frontline Engineer),
+ * under the control of the viewer for a card of the opponent, put on top of its deck or at its bottom, shuffled into it, put into a province of its owner, face up or
  * face down (a card of the dynasty deck: Walking the Way), discarded, and, once looked at, revealed to the opponent (it
  * can still be acted on then), removed from the game, face up or face down (Stolen Secrets), placed face down under a
  * card of the viewer (Kaiu Shihobu, Daidoji Uji). A province looked at stays where it is: nothing to do.
@@ -114,6 +128,7 @@ const DECKS: StackType[] = ['conflict_draw_deck', 'dynasty_draw_deck']
  * @param side the side of the card (`conflict`, `dynasty`, `province`…), from the cards as printed
  * @param provinces the provinces of the owner of the card
  * @param hosts the cards of the viewer it can be placed under (`hostChoices()`)
+ * @param intoPlay what it can be put into play as, from a deck
  */
 export function inspectionActions(
   inspection: Inspection,
@@ -122,6 +137,7 @@ export function inspectionActions(
   side: string | null | undefined,
   provinces: ProvinceChoice[] = [],
   hosts: HostChoice[] = [],
+  intoPlay: IntoPlay = { type: null, conflict: false, characters: [], provinces: [] },
 ): InspectionAction[] {
   if (side === 'province') {
     return []
@@ -137,6 +153,9 @@ export function inspectionActions(
       primary: true,
       payload,
     })
+  }
+  if (DECKS.includes(inspection.stackType)) {
+    actions.push(...intoPlayActions(card, yours ? null : viewerId, intoPlay))
   }
   const deck = DECKS.includes(inspection.stackType) ? 'the deck' : 'its deck'
   actions.push(
@@ -188,6 +207,38 @@ export function inspectionActions(
   actions.push({ type: 'discard_card', label: 'Discard', done: 'Discarded', danger: true, payload })
 
   return actions
+}
+
+function intoPlayActions(card: InspectedCard, controllerId: string | null, intoPlay: IntoPlay): InspectionAction[] {
+  const controller = controllerId === null ? {} : { controller_id: controllerId }
+  const control = controllerId === null ? '' : ' under your control'
+  switch (intoPlay.type) {
+    case 'character':
+      return [false, true]
+        .filter((into_conflict) => !into_conflict || intoPlay.conflict)
+        .map((into_conflict) => ({
+          type: 'put_character_into_play',
+          label: `Put into play${into_conflict ? ' in the conflict' : ''}${control}`,
+          done: into_conflict ? 'In the conflict' : 'In play',
+          payload: { card_id: card.id, into_conflict, ...controller },
+        }))
+    case 'attachment':
+      return intoPlay.characters.map((character) => ({
+        type: 'put_attachment_into_play',
+        label: `Attach to ${character.name}${character.mine ? '' : " (Opp.'s)"}${control}`,
+        done: `Attached to ${character.name}`,
+        payload: { card_id: card.id, target_card_id: character.id, ...controller },
+      }))
+    case 'holding':
+      return intoPlay.provinces.map((province) => ({
+        type: 'put_holding_into_province',
+        label: `Into play in ${province.name}`,
+        done: `In ${province.name}`,
+        payload: { card_id: card.id, province_id: province.id },
+      }))
+    default:
+      return []
+  }
 }
 
 /**

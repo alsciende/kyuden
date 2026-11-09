@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\InitiateDuel;
+use App\Message\PutAttachmentIntoPlay;
 use App\Message\RevealCard;
 
 /**
@@ -30,6 +31,6 @@ final readonly class DaimyoSGunbai18 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [InitiateDuel::class, RevealCard::class];
+        return [InitiateDuel::class, PutAttachmentIntoPlay::class, RevealCard::class];
     }
 }

@@ -27,7 +27,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
 /**
  * Accepted in any game place and from any player of the game, on any character: the engine does not apply card
  * effects, which decide what is put into play. The `put_into_play` transition fails for a character that is neither in
- * a hand, face up in a province nor in a discard pile. Under the control of another player than its owner, it enters
+ * a hand, face up in a province, in a deck, in a discard pile nor set aside. Under the control of another player than its owner, it enters
  * play then changes control (`take_control`: both are logged). Into the conflict, the character joins the side of its
  * controller, who must be the attacking or the defending player.
  */

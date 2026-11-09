@@ -741,6 +741,26 @@ export interface PointAtCard {
 }
 
 /**
+ * Puts an attachment into play without playing it, e.g. to resolve an effect (Time for War, Restored Heirloom, Illustrious Forge, Niten): no cost is paid and no opportunity to act is used. The attachment comes from a hand, a conflict deck (a card looked at), a conflict discard pile or from out of play (removed from the game, under a card), and is attached to a character in play of any player or to a province, under the control of its owner or of the player given.
+ *
+ * The card can belong to any player: the engine does not apply card effects.
+ */
+export interface PutAttachmentIntoPlay {
+  /**
+   * Attachment in a hand, a conflict deck, a conflict discard pile, removed from the game or under a card.
+   */
+  card_id: string
+  /**
+   * Character in play or province the attachment goes on.
+   */
+  target_card_id: string
+  /**
+   * Player under whose control the attachment enters play; its owner by default.
+   */
+  controller_id?: string | null
+}
+
+/**
  * Puts a dynasty card into a province of its owner, face up or face down, beside the cards already there, e.g. to resolve an effect: a card of the dynasty deck (known through `look_at_cards`: Walking the Way, Our Foe Does Not Wait), of the dynasty discard pile (Miya Satoshi), of another province (Logistics, Recalled Defenses), or a character in play, which leaves play (Master of Many Lifetimes, The Receding Tide). A province the card has left is refilled once the effect is resolved, if it is still empty. The deck is not shuffled: `shuffle_dynasty_deck` afterwards.
  *
  * The card can belong to any player: the engine does not apply card effects.
@@ -777,13 +797,13 @@ export interface PutCardOnDeck {
 }
 
 /**
- * Puts a character into play without playing it, e.g. to resolve an effect (Ambush, Charge!, Cavalry Reserves, Keeper Initiate): no cost is paid and no opportunity to act is used. The character comes from the hand of its owner, a province (face up) or a discard pile, and enters play ready, under the control of its owner or of the player given (Shosuro Actress), at home or participating in the conflict on the side of its controller. Fate placed on it is a separate action (`place_fate`); a province it leaves is refilled by the engine.
+ * Puts a character into play without playing it, e.g. to resolve an effect (Ambush, Charge!, Cavalry Reserves, Keeper Initiate): no cost is paid and no opportunity to act is used. The character comes from the hand of its owner, a province (face up), a deck (a card looked at: Favorable Dealbroker, Shinjo Gunso), a discard pile or from out of play (removed from the game, under a card), and enters play ready, under the control of its owner or of the player given (Shosuro Actress), at home or participating in the conflict on the side of its controller. Fate placed on it is a separate action (`place_fate`); a province it leaves is refilled by the engine.
  *
  * The card can belong to any player: the engine does not apply card effects.
  */
 export interface PutCharacterIntoPlay {
   /**
-   * Character in a hand, face up in a province, or in a discard pile.
+   * Character in a hand, face up in a province, in a deck, in a discard pile, removed from the game or under a card.
    */
   card_id: string
   /**
@@ -797,13 +817,13 @@ export interface PutCharacterIntoPlay {
 }
 
 /**
- * Puts a holding of the dynasty discard pile of its owner into play in one of their provinces, face up, e.g. to resolve an effect (Rebuild). The cards already in the province stay there. While the holding remains, the province is not refilled: a card that has left it during the same effect (`shuffle_into_deck`) is not replaced.
+ * Puts a holding of the dynasty deck (a card looked at: Frontline Engineer) or the dynasty discard pile of its owner, or a holding set aside, into play in one of their provinces, face up, e.g. to resolve an effect (Rebuild). The cards already in the province stay there. While the holding remains, the province is not refilled: a card that has left it during the same effect (`shuffle_into_deck`) is not replaced.
  *
  * The card can belong to any player: the engine does not apply card effects.
  */
 export interface PutHoldingIntoProvince {
   /**
-   * Holding in a dynasty discard pile.
+   * Holding in a dynasty deck, a dynasty discard pile, removed from the game or under a card.
    */
   card_id: string
   /**
@@ -1264,6 +1284,7 @@ export interface MessagePayloads {
   play_interrupt_event: PlayInterruptEvent
   play_reaction_event: PlayReactionEvent
   point_at_card: PointAtCard
+  put_attachment_into_play: PutAttachmentIntoPlay
   put_card_into_province: PutCardIntoProvince
   put_card_on_deck: PutCardOnDeck
   put_character_into_play: PutCharacterIntoPlay

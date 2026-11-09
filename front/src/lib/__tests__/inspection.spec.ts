@@ -195,6 +195,68 @@ describe('inspectionActions', () => {
     ).not.toContain('put_card_into_province')
   })
 
+  it('puts a character of a deck into play, into the conflict when its controller takes part in it', () => {
+    const intoPlay = { type: 'character', conflict: true, characters: [], provinces: [] }
+    const puts = inspectionActions(deck, deck.cards[0]!, 'me', 'conflict', [], [], intoPlay).filter(
+      (action) => action.type === 'put_character_into_play',
+    )
+
+    expect(puts.map((action) => [action.label, action.done, action.payload])).toEqual([
+      ['Put into play', 'In play', { card_id: 'c1', into_conflict: false }],
+      ['Put into play in the conflict', 'In the conflict', { card_id: 'c1', into_conflict: true }],
+    ])
+    expect(
+      inspectionActions({ ...deck, ownerId: 'opp' }, deck.cards[0]!, 'me', 'conflict', [], [], {
+        ...intoPlay,
+        conflict: false,
+      })
+        .filter((action) => action.type === 'put_character_into_play')
+        .map((action) => [action.label, action.payload]),
+    ).toEqual([['Put into play under your control', { card_id: 'c1', into_conflict: false, controller_id: 'me' }]])
+  })
+
+  it('puts an attachment of a deck into play on a character of either player', () => {
+    const intoPlay = {
+      type: 'attachment',
+      conflict: false,
+      characters: [
+        { id: 'kaezin', name: 'Kakita Kaezin', mine: true },
+        { id: 'spear', name: 'Master of the Spear', mine: false },
+      ],
+      provinces: [],
+    }
+    const puts = inspectionActions(deck, deck.cards[1]!, 'me', 'conflict', [], [], intoPlay).filter(
+      (action) => action.type === 'put_attachment_into_play',
+    )
+
+    expect(puts.map((action) => [action.label, action.done, action.payload])).toEqual([
+      ['Attach to Kakita Kaezin', 'Attached to Kakita Kaezin', { card_id: 'c2', target_card_id: 'kaezin' }],
+      [
+        "Attach to Master of the Spear (Opp.'s)",
+        'Attached to Master of the Spear',
+        { card_id: 'c2', target_card_id: 'spear' },
+      ],
+    ])
+  })
+
+  it('puts a holding of the dynasty deck into play in a regular province of its owner', () => {
+    const intoPlay = { type: 'holding', conflict: false, characters: [], provinces: [{ id: 'p1', name: 'Pilgrimage' }] }
+    const dynasty = { ...deck, stackType: 'dynasty_draw_deck' as const }
+
+    expect(
+      inspectionActions(dynasty, deck.cards[0]!, 'me', 'dynasty', [], [], intoPlay)
+        .filter((action) => action.type === 'put_holding_into_province')
+        .map((action) => [action.label, action.payload]),
+    ).toEqual([['Into play in Pilgrimage', { card_id: 'c1', province_id: 'p1' }]])
+  })
+
+  it('puts nothing into play out of a deck', () => {
+    const intoPlay = { type: 'character', conflict: true, characters: [], provinces: [] }
+    const types = inspectionActions({ ...deck, stackType: 'hand' }, deck.cards[0]!, 'me', 'conflict', [], [], intoPlay)
+
+    expect(types.map((action) => action.type)).not.toContain('put_character_into_play')
+  })
+
   it('leaves a province where it is', () => {
     expect(inspectionActions({ ...deck, stackType: 'regular_province' }, deck.cards[0]!, 'me', 'province')).toEqual([])
   })

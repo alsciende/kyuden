@@ -1,0 +1,29 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "put_attachment_into_play",
+    "description": "Puts an attachment into play without playing it, e.g. to resolve an effect (Time for War, Restored Heirloom, Illustrious Forge, Niten): no cost is paid and no opportunity to act is used. The attachment comes from a hand, a conflict deck (a card looked at), a conflict discard pile or from out of play (removed from the game, under a card), and is attached to a character in play of any player or to a province, under the control of its owner or of the player given.\n\nThe card can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Attachment in a hand, a conflict deck, a conflict discard pile, removed from the game or under a card.",
+            "type": "string"
+        },
+        "target_card_id": {
+            "description": "Character in play or province the attachment goes on.",
+            "type": "string"
+        },
+        "controller_id": {
+            "description": "Player under whose control the attachment enters play; its owner by default.",
+            "type": [
+                "string",
+                "null"
+            ],
+            "default": null
+        }
+    },
+    "required": [
+        "card_id",
+        "target_card_id"
+    ],
+    "additionalProperties": false
+}

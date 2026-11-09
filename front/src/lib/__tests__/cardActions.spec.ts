@@ -507,6 +507,32 @@ describe('cardMenu', () => {
     expect(cardMenu(view, withKatana, kaezin.id)!.moveAttachment).toBe(false)
   })
 
+  it('puts an attachment out of play into play, from a hand, a discard pile or set aside', () => {
+    const kaezin = card('kaezin')
+    const inHand = card('katana')
+    const discarded = card('katana')
+    const removed = card('katana')
+    const attached = card('katana')
+    const view = game(
+      player('me', [
+        stack('in_play', [kaezin, attached]),
+        stack('hand', [inHand]),
+        stack('conflict_discard_pile', [discarded]),
+        stack('removed_from_game', [removed]),
+      ]),
+      player('opp'),
+      { available_actions: ['put_attachment_into_play'] },
+    )
+    const withKatana = { ...cards, katana: printed('katana', { type: 'attachment' }) }
+
+    for (const attachment of [inHand, discarded, removed]) {
+      expect(cardMenu(view, withKatana, attachment.id)!.attachIntoPlay).toBe(true)
+    }
+    // already in play: moved, not put into play
+    expect(cardMenu(view, withKatana, attached.id)!.attachIntoPlay).toBe(false)
+    expect(cardMenu(view, withKatana, kaezin.id)!.attachIntoPlay).toBe(false)
+  })
+
   it('discards or moves the status token of a character, apart with the special actions', () => {
     const honored = card('kaezin', { personal_honor: 'honored' })
     const ordinary = card('scout')

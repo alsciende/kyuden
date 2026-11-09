@@ -122,6 +122,21 @@ function moveAttachment(): void {
   }
 }
 
+// an attachment put into play by an effect, attached to a character of either player: under the control of its owner,
+// or of the viewer for a card of the opponent once checked
+const attachTargetId = ref<string | null>(null)
+const attachUnderYourControl = ref(false)
+
+function attachIntoPlay(): void {
+  if (attachTargetId.value !== null) {
+    void run('put_attachment_into_play', {
+      card_id: view.value.id,
+      target_card_id: attachTargetId.value,
+      ...(attachUnderYourControl.value ? { controller_id: props.game.viewer_id } : {}),
+    })
+  }
+}
+
 // the status token of a character moved to another character: not to one with a token of the same kind
 const tokenTargetId = ref<string | null>(null)
 const tokenTargets = computed(() =>
@@ -309,6 +324,7 @@ function lookAtProvinces(): void {
 
 const HINTS: Partial<Record<string, string>> = {
   put_character_into_play: 'Without paying its cost nor using an opportunity to act.',
+  put_attachment_into_play: 'Without paying its cost nor using an opportunity to act.',
   put_holding_into_province: 'The cards of the province stay there, and it is no longer refilled.',
   put_card_into_province: 'The cards of the province stay there; a province it leaves empty is refilled.',
   fill_province: 'The top card of the dynasty deck, beside the cards already there.',
@@ -330,6 +346,7 @@ const specialGroups = computed(() =>
     ...(props.menu.duel && challengeable.value.length ? ['initiate_duel'] : []),
     ...(props.menu.intoProvince.length ? ['put_holding_into_province'] : []),
     ...(props.menu.moveAttachment && hosts.value.length ? ['move_attachment'] : []),
+    ...(props.menu.attachIntoPlay && targets.value.length ? ['put_attachment_into_play'] : []),
     ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
     ...(props.menu.putIntoProvince.length ? ['put_card_into_province'] : []),
     ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
@@ -607,6 +624,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 </label>
               </fieldset>
               <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
+            </form>
+
+            <form
+              v-if="group.form && group.type === 'put_attachment_into_play'"
+              class="group"
+              @submit.prevent="attachIntoPlay"
+            >
+              <fieldset class="choices">
+                <legend class="label">Put it into play attached to</legend>
+                <label v-for="target in targets" :key="target.id" class="choice">
+                  <input v-model="attachTargetId" type="radio" name="attach-target" :value="target.id" />
+                  {{ target.name }} <span class="whose">{{ target.mine ? 'yours' : "opponent's" }}</span>
+                </label>
+              </fieldset>
+              <label v-if="owner.id !== game.viewer_id" class="choice">
+                <input v-model="attachUnderYourControl" type="checkbox" /> Under your control
+              </label>
+              <button type="submit" class="btn btn-ghost" :disabled="sending || attachTargetId === null">
+                Put it into play
+              </button>
             </form>
 
             <form

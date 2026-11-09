@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\PutAttachmentIntoPlay;
 use App\Message\ReturnCardToHand;
 
 /**
@@ -29,6 +30,6 @@ final readonly class Niten25 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [ReturnCardToHand::class];
+        return [PutAttachmentIntoPlay::class, ReturnCardToHand::class];
     }
 }

@@ -5,7 +5,7 @@ import type { CardView, GameView, Send, Side } from '@/api/game'
 import type { Message } from '@/api/messages'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayForm from '@/components/game/PlayForm.vue'
-import { playerById, type Cards } from '@/lib/board'
+import { charactersInPlay, playerById, type Cards } from '@/lib/board'
 import { hostChoices, provinceChoices, type PlayAction } from '@/lib/cardActions'
 import {
   inspectionActions,
@@ -14,6 +14,7 @@ import {
   type InspectedCard,
   type Inspection,
   type InspectionAction,
+  type IntoPlay,
 } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
 
@@ -22,7 +23,8 @@ import { hidePreview } from '@/lib/preview'
  * is open. The player chooses a card and what to do with it (its hand, its deck, its discard pile…), as the effect
  * says, then closes the window, which ends the look: the engine records nothing, the cards are out of sight again.
  * Each card shows what it has become; those left stay where they are. A card of a deck can be played from there
- * (Artisan Academy, Pillow Book, Infiltrator…), with the form of the card opened.
+ * (Artisan Academy, Pillow Book, Infiltrator…), with the form of the card opened, or put into play by an effect
+ * (Favorable Dealbroker, Illustrious Forge, Frontline Engineer).
  */
 const props = defineProps<{
   game: GameView
@@ -89,6 +91,27 @@ const ownerProvinces = computed(() => {
   return owner === undefined ? [] : provinceChoices(owner, props.cards)
 })
 
+/** what the selected card can be put into play as: under the control of its owner, or of the viewer for a card of the
+ * opponent */
+const intoPlay = computed((): IntoPlay => {
+  const owner = playerById(props.game, props.inspection.ownerId)
+  const controllerId = yours.value ? props.inspection.ownerId : props.game.viewer_id
+  const conflict = props.game.conflict
+
+  return {
+    type: selected.value === null ? null : props.cards[selected.value.code]?.type,
+    conflict: conflict !== null && [conflict.attacking_player_id, conflict.defending_player_id].includes(controllerId),
+    characters: props.game.players.flatMap((player) =>
+      charactersInPlay(player).map((character) => ({
+        id: character.card.id,
+        name: (character.card.code && props.cards[character.card.code]?.name) || 'Character',
+        mine: player.id === props.game.viewer_id,
+      })),
+    ),
+    provinces: owner === undefined ? [] : provinceChoices(owner, props.cards, null, true),
+  }
+})
+
 const selected = computed(() => props.inspection.cards.find((card) => card.id === selectedId.value) ?? null)
 /** the cards of the viewer the selected card can be placed under */
 const hosts = computed(() =>
@@ -107,6 +130,7 @@ const actions = computed(() =>
         props.cards[selected.value.code]?.side,
         ownerProvinces.value,
         hosts.value,
+        intoPlay.value,
       )
         .filter((action) => !(action.type === 'reveal_card' && revealed.has(action.payload.card_id)))
         .filter((action) => props.game.available_actions.includes(action.type)),
