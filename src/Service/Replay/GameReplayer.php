@@ -19,13 +19,16 @@ use App\Repository\GameLogEntryRepository;
 use App\Repository\GameRepository;
 use App\Service\ActionMessageRegistry;
 use App\Service\EventPlayer;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Replays a game that has ended for one of its players: its events are dispatched again, their ids translated, on a
  * copy of the game under another id (ReplayIdTranslator), which the seed of the original makes draw the same values.
- * The replay stops on each event of the viewer, so that they follow the game from one of their actions to the next.
- * The messages replayed carry a ReplayStamp: nobody is notified and the house bot does not play.
+ * The copy is marked as the replay of the original for the player's user (Game::markAsReplay()) once it is created,
+ * and kept between two steps. The replay stops before each event of the player, so that they see the board as they
+ * had to decide. The messages replayed carry a ReplayStamp: nobody is notified, the house bot does not play, and no
+ * other message is accepted on the copy (GameReplayMiddleware).
  */
 readonly class GameReplayer
 {
@@ -35,11 +38,12 @@ readonly class GameReplayer
         private GameRepository $gameRepository,
         private GameLogEntryRepository $gameLogEntryRepository,
         private ActionMessageRegistry $actionMessageRegistry,
+        private EntityManagerInterface $entityManager,
     ) {
     }
 
     /**
-     * A new replay of the game, nothing replayed yet.
+     * A new replay of the game for the player, nothing replayed yet: the replay they followed is deleted.
      *
      * @throws GameNotEndedException
      */
@@ -49,33 +53,71 @@ readonly class GameReplayer
             throw new GameNotEndedException();
         }
 
+        $previous = $this->gameRepository->findReplay($original->getId(), $viewer->getUserId());
+        if ($previous instanceof Game) {
+            $this->gameRepository->delete($previous->getId());
+        }
+
         return new GameReplay($original, $viewer, new ReplayIdTranslator($original->getId(), Uuid::v4()->toString()));
     }
 
     /**
-     * Replays the events after the version of the replay, up to the next event of the viewer included, or to the end.
+     * The replay of the game the player follows, if any.
+     */
+    public function find(Game $original, Player $viewer): ?GameReplay
+    {
+        $copy = $this->gameRepository->findReplay($original->getId(), $viewer->getUserId());
+
+        return $copy instanceof Game ? new GameReplay($original, $viewer, new ReplayIdTranslator($original->getId(), $copy->getId())) : null;
+    }
+
+    /**
+     * Replays the events after the version of the replay: the next one whatever its sender (the action of the player
+     * the replay stopped before), then those up to the next event of the player, excluded, or to the end; up to the
+     * version given instead, whoever sends the events.
      *
      * @throws ReplayDivergedException when an event cannot be replayed
      */
-    public function proceed(GameReplay $replay): ReplayStep
+    public function proceed(GameReplay $replay, ?int $untilVersion = null): ReplayStep
     {
         $from = $this->getVersion($replay);
-        $events = $this->eventRepository->findSince($replay->original, $from);
-        $pausedOn = null;
-        while (($event = array_shift($events)) instanceof Event) {
-            try {
-                $this->eventPlayer->play($event->getName(), $replay->translator->translatePayload($event->getPayload()), new ReplayStamp());
-            } catch (\Throwable $exception) {
-                throw new ReplayDivergedException($event->getVersion(), $exception);
-            }
-            if ($this->isSentBy($event, $replay->viewer)) {
-                $pausedOn = $event;
-                break;
-            }
+        if ($untilVersion !== null && $untilVersion < $from) {
+            throw new \InvalidArgumentException("The replay is at version {$from}, after version {$untilVersion}: start it again.");
         }
 
-        // ended once no event is left to replay
-        return new ReplayStep($from, $this->getVersion($replay), $pausedOn, $events === []);
+        $events = $this->eventRepository->findSince($replay->original, $from);
+        $first = true;
+        while (($event = array_shift($events)) instanceof Event) {
+            $stops = $untilVersion === null ? ! $first && $this->isSentBy($event, $replay->viewer) : $event->getVersion() > $untilVersion;
+            if ($stops) {
+                array_unshift($events, $event);
+                break;
+            }
+            $this->play($replay, $event);
+            $first = false;
+        }
+
+        return $this->describe($replay, $from, $events);
+    }
+
+    /**
+     * Where the replay stands, nothing replayed.
+     */
+    public function getStep(GameReplay $replay): ReplayStep
+    {
+        $version = $this->getVersion($replay);
+
+        return $this->describe($replay, $version, $this->eventRepository->findSince($replay->original, $version));
+    }
+
+    /**
+     * @param list<Event> $events the events left to replay
+     */
+    private function describe(GameReplay $replay, int $from, array $events): ReplayStep
+    {
+        $next = array_find($events, fn (Event $event): bool => $this->isSentBy($event, $replay->viewer));
+
+        return new ReplayStep($from, $this->getVersion($replay), $next, $events === []);
     }
 
     /**
@@ -110,6 +152,25 @@ readonly class GameReplayer
         }
 
         return null;
+    }
+
+    /**
+     * @throws ReplayDivergedException
+     */
+    private function play(GameReplay $replay, Event $event): void
+    {
+        try {
+            $this->eventPlayer->play($event->getName(), $replay->translator->translatePayload($event->getPayload()), new ReplayStamp());
+        } catch (\Throwable $exception) {
+            throw new ReplayDivergedException($event->getVersion(), $exception);
+        }
+
+        // the copy has just been created (CreateGame)
+        $copy = $this->getReplayGame($replay);
+        if ($copy instanceof Game && ! $copy->isReplay()) {
+            $copy->markAsReplay($replay->original, $replay->viewer->getUser());
+            $this->entityManager->flush();
+        }
     }
 
     private function getVersion(GameReplay $replay): int

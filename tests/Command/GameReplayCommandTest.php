@@ -46,17 +46,18 @@ class GameReplayCommandTest extends AbstractKernelTestCase
         self::assertCount($games, self::service(GameRepository::class)->findAll());
     }
 
-    public function testWaitsForThePlayerOnEachOfTheirActions(): void
+    public function testWaitsForThePlayerBeforeEachOfTheirActions(): void
     {
         $game = $this->playEndedGame();
         $tester = $this->tester();
-        // john chooses his stronghold province and reveals 4 dynasty cards; the replay ends after jane concedes
+        // before john chooses his stronghold province and before each of his 4 dynasty cards
         $tester->setInputs(array_fill(0, 5, ''));
 
         $tester->execute(['id' => $game->getId(), '--as' => 'john', '--step' => true]);
 
         $tester->assertCommandIsSuccessful();
-        self::assertSame(5, substr_count($tester->getDisplay(), 'Your action: press Enter to proceed'));
+        self::assertSame(5, substr_count($tester->getDisplay(), 'Press Enter to proceed'));
+        self::assertStringContainsString('-- next, you: #4 choose_stronghold_province', $tester->getDisplay());
     }
 
     public function testFailsWhenTheReplayDiverges(): void

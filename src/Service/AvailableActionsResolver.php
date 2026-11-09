@@ -28,10 +28,11 @@ final readonly class AvailableActionsResolver
 
     /**
      * @return list<string> the types of the public messages, sorted; none once the game has ended (GameEndedMiddleware)
+     *                      nor in a replay (GameReplayMiddleware)
      */
     public function resolve(Game $game, Player $player): array
     {
-        if ($game->getCurrentPlace() === Game::STATE_ENDED) {
+        if ($game->getCurrentPlace() === Game::STATE_ENDED || $game->isReplay()) {
             return [];
         }
 

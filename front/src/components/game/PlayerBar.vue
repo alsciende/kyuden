@@ -5,7 +5,7 @@ import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from 
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
 import SpecialEffects from '@/components/game/SpecialEffects.vue'
-import { nameOf as playerName, setAsideNote, type Cards } from '@/lib/board'
+import { nameOf as playerName, readOnly, setAsideNote, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat, type Effect } from '@/lib/playerBar'
@@ -60,13 +60,13 @@ const TITLES: Record<BarStat, string> = {
 const mine = computed(() => props.player.id === props.game.viewer_id)
 /** the Imperial Favor nobody has, in the bar of the viewer: a card effect may claim it */
 const unclaimedFavor = computed(
-  () => mine.value && !props.game.spectating && props.game.imperial_favor_holder_id === null,
+  () => mine.value && !readOnly(props.game) && props.game.imperial_favor_holder_id === null,
 )
 const tint = computed(() => findClan(props.player.clan)?.tint ?? '#e2d8c4')
 const bar = computed(() => playerBar(props.game, props.player))
 
-/** a value opening the effects on it, which a spectator does not apply: they only see the discard piles */
-const effectsOn = (key: BarStat): BarStat | null => (props.game.spectating ? null : key)
+/** a value opening the effects on it, which a spectator (or a replay) does not apply: they only see the discard piles */
+const effectsOn = (key: BarStat): BarStat | null => (readOnly(props.game) ? null : key)
 
 const general = computed((): Stat[] => [
   { key: effectsOn('honor'), label: 'Honor', value: bar.value.honor ?? '–' },
@@ -239,7 +239,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   >
     <div class="who">
       <button
-        v-if="mine && !game.spectating"
+        v-if="mine && !readOnly(game)"
         type="button"
         class="name"
         :class="{ on: open === 'player' }"
@@ -274,12 +274,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           </div>
         </template>
         <component
-          :is="game.spectating ? 'div' : 'button'"
-          :type="game.spectating ? undefined : 'button'"
+          :is="readOnly(game) ? 'div' : 'button'"
+          :type="readOnly(game) ? undefined : 'button'"
           class="stat"
-          :class="{ fixed: game.spectating, on: open === 'conflicts' }"
-          :aria-expanded="game.spectating ? undefined : open === 'conflicts'"
-          @click="game.spectating || toggle('conflicts', $event)"
+          :class="{ fixed: readOnly(game), on: open === 'conflicts' }"
+          :aria-expanded="readOnly(game) ? undefined : open === 'conflicts'"
+          @click="readOnly(game) || toggle('conflicts', $event)"
         >
           <b class="icon glyphs" role="img" :aria-label="conflictsAria">
             <span :class="{ used: !bar.conflictsLeft.includes('military') }">{{ CONFLICT_ICONS.military }}</span>
@@ -333,7 +333,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
     <div class="badges">
       <span v-for="note in bar.notes" :key="note" class="badge">{{ note }}</span>
-      <span v-if="bar.favor && game.spectating" class="badge">
+      <span v-if="bar.favor && readOnly(game)" class="badge">
         <span v-if="game.imperial_favor_side" class="icon" aria-hidden="true">{{
           CONFLICT_ICONS[game.imperial_favor_side]
         }}</span>
@@ -354,7 +354,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         }}</span>
         Imperial Favor
       </button>
-      <span v-if="bar.firstPlayer && game.spectating" class="badge first">First player</span>
+      <span v-if="bar.firstPlayer && readOnly(game)" class="badge first">First player</span>
       <button
         v-else-if="bar.firstPlayer"
         type="button"

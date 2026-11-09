@@ -23,9 +23,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+use function Symfony\Component\String\u;
+
 /**
- * Replays a game that has ended as one of its players follows it, in a transaction rolled back at the end: nothing of
- * the replay stays.
+ * Replays a game that has ended as one of its players follows it, stopping before each of their actions, in a
+ * transaction rolled back at the end: nothing of the replay stays.
  */
 #[AsCommand(
     name: 'app:game:replay',
@@ -49,7 +51,7 @@ readonly class GameReplayCommand
         OutputInterface $output,
         #[Option('User ID of the player following the replay (required)')]
         ?string $as = null,
-        #[Option('Wait for Enter on each action of the player')]
+        #[Option('Wait for Enter before each action of the player')]
         bool $step = false,
     ): int {
         $io = new SymfonyStyle($input, $output);
@@ -67,8 +69,12 @@ readonly class GameReplayCommand
             do {
                 $replayStep = $this->replayer->proceed($replay);
                 $this->writeLog($io, $replay, $replayStep);
-                if ($step && $replayStep->pausedOn !== null && ! $replayStep->ended) {
-                    $io->ask('Your action: press Enter to proceed', '');
+                // the replay stops before each action of the player
+                if ($replayStep->next !== null && $replayStep->next->getVersion() === $replayStep->to + 1) {
+                    $io->writeln(sprintf('<comment>-- next, you: #%d %s</comment>', $replayStep->next->getVersion(), u($replayStep->next->getName())->afterLast('\\')->snake()->toString()));
+                    if ($step) {
+                        $io->ask('Press Enter to proceed', '');
+                    }
                 }
             } while (! $replayStep->ended);
 

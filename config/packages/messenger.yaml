@@ -43,6 +43,8 @@ framework:
                     - 'App\Middleware\GameLockMiddleware'
                     - 'App\Middleware\GameVersionMiddleware'
                     - 'App\Middleware\GameEndedMiddleware'
+                    # a replay only follows the events of the game it replays
+                    - 'App\Middleware\GameReplayMiddleware'
                     # increments the version once the automatic transitions are applied: the log entries they write
                     # belong to the version of the message that led to them
                     - 'App\Middleware\EventRecordingMiddleware'

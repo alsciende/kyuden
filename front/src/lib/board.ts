@@ -20,6 +20,14 @@ export function opponent(game: GameView): PlayerView | undefined {
 }
 
 /**
+ * The viewer sends nothing: a spectator, or a player replaying a game they played. A spectator also reads the names
+ * of the players (`spectating`); a player replaying reads "You" and "Opp." as when they played.
+ */
+export function readOnly(game: GameView): boolean {
+  return game.spectating === true || game.replaying === true
+}
+
+/**
  * How a player is named to the viewer: "You", and "Opp." (short) or "Opponent"; a spectator reads their names.
  */
 export function nameOf(game: GameView, player: PlayerView | undefined, short = true): string {
@@ -443,19 +451,29 @@ export function gameEnded(game: GameView): boolean {
 
 /** the result of the game for the viewer: nobody wins a game every player has left */
 export function resultTitle(game: GameView): string {
-  if (game.winner_id === null) {
+  return resultTitleOf(game.winner_id, game.viewer_id)
+}
+
+/** the result of a game for a player: their victory, their defeat, or nobody's */
+export function resultTitleOf(winnerId: string | null, playerId: string): string {
+  if (winnerId === null) {
     return 'No winner'
   }
-  return game.winner_id === game.viewer_id ? 'Victory' : 'Defeat'
+  return winnerId === playerId ? 'Victory' : 'Defeat'
 }
 
 /** how the game was won, from the point of view of the viewer */
 export function victoryText(game: GameView): string {
-  const won = game.winner_id === game.viewer_id
-  if (game.winner_id === null) {
-    return game.victory_condition === 'abandonment' ? 'Nobody played for an hour: the game ended without a winner.' : ''
+  return victoryTextOf(game.winner_id, game.viewer_id, game.victory_condition)
+}
+
+/** how a game was won, from the point of view of a player */
+export function victoryTextOf(winnerId: string | null, playerId: string, condition: string | null): string {
+  const won = winnerId === playerId
+  if (winnerId === null) {
+    return condition === 'abandonment' ? 'Nobody played for an hour: the game ended without a winner.' : ''
   }
-  switch (game.victory_condition) {
+  switch (condition) {
     case 'honor_win':
       return won ? 'You reached 25 honor.' : 'The opponent reached 25 honor.'
     case 'honor_loss':

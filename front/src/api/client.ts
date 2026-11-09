@@ -104,6 +104,21 @@ export interface UserGame {
   friendly: boolean
   /** the user ids, in player order */
   players: string[]
+  /** the players, in player order: their name, the clan of their stronghold, whether a program plays them */
+  seats: UserGameSeat[]
+  /** when the game ended, null while it goes on */
+  ended_at: string | null
+  /** the player who won, null while the game goes on or when nobody won */
+  winner_id: string | null
+  /** how the game ended, null while it goes on */
+  victory_condition: string | null
+}
+
+export interface UserGameSeat {
+  user_id: string
+  name: string
+  clan: string | null
+  bot: boolean
 }
 
 export interface BotGame {

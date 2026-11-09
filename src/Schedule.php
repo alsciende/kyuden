@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Task\DeleteStaleReplays;
 use App\Task\EndAbandonedGames;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
@@ -31,6 +32,7 @@ final readonly class Schedule implements ScheduleProviderInterface
         return new SymfonySchedule()
             ->stateful($this->cache)
             ->processOnlyLastMissedRun(true)
-            ->add(RecurringMessage::every(EndAbandonedGames::INTERVAL, new EndAbandonedGames()));
+            ->add(RecurringMessage::every(EndAbandonedGames::INTERVAL, new EndAbandonedGames()))
+            ->add(RecurringMessage::every(DeleteStaleReplays::INTERVAL, new DeleteStaleReplays()));
     }
 }

@@ -24,6 +24,7 @@ use Symfony\Component\Uid\Uuid;
  */
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table('games')]
+#[ORM\UniqueConstraint(name: 'replay_of_user', columns: ['replay_of_id', 'replay_user_id'])]
 #[ORM\HasLifecycleCallbacks]
 class Game implements StatefulInterface
 {
@@ -69,6 +70,21 @@ class Game implements StatefulInterface
     private bool $friendly;
 
     /**
+     * The game this one replays (Service/Replay/GameReplayer): a copy rebuilt from the events of a game that has ended,
+     * for one of its players only, read only and listed nowhere; null for a game played.
+     */
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?Game $replayOf = null;
+
+    /**
+     * The user who follows the replay, a player of the original game.
+     */
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?User $replayUser = null;
+
+    /**
      * @var ArrayCollection<int, Player>
      */
     #[ORM\OneToMany(mappedBy: 'game', targetEntity: Player::class, cascade: ['persist', 'remove'], fetch: 'LAZY', orphanRemoval: true)]
@@ -103,6 +119,38 @@ class Game implements StatefulInterface
     public function isFriendly(): bool
     {
         return $this->friendly;
+    }
+
+    /**
+     * Makes the game the replay of another one, followed by the user given.
+     */
+    public function markAsReplay(self $original, User $user): void
+    {
+        $this->replayOf = $original;
+        $this->replayUser = $user;
+    }
+
+    public function isReplay(): bool
+    {
+        return $this->replayOf instanceof self;
+    }
+
+    public function getReplayOf(): ?self
+    {
+        return $this->replayOf;
+    }
+
+    public function getReplayUser(): ?User
+    {
+        return $this->replayUser;
+    }
+
+    /**
+     * A replay exists for its user only: anyone else is told it does not exist.
+     */
+    public function isHiddenFrom(?string $userId): bool
+    {
+        return $this->replayUser instanceof User && $this->replayUser->getId() !== $userId;
     }
 
     public function getCurrentPlace(): ?string

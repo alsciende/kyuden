@@ -16,6 +16,7 @@ import {
   opponent,
   provinces,
   provinceToReveal,
+  readOnly,
   rings,
   stackOf,
   strongholdCandidates,
@@ -411,7 +412,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
       <section class="zone hand" aria-label="Your hand">
         <span class="label"
-          >{{ handOwner }} · {{ hand.length }} cards<template v-if="!game.spectating">
+          >{{ handOwner }} · {{ hand.length }} cards<template v-if="!readOnly(game)">
             · click a card to play it</template
           ></span
         >

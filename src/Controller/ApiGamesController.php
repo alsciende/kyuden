@@ -75,7 +75,7 @@ class ApiGamesController extends AbstractController
     public function show(string $id, Request $request, #[CurrentUser] User $user): Response
     {
         $game = $this->gameRepository->findWithCards($id);
-        if ($game === null) {
+        if ($game === null || $game->isHiddenFrom($user->getId())) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
 
@@ -108,7 +108,7 @@ class ApiGamesController extends AbstractController
         }
 
         $game = $this->gameRepository->find($id);
-        if ($game === null) {
+        if ($game === null || $game->isHiddenFrom($user->getId())) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
 
@@ -134,7 +134,7 @@ class ApiGamesController extends AbstractController
     public function spectators(string $id, #[CurrentUser] User $user): Response
     {
         $game = $this->gameRepository->find($id);
-        if ($game === null) {
+        if ($game === null || $game->isHiddenFrom($user->getId())) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
 
@@ -158,7 +158,7 @@ class ApiGamesController extends AbstractController
     public function leave(string $id, #[CurrentUser] User $user): Response
     {
         $game = $this->gameRepository->find($id);
-        if ($game === null) {
+        if ($game === null || $game->isHiddenFrom($user->getId())) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
 

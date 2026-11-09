@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Entity\Game;
 use App\Entity\User;
 use App\Enum\CardDisplay;
 use App\Enum\Clan;
@@ -14,7 +13,6 @@ use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
 use App\Security\AccountDeleter;
 use App\View\Model\SelfView;
-use App\View\Model\UserGameView;
 use App\View\UserGameViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -169,9 +167,9 @@ class ApiSelfController extends AbstractController
     {
         $userId = $user->getUserIdentifier();
 
-        return $this->json(array_map(
-            fn (Game $game): UserGameView => $this->userGameViewFactory->create($game, $userId),
+        return $this->json($this->userGameViewFactory->createAll(
             $this->gameRepository->findByUser($userId),
+            $userId,
         ));
     }
 

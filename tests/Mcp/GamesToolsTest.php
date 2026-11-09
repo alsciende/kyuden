@@ -51,6 +51,13 @@ class GamesToolsTest extends AbstractMcpTestCase
             'ended' => false,
             'friendly' => false,
             'players' => ['hida-bot', 'akodo-bot'],
+            'seats' => [
+                ['user_id' => 'hida-bot', 'name' => 'Hida Bot', 'clan' => null, 'bot' => true],
+                ['user_id' => 'akodo-bot', 'name' => 'Akodo Bot', 'clan' => null, 'bot' => true],
+            ],
+            'ended_at' => null,
+            'winner_id' => null,
+            'victory_condition' => null,
         ]], $games);
     }
 

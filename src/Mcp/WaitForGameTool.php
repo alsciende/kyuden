@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Mcp;
 
 use App\Controller\ApiGamesController;
-use App\Entity\Game;
 use App\Service\GameStartWaiter;
-use App\View\Model\UserGameView;
 use App\View\UserGameViewFactory;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
@@ -47,9 +45,9 @@ final readonly class WaitForGameTool
         $userId = $this->security->getUser()?->getUserIdentifier();
         \assert($userId !== null);
 
-        $games = $this->normalizer->normalize(array_map(
-            fn (Game $game): UserGameView => $this->userGameViewFactory->create($game, $userId),
+        $games = $this->normalizer->normalize($this->userGameViewFactory->createAll(
             $this->gameStartWaiter->wait($userId, $timeout),
+            $userId,
         ));
 
         return ['games' => $games];

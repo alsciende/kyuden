@@ -55,11 +55,11 @@ final readonly class WaitForUpdateTool
     ): array {
         // the server checks the arguments against their schema (bounds included) before the call
         $game = $this->gameRepository->find($game_id);
-        if ($game === null) {
+        $userId = $this->security->getUser()?->getUserIdentifier();
+        if ($game === null || $game->isHiddenFrom($userId)) {
             throw new ToolCallException("Game not found: [{$game_id}]");
         }
 
-        $userId = $this->security->getUser()?->getUserIdentifier();
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $userId) {
                 $this->playerPresence->see($player);

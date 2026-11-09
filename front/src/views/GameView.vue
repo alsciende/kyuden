@@ -298,6 +298,9 @@ const problem = computed(() => {
           </div>
         </div>
         <RouterLink v-else to="/" class="btn leave">Leave the game</RouterLink>
+        <RouterLink :to="{ name: 'replay', params: { id: game.id } }" class="btn-link replay"
+          >Replay this game</RouterLink
+        >
       </div>
     </div>
 
@@ -448,6 +451,10 @@ const problem = computed(() => {
 }
 
 .invitation-actions .btn-link {
+  color: var(--on-veil);
+}
+
+.replay {
   color: var(--on-veil);
 }
 

@@ -43,11 +43,11 @@ final readonly class GetGameTool
     public function __invoke(string $game_id): array
     {
         $game = $this->gameRepository->findWithCards($game_id);
-        if ($game === null) {
+        $userId = $this->security->getUser()?->getUserIdentifier();
+        if ($game === null || $game->isHiddenFrom($userId)) {
             throw new ToolCallException("Game not found: [{$game_id}]");
         }
 
-        $userId = $this->security->getUser()?->getUserIdentifier();
         foreach ($game->getPlayers() as $player) {
             if ($player->getUserId() === $userId) {
                 $this->playerPresence->see($player);

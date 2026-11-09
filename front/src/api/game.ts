@@ -140,6 +140,8 @@ export interface GameView {
   viewer_id: string
   /** set by the client (seenFrom): the viewer watches the game without playing it, and can send nothing */
   spectating?: boolean
+  /** set by the client: the viewer replays a game they played (a copy rebuilt from its events), and can send nothing */
+  replaying?: boolean
   player_ids: string[]
   first_player_id: string | null
   active_player_ids: string[]
@@ -166,7 +168,7 @@ export interface SpecialActionView {
 }
 
 /** the view as the API sends it: no viewer for a spectator */
-export type GameViewData = Omit<GameView, 'viewer_id' | 'spectating'> & { viewer_id: string | null }
+export type GameViewData = Omit<GameView, 'viewer_id' | 'spectating' | 'replaying'> & { viewer_id: string | null }
 
 /**
  * The view as the client shows it: a spectator watches from the side of a player (`seat`, the first player in player

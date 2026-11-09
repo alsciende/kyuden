@@ -22,8 +22,8 @@ use Symfony\Component\Messenger\MessageBusInterface;
 /**
  * Deletes an account, and the bots it owns: the user stays, anonymized with the date of the deletion (User::anonymize()),
  * so that the games keep their players and their opponents their history. It leaves the queue, concedes the games it
- * plays (its opponents win), then its invitations, its tokens, its linked identities, the games it watches and its
- * decks are deleted (those played in a game only lose their name).
+ * plays (its opponents win), then its replays, its invitations, its tokens, its linked identities, the games it
+ * watches and its decks are deleted (those played in a game only lose their name).
  */
 readonly class AccountDeleter
 {
@@ -68,6 +68,9 @@ readonly class AccountDeleter
         $deletedAt = $this->clock->now();
         $this->entityManager->wrapInTransaction(function () use ($users, $deletedAt): void {
             foreach ($users as $user) {
+                foreach ($this->gameRepository->findReplayIdsOf($user->getId()) as $replayId) {
+                    $this->gameRepository->delete($replayId);
+                }
                 $this->invitationRepository->deleteByHost($user);
                 $this->accessTokenRepository->deleteByUser($user);
                 $this->linkedAccountRepository->deleteByUser($user);

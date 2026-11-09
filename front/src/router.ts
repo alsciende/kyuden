@@ -4,7 +4,9 @@ import { findClan } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 import { session } from '@/lib/session'
 import AccountView from '@/views/AccountView.vue'
+import GameReplayView from '@/views/GameReplayView.vue'
 import GameView from '@/views/GameView.vue'
+import HistoryView from '@/views/HistoryView.vue'
 import InviteView from '@/views/InviteView.vue'
 import JoinView from '@/views/JoinView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -96,6 +98,21 @@ export const router = createRouter({
       meta: { title: 'Back to court · Kyūden' },
     },
     { path: '/games/:id', name: 'game', component: GameView, meta: { title: 'Game · Kyūden', fullscreen: true } },
+    // the games a user has played, a guest's too
+    {
+      path: '/history',
+      name: 'history',
+      component: HistoryView,
+      meta: { title: 'Your games · Kyūden' },
+      beforeEnter: () => (session.value !== null ? true : { name: 'login' }),
+    },
+    {
+      path: '/games/:id/replay',
+      name: 'replay',
+      component: GameReplayView,
+      meta: { title: 'Replay · Kyūden', fullscreen: true },
+      beforeEnter: () => (session.value !== null ? true : { name: 'login' }),
+    },
     { path: '/:path(.*)*', redirect: { name: 'landing' } },
   ],
 })

@@ -7,7 +7,7 @@ namespace App\View\Model;
 use App\Enum\Clan;
 
 /**
- * A player of a game in progress, in the list of the games to watch (GameInProgressView).
+ * A player of a game, in the lists of the games: those to watch (GameInProgressView), those of a user (UserGameView).
  */
 final readonly class GameInProgressPlayerView
 {

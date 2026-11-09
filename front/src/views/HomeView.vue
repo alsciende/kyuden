@@ -52,6 +52,7 @@ onMounted(async () => {
         <div class="tile-actions">
           <RouterLink :to="{ name: 'queue' }" class="btn btn-primary btn-large">Choose a deck</RouterLink>
           <RouterLink :to="{ name: 'invite' }" class="btn-link">Play a friendly game</RouterLink>
+          <RouterLink :to="{ name: 'history' }" class="btn-link">Your games</RouterLink>
         </div>
       </section>
       <section class="tile" aria-labelledby="watch">

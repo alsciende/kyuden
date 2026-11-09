@@ -37,7 +37,8 @@ class ApiAbandonmentController extends AbstractController
     public function show(string $id, #[CurrentUser] User $user): Response
     {
         $game = $this->gameRepository->findWithCards($id);
-        if ($game === null) {
+        // a replay is never abandoned: it waits for nobody
+        if ($game === null || $game->isReplay()) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'game_not_found', "Game not found: [{$id}]");
         }
 

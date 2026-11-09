@@ -9,14 +9,20 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Exception\Data\ReplayDivergedException;
 use App\Exception\Rules\GameNotEndedException;
-use App\Message\ChooseStrongholdProvince;
+use App\Exception\Rules\ReplayReadOnlyException;
 use App\Message\ConcedeGame;
 use App\Message\RevealDynastyCard;
+use App\Model\GameReplay;
 use App\Repository\EventRepository;
+use App\Service\AvailableActionsResolver;
 use App\Service\Replay\GameReplayer;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 
+/**
+ * The game of PlaysEndedGame has 14 events: 1 CreateGame, 2 and 3 john and jane join, 4 and 5 they choose their
+ * stronghold provinces, 6 to 9 john reveals his dynasty cards, 10 to 13 jane hers, 14 jane concedes.
+ */
 class GameReplayerTest extends AbstractKernelTestCase
 {
     use PlaysEndedGame;
@@ -37,23 +43,48 @@ class GameReplayerTest extends AbstractKernelTestCase
         self::fail("{$userId} does not play the game.");
     }
 
+    private function replayToTheEnd(GameReplay $replay): void
+    {
+        do {
+            $step = $this->replayer()->proceed($replay);
+        } while (! $step->ended);
+    }
+
     public function testTheReplayRebuildsTheGameUnderAnotherId(): void
     {
         $game = $this->playEndedGame();
         $replayer = $this->replayer();
         $replay = $replayer->start($game, $this->player($game, 'john'));
 
-        do {
-            $step = $replayer->proceed($replay);
-        } while (! $step->ended);
+        $this->replayToTheEnd($replay);
 
         $copy = $replayer->getReplayGame($replay);
         self::assertInstanceOf(Game::class, $copy);
         self::assertNotSame($game->getId(), $copy->getId());
-        self::assertSame($game->getVersion(), $copy->getVersion());
+        self::assertSame(14, $copy->getVersion());
         self::assertSame(Game::STATE_ENDED, $copy->getCurrentPlace());
         self::assertSame($game->getPhysicalCards()->count(), $copy->getPhysicalCards()->count());
         self::assertNull($replayer->findDivergence($replay));
+    }
+
+    public function testTheCopyIsTheReplayOfTheGameForTheUser(): void
+    {
+        $game = $this->playEndedGame();
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+
+        $this->replayer()->proceed($replay);
+
+        $copy = $this->replayer()->getReplayGame($replay);
+        self::assertInstanceOf(Game::class, $copy);
+        self::assertTrue($copy->isReplay());
+        self::assertSame($game, $copy->getReplayOf());
+        self::assertSame('john', $copy->getReplayUser()?->getId());
+        // listed nowhere: neither john nor jane find it among their games
+        foreach (['john', 'jane'] as $userId) {
+            self::assertSame([$game->getId()], array_map(fn (Game $game): string => $game->getId(), $this->gameRepository->findByUser($userId)));
+        }
+        self::assertTrue($copy->isHiddenFrom('jane'));
+        self::assertFalse($copy->isHiddenFrom('john'));
     }
 
     public function testTheOriginalReadAgainFromTheDatabaseIsTheSame(): void
@@ -62,60 +93,119 @@ class GameReplayerTest extends AbstractKernelTestCase
         // jsonb does not keep the order of the keys of the params of the log
         self::service(EntityManagerInterface::class)->clear();
         $game = $this->gameRepository->get($gameId);
-        $replayer = $this->replayer();
-        $replay = $replayer->start($game, $this->player($game, 'john'));
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
 
-        do {
-            $step = $replayer->proceed($replay);
-        } while (! $step->ended);
+        $this->replayToTheEnd($replay);
 
-        self::assertNull($replayer->findDivergence($replay));
+        self::assertNull($this->replayer()->findDivergence($replay));
     }
 
-    public function testTheReplayStopsOnEachActionOfTheViewer(): void
+    public function testTheReplayStopsBeforeEachActionOfTheViewer(): void
     {
         $game = $this->playEndedGame();
-        $replayer = $this->replayer();
-        $replay = $replayer->start($game, $this->player($game, 'jane'));
+        $replay = $this->replayer()->start($game, $this->player($game, 'jane'));
 
         $stops = [];
         do {
-            $step = $replayer->proceed($replay);
-            if ($step->pausedOn !== null) {
-                $stops[] = $step->pausedOn->getName();
+            $step = $this->replayer()->proceed($replay);
+            if (! $step->ended) {
+                self::assertNotNull($step->next);
+                self::assertSame($step->to + 1, $step->next->getVersion());
+                $stops[] = $step->next->getVersion();
             }
         } while (! $step->ended);
 
-        // jane's own actions, not her joining the game (a message of the platform)
-        self::assertSame([ChooseStrongholdProvince::class, ...array_fill(0, 4, RevealDynastyCard::class), ConcedeGame::class], $stops);
+        // her stronghold province, her 4 dynasty cards, her concession; not her joining the game (the platform's)
+        self::assertSame([5, 10, 11, 12, 13, 14], $stops);
+        self::assertNull($step->next);
     }
 
-    public function testEachStepStartsWhereThePreviousOneStopped(): void
+    public function testEachStepPlaysTheActionTheReplayStoppedBefore(): void
     {
         $game = $this->playEndedGame();
-        $replayer = $this->replayer();
-        $replay = $replayer->start($game, $this->player($game, 'john'));
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
 
-        $first = $replayer->proceed($replay);
-        $second = $replayer->proceed($replay);
+        $first = $this->replayer()->proceed($replay);
+        $second = $this->replayer()->proceed($replay);
 
-        self::assertSame(0, $first->from);
-        // CreateGame, both JoinGame, then john chooses his stronghold province
-        self::assertSame(4, $first->to);
-        self::assertSame($first->to, $second->from);
-        self::assertGreaterThan($second->from, $second->to);
+        self::assertSame([0, 3], [$first->from, $first->to]);
+        // john chooses his stronghold province, then jane hers, up to his first dynasty card
+        self::assertSame([3, 5], [$second->from, $second->to]);
+        self::assertSame(6, $second->next?->getVersion());
     }
 
-    public function testNobodyIsNotifiedAndNoTaskIsSent(): void
+    public function testTheReplayGoesUpToAVersionWhoeverSendsTheEvents(): void
+    {
+        $game = $this->playEndedGame();
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+
+        $step = $this->replayer()->proceed($replay, 11);
+
+        self::assertSame(11, $step->to);
+        // john sends nothing after his dynasty cards
+        self::assertNull($step->next);
+        self::assertFalse($step->ended);
+    }
+
+    public function testTheReplayDoesNotGoBack(): void
+    {
+        $game = $this->playEndedGame();
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+        $this->replayer()->proceed($replay, 8);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->replayer()->proceed($replay, 7);
+    }
+
+    public function testTheReplayIsFoundAgainWhereItStands(): void
+    {
+        $game = $this->playEndedGame();
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+        $this->replayer()->proceed($replay);
+        self::service(EntityManagerInterface::class)->clear();
+        $game = $this->gameRepository->get($game->getId());
+
+        $found = $this->replayer()->find($game, $this->player($game, 'john'));
+
+        self::assertInstanceOf(GameReplay::class, $found);
+        self::assertSame($replay->getReplayGameId(), $found->getReplayGameId());
+        $step = $this->replayer()->getStep($found);
+        self::assertSame([3, 3, 4], [$step->from, $step->to, $step->next?->getVersion()]);
+        self::assertNull($this->replayer()->find($game, $this->player($game, 'jane')));
+    }
+
+    public function testStartingAgainDeletesThePreviousReplay(): void
+    {
+        $game = $this->playEndedGame();
+        $previous = $this->replayer()->start($game, $this->player($game, 'john'));
+        $this->replayer()->proceed($previous);
+
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+        $this->replayer()->proceed($replay);
+
+        self::service(EntityManagerInterface::class)->clear();
+        self::assertNull($this->gameRepository->find($previous->getReplayGameId()));
+        self::assertInstanceOf(Game::class, $this->gameRepository->find($replay->getReplayGameId()));
+    }
+
+    public function testNoOtherMessageIsAcceptedOnTheCopy(): void
+    {
+        $game = $this->playEndedGame();
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
+        $this->replayer()->proceed($replay);
+        $copy = $this->replayer()->getReplayGame($replay) ?? self::fail('No copy.');
+
+        self::assertSame([], self::service(AvailableActionsResolver::class)->resolve($copy, $copy->getPlayer($replay->getReplayViewerId())));
+        $this->expectException(ReplayReadOnlyException::class);
+        $this->messageBus->dispatch(new ConcedeGame($copy->getId(), $replay->getReplayViewerId()));
+    }
+
+    public function testNoTaskIsSent(): void
     {
         $game = $this->playEndedGame();
         $tasksBefore = count($this->sentTasks());
-        $replayer = $this->replayer();
-        $replay = $replayer->start($game, $this->player($game, 'john'));
 
-        do {
-            $step = $replayer->proceed($replay);
-        } while (! $step->ended);
+        $this->replayToTheEnd($this->replayer()->start($game, $this->player($game, 'john')));
 
         self::assertCount($tasksBefore, $this->sentTasks());
     }
@@ -139,13 +229,10 @@ class GameReplayerTest extends AbstractKernelTestCase
         \assert(\is_array($payload));
         $event->setPayload(json_encode(['card_id' => '00000000-0000-4000-8000-000000000000'] + $payload, JSON_THROW_ON_ERROR));
         self::service(EntityManagerInterface::class)->flush();
-        $replayer = $this->replayer();
-        $replay = $replayer->start($game, $this->player($game, 'john'));
+        $replay = $this->replayer()->start($game, $this->player($game, 'john'));
 
         try {
-            do {
-                $step = $replayer->proceed($replay);
-            } while (! $step->ended);
+            $this->replayToTheEnd($replay);
             self::fail('The replay did not diverge.');
         } catch (ReplayDivergedException $exception) {
             self::assertSame($event->getVersion(), $exception->getVersion());

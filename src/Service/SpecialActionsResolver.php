@@ -30,7 +30,8 @@ final readonly class SpecialActionsResolver
     public function resolve(Game $game, ?Player $player): array
     {
         $cardIds = array_fill_keys($this->actionMessageRegistry->getSpecialMessageTypes(), []);
-        if (! $player instanceof Player) {
+        // a replay is read only
+        if (! $player instanceof Player || $game->isReplay()) {
             return $cardIds;
         }
 

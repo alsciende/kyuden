@@ -462,6 +462,7 @@ async function leave(): Promise<void> {
     <div class="actions">
       <RouterLink :to="{ name: 'queue' }" class="btn btn-primary">Play a game</RouterLink>
       <RouterLink :to="{ name: 'invite' }" class="btn btn-ghost">Play a friendly game</RouterLink>
+      <RouterLink :to="{ name: 'history' }" class="btn btn-ghost">Your games</RouterLink>
       <button type="button" class="btn-link" @click="leave">Sign out</button>
     </div>
   </div>

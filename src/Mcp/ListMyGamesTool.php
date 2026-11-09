@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mcp;
 
-use App\Entity\Game;
 use App\Repository\GameRepository;
-use App\View\Model\UserGameView;
 use App\View\UserGameViewFactory;
 use Mcp\Capability\Attribute\McpTool;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -39,9 +37,9 @@ final readonly class ListMyGamesTool
         $userId = $this->security->getUser()?->getUserIdentifier();
         \assert($userId !== null);
 
-        $games = $this->normalizer->normalize(array_map(
-            fn (Game $game): UserGameView => $this->userGameViewFactory->create($game, $userId),
+        $games = $this->normalizer->normalize($this->userGameViewFactory->createAll(
             $this->gameRepository->findByUser($userId),
+            $userId,
         ));
 
         return ['games' => $games];

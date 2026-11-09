@@ -21,6 +21,8 @@ import { spectatorsLabel } from '@/lib/watch'
  * in their bars, above and below the board).
  *
  * A spectator does nothing in the step: they read who acts, from whose side they watch (they switch sides), and leave.
+ * A replay puts its own panel in place of what the player does (slot `panel`), and its log in place of the last lines
+ * (slot `log`); nobody watches it.
  */
 const props = defineProps<{
   game: GameView
@@ -87,8 +89,8 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
 <template>
   <aside class="sidebar" aria-label="Game">
     <div class="audience">
-      <span class="eyebrow">{{ game.spectating ? 'Spectating' : 'Your game' }}</span>
-      <div class="audience-anchor">
+      <span class="eyebrow">{{ game.replaying ? 'Replay' : game.spectating ? 'Spectating' : 'Your game' }}</span>
+      <div v-if="!game.replaying" class="audience-anchor">
         <button
           type="button"
           class="eye"
@@ -135,42 +137,44 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <p v-if="step.help" class="help">{{ step.help }}</p>
     </header>
 
-    <section v-if="game.spectating" class="spectator" aria-label="Spectating">
-      <p v-if="acting" class="acting"><span class="dot" aria-hidden="true"></span>{{ acting }}</p>
-      <div class="pov">
-        <span class="pov-text"
-          >Seen from the side of<br /><strong>{{ seenFrom }}</strong></span
-        >
-        <button type="button" class="swap" @click="$emit('switchSides')">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+    <slot name="panel">
+      <section v-if="game.spectating" class="spectator" aria-label="Spectating">
+        <p v-if="acting" class="acting"><span class="dot" aria-hidden="true"></span>{{ acting }}</p>
+        <div class="pov">
+          <span class="pov-text"
+            >Seen from the side of<br /><strong>{{ seenFrom }}</strong></span
           >
-            <path d="m21 16-4 4-4-4" />
-            <path d="M17 20V4" />
-            <path d="m3 8 4-4 4 4" />
-            <path d="M7 4v16" />
-          </svg>
-          Switch sides
-        </button>
-      </div>
-    </section>
-    <ActionPanel
-      v-else
-      :game="game"
-      :cards="cards"
-      :selection="selection"
-      :sending="sending"
-      :error="error"
-      :send="send"
-    />
+          <button type="button" class="swap" @click="$emit('switchSides')">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m21 16-4 4-4-4" />
+              <path d="M17 20V4" />
+              <path d="m3 8 4-4 4 4" />
+              <path d="M7 4v16" />
+            </svg>
+            Switch sides
+          </button>
+        </div>
+      </section>
+      <ActionPanel
+        v-else
+        :game="game"
+        :cards="cards"
+        :selection="selection"
+        :sending="sending"
+        :error="error"
+        :send="send"
+      />
+    </slot>
 
     <section
       v-if="othersResolve.length > 0 || othersRing"
@@ -244,13 +248,15 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       />
     </section>
 
-    <section class="log" aria-label="Last lines of the log">
-      <div class="title">
-        <span class="label">Log</span>
-        <button type="button" class="btn-link" @click="$emit('openLog')">Show all</button>
-      </div>
-      <LogLine v-for="(entry, index) in tail" :key="index" :entry="entry" :game="game" :cards="cards" />
-    </section>
+    <slot name="log">
+      <section class="log" aria-label="Last lines of the log">
+        <div class="title">
+          <span class="label">Log</span>
+          <button type="button" class="btn-link" @click="$emit('openLog')">Show all</button>
+        </div>
+        <LogLine v-for="(entry, index) in tail" :key="index" :entry="entry" :game="game" :cards="cards" />
+      </section>
+    </slot>
 
     <button v-if="game.spectating" type="button" class="btn btn-ghost leave" @click="$emit('leave')">
       Leave the game

@@ -209,6 +209,14 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
             'ended' => false,
             'friendly' => false,
             'players' => ['john', 'jane'],
+            // no stronghold in the scenario: no clan
+            'seats' => [
+                ['user_id' => 'john', 'name' => 'John', 'clan' => null, 'bot' => false],
+                ['user_id' => 'jane', 'name' => 'Jane', 'clan' => null, 'bot' => false],
+            ],
+            'ended_at' => null,
+            'winner_id' => null,
+            'victory_condition' => null,
         ]], $games);
     }
 
