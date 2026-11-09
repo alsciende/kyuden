@@ -7,7 +7,6 @@ namespace App\Middleware;
 use App\Entity\Game;
 use App\Message\ActionInterface;
 use App\Repository\GameRepository;
-use App\Service\ProvinceRefiller;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Envelope;
@@ -16,8 +15,7 @@ use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * After the message handling, refills the provinces dynasty cards have left once nothing is being resolved
- * (ProvinceRefiller), then applies the automatic transitions, refilling again after each of them.
+ * After the message handling, applies the automatic transitions, one at a time, until none is enabled.
  */
 readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
 {
@@ -25,7 +23,6 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
         #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private GameRepository $gameRepository,
-        private ProvinceRefiller $provinceRefiller,
         private LoggerInterface $logger,
     ) {
     }
@@ -41,7 +38,6 @@ readonly class WorkflowTransitionMiddleware implements MiddlewareInterface
             $gameId = $message->getGameId();
             $game = $this->gameRepository->get($gameId);
             do {
-                $this->provinceRefiller->refillScheduled($game);
                 $transitionOccurred = $this->checkTransition($game);
             } while ($transitionOccurred);
         }

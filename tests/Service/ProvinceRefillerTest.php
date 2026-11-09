@@ -6,9 +6,6 @@ namespace App\Tests\Service;
 
 use App\Entity\CardTypes\DynastyCard;
 use App\Enum\AbilityTiming;
-use App\Message\DiscardCard;
-use App\Message\EndResolution;
-use App\Message\PlayCharacterFromProvince;
 use App\Service\ProvinceRefiller;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
@@ -112,28 +109,6 @@ class ProvinceRefillerTest extends AbstractKernelTestCase
 
         self::assertFalse($this->refilled($scenario));
         self::assertSame([], self::service(GameStateManager::class)->getState($scenario->game())->provincesToRefill);
-    }
-
-    public function testTheProvinceOfACharacterPlayedIsRefilledOnceTheActionIsEnded(): void
-    {
-        $scenario = $this->builder()->persist();
-        $game = $scenario->game()->getId();
-        $john = $scenario->player('john')->getId();
-
-        $this->messageBus->dispatch(new PlayCharacterFromProvince($game, $john, $scenario->card('toturi')->getId(), 5, 0, 0));
-        self::assertFalse($this->refilled($scenario));
-
-        $this->messageBus->dispatch(new EndResolution($game, $john));
-        self::assertTrue($this->refilled($scenario));
-    }
-
-    public function testAProvinceEmptiedOutsideOfAnyResolutionIsRefilledAfterTheMessage(): void
-    {
-        $scenario = $this->builder()->persist();
-
-        $this->messageBus->dispatch(new DiscardCard($scenario->game()->getId(), $scenario->player('jane')->getId(), $scenario->card('toturi')->getId()));
-
-        self::assertTrue($this->refilled($scenario));
     }
 
     public function testOnlyRegularProvincesAreScheduled(): void

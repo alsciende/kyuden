@@ -25,7 +25,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * A province a dynasty card has left is refilled once the effect is resolved, if it is still empty: "After a card is
  * removed from a province for any reason (and after all reaction opportunities to that card leaving the province are
  * passed), a player automatically refills the province". The handlers schedule it (`schedule()`), and
- * WorkflowTransitionMiddleware refills the scheduled provinces after each message once nobody resolves what they have
+ * ProvinceRefillMiddleware refills the scheduled provinces after each message once nobody resolves what they have
  * played (an action, an interrupt or a reaction) and no duel is being resolved (`refillScheduled()`).
  */
 readonly class ProvinceRefiller

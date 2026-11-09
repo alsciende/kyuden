@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Kyūden Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=EB+Garamond:wght@500;600&family=Shippori+Mincho:wght@600&display=swap">
+<style>
+/* Layout: four stacked chapters, each a hand-drawn diagram beside the walkthrough of its steps. Ink on paper, one vermilion accent (the identity of the Kyūden web client). */
+:root {
+  --paper: #f4f2ec;
+  --board: #fbfaf6;
+  --ink: #1f1d1a;
+  --ink-soft: #625c53;
+  --rule: #d8d2c6;
+  --accent: #b93a26;
+  --accent-wash: #f3e1db;
+  --display: "EB Garamond", "Iowan Old Style", Georgia, serif;
+  --kanji: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --ui: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #18171a; --board: #201f23; --ink: #ebe6dc; --ink-soft: #a69f94;
+    --rule: #3b3834; --accent: #e3644b; --accent-wash: #3a221d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #18171a; --board: #201f23; --ink: #ebe6dc; --ink-soft: #a69f94;
+  --rule: #3b3834; --accent: #e3644b; --accent-wash: #3a221d; color-scheme: dark;
+}
+body {
+  margin: 0;
+  background: var(--paper); color: var(--ink); font-family: var(--ui); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 64px;
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+header { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; border-bottom: 1px solid var(--rule); padding-bottom: 20px; }
+.kanji { font-family: var(--kanji); font-size: 56px; line-height: 1; color: var(--accent); }
+header h1 { font-family: var(--display); font-weight: 600; font-size: 40px; line-height: 1.1; margin: 0; text-wrap: balance; }
+header p { margin: 6px 0 0; color: var(--ink-soft); max-width: 62ch; }
+header .titles { min-width: 0; flex: 1 1 320px; }
+nav { display: flex; gap: 8px 20px; flex-wrap: wrap; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+nav a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; }
+nav a:hover, nav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); outline: none; }
+
+section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
+section h2 { font-family: var(--display); font-weight: 600; font-size: 28px; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+section h2 .n { font-family: var(--ui); font-size: 13px; letter-spacing: .08em; color: var(--accent); }
+.lede { margin: 0; color: var(--ink-soft); max-width: 70ch; }
+.chapter { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .chapter { grid-template-columns: minmax(0, 1fr); } }
+.diagram { background: var(--board); border: 1px solid var(--rule); border-radius: 6px; overflow-x: auto; padding: 16px; min-height: 200px; }
+.diagram svg { display: block; margin: 0 auto; height: auto; }
+.diagram small { font-size: .8em; color: var(--ink-soft); }
+.diagram .error { color: var(--ink-soft); font-size: 13px; }
+.diagram.stepping g.node, .diagram.stepping .edgePaths path, .diagram.stepping g.edgeLabel { transition: opacity .25s; }
+.diagram.stepping g.node:not(.on), .diagram.stepping .edgePaths path:not(.on) { opacity: .16; }
+.diagram.stepping g.edgeLabel { opacity: .3; }
+.diagram g.node.on path, .diagram g.node.on rect, .diagram g.node.on polygon, .diagram g.node.on circle { stroke: var(--accent) !important; }
+.diagram .edgePaths path.on { stroke: var(--accent) !important; stroke-width: 2.2px !important; }
+@media (prefers-reduced-motion: reduce) { .diagram * { transition: none !important; } }
+
+.steps { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.steps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; counter-reset: s; }
+.steps button.step {
+  width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: transparent; border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px 10px 40px; position: relative;
+}
+.steps button.step::before {
+  counter-increment: s; content: counter(s); position: absolute; left: 12px; top: 10px;
+  font-size: 12px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+.steps button.step strong { display: block; font-weight: 600; }
+.steps button.step span { display: block; font-size: 13.5px; color: var(--ink-soft); }
+.steps button.step:hover { border-color: var(--ink-soft); }
+.steps button.step[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }
+.steps button.step[aria-pressed="true"]::before { color: var(--accent); }
+.steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.steps .controls { display: flex; gap: 8px; }
+.steps .controls button {
+  font: inherit; font-size: 13px; color: var(--ink); background: var(--board); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+.steps .controls button:hover { border-color: var(--ink-soft); }
+.hint { font-size: 12.5px; color: var(--ink-soft); margin: 0; }
+footer { color: var(--ink-soft); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="kanji" aria-hidden="true">宮殿</div>
+    <div class="titles">
+      <h1>Kyūden architecture</h1>
+      <p>The engine that plays Legend of the Five Rings LCG as a board: it enforces rounds, phases and framework steps, while the players apply the card rules. Pick a step beside a diagram to follow it.</p>
+    </div>
+    <nav aria-label="Diagrams">
+      <a href="#server">Server</a><a href="#client">Web client</a><a href="#scripts">Scripts and log</a><a href="#bus">Bus middlewares</a><a href="#transitions">Automatic transitions</a><a href="#events">Events and replays</a>
+    </nav>
+  </header>
+
+  <section id="server">
+    <h2><span class="n">I</span> The server</h2>
+    <p class="lede">Humans use the web client over the HTTP API; AI bots use the MCP server, where every public action is a tool. Both send the same Messenger messages, and the house bot plays through the same bus.</p>
+    <div class="chapter"><div class="diagram" data-d="0"></div><div class="steps" data-d="0"></div></div>
+  </section>
+
+  <section id="client">
+    <h2><span class="n">II</span> The web client</h2>
+    <p class="lede">Vue 3, vue-router, Vite and TypeScript in <code>front/</code>. Components stay thin: the logic lives in tested TypeScript under <code>lib/</code>, and only <code>api/</code> talks to the server.</p>
+    <div class="chapter"><div class="diagram" data-d="1"></div><div class="steps" data-d="1"></div></div>
+  </section>
+
+  <section id="scripts">
+    <h2><span class="n">III</span> Card scripts and the game log</h2>
+    <p class="lede">A script says what a card's text means for a game in progress, without deciding anything. The log records every change of the state, and each reader sees only what they know.</p>
+    <div class="chapter"><div class="diagram" data-d="2"></div><div class="steps" data-d="2"></div></div>
+  </section>
+
+  <section id="bus">
+    <h2><span class="n">IV</span> Middleware order of the message bus</h2>
+    <p class="lede"><code>default.bus</code> in <code>config/packages/messenger.yaml</code>. Each middleware wraps the ones below it, so the order is what gives the guarantees.</p>
+    <div class="chapter"><div class="diagram" data-d="3"></div><div class="steps" data-d="3"></div></div>
+  </section>
+
+  <section id="transitions">
+    <h2><span class="n">V</span> Guards and automatic transitions</h2>
+    <p class="lede">The <code>game</code> workflow moves on by itself. A handler only changes the state. <code>ProvinceRefillMiddleware</code> then refills the provinces scheduled for it, and <code>WorkflowTransitionMiddleware</code> asks the workflow which transitions are enabled and applies the automatic ones until the game waits for a player again. The guards are what make it wait.</p>
+    <div class="chapter"><div class="diagram" data-d="5"></div><div class="steps" data-d="5"></div></div>
+  </section>
+
+  <section id="events">
+    <h2><span class="n">VI</span> Events and replays</h2>
+    <p class="lede">Every action handled on a game is stored as an <code>Event</code>: the class of the message and its JSON payload, numbered by the version of the game. Since every random draw comes from the seeded generator of the game, dispatching the same events again should give the same game.</p>
+    <div class="chapter"><div class="diagram" data-d="4"></div><div class="steps" data-d="4"></div></div>
+  </section>
+
+  <footer>Drawn from <code>README.md</code> and <code>config/packages/messenger.yaml</code> of the Kyūden repository, November 2026.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+const DIAGRAMS = [
+  {
+    src: `flowchart LR
+  subgraph clients [Players]
+    web["Web client<br/><small>Vue 3 SPA</small>"]
+    agent["AI bot agent<br/><small>MCP client, API key</small>"]
+  end
+  subgraph server [FrankenPHP container]
+    api["HTTP API<br/><small>/api/…</small>"]
+    mcp["MCP server<br/><small>/api/mcp, one tool per action</small>"]
+    bus["Messenger bus<br/><small>lock, version, events, auto transitions</small>"]
+    handlers["Action handlers<br/><small>assertAvailable, then transitions</small>"]
+    wf["Workflows<br/><small>game + one per card type</small>"]
+    house["House bot<br/><small>plays on kernel.terminate</small>"]
+    hub["Mercure hub<br/><small>private topics</small>"]
+  end
+  db[("PostgreSQL<br/><small>state, events, log</small>")]
+  web -->|JSON + If-Match| api
+  agent -->|tools| mcp
+  mcp --> bus
+  api -->|dispatch| bus
+  house --> bus
+  bus --> handlers
+  handlers -->|transitions| wf
+  wf -->|state, events, log| db
+  bus -.->|game_updated| hub
+  hub -.->|notify| web
+  class bus,wf accent`,
+    steps: [
+      ['Players send actions', 'The web client calls the HTTP API; an AI bot calls the same actions as MCP tools.', 'web agent api mcp web>api agent>mcp'],
+      ['One action at a time', 'Each message is validated, the game row is locked, a stale version is rejected.', 'bus api>bus mcp>bus'],
+      ['Handlers drive workflows', 'A handler checks what the current step allows and applies transitions; listeners hold what depends on the step.', 'bus handlers wf bus>handlers handlers>wf'],
+      ['Everything is recorded', 'The state is saved, the message becomes an Event, replayable with the seeded randomizer of the game, and every change writes a log entry.', 'wf db wf>db'],
+      ['Clients are notified', 'After the commit, Mercure tells the players the version changed; they read their view and the log again, masked for them.', 'bus hub web api bus>hub hub>web web>api'],
+      ['The house bot plays', 'Once the response is sent, Kyūden no Karō reads the board and plays through the bus like any player.', 'house bus house>bus'],
+    ],
+  },
+  {
+    src: `flowchart LR
+  subgraph views [Views]
+    home["Home and newcomers<br/><small>clan, name, opponent</small>"]
+    lobby["Queue and invitations<br/><small>decks, EmeraldDB import</small>"]
+    account["Account and sign-in<br/><small>login, signup, OAuth</small>"]
+    watch["Watch games<br/><small>games in progress</small>"]
+    gamev["Game view<br/><small>board, bars, card dialog</small>"]
+  end
+  subgraph lib [lib/, pure logic]
+    session["Session<br/><small>guest or account token</small>"]
+    usegame["useGame<br/><small>view, log, hub, If-Match</small>"]
+    board["Board readers<br/><small>board, cardActions, playerBar, logText</small>"]
+  end
+  subgraph apil [api/]
+    client["API client<br/><small>request, problems, 401</small>"]
+    msgs["Typed messages<br/><small>generated from schemas</small>"]
+  end
+  backend["Symfony API<br/><small>/api/…</small>"]
+  hub["Mercure hub"]
+  home --> session
+  account --> session
+  lobby --> client
+  watch --> client
+  gamev --> usegame
+  gamev -->|renders| board
+  usegame -->|view data| board
+  usegame -->|actions| msgs
+  msgs --> client
+  session -->|token| client
+  client -->|HTTP| backend
+  hub -.->|game_updated| usegame
+  class gamev,usegame accent`,
+    steps: [
+      ['Pages', 'Views handle the way of the newcomers, accounts, the queue, invitations, watching and the game itself.', 'home lobby account watch gamev'],
+      ['Session', 'The browser keeps the token of a guest or an account; a token the API refuses is forgotten, and the user signs in again or starts over as a newcomer.', 'session client home>session account>session session>client'],
+      ['The game page', 'useGame loads the view and the log, follows the topic of the game on Mercure and reads both again after each notification, or after 15 quiet seconds.', 'gamev usegame hub backend gamev>usegame hub>usegame'],
+      ['Pure logic', 'The board, the actions of a card, the player bars, the text of the log and the rings are computed from the view in tested TypeScript.', 'board gamev usegame usegame>board gamev>board'],
+      ['Sending actions', 'Payloads are typed from the generated schemas and sent with the version seen; a 412 reads the game again.', 'usegame msgs client backend usegame>msgs msgs>client client>backend'],
+    ],
+  },
+  {
+    src: `flowchart LR
+  subgraph scripts [Card scripts]
+    script["Card script<br/><small>one class per card code</small>"]
+    registry["CardScriptRegistry<br/><small>by code, stateless</small>"]
+    active["ActiveCardsResolver<br/><small>cards the player controls or knows</small>"]
+    readers["Script readers<br/><small>PlayService, AbilityService, /api/cards, special actions</small>"]
+  end
+  subgraph log [Game log]
+    sources["Log sources<br/><small>card and game transitions, domain events</small>"]
+    logger["GameLogger<br/><small>template + params, per version</small>"]
+    params["LogParam visibility<br/><small>who knows each card or value</small>"]
+    logview["GameLogViewFactory<br/><small>masks per reader</small>"]
+  end
+  viewer(["Player or spectator"])
+  script -->|tagged| registry
+  registry -->|by code| readers
+  active -->|which cards| readers
+  sources --> logger
+  logger -->|at write time| params
+  params --> logview
+  readers -.->|special actions, timings| viewer
+  logview -.->|masked log| viewer
+  class readers,logger accent`,
+    steps: [
+      ['One script per card', 'A card whose text matters for the engine gets a script: its ability timings, the abilities it grants to the character it is attached to, its special actions.', 'script registry script>registry'],
+      ['Only known cards count', 'ActiveCardsResolver keeps the cards a player controls or whose face they already know, so a script reveals nothing secret.', 'active readers active>readers'],
+      ['Scripts inform, never decide', 'They feed the timings of events, the controller of an ability, the card catalogue and the special actions the client offers.', 'registry readers viewer registry>readers readers>viewer'],
+      ['Every change is logged', 'Card and game transitions write their log metadata; any other change of the state dispatches a domain event carrying #[GameLog].', 'sources logger sources>logger'],
+      ['Masked per reader', 'Who knows each card or value is computed when the entry is written, then the factory masks the log for each reader; spectators see only what is public.', 'logger params logview viewer logger>params params>logview logview>viewer'],
+    ],
+  },
+  {
+    src: `flowchart TD
+  msg>"Action message<br/><small>HTTP API, MCP tool, house bot, EventPlayer</small>"]
+  housebot["HouseBotMiddleware<br/><small>schedules the game for the bot</small>"]
+  validation["validation<br/><small>constraints of the message</small>"]
+  notify["GameUpdatedNotificationMiddleware<br/><small>notifies after the commit</small>"]
+  tx["doctrine_transaction<br/><small>commit or roll back</small>"]
+  lock["GameLockMiddleware<br/><small>SELECT … FOR UPDATE</small>"]
+  version["GameVersionMiddleware<br/><small>stale If-Match → 412</small>"]
+  gameover["GameEndedMiddleware<br/><small>no action once the game is over</small>"]
+  record["EventRecordingMiddleware<br/><small>version++, save the Event</small>"]
+  autotr["WorkflowTransitionMiddleware<br/><small>automatic transitions</small>"]
+  refillmw["ProvinceRefillMiddleware<br/><small>scheduled province refills</small>"]
+  handler(["Handler<br/><small>assertAvailable, then transitions</small>"])
+  msg --> housebot --> validation --> notify --> tx --> lock --> version --> gameover --> record --> autotr --> refillmw --> handler
+  class tx,lock accent`,
+    steps: [
+      ['Before anything is locked', 'The house bot notes the game and the Validator checks the payload, so an invalid message never touches the database.', 'msg housebot validation msg>housebot housebot>validation'],
+      ['Notify only after the commit', 'The notification middleware wraps the transaction: players hear about a change only once it is committed, and about nothing when the handling fails.', 'notify tx validation>notify notify>tx'],
+      ['Lock, then check', 'Inside the transaction the game row is locked, then a stale version or an ended game is rejected before the handling.', 'tx lock version gameover tx>lock lock>version version>gameover'],
+      ['Handle, refill, cascade', 'The handler runs, then the scheduled provinces are refilled if nothing is being resolved, then the enabled automatic transition of highest priority applies, again and again until none is enabled.', 'autotr refillmw handler record>autotr autotr>refillmw refillmw>handler'],
+      ['Record the event', 'Once the cascade is done, the version is incremented and the message saved as an Event, so the log entries of the automatic transitions share its version.', 'record gameover>record'],
+    ],
+  },
+  {
+    src: `flowchart LR
+  msg>"Action message<br/><small>API, MCP tool, house bot</small>"]
+  bus["Message bus<br/><small>handler + auto transitions</small>"]
+  record["EventRecordingMiddleware<br/><small>after the handling</small>"]
+  game["Game<br/><small>version, random engine state</small>"]
+  events[("events table<br/><small>game, version, class, JSON payload</small>")]
+  log["Game log<br/><small>what the players read</small>"]
+  eventplayer["EventPlayer<br/><small>deserialize, dispatch</small>"]
+  cli["app:event:play<br/><small>one message, typed by hand</small>"]
+  msg --> bus
+  bus --> record
+  record -->|version + 1| game
+  record -->|class + payload| events
+  bus -->|entries| log
+  events -->|read| eventplayer
+  cli --> eventplayer
+  eventplayer -->|dispatch again| bus
+  class record,eventplayer accent`,
+    steps: [
+      ['Recording', 'Once the handler and the automatic transitions are done, the middleware increments the version of the game and stores the message: its class and its JSON payload. Events are numbered from 1, unique by game and version.', 'msg bus record game events msg>bus bus>record record>game record>events'],
+      ['Secrets stay in the events', 'The payload holds everything, including the seed of CreateGame and the secret honor bids, so events are never shown to the players. They read the game log, masked for each of them.', 'events log bus>log'],
+      ['Deterministic by construction', 'CreateGame carries a seed; the game owns its random generator and saves the engine state with itself. Shuffles, first player, random discards and the ids of new cards and stacks all draw from it.', 'game record>game'],
+      ['Replaying a message', 'EventPlayer deserializes a stored event and dispatches it through the same bus. The expected version is a stamp outside the payload, so a replay never fails on it. A test checks the round trip through the serializer on one message, DeclareConflict.', 'events eventplayer cli bus events>eventplayer cli>eventplayer eventplayer>bus'],
+      ['What breaks a replay', 'A deck or the engine code changed since the game was played. Renaming a message is such a change: old events are not migrated.', 'events eventplayer events>eventplayer'],
+    ],
+  },
+  {
+    src: `flowchart LR
+  msg>"Action message<br/><small>e.g. CollectFate</small>"]
+  handler["Handler<br/><small>changes the state, may apply a transition</small>"]
+  refill["ProvinceRefillMiddleware<br/><small>scheduled refills, once nothing resolves</small>"]
+  subgraph mw [WorkflowTransitionMiddleware]
+    enabled{"Enabled<br/>transitions?"}
+    pick["Pick one<br/><small>auto only, highest priority</small>"]
+    apply["Apply it<br/><small>workflow apply()</small>"]
+  end
+  guards["Guard listeners<br/><small>every player passed, fate collected, victory…</small>"]
+  listeners["Transition and enter listeners<br/><small>do the step, open opportunities</small>"]
+  wait(["Stable<br/><small>waits for the players</small>"])
+  ambiguous["LogicException<br/><small>two at the same priority</small>"]
+  msg --> handler
+  handler --> refill
+  refill --> enabled
+  guards -.->|block| enabled
+  enabled -->|auto ones| pick
+  enabled -->|none| wait
+  pick --> apply
+  pick -.->|tie| ambiguous
+  apply -.->|runs| listeners
+  apply -->|again| enabled
+  class enabled,guards accent`,
+    steps: [
+      ['The handler changes the state', 'A message records what the player did: the fate they collected, their pass, their bid. The few transitions a player decides, such as conflict_declared, are applied by the handler itself; one that is not enabled is refused with a 409.', 'msg handler msg>handler'],
+      ['Refill first', 'Before the transitions, ProvinceRefillMiddleware refills the provinces the handlers have scheduled, once nobody is resolving an action, an interrupt or a reaction, and no duel is under way.', 'refill handler>refill'],
+      ['Guards decide what is enabled', 'Asking for the enabled transitions runs the guard listeners. Each reads the state and blocks its transition until its condition holds: AllPlayersPassedGuardListener for the steps where players pass, FateCollectedGuardListener, EndGameGuardListener…', 'guards enabled refill>enabled guards>enabled'],
+      ['One automatic transition wins', 'Only transitions marked auto count, and the one with the highest priority is applied. end_game has priority 100, so the game ends as soon as a player wins. Two at the same highest priority are a definition error.', 'enabled pick ambiguous enabled>pick pick>ambiguous'],
+      ['Applying runs the listeners', 'The transition writes its log entry, its transition listeners do the work of the framework step (drawing cards, transferring honor), and the enter listeners of the new place give the opportunities to act and reset the passes.', 'pick apply listeners pick>apply apply>listeners'],
+      ['Repeat until the game waits', 'The loop checks again after each transition, and stops when no automatic transition is enabled. Once both players have collected fate, fate_collected leads to play_cards_from_provinces, the first player becomes active, and dynasty_actions_passed stays blocked until both pass.', 'apply enabled wait apply>enabled enabled>wait'],
+    ],
+  },
+];
+
+const state = DIAGRAMS.map(() => ({ step: -1 }));
+let renderCount = 0;
+
+function token(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function buildSteps() {
+  document.querySelectorAll('.steps').forEach((box) => {
+    const d = +box.dataset.d;
+    const ol = document.createElement('ol');
+    DIAGRAMS[d].steps.forEach(([title, text], i) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'step'; b.id = `step-${d}-${i}`;
+      b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = '<strong></strong><span></span>';
+      b.querySelector('strong').textContent = title;
+      b.querySelector('span').textContent = text;
+      b.addEventListener('click', () => select(d, state[d].step === i ? -1 : i));
+      b.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); move(d, 1); }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); move(d, -1); }
+      });
+      li.appendChild(b); ol.appendChild(li);
+    });
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+    controls.innerHTML = '<button type="button" data-a="prev">Previous</button><button type="button" data-a="next">Next</button><button type="button" data-a="all">Show everything</button>';
+    controls.addEventListener('click', (e) => {
+      const a = e.target.closest('button')?.dataset.a;
+      if (a === 'prev') move(d, -1);
+      if (a === 'next') move(d, 1);
+      if (a === 'all') select(d, -1);
+    });
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.textContent = 'Arrow keys move between the steps.';
+    box.append(ol, controls, hint);
+  });
+}
+
+function move(d, delta) {
+  const n = DIAGRAMS[d].steps.length;
+  const cur = state[d].step;
+  const next = cur < 0 ? (delta > 0 ? 0 : n - 1) : Math.min(n - 1, Math.max(0, cur + delta));
+  select(d, next);
+  document.getElementById(`step-${d}-${next}`)?.focus();
+}
+
+function select(d, i) {
+  state[d].step = i;
+  document.querySelectorAll(`.steps[data-d="${d}"] button.step`).forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+  highlight(d);
+}
+
+function highlight(d) {
+  const box = document.querySelector(`.diagram[data-d="${d}"]`);
+  const i = state[d].step;
+  const parts = box._parts;
+  box.querySelectorAll('.on').forEach((el) => el.classList.remove('on'));
+  if (i < 0 || !parts) { box.classList.remove('stepping'); return; }
+  const wanted = DIAGRAMS[d].steps[i][2].split(' ');
+  let found = 0;
+  wanted.forEach((key) => (parts[key] || []).forEach((el) => { el.classList.add('on'); found++; }));
+  box.classList.toggle('stepping', found > 0);
+}
+
+function index(box) {
+  const parts = {};
+  const add = (k, el) => (parts[k] ||= []).push(el);
+  box.querySelectorAll('g.node').forEach((g) => {
+    const m = (g.id || '').match(/flowchart-([A-Za-z0-9]+)-\d+$/);
+    if (m) add(m[1], g);
+  });
+  box.querySelectorAll('.edgePaths path').forEach((p) => {
+    const id = p.getAttribute('data-id') || p.id || '';
+    const m = id.match(/L[-_]([A-Za-z0-9]+)[-_]([A-Za-z0-9]+)[-_]\d+$/);
+    if (m) add(`${m[1]}>${m[2]}`, p);
+  });
+  box._parts = parts;
+}
+
+async function renderAll() {
+  if (!window.mermaid) {
+    document.querySelectorAll('.diagram').forEach((b) => { b.innerHTML = '<p class="error">The diagrams could not be loaded. Reload the page to try again.</p>'; });
+    return;
+  }
+  const c = { paper: token('--paper'), board: token('--board'), ink: token('--ink'), soft: token('--ink-soft'), rule: token('--rule'), accent: token('--accent'), wash: token('--accent-wash') };
+  mermaid.initialize({
+    startOnLoad: false, theme: 'base', look: 'handDrawn', securityLevel: 'strict',
+    fontFamily: 'Barlow, Helvetica Neue, Arial, sans-serif',
+    themeVariables: {
+      background: c.board, primaryColor: c.paper, primaryBorderColor: c.ink, primaryTextColor: c.ink,
+      secondaryColor: c.paper, tertiaryColor: c.board, lineColor: c.soft, textColor: c.ink,
+      clusterBkg: c.board, clusterBorder: c.rule, edgeLabelBackground: c.board, fontSize: '15px',
+    },
+    flowchart: { htmlLabels: true, curve: 'basis', padding: 14, nodeSpacing: 36, rankSpacing: 48 },
+  });
+  for (let d = 0; d < DIAGRAMS.length; d++) {
+    const box = document.querySelector(`.diagram[data-d="${d}"]`);
+    const src = `${DIAGRAMS[d].src}\n  classDef accent stroke:${c.accent},stroke-width:2.5px,fill:${c.wash},color:${c.ink}`;
+    try {
+      const { svg } = await mermaid.render(`kd${d}r${renderCount++}`, src);
+      box.innerHTML = svg;
+      index(box);
+      highlight(d);
+    } catch (e) {
+      box.innerHTML = '<p class="error">This diagram could not be drawn.</p>';
+      console.error(e);
+    }
+  }
+}
+
+buildSteps();
+renderAll();
+try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll); } catch (e) {}
+new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
+</body>
+</html>

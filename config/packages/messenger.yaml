@@ -47,6 +47,9 @@ framework:
                     # belong to the version of the message that led to them
                     - 'App\Middleware\EventRecordingMiddleware'
                     - 'App\Middleware\WorkflowTransitionMiddleware'
+                    # right after the handling, before the automatic transitions: the provinces dynasty cards have left,
+                    # once nothing is being resolved
+                    - 'App\Middleware\ProvinceRefillMiddleware'
             # bus without middlewares to use in the message handlers
             transition.bus:
             # the tasks of the worker (src/Task), sent to the transport async: none of the middlewares of the actions,
