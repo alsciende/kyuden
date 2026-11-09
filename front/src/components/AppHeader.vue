@@ -26,12 +26,8 @@ const account = computed(() => (session.value?.username ? session.value : null))
       <span>New to Kyūden?</span>
       <RouterLink to="/" class="btn-link">Play a first game</RouterLink>
     </div>
-    <div v-else-if="route.name === 'signup'" class="returning">
-      <span>Already have an account?</span>
-      <RouterLink :to="{ name: 'login' }" class="btn btn-ghost">Sign in</RouterLink>
-    </div>
     <div v-else class="returning">
-      <span>Already play on Kyūden?</span>
+      <span>Already have an account?</span>
       <RouterLink :to="{ name: 'login' }" class="btn btn-ghost">Sign in</RouterLink>
     </div>
   </header>
