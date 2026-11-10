@@ -8,7 +8,8 @@ import CardName from '@/components/game/CardName.vue'
 import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
-import { PHASES, playerById, rings, stepOf, type Cards } from '@/lib/board'
+import { PHASES, playerById, rings, type Cards } from '@/lib/board'
+import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { othersResolving, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
@@ -39,7 +40,7 @@ const props = defineProps<{
 
 defineEmits<{ openLog: []; switchSides: []; leave: [] }>()
 
-const step = computed(() => stepOf(props.game.place, props.game.spectating))
+const step = computed(() => stepWithDuel(props.game))
 
 /** what the opponent resolves (every player, for a spectator): the viewer's own is in the panel of actions */
 const othersResolve = computed(() => othersResolving(props.game, props.cards))

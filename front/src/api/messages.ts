@@ -61,6 +61,13 @@ export interface BreakProvince {
 }
 
 /**
+ * Cancels the duel being resolved, at any step (Stay Your Hand): it ends without result, the secret bids of its honor dials forgotten, and the action window in which it was initiated goes on.
+ *
+ * Any player of the game can send it: the engine does not apply card effects.
+ */
+export type CancelDuel = Record<string, never>
+
+/**
  * The player chooses, during setup, the province put under their stronghold.
  */
 export interface ChooseStrongholdProvince {
@@ -1316,6 +1323,7 @@ export interface MessagePayloads {
   bid_honor: BidHonor
   bow_card: BowCard
   break_province: BreakProvince
+  cancel_duel: CancelDuel
   choose_stronghold_province: ChooseStrongholdProvince
   claim_imperial_favor: ClaimImperialFavor
   claim_ring: ClaimRing

@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import type { CardView, ConflictType, Element, GameView } from '@/api/game'
 import CharacterRow from '@/components/game/CharacterRow.vue'
 import ConflictField from '@/components/game/ConflictField.vue'
+import DuelField from '@/components/game/DuelField.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import ProvinceRow from '@/components/game/ProvinceRow.vue'
@@ -19,19 +20,24 @@ import {
   provinceToReveal,
   readOnly,
   rings,
+  sideSkill,
   stackOf,
   strongholdCandidates,
   viewer,
   type Cards,
 } from '@/lib/board'
+import { duelCardIdsOf, playableDuringDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
+import type { Effect } from '@/lib/playerBar'
 import type { Selection } from '@/lib/selection'
 import { vTip } from '@/lib/tooltip'
 
 /**
  * The board, laid out for the current step: what the player does not need now folds into a line, what they need
  * comes forward; a click on a line unfolds it until the next step. Declaring a conflict shows the opponent's
- * provinces, the rings and the characters; a conflict shows its two sides.
+ * provinces, the rings and the characters; a conflict shows its two sides; a duel takes the middle, the conflict it
+ * is resolved in folded into a line, and the hand dims what cannot be played during it (only interrupts and
+ * reactions).
  */
 const props = defineProps<{ game: GameView; cards: Cards; selection: Selection }>()
 
@@ -45,13 +51,14 @@ const emit = defineEmits<{
   reveal: [type: 'reveal_dynasty_card' | 'reveal_province', id: string]
   switchType: []
   switchRing: [element: Element]
+  effect: [effect: Effect]
 }>()
 
 const available = computed(() => new Set(props.game.available_actions))
 const me = computed(() => viewer(props.game))
 const opp = computed(() => opponent(props.game))
 
-type Mode = 'stronghold' | 'declare' | 'conflict' | 'board'
+type Mode = 'stronghold' | 'declare' | 'duel' | 'conflict' | 'board'
 
 const mode = computed<Mode>(() => {
   if (available.value.has('choose_stronghold_province')) {
@@ -60,14 +67,47 @@ const mode = computed<Mode>(() => {
   if (available.value.has('declare_conflict')) {
     return 'declare'
   }
+  if (props.game.duel !== null) {
+    return 'duel'
+  }
 
   return props.game.conflict === null ? 'board' : 'conflict'
 })
 
+/** the characters shown elsewhere than at home: in the conflict, in the duel (whose conflict is folded) */
 const participants = computed(() => {
   const conflict = props.game.conflict
 
-  return conflict === null ? [] : [...conflict.attacker_ids, ...conflict.defender_ids]
+  return [
+    ...(conflict === null ? [] : [...conflict.attacker_ids, ...conflict.defender_ids]),
+    ...duelCardIdsOf(props.game),
+  ]
+})
+
+/** the conflict a duel is resolved in, folded into a line: its type, its ring, its province and its skills */
+const conflictLine = computed(() => {
+  const conflict = props.game.conflict
+  if (conflict === null) {
+    return null
+  }
+  const attacker = props.game.players.find((player) => player.id === conflict.attacking_player_id)
+  const province = locate(props.game, conflict.province_id)?.card
+  const skill = (playerId: string | undefined) => {
+    if (playerId === conflict.attacking_player_id) {
+      return conflict.attacker_skill ?? sideSkill(props.game, props.cards, conflict.attacker_ids, conflict.type)
+    }
+
+    return conflict.defender_skill ?? sideSkill(props.game, props.cards, conflict.defender_ids, conflict.type)
+  }
+
+  return {
+    type: conflict.type,
+    ring: conflict.ring,
+    attacker,
+    province: province?.code ? (props.cards[province.code]?.name ?? 'a province') : 'a face-down province',
+    oppSkill: skill(opp.value?.id),
+    mySkill: skill(me.value.id),
+  }
 })
 
 const myHome = computed(() =>
@@ -317,6 +357,99 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
           <span class="strip-end">No action while declaring <span class="chevron" aria-hidden="true">▾</span></span>
         </button>
       </div>
+    </template>
+
+    <!-- a duel: in the middle, the conflict it is resolved in folded -->
+    <template v-else-if="mode === 'duel'">
+      <section v-if="unfolded.includes('opponent')" class="zone" aria-label="Opponent at home">
+        <span class="label"
+          ><PlayerChip :player="opp" :viewer-id="game.viewer_id" /> · at home and provinces
+          <button type="button" class="btn-link fold" @click="fold('opponent')">Fold</button></span
+        >
+        <div class="unfolded">
+          <ProvinceRow v-if="opp" :game="game" :player="opp" :cards="cards" size="small" @open="emit('open', $event)" />
+          <CharacterRow :characters="oppHome" :cards="cards" :mine="false" @open="emit('open', $event)" />
+        </div>
+      </section>
+      <div v-else class="strip" @click="unfoldStrip($event, 'opponent')">
+        <span class="label"><PlayerChip :player="opp" :viewer-id="game.viewer_id" /> · at home</span>
+        <CharacterRow :characters="oppHome" :cards="cards" :mine="false" size="small" @open="emit('open', $event)" />
+        <button type="button" class="strip-end strip-toggle" :aria-expanded="false">
+          {{ oppIntact }} provinces intact <span class="chevron" aria-hidden="true">▾</span>
+        </button>
+      </div>
+
+      <template v-if="conflictLine">
+        <section v-if="unfolded.includes('conflict')" class="zone" aria-label="Conflict">
+          <span class="label"
+            >Conflict <button type="button" class="btn-link fold" @click="fold('conflict')">Fold</button></span
+          >
+          <ConflictField
+            :game="game"
+            :cards="cards"
+            @open="openInConflict"
+            @switch-type="emit('switchType')"
+            @switch-ring="emit('switchRing', $event)"
+          />
+        </section>
+        <button v-else type="button" class="strip" :aria-expanded="false" @click="unfold('conflict')">
+          <span class="label">Conflict</span>
+          <span class="strip-text"
+            ><span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[conflictLine.type] }}</span>
+            <span class="capitalize">{{ conflictLine.type }}</span> conflict for the
+            <span class="icon" aria-hidden="true">{{ ELEMENT_ICONS[conflictLine.ring] }}</span>
+            {{ ELEMENT_NAMES[conflictLine.ring] }} ring ·
+            <PlayerChip :player="conflictLine.attacker" :viewer-id="game.viewer_id" short /> attacks
+            {{ conflictLine.province }}</span
+          >
+          <span class="strip-end"
+            ><b
+              ><PlayerChip :player="opp" :viewer-id="game.viewer_id" short /> {{ conflictLine.oppSkill }} ·
+              <PlayerChip :player="me" :viewer-id="game.viewer_id" short /> {{ conflictLine.mySkill }}</b
+            >
+            <span class="chevron" aria-hidden="true">▾</span></span
+          >
+        </button>
+      </template>
+
+      <DuelField :game="game" :cards="cards" @open="emit('open', $event)" @effect="emit('effect', $event)" />
+
+      <section v-if="unfolded.includes('me')" class="zone" aria-label="You at home">
+        <span class="label"
+          ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home and provinces
+          <button type="button" class="btn-link fold" @click="fold('me')">Fold</button></span
+        >
+        <div class="unfolded">
+          <CharacterRow :characters="myHome" :cards="cards" :mine="true" @open="emit('open', $event)" />
+          <ProvinceRow :game="game" :player="me" :cards="cards" size="small" @open="emit('open', $event)" />
+        </div>
+      </section>
+      <div v-else class="strip" @click="unfoldStrip($event, 'me')">
+        <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · at home</span>
+        <CharacterRow :characters="myHome" :cards="cards" :mine="true" size="small" @open="emit('open', $event)" />
+        <button type="button" class="strip-end strip-toggle" :aria-expanded="false">
+          {{ myIntact }} provinces intact <span class="chevron" aria-hidden="true">▾</span>
+        </button>
+      </div>
+
+      <section class="zone hand" aria-label="Your hand">
+        <span class="label"
+          >{{ handOwner }} · {{ hand.length }} cards<template v-if="!readOnly(game)">
+            · during a duel, only interrupts and reactions</template
+          ></span
+        >
+        <div class="row">
+          <GameCard
+            v-for="card in hand"
+            :key="card.id"
+            :card="card"
+            :cards="cards"
+            :mine="true"
+            :muted="!readOnly(game) && !playableDuringDuel(card.code, cards)"
+            @click="emit('open', card.id)"
+          />
+        </div>
+      </section>
     </template>
 
     <!-- a conflict -->
@@ -730,6 +863,10 @@ div.strip {
 
 .chevron {
   margin-left: 6px;
+}
+
+.capitalize {
+  text-transform: capitalize;
 }
 
 .fold {

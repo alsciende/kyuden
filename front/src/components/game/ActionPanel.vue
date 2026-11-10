@@ -1,31 +1,28 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 
-import type { ConflictType, GameView, Send } from '@/api/game'
+import type { GameView, Send } from '@/api/game'
 import AbandonmentPrompt from '@/components/game/AbandonmentPrompt.vue'
 import CardText from '@/components/game/CardText.vue'
 import GameCard from '@/components/game/GameCard.vue'
-import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
   BROKEN_TO_ATTACK_STRONGHOLD,
   strongholdTooEarly,
   stepOf,
-  charactersInPlay,
   gameEnded,
   gloryCount,
   locate,
   opponent,
-  printed,
   provinceStrength,
   provinceToReveal,
   sideSkill,
-  skillOf,
   strongholdFate,
   resultTitle,
   victoryText,
   viewer,
   type Cards,
 } from '@/lib/board'
+import { duelCharacters, duelStatistic, statisticName } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
 import { resolvingOf, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
@@ -128,26 +125,8 @@ function prefill(): void {
     }
   }
   values.glory = gloryCount(props.game, me.value, props.cards)
-  values.statistic = duelStatistic()
-}
-
-function duelStatistic(): number {
-  const duel = props.game.duel
-  if (duel === null) {
-    return 0
-  }
-  const ids = duel.challenger_id === me.value.id ? duel.challenger_card_ids : duel.challenged_card_ids
-  const statistic = charactersInPlay(me.value)
-    .filter((character) => ids.includes(character.card.id))
-    .reduce((total, character) => {
-      if (duel.type === 'glory') {
-        return total + printed(character.card.code ? props.cards[character.card.code]?.glory : null)
-      }
-
-      return total + skillOf(character, props.cards, duel.type)
-    }, 0)
-
-  return statistic + (me.value.honor_bid ?? 0)
+  values.statistic =
+    props.game.duel === null ? 0 : duelStatistic(duelCharacters(props.game, me.value.id), props.cards, props.game.duel)
 }
 
 // the prefilled values follow the game until the player sends them
@@ -204,12 +183,18 @@ async function declareStrengths(): Promise<void> {
 
 const toReveal = computed(() => provinceToReveal(props.game))
 
-const duel = computed(() => props.game.duel)
-const DUEL_TYPES: Record<ConflictType | 'glory', string> = {
-  military: 'Military',
-  political: 'Political',
-  glory: 'Glory',
-}
+/** the statistic the viewer declares in the duel, and the names of their duelists */
+const duelDeclaration = computed(() => {
+  const duel = props.game.duel
+  if (duel === null) {
+    return null
+  }
+  const names = duelCharacters(props.game, me.value.id)
+    .map((character) => cardName(character.card.id))
+    .join(', ')
+
+  return { statistic: statisticName(duel).toLowerCase(), names }
+})
 
 const nothing = computed(
   () =>
@@ -243,37 +228,6 @@ const nothing = computed(
     <div v-if="status" class="status" :class="{ mine: status.mine }"><span class="dot" />{{ status.text }}</div>
 
     <AbandonmentPrompt v-if="!ended" :sending="sending" />
-
-    <section v-if="duel" class="duel" aria-label="Duel">
-      <span class="label">{{ DUEL_TYPES[duel.type] }} duel</span>
-      <p>
-        <PlayerChip
-          :player="game.players.find((p) => p.id === duel!.challenger_id)"
-          :viewer-id="game.viewer_id"
-          short
-        />
-        {{ duel.challenger_card_ids.map(cardName).join(', ') }}
-        <template v-if="duel.challenger_statistic !== null"> · {{ duel.challenger_statistic }}</template>
-      </p>
-      <p>
-        <PlayerChip
-          :player="game.players.find((p) => p.id === duel!.challenged_id)"
-          :viewer-id="game.viewer_id"
-          short
-        />
-        {{ duel.challenged_card_ids.map(cardName).join(', ') }}
-        <template v-if="duel.challenged_statistic !== null"> · {{ duel.challenged_statistic }}</template>
-      </p>
-      <p v-if="duel.resolved" class="hint">
-        {{
-          duel.winner_id === null
-            ? 'A tie.'
-            : duel.winner_id === me.id
-              ? 'You win the duel.'
-              : 'The opponent wins the duel.'
-        }}
-      </p>
-    </section>
 
     <section v-if="resolving" class="resolving" aria-label="What you are resolving">
       <div class="resolving-card">
@@ -532,10 +486,11 @@ const nothing = computed(
       @submit.prevent="send('declare_duel_statistic', { statistic: values.statistic })"
     >
       <label class="field-row">
-        <span>Your dueling statistic</span>
+        <span>Your {{ duelDeclaration?.statistic }} of {{ duelDeclaration?.names }}</span>
         <input v-model.number="values.statistic" class="number" type="number" min="0" />
       </label>
       <button type="submit" class="btn btn-primary" :disabled="sending">Declare {{ values.statistic }}</button>
+      <span class="hint">Prefilled from the cards, without your honor bid: the engine adds it.</span>
     </form>
 
     <button
@@ -547,6 +502,9 @@ const nothing = computed(
     >
       End the duel
     </button>
+    <p v-if="available.has('end_duel')" class="hint">
+      Once its results are applied: either duelist ends it, and the action window goes on.
+    </p>
 
     <p v-if="hint" class="hint">{{ hint }}</p>
     <p v-else-if="nothing && !status" class="hint">Nothing to do for now.</p>
@@ -783,16 +741,6 @@ const nothing = computed(
 
 .two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.duel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border: 1.5px solid var(--ink);
-  border-radius: 2px;
-  font-size: 14px;
 }
 
 .label {

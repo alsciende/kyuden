@@ -21,6 +21,7 @@ import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } fro
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf, isRedistribution } from '@/lib/inspection'
 import { mulliganWindow } from '@/lib/mulligan'
+import type { Effect } from '@/lib/playerBar'
 import { closeCardImage, viewedCode } from '@/lib/cardImage'
 import { hidePreview } from '@/lib/preview'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
@@ -199,6 +200,13 @@ function switchRing(element: Element): void {
   }
 }
 
+/** an effect offered on the board (cancelling the duel) */
+function runEffect(effect: Effect): void {
+  if (!sending.value) {
+    void send(effect.type, effect.payload as never)
+  }
+}
+
 const ended = computed(() => game.value !== null && gameEnded(game.value) && !game.value.spectating)
 const result = computed(() =>
   game.value === null ? null : { title: resultTitle(game.value), text: victoryText(game.value) },
@@ -281,6 +289,7 @@ const problem = computed(() => {
       @reveal="reveal"
       @switch-type="switchType"
       @switch-ring="switchRing"
+      @effect="runEffect"
     />
     <GameSidebar
       class="middle"

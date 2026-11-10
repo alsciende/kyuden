@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "cancel_duel",
+    "description": "Cancels the duel being resolved, at any step (Stay Your Hand): it ends without result, the secret bids of its honor dials forgotten, and the action window in which it was initiated goes on.\n\nAny player of the game can send it: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

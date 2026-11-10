@@ -10,7 +10,7 @@ import { groupSpecial, neededCount, specialActions } from '@/lib/specialActions'
  * The special actions (`lib/specialActions.ts`) of a popover of the bars, behind a "+" with the number of those the
  * cards of the viewer need: these first, with the cards they are for, then every other one on demand. Opened at once
  * when the popover offers nothing else (`open`). A special action offered by a form of the popover (`forms`: switching
- * a ring) shows that form in the slot named after its type.
+ * a ring) shows that form in the slot named after its type. On the board (`floating`), they open over it.
  */
 const props = defineProps<{
   effects: Effect[]
@@ -20,6 +20,8 @@ const props = defineProps<{
   /** the popover has no other action: no "+", the actions are shown at once */
   open?: boolean
   forms?: string[]
+  /** the actions open in a panel over what follows, below the "+" (the board), rather than below it in the flow */
+  floating?: boolean
 }>()
 
 const emit = defineEmits<{ run: [effect: Effect] }>()
@@ -70,7 +72,7 @@ const sections = computed(() => {
       <span v-if="needed && !expanded" class="badge" aria-hidden="true">{{ needed }}</span>
     </button>
 
-    <template v-if="shown">
+    <div v-if="shown" class="content" :class="{ floating }">
       <div v-for="section in sections" :key="section.key" class="section">
         <span class="label">{{ section.label }}</span>
         <span v-if="section.key === 'others'" class="hint">
@@ -101,15 +103,36 @@ const sections = computed(() => {
       >
         {{ everyAction ? 'Only the actions for your cards' : 'Show every action' }}
       </button>
-    </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .special-effects {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.content.floating {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 11;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: var(--card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
 }
 
 .toggle {
