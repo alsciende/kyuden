@@ -68,6 +68,20 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
   }
 }
 
+/**
+ * The honor bid of a player, shown in the window of their name whatever the phase (cards refer to it after the bid):
+ * the dial last revealed (draw phase or duel), or the one being chosen, its value for its owner only.
+ */
+export function honorBidText(player: PlayerView): string {
+  if (player.honor_bid_selected) {
+    return player.pending_honor_bid === null
+      ? 'Bid chosen, not revealed yet'
+      : `Bid ${player.pending_honor_bid}, not revealed yet`
+  }
+
+  return player.honor_bid === null ? 'No honor bid yet' : `Honor bid: ${player.honor_bid}`
+}
+
 /** the stronghold province can be attacked once three of the other provinces of its player are broken */
 const BROKEN_FOR_STRONGHOLD = 3
 
@@ -108,7 +122,7 @@ export type BarStat =
   | 'imperial_favor'
   /** the conflicts the player may still declare */
   | 'conflicts'
-  /** the player themselves, their name in their bar: what they do with the game */
+  /** the player themselves, their name in their bar: their honor bid, and what the viewer does with the game */
   | 'player'
 
 /** the values whose effects take no amount */

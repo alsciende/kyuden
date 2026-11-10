@@ -4,7 +4,7 @@ import GameCard from '@/components/game/GameCard.vue'
 import UnderPile from '@/components/game/UnderPile.vue'
 
 /**
- * Characters with their attachments, tucked under them, after the cards of the default slot (e.g. the contested
+ * Characters with their attachments in a row below them (not over the card: its skills stay readable), after the cards of the default slot (e.g. the contested
  * province), with the cards placed under them (`UnderPile.vue`). In a selection, the characters that can be chosen are the
  * targets of the click; the others are dimmed.
  */
@@ -39,37 +39,35 @@ function click(id: string, selectable: string[] | null): void {
   <div class="characters" :class="size">
     <slot />
     <div v-for="character in characters" :key="character.stack.id" class="unit">
-      <UnderPile :host="character.card" :cards="cards" :mine="mine" :size="size" @open="emit('open', $event)">
-        <GameCard
-          :card="character.card"
-          :cards="cards"
-          :mine="mine"
-          :size="size"
-          :attachments="character.attachments"
-          :selected="selectedIds.includes(character.card.id)"
-          :muted="selectable !== null && !selectable.includes(character.card.id)"
-          :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"
-          @click="click(character.card.id, selectable)"
-        />
-      </UnderPile>
-      <UnderPile
-        v-for="attachment in character.attachments"
-        :key="attachment.id"
-        :host="attachment"
-        :cards="cards"
-        :mine="mine"
-        size="small"
-        @open="emit('open', $event)"
-      >
-        <GameCard
-          class="attachment"
-          :card="attachment"
+      <!-- the characters on one line, bowed ones at its foot, whatever hangs below them -->
+      <div class="slot">
+        <UnderPile :host="character.card" :cards="cards" :mine="mine" :size="size" @open="emit('open', $event)">
+          <GameCard
+            :card="character.card"
+            :cards="cards"
+            :mine="mine"
+            :size="size"
+            :attachments="character.attachments"
+            :selected="selectedIds.includes(character.card.id)"
+            :muted="selectable !== null && !selectable.includes(character.card.id)"
+            :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"
+            @click="click(character.card.id, selectable)"
+          />
+        </UnderPile>
+      </div>
+      <div v-if="character.attachments.length" class="attachments">
+        <UnderPile
+          v-for="attachment in character.attachments"
+          :key="attachment.id"
+          :host="attachment"
           :cards="cards"
           :mine="mine"
           size="small"
-          @click="emit('open', attachment.id)"
-        />
-      </UnderPile>
+          @open="emit('open', $event)"
+        >
+          <GameCard :card="attachment" :cards="cards" :mine="mine" size="small" @click="emit('open', attachment.id)" />
+        </UnderPile>
+      </div>
     </div>
     <p v-if="characters.length === 0" class="none">No character</p>
   </div>
@@ -80,7 +78,7 @@ function click(id: string, selectable: string[] | null): void {
   display: flex;
   flex-wrap: wrap;
   gap: 18px 22px;
-  align-items: flex-end;
+  align-items: flex-start;
   min-height: 118px;
 }
 
@@ -95,12 +93,25 @@ function click(id: string, selectable: string[] | null): void {
 
 .unit {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* room for the word on the character (its tag, below it) */
+  gap: 14px;
+}
+
+.slot {
+  min-height: 118px;
+  display: flex;
   align-items: flex-end;
 }
 
-.attachment {
-  margin-left: -18px;
-  margin-bottom: -10px;
+.small .slot {
+  min-height: 81px;
+}
+
+.attachments {
+  display: flex;
+  gap: 6px;
 }
 
 .none {

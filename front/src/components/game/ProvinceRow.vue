@@ -8,6 +8,7 @@ import GameCard from '@/components/game/GameCard.vue'
 import UnderPile from '@/components/game/UnderPile.vue'
 import { printed, provinceCards, provinces, type Cards } from '@/lib/board'
 import { hidePreview, showPreview } from '@/lib/preview'
+import { vTip } from '@/lib/tooltip'
 import { useCardsUnder } from '@/lib/underneath'
 
 /**
@@ -49,6 +50,8 @@ const list = computed(() =>
       name: printedCard?.name ?? (card?.code === null ? 'Face-down province' : 'Province'),
       strength: printedCard ? printed(printedCard.strength) : null,
       hidden: card?.code === null,
+      /** face down, its owner knowing it: the opponent has not seen it */
+      secret: card !== null && card.code !== null && card.orientation === 'face_down',
       stronghold: province.stronghold !== null,
       selectable: card !== null && props.selectable !== null && props.selectable.includes(card.id),
       /** the cards on the province, the top first: listed when there are several */
@@ -181,6 +184,7 @@ function clickProvince(id: string, selectable: boolean): void {
           class="tag"
           :class="{
             hidden: item.hidden,
+            secret: item.secret,
             broken: item.province.broken,
             selectable: item.selectable,
             selected: item.card.id === selectedId,
@@ -194,6 +198,7 @@ function clickProvince(id: string, selectable: boolean): void {
           <span class="tag-name">{{ item.name }}</span>
           <span v-if="item.province.broken" class="tag-value">Broken</span>
           <span v-else-if="item.strength !== null" class="tag-value">{{ item.strength }}</span>
+          <span v-if="item.secret" v-tip="'Not revealed: Opp. has not seen it'" class="tag-state">Face down</span>
           <span v-if="item.stronghold" class="visually-hidden">(stronghold province)</span>
         </button>
       </UnderPile>
@@ -484,9 +489,10 @@ function clickProvince(id: string, selectable: boolean): void {
   border-top: 1.5px solid var(--ink);
   background: transparent;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 6px;
+  gap: 2px 6px;
   font-size: 11px;
   text-align: left;
   cursor: pointer;
@@ -511,6 +517,19 @@ function clickProvince(id: string, selectable: boolean): void {
 
 .tag-value {
   font-weight: 700;
+}
+
+.tag-state {
+  flex-basis: 100%;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.secret {
+  border-top-style: dashed;
 }
 
 .hidden .tag-name {

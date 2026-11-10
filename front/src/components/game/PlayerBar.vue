@@ -11,7 +11,7 @@ import SpecialEffects from '@/components/game/SpecialEffects.vue'
 import { nameOf as playerName, readOnly, setAsideNote, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
-import { playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat, type Effect } from '@/lib/playerBar'
+import { honorBidText, playerBar, playerEffects, WITHOUT_AMOUNT, type BarStat, type Effect } from '@/lib/playerBar'
 import { specialActions } from '@/lib/specialActions'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { vTip } from '@/lib/tooltip'
@@ -23,7 +23,8 @@ import { vTip } from '@/lib/tooltip'
  * have removed from the game, once there are some (mockup: screen 1 of `LdtL4NT1SnDLTzRZpz376x`); the Imperial Favor
  * and the first player token one above the other, so that the bar fits the width of an iPad mini. A click on a value
  * opens a popover with the effects on it, or the cards of a discard pile, which open like the cards of the board; a
- * click on a claimed ring opens its window, as in the bar on the right.
+ * click on a claimed ring opens its window, as in the bar on the right. A click on the name of a player tells their honor
+ * bid, and lets the viewer concede from their own.
  */
 const props = defineProps<{
   game: GameView
@@ -59,7 +60,7 @@ const TITLES: Record<BarStat, string> = {
   first_player: 'First player token',
   imperial_favor: 'Imperial Favor',
   conflicts: 'Conflicts',
-  player: 'Game',
+  player: 'Player',
 }
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
@@ -256,7 +257,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   >
     <div class="who">
       <button
-        v-if="mine && !readOnly(game)"
         type="button"
         class="name"
         :class="{ on: open === 'player' }"
@@ -266,7 +266,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       >
         {{ player.name }}
       </button>
-      <span v-else class="name" :style="{ background: tint }">{{ player.name }}</span>
     </div>
 
     <!-- the values of the player, centered in the bar -->
@@ -454,6 +453,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <p v-else-if="open === 'provinces'" class="tip-text">{{ bar.strongholdTip }}</p>
 
         <template v-else>
+          <p v-if="open === 'player'" class="tip-text">{{ honorBidText(player) }}</p>
           <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
             <span>Amount</span>
             <button type="button" class="step" aria-label="Less" :disabled="amount <= 0" @click="amount--">−</button>
@@ -481,7 +481,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             :open="!basicEffects.length"
             @run="runEffect"
           />
-          <p v-if="!effects.length" class="hint">Nothing to do now.</p>
+          <p v-if="!effects.length && open !== 'player'" class="hint">Nothing to do now.</p>
         </template>
 
         <p v-if="error" class="error" role="alert">{{ error }}</p>

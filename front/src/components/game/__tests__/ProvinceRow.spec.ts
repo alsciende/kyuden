@@ -52,6 +52,23 @@ describe('ProvinceRow', () => {
     expect(wrapper.find('.popover').exists()).toBe(false)
   })
 
+  it('marks the face-down provinces its owner knows, not those nobody sees', () => {
+    const owner = player('me', [
+      stack('regular_province', [card('raid', { side: 'province', orientation: 'face_down' })]),
+      stack('regular_province', [card('garden', { side: 'province' })]),
+    ])
+    const opponent = player('opp', [
+      stack('regular_province', [card(null, { side: 'province', orientation: 'face_down' })]),
+    ])
+    const shown = (who: typeof owner) =>
+      mount(ProvinceRow, { props: { game: game(owner, opponent), player: who, cards } })
+        .findAll('.tag')
+        .map((tag) => tag.find('.tag-state').exists())
+
+    expect(shown(owner)).toEqual([true, false])
+    expect(shown(opponent)).toEqual([false])
+  })
+
   it('hides the badge while a province is chosen', () => {
     const wrapper = mount(ProvinceRow, { props: { game: view, player: me, cards, selectable: [] } })
 

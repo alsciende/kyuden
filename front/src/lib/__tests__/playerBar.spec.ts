@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { playerBar, playerEffects } from '@/lib/playerBar'
+import { honorBidText, playerBar, playerEffects } from '@/lib/playerBar'
 
 import { card, game, player, stack } from './gameFixture'
 
@@ -94,6 +94,17 @@ describe('playerBar', () => {
 
     expect(playerBar(view, me)).toMatchObject({ firstPlayer: true, notes: [] })
     expect(playerBar({ ...view, place: 'draw_phase_action_window' }, me).notes).toEqual(['Bid 3'])
+  })
+})
+
+describe('honorBidText', () => {
+  it('tells the bid revealed, the one being chosen (its value to its owner only), or none', () => {
+    expect(honorBidText(player('me', [], { honor_bid: 3 }))).toBe('Honor bid: 3')
+    expect(honorBidText(player('me', [], { honor_bid_selected: true, pending_honor_bid: 2 }))).toBe(
+      'Bid 2, not revealed yet',
+    )
+    expect(honorBidText(player('opp', [], { honor_bid_selected: true }))).toBe('Bid chosen, not revealed yet')
+    expect(honorBidText(player('opp'))).toBe('No honor bid yet')
   })
 })
 
