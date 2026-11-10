@@ -125,11 +125,7 @@ class ApiOAuthController extends AbstractController
 
         $limit = $this->ipLimiter->create($request->getClientIp())->consume();
         if (! $limit->isAccepted()) {
-            $retryAfter = max(1, $limit->getRetryAfter()->getTimestamp() - time());
-            $response = $this->problem(Response::HTTP_TOO_MANY_REQUESTS, 'too_many_attempts', "Too many attempts to sign in: try again in {$retryAfter} seconds.");
-            $response->headers->set('Retry-After', (string) $retryAfter);
-
-            return $response;
+            return $this->tooManyAttempts($limit, 'Too many attempts to sign in: try again in %d seconds.');
         }
 
         try {

@@ -71,6 +71,8 @@ async function enter(): Promise<void> {
   } catch (problem) {
     if (problem instanceof ApiProblem && problem.type === 'invalid_invitation') {
       state.value = 'invalid'
+    } else if (problem instanceof ApiProblem && problem.status === 429) {
+      error.value = 'Too many players came from your network lately. Please try again later.'
     } else {
       error.value = 'The queue cannot be joined: try again.'
     }

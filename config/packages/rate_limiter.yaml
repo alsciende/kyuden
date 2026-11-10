@@ -10,3 +10,8 @@ framework:
             limit: 20
             interval: '1 minute'
 
+        # the creations of users (POST /api/guests, POST /api/accounts): each attempt counts, by IP
+        user_creation_ip:
+            policy: sliding_window
+            limit: 30
+            interval: '1 hour'

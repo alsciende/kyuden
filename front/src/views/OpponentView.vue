@@ -32,10 +32,13 @@ async function search(): Promise<void> {
     ])
     newcomer.game = created
   } catch (exception) {
-    error.value =
-      exception instanceof ApiProblem && exception.type === 'bot_unavailable'
-        ? 'No opponent is available right now. Please try again in a moment.'
-        : 'The game could not be created. Please try again.'
+    if (exception instanceof ApiProblem && exception.type === 'bot_unavailable') {
+      error.value = 'No opponent is available right now. Please try again in a moment.'
+    } else if (exception instanceof ApiProblem && exception.status === 429) {
+      error.value = 'Too many players came from your network lately. Please try again later.'
+    } else {
+      error.value = 'The game could not be created. Please try again.'
+    }
   }
 }
 

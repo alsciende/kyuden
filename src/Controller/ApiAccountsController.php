@@ -14,10 +14,12 @@ use App\View\Model\AccountView;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -28,7 +30,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * The accounts the humans sign in to (`{"username": ..., "password": ..., "clan": ...}`, the preferred clan, a Great
  * Clan). A guest sends their token and keeps their user, name included; anyone else also sends their name at court
  * (`"name"`) and gets a new user. The account gets a copy of the starter deck of its clan. The response holds a new
- * session token. Public. Errors are problem details (RFC 9457).
+ * session token. Public. Each well-formed attempt counts against the limit of the creations of users from its IP,
+ * shared with `POST /api/guests` (429 `too_many_attempts`). Errors are problem details (RFC 9457).
  */
 class ApiAccountsController extends AbstractController
 {
@@ -39,6 +42,8 @@ class ApiAccountsController extends AbstractController
         private readonly AccessTokenIssuer $accessTokenIssuer,
         private readonly EntityManagerInterface $entityManager,
         private readonly ValidatorInterface $validator,
+        #[Target('user_creation_ip')]
+        private readonly RateLimiterFactoryInterface $userCreationLimiter,
     ) {
     }
 
@@ -60,6 +65,11 @@ class ApiAccountsController extends AbstractController
         if ($violations !== []) {
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Invalid account.', ['violations' => $violations]);
         }
+        $limit = $this->userCreationLimiter->create($request->getClientIp())->consume();
+        if (! $limit->isAccepted()) {
+            return $this->tooManyAttempts($limit, ApiGuestsController::TOO_MANY_USERS);
+        }
+
         /** @var array{username: string, password: string, clan: string, name?: string} $body */
         $accountRequest = new AccountRequest($body['username'], $body['password'], $body['clan'], isset($body['name']) ? trim($body['name']) : null);
 

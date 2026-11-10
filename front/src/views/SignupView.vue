@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { ApiProblem } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import ClanPicker from '@/components/ClanPicker.vue'
@@ -57,7 +58,10 @@ async function submit(): Promise<void> {
     await signUp(username.value, password.value, clan.value)
     await router.push({ name: 'account', query: { created: '1' } })
   } catch (problem) {
-    errors.value = formErrors(problem)
+    errors.value =
+      problem instanceof ApiProblem && problem.status === 429
+        ? { form: 'Too many accounts were created from your network lately. Please try again later.' }
+        : formErrors(problem)
   } finally {
     sending.value = false
   }

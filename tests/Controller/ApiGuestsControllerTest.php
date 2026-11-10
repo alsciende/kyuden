@@ -9,14 +9,27 @@ use App\Entity\User;
 use App\Enum\UserType;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
 
 class ApiGuestsControllerTest extends AbstractKernelTestCase
 {
-    private function request(string $method, string $uri, mixed $body = null, ?string $token = null): Response
+    /**
+     * The attempts are counted in a cache that outlives the test: each test starts with none.
+     */
+    #[Before]
+    protected function forgetAttempts(): void
+    {
+        $cache = self::getContainer()->get('cache.rate_limiter');
+        self::assertInstanceOf(CacheItemPoolInterface::class, $cache);
+        $cache->clear();
+    }
+
+    private function request(string $method, string $uri, mixed $body = null, ?string $token = null, string $ip = '203.0.113.1'): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
@@ -28,6 +41,7 @@ class ApiGuestsControllerTest extends AbstractKernelTestCase
             server: array_filter([
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_AUTHORIZATION' => $token === null ? null : 'Bearer ' . $token,
+                'REMOTE_ADDR' => $ip,
             ]),
             content: $body === null ? null : json_encode($body, \JSON_THROW_ON_ERROR),
         );
@@ -85,5 +99,29 @@ class ApiGuestsControllerTest extends AbstractKernelTestCase
 
         self::assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode(), (string) $response->getContent());
         self::assertSame('invalid_payload', $this->decode($response)['type']);
+    }
+
+    public function testTheCreationsFromAnAddressAreLimited(): void
+    {
+        for ($attempt = 0; $attempt < 30; ++$attempt) {
+            self::assertSame(Response::HTTP_CREATED, $this->request('POST', '/api/guests', ['name' => "Guest {$attempt}"])->getStatusCode());
+        }
+
+        $response = $this->request('POST', '/api/guests', ['name' => 'One too many']);
+        self::assertSame(Response::HTTP_TOO_MANY_REQUESTS, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('too_many_attempts', $this->decode($response)['type']);
+        self::assertGreaterThan(0, (int) $response->headers->get('Retry-After'));
+
+        // another address is not limited
+        self::assertSame(Response::HTTP_CREATED, $this->request('POST', '/api/guests', ['name' => 'Elsewhere'], ip: '203.0.113.2')->getStatusCode());
+    }
+
+    public function testAnInvalidNameDoesNotCount(): void
+    {
+        for ($attempt = 0; $attempt < 30; ++$attempt) {
+            $this->request('POST', '/api/guests', ['name' => '']);
+        }
+
+        self::assertSame(Response::HTTP_CREATED, $this->request('POST', '/api/guests', ['name' => 'Hida Takeshi'])->getStatusCode());
     }
 }

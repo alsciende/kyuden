@@ -19,7 +19,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\RateLimiter\RateLimit;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -68,7 +67,7 @@ class ApiSessionsController extends AbstractController
         foreach ([$this->ipLimiter->create($request->getClientIp()), $usernameLimiter] as $limiter) {
             $limit = $limiter->consume();
             if (! $limit->isAccepted()) {
-                return $this->tooManyAttempts($limit);
+                return $this->tooManyAttempts($limit, 'Too many attempts to sign in: try again in %d seconds.');
             }
         }
 
@@ -111,12 +110,4 @@ class ApiSessionsController extends AbstractController
         return new Response(status: Response::HTTP_NO_CONTENT);
     }
 
-    private function tooManyAttempts(RateLimit $limit): Response
-    {
-        $retryAfter = max(1, $limit->getRetryAfter()->getTimestamp() - time());
-        $response = $this->problem(Response::HTTP_TOO_MANY_REQUESTS, 'too_many_attempts', "Too many attempts to sign in: try again in {$retryAfter} seconds.");
-        $response->headers->set('Retry-After', (string) $retryAfter);
-
-        return $response;
-    }
 }

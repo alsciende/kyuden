@@ -40,11 +40,11 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 
 - **Rules not enforced**: uniqueness, the Limited keyword and "max X per conflict / round", covert (the keyword and the number of evaded characters), ancestral attachments (discarded with their character). The end of a lasting effect is not handled: a player takes control back with `TakeControl` (Blackmail).
 - **Spectators**: a spectator sees the same layouts as the player at the bottom (the declaration of a conflict folds their hand and provinces), and a few texts of the board still speak to the player; the players are told who watches but cannot refuse it.
-- **Web client**: the province choices of a character in play are those of its controller (the view does not tell the owner: a character whose control was taken is refused); covert is not offered (`evaded_ids` sent empty); a multi-province conflict shows its first province only.
+- **Web client**: the province choices of a character in play are those of its controller (the view does not tell the owner: a character whose control was taken is refused); covert is not offered (`evaded_ids` sent empty).
 - **House bot**: plays no conflict card and triggers no ability, always puts the Imperial Favor on its military side, never discards from its provinces, never ends a duel. It plays in the worker (`PlayHouseBotTurn`); while the worker is stopped, its opponent waits (no turn is played elsewhere); a failure makes it pass, else concede, the reason in the event for the developers only.
 - **Agents (MCP)**: no game played by an agent yet; an agent that stops without conceding is ended by its opponent (`end_abandoned_game` for an agent left alone), or by the platform after an hour when both have left; the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
 - **Scaling**: each long-poll holds a FrankenPHP thread for up to 30 s (classic mode, 20 threads); the OAuth state, the rate limiter and the MCP sessions live in filesystem caches (one host only; MCP sessions lost on restart).
-- **Security**: a Mercure subscriber token outlives a revoked session by up to an hour; no rate limit on creating guests and accounts; deleting an account asks no re-authentication (Symfony 8.2 brings one).
+- **Security**: a Mercure subscriber token outlives a revoked session by up to an hour; the limit of the creations of users is by IP only (a network shared by many players, at a tournament, may reach it); deleting an account asks no re-authentication (Symfony 8.2 brings one).
 - **Decks of EmeraldDB**: the decks of the Emerald Legacy card pool are refused (their new cards are unknown to the engine); a deck whose page EmeraldDB does not show (private, not published) cannot be downloaded: only what `/api/decklists/<id>` answers without authentication.
 - **Data**: the images of the cards are ours (`images.kyuden.app`, Cloudflare R2: README, "Other services"): a card added to the fixtures needs its image uploaded, else a 404 (nothing checks it); the banned and restricted lists are not checked, and copies are counted by title where EmeraldDB counts by version.
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; the fix is a breaking downgrade, wait for an update.
@@ -56,8 +56,8 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 1.0 means a stable contract: the HTTP API, the MCP tools (named after the messages) and the event log, which is replayed. A message or an optional field added later is a minor release; a message changed or removed, or a rule enforced on what is accepted today, breaks it. Hence, before tagging `v1.0.0`:
 
 - **Agents**: a whole game played by an agent through `agent/play.sh`, and what it reports fixed (the names and the arguments of the tools are the contract).
-- **Authentication**: sessions expiring, renewed by the web client; a rate limit on the creation of guests and accounts.
-- **Messages proposed** (below), the conflicts (attacked provinces added or moved, a province restored, the stronghold province attacked early; the web client then shows every attacked province), and the characters as attachments (done).
+- **Authentication**: sessions expiring, renewed by the web client. Done: a rate limit on the creation of guests and accounts (30 an hour by IP, shared).
+- Done: the messages proposed (below), the conflicts (attacked provinces added or moved, a province restored, the stronghold province attacked early; the web client shows every attacked province) and the characters as attachments.
 
 The rest of these next steps can come after 1.0.
 
@@ -112,13 +112,13 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
 - Accounts: list and edit their decks.
 - Spectators: a component test of the spectator mode of `GameView`.
-- Mobile: the client is installable (a PWA: manifest, service worker precaching its shell) but laid out for a desktop (at least 1280px wide); next, a layout for tablets in landscape, then phones (a mockup first), touch instead of hovering (the tooltips are done: their texts written where a click leads, the hover styles for devices that hover; the previews of the cards on the board remain), and notifications of the turn of the player (Web Push: VAPID keys, subscriptions stored, sent by the worker), which Mercure cannot do once the page is closed.
+- Mobile: the client is installable (a PWA: manifest, service worker precaching its shell) and laid out for desktops and tablets in landscape (at least 1133px wide: an iPad mini); next, phones (a mockup first), touch instead of hovering (the tooltips are done: their texts written where a click leads, a press held shows them, the hover styles for devices that hover; the previews of the cards on the board remain), and notifications of the turn of the player (Web Push: VAPID keys, subscriptions stored, sent by the worker), which Mercure cannot do once the page is closed.
 
 ### API and platform
 
-- **Agents**: play a game against `agent/play.sh` and fix what it reports; a timeout for an agent that stops; a compact view if the context fills.
+- **Agents** (the game against `agent/play.sh` is a step of 1.0, above): a timeout for an agent that stops; a compact view if the context fills.
 - **Decks**: a deck of EmeraldDB is imported from the URL of its page (`EmeraldDbDeckFetcher`: `POST /api/decks` with `url`, `app:deck:import`, and the field of the queue screen, friendly games included: mockup in the row "Play a game: the queue" of `LBUBwNBPdSopj5NMj5GLTL`); importing does not join the queue, the player still clicks. A user deletes their own decks (`DELETE /api/decks/{id}`, soft-deleted once played, restored when imported again; the button on the tiles of the queue: mockups "hovering one of your decks shows Delete", "confirm before deleting a deck", "deck deleted"), and identical decks are found by their content hash (`Deck::contentHash`, not indexed: an index across users when statistics need it). Then: the text export of EmeraldDB, the banned and restricted lists.
-- **Authentication**: rate limit the creation of guests and accounts; press the players to link a provider; sessions expiring after a few hours, renewed by the client.
+- **Authentication** (the sessions expiring are a step of 1.0, above): press the players to link a provider.
 - **npm**: update the npm of the stack (the service `node` and the stage `front` of the production image, `node:24-alpine`, ship npm 11; npm 12 is out), then check `make front-install`, `make front-build` and the CI.
 - **Ranking** of the games that are not friendly.
 - **Rewinding a game** (`app:game:rewind <game> <version>`): deleting events changes nothing (the state lives in the entities), so replay instead, with `GameReplayer` (the copy, the ids translated, `ReplayStamp`), then swap the copy for the game. Caveats: a deck or an engine changed since makes the replay diverge (`ReplayDivergedException`).

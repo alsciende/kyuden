@@ -11,16 +11,19 @@ use App\Security\AccessTokenIssuer;
 use App\View\Model\GuestView;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Guest accounts: anyone gets a human account by choosing a name (`{"name": ...}`), with a session token, to try the
- * game without signing up, until they create their account (`POST /api/accounts`). Public. Errors are problem details
- * (RFC 9457).
+ * game without signing up, until they create their account (`POST /api/accounts`). Public. Each attempt counts against
+ * the limit of the creations of users from its IP, shared with `POST /api/accounts` (429 `too_many_attempts`). Errors
+ * are problem details (RFC 9457).
  */
 class ApiGuestsController extends AbstractController
 {
@@ -28,9 +31,14 @@ class ApiGuestsController extends AbstractController
 
     public const int MAX_NAME_LENGTH = User::MAX_NAME_LENGTH;
 
+    /** the detail of the problem once the creations of users from an IP are over the limit (`%d`: the seconds to wait) */
+    public const string TOO_MANY_USERS = 'Too many users created from this address: try again in %d seconds.';
+
     public function __construct(
         private readonly AccessTokenIssuer $accessTokenIssuer,
         private readonly EntityManagerInterface $entityManager,
+        #[Target('user_creation_ip')]
+        private readonly RateLimiterFactoryInterface $userCreationLimiter,
     ) {
     }
 
@@ -49,6 +57,11 @@ class ApiGuestsController extends AbstractController
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'The body must only have a string "name".', [
                 'violations' => [['property_path' => 'name', 'message' => sprintf('The name of the guest, from 1 to %d characters.', self::MAX_NAME_LENGTH)]],
             ]);
+        }
+
+        $limit = $this->userCreationLimiter->create($request->getClientIp())->consume();
+        if (! $limit->isAccepted()) {
+            return $this->tooManyAttempts($limit, self::TOO_MANY_USERS);
         }
 
         $user = new User(Uuid::v4()->toString(), $name, UserType::Human);

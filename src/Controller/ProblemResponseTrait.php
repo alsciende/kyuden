@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimit;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 use function Symfony\Component\String\u;
@@ -46,5 +47,18 @@ trait ProblemResponseTrait
         }
 
         return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'validation_failed', 'The payload has invalid values.', ['violations' => $list]);
+    }
+
+    /**
+     * A rate limit refused the request: 429 `too_many_attempts`, with `Retry-After` (in seconds). `%d` in the detail
+     * is replaced by those seconds.
+     */
+    private function tooManyAttempts(RateLimit $limit, string $detail): JsonResponse
+    {
+        $retryAfter = max(1, $limit->getRetryAfter()->getTimestamp() - time());
+        $response = $this->problem(Response::HTTP_TOO_MANY_REQUESTS, 'too_many_attempts', sprintf($detail, $retryAfter));
+        $response->headers->set('Retry-After', (string) $retryAfter);
+
+        return $response;
     }
 }
