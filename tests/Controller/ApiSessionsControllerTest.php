@@ -25,7 +25,7 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
         $cache->clear();
     }
 
-    private function request(string $method, string $uri, mixed $body = null, ?string $token = null, string $ip = '203.0.113.1'): Response
+    private function request(string $method, string $uri, mixed $body = null, ?string $token = null, string $ip = '203.0.113.1', ?string $forwardedFor = null): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
@@ -38,6 +38,7 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_AUTHORIZATION' => $token === null ? null : 'Bearer ' . $token,
                 'REMOTE_ADDR' => $ip,
+                'HTTP_X_FORWARDED_FOR' => $forwardedFor,
             ]),
             content: $body === null ? null : json_encode($body, \JSON_THROW_ON_ERROR),
         );
@@ -138,6 +139,29 @@ class ApiSessionsControllerTest extends AbstractKernelTestCase
         }
 
         $response = $this->request('POST', '/api/sessions', ['username' => 'john', 'password' => UserFixtures::PASSWORDS['john']]);
+        self::assertSame('too_many_attempts', $this->decode($response, Response::HTTP_TOO_MANY_REQUESTS)['type']);
+    }
+
+    public function testTheAttemptsAreCountedByTheAddressOfTheClientBehindATrustedProxy(): void
+    {
+        // the same proxy of Cloudflare (TRUSTED_PROXIES), in front of two clients
+        for ($attempt = 0; $attempt < 20; ++$attempt) {
+            $this->decode($this->request('POST', '/api/sessions', ['username' => "user_{$attempt}", 'password' => 'guess'], ip: '173.245.48.1', forwardedFor: '198.51.100.1'), Response::HTTP_UNAUTHORIZED);
+        }
+
+        $credentials = ['username' => 'john', 'password' => UserFixtures::PASSWORDS['john']];
+        $this->decode($this->request('POST', '/api/sessions', $credentials, ip: '173.245.48.1', forwardedFor: '198.51.100.1'), Response::HTTP_TOO_MANY_REQUESTS);
+        $this->decode($this->request('POST', '/api/sessions', $credentials, ip: '173.245.48.1', forwardedFor: '198.51.100.2'), Response::HTTP_CREATED);
+    }
+
+    public function testTheForwardedAddressOfAnUntrustedClientIsIgnored(): void
+    {
+        for ($attempt = 0; $attempt < 20; ++$attempt) {
+            // a new address on each attempt, which the client makes up
+            $this->decode($this->request('POST', '/api/sessions', ['username' => "user_{$attempt}", 'password' => 'guess'], forwardedFor: "198.51.100.{$attempt}"), Response::HTTP_UNAUTHORIZED);
+        }
+
+        $response = $this->request('POST', '/api/sessions', ['username' => 'john', 'password' => UserFixtures::PASSWORDS['john']], forwardedFor: '198.51.100.99');
         self::assertSame('too_many_attempts', $this->decode($response, Response::HTTP_TOO_MANY_REQUESTS)['type']);
     }
 

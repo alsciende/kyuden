@@ -48,8 +48,11 @@
 		file_server
 	}
 
-	# the web client (front/dist): an unknown path is a route of the client
+	# the web client (front/dist): an unknown path is a route of the client. index.html, the service worker and the
+	# manifest name the files of a release: revalidated on every load (ETag), by the browsers and by Cloudflare, so that a
+	# new release reaches the players at once
 	handle {
+		header Cache-Control "no-cache"
 		try_files {path} /index.html
 		file_server
 	}
