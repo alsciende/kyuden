@@ -17,5 +17,6 @@ RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
     && chown -R www-data:www-data /data/caddy /config/caddy
 
 COPY docker/dev/symfony/Caddyfile /etc/frankenphp/Caddyfile
+COPY docker/dev/symfony/php.ini $PHP_INI_DIR/conf.d/app.ini
 
 WORKDIR /var/www/html

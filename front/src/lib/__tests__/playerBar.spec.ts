@@ -156,11 +156,21 @@ describe('playerEffects', () => {
         payload: { target_player_id: 'me', stack: 'dynasty_deck', quantity: 3 },
       },
     ])
-    expect(playerEffects(inspecting, me, 'hand', 1).map((effect) => effect.label)).toEqual(['Reveal the hand'])
-    expect(playerEffects(inspecting, opp, 'hand', 1).map((effect) => effect.label)).toEqual([
-      'Look at the hand',
+    expect(playerEffects(inspecting, me, 'hand', 1).map((effect) => effect.label)).toEqual([
       'Reveal the hand',
+      'Reveal 1 at random',
     ])
+    expect(playerEffects(inspecting, opp, 'hand', 3).map((effect) => effect.label)).toEqual([
+      'Look at the hand',
+      'Look at 3 at random',
+      'Reveal the hand',
+      'Reveal 3 at random',
+    ])
+    expect(playerEffects(inspecting, opp, 'hand', 3)[1]).toEqual({
+      type: 'look_at_cards',
+      label: 'Look at 3 at random',
+      payload: { target_player_id: 'opp', stack: 'hand', quantity: 3, random: true },
+    })
   })
 
   it('gives honor to the other player', () => {

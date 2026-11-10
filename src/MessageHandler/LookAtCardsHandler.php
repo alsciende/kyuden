@@ -39,6 +39,6 @@ final readonly class LookAtCardsHandler implements PlayerActionHandlerInterface
         $this->assertAvailable($game, $player);
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
-        $this->cardInspector->lookAtPile($player, $target, $message->getStack(), $message->getQuantity());
+        $this->cardInspector->lookAtPile($player, $target, $message->getStack(), $message->getQuantity(), $message->isRandom());
     }
 }

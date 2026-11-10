@@ -190,7 +190,18 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
           label: 'Look at the hand',
           payload: { ...target, stack: 'hand' },
         },
+        player.id !== game.viewer_id && {
+          type: 'look_at_cards',
+          label: `Look at ${amount} at random`,
+          payload: { ...target, stack: 'hand', quantity: amount, random: true },
+        },
         { type: 'reveal_cards', label: 'Reveal the hand', payload: { ...target, stack: 'hand' } },
+        // drawn by the engine (Court of Justice, Kitsuki Chiari, Overhear)
+        {
+          type: 'reveal_cards',
+          label: `Reveal ${amount} at random`,
+          payload: { ...target, stack: 'hand', quantity: amount, random: true },
+        },
       ]
       break
     case 'conflict_deck':

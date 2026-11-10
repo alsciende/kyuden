@@ -399,7 +399,7 @@ export interface LookAtCard {
 }
 
 /**
- * The sender looks at cards some players do not see: the top cards of a deck (`quantity`, the whole deck by default), a hand or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (Shrewd Yasuki, Agasha Swordsmith, Kitsuki Investigator, Governor's Spy). The log gives the cards to the sender only (the others read how many cards and where): the sender then resolves the effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`, `reveal_card`, `redistribute_province_cards`). Nothing is recorded: the cards are out of sight again afterwards.
+ * The sender looks at cards some players do not see: the top cards of a deck (`quantity`, the whole deck by default), a hand (or `quantity` cards of it drawn at random by the engine, `random`) or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (Shrewd Yasuki, Agasha Swordsmith, Kitsuki Investigator, Governor's Spy; random cards: Shrewd Investigator, Court of Justice, Isawa Tadaka). The log gives the cards to the sender only (the others read how many cards and where): the sender then resolves the effect with other actions on them (`add_card_to_hand`, `put_card_on_deck`, `shuffle_into_deck`, `discard_card`, `reveal_card`, `redistribute_province_cards`). Nothing is recorded: the cards are out of sight again afterwards.
  */
 export interface LookAtCards {
   /**
@@ -411,9 +411,13 @@ export interface LookAtCards {
    */
   stack: 'conflict_deck' | 'dynasty_deck' | 'hand' | 'provinces'
   /**
-   * Number of cards from the top of a deck; the whole stack by default; not for the provinces.
+   * Number of cards from the top of a deck, or drawn at random from a hand; the whole stack by default; not for the provinces.
    */
   quantity?: number | null
+  /**
+   * Cards of a hand drawn at random by the engine (`quantity` of them), instead of the first ones; a hand only.
+   */
+  random?: boolean
 }
 
 /**
@@ -995,7 +999,7 @@ export interface RevealCard {
 }
 
 /**
- * The sender reveals cards some players do not see to every player: the top cards of a deck (`quantity`, the whole deck by default), a hand or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy). The log gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
+ * The sender reveals cards some players do not see to every player: the top cards of a deck (`quantity`, the whole deck by default), a hand (or `quantity` cards of it drawn at random by the engine, `random`) or the dynasty cards in the provinces, of any player, e.g. to resolve an effect (The Perfect Gift, Artisan Academy; random cards: Kitsuki Chiari, Overhear). The log gives the cards to every player; nothing is recorded: the cards are out of sight again afterwards.
  */
 export interface RevealCards {
   /**
@@ -1007,9 +1011,13 @@ export interface RevealCards {
    */
   stack: 'conflict_deck' | 'dynasty_deck' | 'hand' | 'provinces'
   /**
-   * Number of cards from the top of a deck; the whole stack by default; not for the provinces.
+   * Number of cards from the top of a deck, or drawn at random from a hand; the whole stack by default; not for the provinces.
    */
   quantity?: number | null
+  /**
+   * Cards of a hand drawn at random by the engine (`quantity` of them), instead of the first ones; a hand only.
+   */
+  random?: boolean
 }
 
 /**

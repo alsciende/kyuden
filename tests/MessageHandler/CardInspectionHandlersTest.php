@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Entity\PhysicalCard;
 use App\Enum\HiddenPile;
 use App\Enum\Orientation;
 use App\Enum\StackType;
@@ -18,6 +19,7 @@ use App\MessageHandler\RevealCardsHandler;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use Random\Randomizer;
 
 /**
  * Looking at cards and revealing them: nothing changes but the log, which gives the cards to the players who learn
@@ -58,6 +60,40 @@ class CardInspectionHandlersTest extends AbstractKernelTestCase
         $line = "john looks at Way of the Crane, Assassination in jane's hand";
         self::assertSame([$line], $this->logLines($scenario->game(), $scenario->player('john')));
         self::assertSame([$line], $this->logLines($scenario->game(), $scenario->player('jane')));
+    }
+
+    public function testThePlayerLooksAtRandomCardsOfTheHandOfTheOpponent(): void
+    {
+        // Court of Justice: the cards are drawn by the generator of the game, the opponent knowing which ones
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->hand(['01-way-of-the-crane', '01-assassination', '01-banzai', '01-fine-katana', '01-ornate-fan']))
+            ->persist();
+        $game = $scenario->game();
+        $hand = $scenario->player('jane')->getUniqueStack(StackType::Hand)->getOrderedCards();
+        $expected = array_slice(new Randomizer(clone $game->getRandomizer()->engine)->shuffleArray($hand), 0, 3);
+
+        self::service(LookAtCardsHandler::class)(new LookAtCards($game->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId(), HiddenPile::Hand, 3, true));
+
+        $line = sprintf("john looks at %s in jane's hand", implode(', ', array_map(fn (PhysicalCard $card): string => $card->getLogicalCard()->getName(), $expected)));
+        self::assertSame([$line], $this->logLines($game, $scenario->player('john')));
+        self::assertSame([$line], $this->logLines($game, $scenario->player('jane')));
+    }
+
+    public function testThePlayerRevealsRandomCardsOfAHandHoldingFewerCards(): void
+    {
+        $scenario = $this->scenarioWithDecks();
+
+        self::service(RevealCardsHandler::class)(new RevealCards($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId(), HiddenPile::Hand, 4, true));
+
+        $lines = $this->logLines($scenario->game(), $scenario->player('john'));
+        self::assertCount(1, $lines);
+        self::assertContains($lines[0], [
+            "john reveals Way of the Crane, Assassination from jane's hand",
+            "john reveals Assassination, Way of the Crane from jane's hand",
+        ]);
     }
 
     public function testThePlayerRevealsTheTopCardsOfADeckToEveryPlayer(): void

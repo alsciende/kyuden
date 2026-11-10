@@ -40,9 +40,10 @@ readonly class MessageSchemasDumpCommand
             throw new \RuntimeException("Cannot create {$directory}.");
         }
 
+        // computed before anything is deleted: a message without schema leaves the snapshot as it was
+        $schemas = $this->messageSchemaFactory->createAll();
         // schemas of messages that no longer exist or are no longer public
         array_map(unlink(...), glob("{$directory}/*.json") ?: []);
-        $schemas = $this->messageSchemaFactory->createAll();
         foreach ($schemas as $type => $schema) {
             file_put_contents("{$directory}/{$type}.json", MessageSchemaFactory::encode($schema));
         }

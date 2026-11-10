@@ -34,9 +34,9 @@ final readonly class CardInspector
     /**
      * The player looks at cards of a hidden pile of the owner: one entry in the log per stack.
      */
-    public function lookAtPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity): void
+    public function lookAtPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity, bool $random = false): void
     {
-        foreach ($this->stacksOf($owner, $pile, $quantity) as [$stack, $cards]) {
+        foreach ($this->stacksOf($owner, $pile, $quantity, $random) as [$stack, $cards]) {
             $this->lookAt($player, $stack, $cards);
         }
     }
@@ -44,9 +44,9 @@ final readonly class CardInspector
     /**
      * The player reveals cards of a hidden pile of the owner: one entry in the log per stack.
      */
-    public function revealPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity): void
+    public function revealPile(Player $player, Player $owner, HiddenPile $pile, ?int $quantity, bool $random = false): void
     {
-        foreach ($this->stacksOf($owner, $pile, $quantity) as [$stack, $cards]) {
+        foreach ($this->stacksOf($owner, $pile, $quantity, $random) as [$stack, $cards]) {
             $this->reveal($player, $stack, $cards);
         }
     }
@@ -54,10 +54,12 @@ final readonly class CardInspector
     /**
      * The top cards of a deck, the top card first, or the cards of a hand: every card unless a quantity is given; the
      * dynasty cards of each province holding some, from the bottom of the province (the quantity does not apply).
+     * Random cards of a hand are drawn by the generator of the game, in the order drawn, so that the position of a
+     * card in the hand tells nothing.
      *
      * @return list<array{Stack, list<PhysicalCard>}>
      */
-    private function stacksOf(Player $owner, HiddenPile $pile, ?int $quantity): array
+    private function stacksOf(Player $owner, HiddenPile $pile, ?int $quantity, bool $random): array
     {
         if ($pile === HiddenPile::Provinces) {
             $stacks = [];
@@ -73,9 +75,11 @@ final readonly class CardInspector
 
         $stack = $owner->getUniqueStack($pile->stackType());
         $count = $quantity ?? $stack->getCards()->count();
-        $cards = $pile === HiddenPile::Hand
-            ? array_slice($stack->getOrderedCards(), 0, $count)
-            : $stack->getTopCards($count);
+        $cards = match (true) {
+            $pile !== HiddenPile::Hand => $stack->getTopCards($count),
+            $random => array_slice($owner->getGame()->getRandomizer()->shuffleArray($stack->getOrderedCards()), 0, $count),
+            default => array_slice($stack->getOrderedCards(), 0, $count),
+        };
 
         // an empty pile still writes its entry: the players read that there was nothing to see
         return [[$stack, $cards]];

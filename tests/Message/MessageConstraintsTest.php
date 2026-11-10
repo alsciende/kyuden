@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Message;
 
 use App\Enum\DuelType;
+use App\Enum\HiddenPile;
 use App\Message\ActionInterface;
 use App\Message\BidHonor;
 use App\Message\CollectFate;
@@ -17,6 +18,7 @@ use App\Message\DeclareProvinceStrength;
 use App\Message\GainFate;
 use App\Message\GainHonor;
 use App\Message\InitiateDuel;
+use App\Message\LookAtCards;
 use App\Message\LoseFate;
 use App\Message\LoseHonor;
 use App\Message\PlayActionEvent;
@@ -27,6 +29,7 @@ use App\Message\PlayInterruptEvent;
 use App\Message\PlayReactionEvent;
 use App\Message\PlaceFate;
 use App\Message\RemoveFate;
+use App\Message\RevealCards;
 use App\Message\SetHonorBid;
 use App\Message\TransferHonor;
 use App\Tests\AbstractKernelTestCase;
@@ -71,6 +74,9 @@ class MessageConstraintsTest extends AbstractKernelTestCase
         yield 'negative costs from province' => [new PlayCharacterFromProvince('g', 'p', 'c', -1, -1, -1), ['cardCost', 'fateCost', 'fate']];
         yield 'no defender declared' => [new DeclareDefenders('g', 'p', []), ['defenderIds']];
         yield 'a defender declared' => [new DeclareDefenders('g', 'p', ['c']), []];
+        yield 'random cards of a hand looked at' => [new LookAtCards('g', 'p', 't', HiddenPile::Hand, 3, true), []];
+        yield 'random cards of a deck looked at' => [new LookAtCards('g', 'p', 't', HiddenPile::ConflictDeck, 3, true), ['random']];
+        yield 'random cards of the provinces revealed' => [new RevealCards('g', 'p', 't', HiddenPile::Provinces, null, true), ['random']];
         yield 'duel without characters' => [new InitiateDuel('g', 'p', DuelType::Military, [], []), ['challengerIds', 'challengedIds']];
     }
 

@@ -54,7 +54,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 
 - **Agents**: a whole game played by an agent through `agent/play.sh`, and what it reports fixed (the names and the arguments of the tools are the contract).
 - **Authentication**: sessions expiring, renewed by the web client; a rate limit on the creation of guests and accounts.
-- **Messages proposed** (below), the five of them: random cards of a hand, the conflicts (attacked provinces added or moved, a province restored, the stronghold province attacked early; the web client then shows every attacked province), `GiveActionOpportunity`, `CancelDuel` (with a layout for the duels), and the characters as attachments.
+- **Messages proposed** (below), the four of them: the conflicts (attacked provinces added or moved, a province restored, the stronghold province attacked early; the web client then shows every attacked province), `GiveActionOpportunity`, `CancelDuel` (with a layout for the duels), and the characters as attachments.
 
 The rest of these next steps can come after 1.0.
 
@@ -82,7 +82,7 @@ A review of the texts of every card of the fixtures (1,129 cards, all of FFG) ag
     - the defenders declared before the attackers: Seven Stings Keep;
     - the conflict resolved as if both players had passed: Moment of Perfect Beauty.
 10. **Opportunities to act**: the attacking player acting first in a conflict (Child of the Plains); taking another action after one (Hawk Tattoo), or several actions (Current of the Beryt, Austere Exemplar). Several cards played within one action (Wayfarer's Camp, Invoke the Divine) already work: an active player who has acted can still play.
-11. **Random cards of a hand, looked at or revealed** (`LookAtCards` / `RevealCards` take the whole hand): Shrewd Investigator, Kitsuki Chiari, Isawa Tadaka, Court of Justice, Overhear.
+11. **Random cards of a hand, looked at or revealed** (done: `LookAtCards` / `RevealCards` with `random`, the cards drawn by the generator of the game): Shrewd Investigator, Kitsuki Chiari, Isawa Tadaka, Court of Justice, Overhear.
 12. **What the engine applies and a card prevents or changes**: cancelling a duel before its result (Stay Your Hand: `EndDuel` only once it is resolved); the honor loss of an unopposed conflict (Ikebana Artisan); losing the last honor (Duty: the game ends at once); triggering the ability of a card one does not control (Kujira's Hireling: `AbilityService` checks the controller); a secret honor dial outside a bid (Maze of Illusion).
 13. **Phases**: skipping or repeating one: A Season of War (a second dynasty phase), Jurojin's Curse (a second fate phase), Trading on the Sand Road (no draw phase).
 
@@ -92,11 +92,10 @@ Borderline, not counted: "does not bow as a result of conflict resolution" (17 c
 
 In order of value (cards covered, cost). Like the other effect messages: accepted in any place, from any player, on any card or player; each writes its entry in the log.
 
-1. **`LookAtCards` / `RevealCards`** with `random: true` on a hand: the cards drawn by the generator of the game (category 11).
-2. **Conflicts**: **`AddAttackedProvince`** (`province_id`) and **`MoveConflict`** (`province_id`: the new attacked province, revealed by `RevealProvince`); **`RestoreProvince`** (`province_id`: a broken province face up again, unless the game has ended); the stronghold province check of `DeclareConflict` lifted by an `ignore_stronghold_restriction` flag (Scouted Terrain).
-3. **`GiveActionOpportunity`** (`target_player_id`): in an action window, the target becomes the active player, passes kept (Child of the Plains; Hawk Tattoo, Current of the Beryt and Austere Exemplar: the sender gives it back to themselves after `EndResolution`).
-4. **`CancelDuel`**: the duel ends at any step, no result (Stay Your Hand).
-5. **Characters as attachments**: a new place of the conflict and dynasty character workflows (`attached`), with **`PlayCharacterAsAttachment`** (`card_id`, `target_card_id`, `card_cost`) and **`DetachAsCharacter`** (`card_id`): category 5, the most work, last.
+1. **Conflicts**: **`AddAttackedProvince`** (`province_id`) and **`MoveConflict`** (`province_id`: the new attacked province, revealed by `RevealProvince`); **`RestoreProvince`** (`province_id`: a broken province face up again, unless the game has ended); the stronghold province check of `DeclareConflict` lifted by an `ignore_stronghold_restriction` flag (Scouted Terrain).
+2. **`GiveActionOpportunity`** (`target_player_id`): in an action window, the target becomes the active player, passes kept (Child of the Plains; Hawk Tattoo, Current of the Beryt and Austere Exemplar: the sender gives it back to themselves after `EndResolution`).
+3. **`CancelDuel`**: the duel ends at any step, no result (Stay Your Hand).
+4. **Characters as attachments**: a new place of the conflict and dynasty character workflows (`attached`), with **`PlayCharacterAsAttachment`** (`card_id`, `target_card_id`, `card_cost`) and **`DetachAsCharacter`** (`card_id`): category 5, the most work, last.
 
 Not planned, since the cards are few and the changes deep: Seven Stings Keep (the order of the declarations), Moment of Perfect Beauty (the window closed after one opportunity), the phases skipped or repeated (A Season of War, Jurojin's Curse, Trading on the Sand Road), Kujira's Hireling (the controller checked by `AbilityService`), Maze of Illusion, Duty and Ikebana Artisan (losses applied by the engine: the honor given back with `GainHonor`, but the game ends at 0 honor), Sudden Tempest, Greater Understanding, Force of the River.
 

@@ -39,6 +39,6 @@ final readonly class RevealCardsHandler implements PlayerActionHandlerInterface
         $this->assertAvailable($game, $player);
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
-        $this->cardInspector->revealPile($player, $target, $message->getStack(), $message->getQuantity());
+        $this->cardInspector->revealPile($player, $target, $message->getStack(), $message->getQuantity(), $message->isRandom());
     }
 }
