@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\AccessToken;
 use App\Entity\User;
+use App\Enum\AccessTokenType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -48,6 +49,40 @@ class AccessTokenRepository extends ServiceEntityRepository
             ->where('t.user = :user')
             ->setParameter('user', $user)
             ->getQuery()
+            ->execute();
+        \assert(\is_int($count));
+
+        return $count;
+    }
+
+    /**
+     * The token is used now: written unless it was used after the threshold, so that frequent requests write seldom. A
+     * single statement, the token in memory left as it is.
+     */
+    public function recordUse(AccessToken $token, \DateTimeImmutable $now, \DateTimeImmutable $threshold): void
+    {
+        $this->getEntityManager()->createQuery(
+            'UPDATE ' . AccessToken::class . ' t SET t.lastUsedAt = :now WHERE t.id = :id AND t.lastUsedAt < :threshold',
+        )
+            ->setParameter('now', $now, 'datetime_immutable')
+            ->setParameter('threshold', $threshold, 'datetime_immutable')
+            ->setParameter('id', $token->getId())
+            ->execute();
+    }
+
+    /**
+     * Deletes the sessions of the accounts (not of the guests) last used before the time given.
+     *
+     * @return int the number of sessions deleted
+     */
+    public function deleteSessionsOfAccountsUnusedSince(\DateTimeImmutable $since): int
+    {
+        $count = $this->getEntityManager()->createQuery(
+            'DELETE ' . AccessToken::class . ' t WHERE t.type = :session AND t.lastUsedAt < :since'
+            . ' AND t.user IN (SELECT u.id FROM ' . User::class . ' u WHERE u.username IS NOT NULL)',
+        )
+            ->setParameter('session', AccessTokenType::Session)
+            ->setParameter('since', $since, 'datetime_immutable')
             ->execute();
         \assert(\is_int($count));
 

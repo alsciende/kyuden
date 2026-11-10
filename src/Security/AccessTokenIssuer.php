@@ -9,6 +9,7 @@ use App\Entity\Invitation;
 use App\Entity\User;
 use App\Enum\AccessTokenType;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\ClockInterface;
 
 /**
  * Issues the access tokens: a random secret of 256 bits, prefixed so that a leaked token is recognized (secret
@@ -20,13 +21,14 @@ readonly class AccessTokenIssuer
 
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private ClockInterface $clock,
     ) {
     }
 
     public function issue(User $user, AccessTokenType $type, ?Invitation $invitation = null): string
     {
         $token = self::PREFIX . bin2hex(random_bytes(32));
-        $this->entityManager->persist(new AccessToken($user, $token, $type, $invitation));
+        $this->entityManager->persist(new AccessToken($user, $token, $type, $this->clock->now(), $invitation));
 
         return $token;
     }

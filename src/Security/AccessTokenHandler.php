@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Security;
 
+use App\Entity\AccessToken;
 use App\Entity\Invitation;
 use App\Entity\User;
+use App\Enum\AccessTokenType;
 use App\Repository\AccessTokenRepository;
 use App\Repository\GameRepository;
 use Symfony\Component\Clock\ClockInterface;
@@ -16,8 +18,9 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 /**
  * Authenticates the user of an access token (App\Entity\AccessToken), found by the hash of the token. The user is
  * loaded with the token, so that authenticating costs a single query. The key of an invitation for a bot is valid
- * while the invitation waits for the bot, then until the end of the game it led to. The token is kept for the request
- * (CurrentAccessToken).
+ * while the invitation waits for the bot, then until the end of the game it led to. A session of an account expires
+ * once unused for a while (AccessToken::isExpired()); each use of a session is recorded (at most once an hour). The
+ * token is kept for the request (CurrentAccessToken).
  */
 readonly class AccessTokenHandler implements AccessTokenHandlerInterface
 {
@@ -34,8 +37,14 @@ readonly class AccessTokenHandler implements AccessTokenHandlerInterface
     {
         $token = $this->accessTokenRepository->findOneByToken($accessToken);
         $invitation = $token?->getInvitation();
-        if ($token === null || ($invitation instanceof Invitation && ! $this->isValid($invitation))) {
+        $now = $this->clock->now();
+        if ($token === null || $token->isExpired($now) || ($invitation instanceof Invitation && ! $this->isValid($invitation))) {
             throw new BadCredentialsException('Invalid access token.');
+        }
+        $threshold = $now->modify(sprintf('-%d seconds', AccessToken::USE_RECORDED_EVERY));
+        // read with the token: no statement at all for a session used within the hour
+        if ($token->getType() === AccessTokenType::Session && $token->getLastUsedAt() < $threshold) {
+            $this->accessTokenRepository->recordUse($token, $now, $threshold);
         }
 
         $this->currentAccessToken->set($token);

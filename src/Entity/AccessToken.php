@@ -13,12 +13,20 @@ use Doctrine\ORM\Mapping as ORM;
  * A token authenticating its user on the API (`Authorization: Bearer <token>`, App\Security\AccessTokenHandler).
  * Only its hash is stored: the token is a random secret of high entropy, so a fast hash (SHA-256) is enough and lets
  * the token be found by its hash. An API key is given to a bot only; the key of an invitation for a bot is limited to it
- * (App\Security\AccessTokenHandler): the bot joins the queue with it, and the key expires with it.
+ * (App\Security\AccessTokenHandler): the bot joins the queue with it, and the key expires with it. The session of an account
+ * expires once unused for SESSION_EXPIRES_AFTER seconds, each use extending it (lastUsedAt, written at most every
+ * USE_RECORDED_EVERY seconds); the session of a guest, their only key to their user, and the API keys never expire.
  */
 #[ORM\Entity(repositoryClass: AccessTokenRepository::class)]
 #[ORM\Table('access_tokens')]
 class AccessToken
 {
+    /** 30 days */
+    public const int SESSION_EXPIRES_AFTER = 30 * 86400;
+
+    /** the last use is written at most once an hour, so that the requests of a session write seldom */
+    public const int USE_RECORDED_EVERY = 3600;
+
     #[ORM\Id]
     #[ORM\GeneratedValue('SEQUENCE')]
     #[ORM\Column]
@@ -41,7 +49,13 @@ class AccessToken
     #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Invitation $invitation;
 
-    public function __construct(User $user, #[\SensitiveParameter] string $token, AccessTokenType $type, ?Invitation $invitation = null)
+    /**
+     * When the token was last used (to the hour: USE_RECORDED_EVERY), from which a session of an account expires.
+     */
+    #[ORM\Column]
+    private \DateTimeImmutable $lastUsedAt;
+
+    public function __construct(User $user, #[\SensitiveParameter] string $token, AccessTokenType $type, \DateTimeImmutable $now, ?Invitation $invitation = null)
     {
         if ($type === AccessTokenType::ApiKey && $user->getType() !== UserType::Bot) {
             throw new \InvalidArgumentException('Only a bot gets API keys.');
@@ -54,6 +68,7 @@ class AccessToken
         $this->hash = self::hash($token);
         $this->type = $type;
         $this->invitation = $invitation;
+        $this->lastUsedAt = $now;
     }
 
     public static function hash(#[\SensitiveParameter] string $token): string
@@ -84,5 +99,20 @@ class AccessToken
     public function getInvitation(): ?Invitation
     {
         return $this->invitation;
+    }
+
+    public function getLastUsedAt(): \DateTimeImmutable
+    {
+        return $this->lastUsedAt;
+    }
+
+    /**
+     * A session of an account unused for SESSION_EXPIRES_AFTER seconds; never a session of a guest nor an API key.
+     */
+    public function isExpired(\DateTimeImmutable $now): bool
+    {
+        return $this->type === AccessTokenType::Session
+            && ! $this->user->isGuest()
+            && $this->lastUsedAt < $now->modify(sprintf('-%d seconds', self::SESSION_EXPIRES_AFTER));
     }
 }

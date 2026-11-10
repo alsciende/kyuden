@@ -39,12 +39,12 @@ class UserTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        new AccessToken(new User('john', 'John', UserType::Human), 'secret', AccessTokenType::ApiKey);
+        new AccessToken(new User('john', 'John', UserType::Human), 'secret', AccessTokenType::ApiKey, new \DateTimeImmutable());
     }
 
     public function testOnlyTheHashOfTheTokenIsStored(): void
     {
-        $token = new AccessToken(new User('john', 'John', UserType::Human), 'secret', AccessTokenType::Session);
+        $token = new AccessToken(new User('john', 'John', UserType::Human), 'secret', AccessTokenType::Session, new \DateTimeImmutable());
 
         self::assertSame(hash('sha256', 'secret'), $token->getHash());
     }

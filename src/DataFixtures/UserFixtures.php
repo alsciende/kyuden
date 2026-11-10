@@ -74,6 +74,12 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
         'kyuden-bot' => 'kyuden-bot-dev-key',
     ];
 
+    /**
+     * When the tokens were last used: in the future, so that they never expire, whenever the database was loaded (the
+     * tests roll back the uses they record).
+     */
+    public const string TOKENS_USED_AT = '2100-01-01';
+
     #[\Override]
     public function load(ObjectManager $manager): void
     {
@@ -102,7 +108,7 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
             $manager->persist($user);
             $this->addReference($user->getId(), $user);
             $type = $user->getType() === UserType::Bot ? AccessTokenType::ApiKey : AccessTokenType::Session;
-            $manager->persist(new AccessToken($user, self::TOKENS[$user->getId()], $type));
+            $manager->persist(new AccessToken($user, self::TOKENS[$user->getId()], $type, new \DateTimeImmutable(self::TOKENS_USED_AT)));
         }
 
         $manager->flush();
