@@ -357,6 +357,20 @@ export interface GainHonor {
 }
 
 /**
+ * The next action opportunities given in an action window go to a player, whoever would get them otherwise: at the end of the action being resolved, or when the next action window opens (Child of the Plains: the first action opportunity of the conflict; Hawk Tattoo: another action; Current of the Beryt: two actions; Austere Exemplar: three actions). The actions add up for the same player, and replace those given to another player; a player who passes in an action window loses the actions left.
+ */
+export interface GiveActionOpportunity {
+  /**
+   * Player who gets the next action opportunities.
+   */
+  target_player_id: string
+  /**
+   * Number of action opportunities the player gets in a row.
+   */
+  actions?: number
+}
+
+/**
  * A player may declare an additional conflict of a type this round: one more conflict opportunity (Hida O-Ushi, Hisu Mori Toride, Shori, Suffer the Consequences, Courteous Scheming).
  */
 export interface GrantConflictOpportunity {
@@ -1327,6 +1341,7 @@ export interface MessagePayloads {
   fill_province: FillProvince
   gain_fate: GainFate
   gain_honor: GainHonor
+  give_action_opportunity: GiveActionOpportunity
   grant_conflict_opportunity: GrantConflictOpportunity
   honor_character: HonorCharacter
   initiate_duel: InitiateDuel

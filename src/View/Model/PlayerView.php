@@ -45,6 +45,10 @@ final readonly class PlayerView
          */
         public bool $acted,
         /**
+         * The next action opportunities given in an action window that go to the player (GiveActionOpportunity).
+         */
+        public int $givenActions,
+        /**
          * Number of interrupts and reactions the player has initiated and has not ended yet.
          */
         public int $resolvingInterruptsAndReactions,

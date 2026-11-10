@@ -230,6 +230,41 @@ describe('playerEffects of the player', () => {
     expect(playerEffects(view, opp, 'player', 1)).toEqual([])
     expect(playerEffects({ ...view, available_actions: [] }, me, 'player', 1)).toEqual([])
   })
+
+  it('gives the next action opportunities to either player', () => {
+    const me = player('me')
+    const opp = player('opp')
+    const view = game(me, opp, { available_actions: ['give_action_opportunity'] })
+
+    expect(playerEffects(view, me, 'player', 1)).toEqual([
+      {
+        type: 'give_action_opportunity',
+        label: 'Take the next action',
+        payload: { target_player_id: 'me', actions: 1 },
+      },
+      {
+        type: 'give_action_opportunity',
+        label: 'Take the next 2 actions',
+        payload: { target_player_id: 'me', actions: 2 },
+      },
+      {
+        type: 'give_action_opportunity',
+        label: 'Take the next 3 actions',
+        payload: { target_player_id: 'me', actions: 3 },
+      },
+    ])
+    expect(playerEffects(view, opp, 'player', 1).map((effect) => effect.label)).toEqual([
+      'Give Opp. the next action',
+      'Give Opp. the next 2 actions',
+      'Give Opp. the next 3 actions',
+    ])
+  })
+
+  it('notes the next action opportunities given to the player', () => {
+    const me = player('me', [], { given_actions: 2 })
+
+    expect(playerBar(game(me, player('opp')), me).notes).toEqual(['Next 2 actions'])
+  })
 })
 
 describe('playerEffects of the Imperial Favor', () => {

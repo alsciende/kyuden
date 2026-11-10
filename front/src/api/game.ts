@@ -81,6 +81,8 @@ export interface PlayerView {
   stronghold_province_id: string | null
   passed: boolean
   acted: boolean
+  /** the next action opportunities given in an action window that go to the player (give_action_opportunity) */
+  given_actions: number
   resolving_interrupts_and_reactions: number
   /** in the order they were initiated */
   resolutions: ResolutionView[]

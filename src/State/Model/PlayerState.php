@@ -78,6 +78,13 @@ class PlayerState
     private bool $acted = false;
 
     /**
+     * The next action opportunities given in an action window go to the player, whoever would get them otherwise, by a
+     * card effect (GiveActionOpportunity: Child of the Plains, Hawk Tattoo, Current of the Beryt, Austere Exemplar):
+     * one less each time (OpportunityService), none once the player passes.
+     */
+    private int $givenActions = 0;
+
+    /**
      * The events played and the abilities triggered that the player resolves, in the order they were initiated: those
      * of their action, ended together with it, and the interrupts and reactions, whether or not they have the
      * opportunity to act, each one ending with EndResolution, the last one initiated first (interrupts and reactions
@@ -364,6 +371,18 @@ class PlayerState
     public function setPassed(bool $passed): self
     {
         $this->passed = $passed;
+
+        return $this;
+    }
+
+    public function getGivenActions(): int
+    {
+        return $this->givenActions;
+    }
+
+    public function setGivenActions(int $givenActions): self
+    {
+        $this->givenActions = $givenActions;
 
         return $this;
     }

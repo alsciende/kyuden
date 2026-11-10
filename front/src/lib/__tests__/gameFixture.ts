@@ -58,6 +58,7 @@ export function player(id: string, stacks: StackView[] = [], changes: Partial<Pl
     stronghold_province_id: null,
     passed: false,
     acted: false,
+    given_actions: 0,
     resolving_interrupts_and_reactions: 0,
     resolutions: [],
     fate_collected: false,

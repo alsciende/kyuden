@@ -103,6 +103,7 @@ final readonly class GameViewFactory
             strongholdProvinceId: $isViewer ? $state->getStrongholdProvinceId() : null,
             passed: $state->isPassed(),
             acted: $state->hasActed(),
+            givenActions: $state->getGivenActions(),
             resolvingInterruptsAndReactions: $state->countInterruptsAndReactions(),
             resolutions: array_map(fn (Resolution $resolution): ResolutionView => $this->createResolutionView($resolution, $cards[$resolution->cardId] ?? null, $viewer), $state->getResolutions()),
             fateCollected: $state->isFateCollected(),

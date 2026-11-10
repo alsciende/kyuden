@@ -30,6 +30,10 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * A player who acts (a card played, an action ability triggered) resolves their action, then ends it (EndResolution)
  * instead of passing. Interrupts and reactions are resolved the same way, by any player, without using an
  * opportunity to act.
+ *
+ * A card effect gives the next action opportunities to a player (GiveActionOpportunity, PlayerState::givenActions):
+ * each opportunity given in an action window goes to them, at the end of an action or when the window opens, until
+ * they have had them all or pass.
  */
 readonly class OpportunityService
 {
@@ -54,6 +58,50 @@ readonly class OpportunityService
         $rule = $this->gameStateMachine->getMetadataStore()->getPlaceMetadata($place)['opportunities'] ?? null;
 
         return $rule instanceof PassingRule ? $rule : null;
+    }
+
+    /**
+     * The game is in an action window (`action_window` metadata of the game place).
+     */
+    public function isActionWindow(Game $game): bool
+    {
+        $place = $game->getCurrentPlace();
+
+        return $place !== null && ($this->gameStateMachine->getMetadataStore()->getPlaceMetadata($place)['action_window'] ?? false) === true;
+    }
+
+    /**
+     * The next action opportunities given in an action window go to the player: added to those they have already been
+     * given, instead of those given to another player.
+     */
+    public function giveActions(Game $game, Player $target, int $actions): void
+    {
+        foreach ($game->getPlayers() as $player) {
+            $this->playerStateManager->withState(
+                $player,
+                fn (PlayerState $state): PlayerState => $state->setGivenActions($player === $target ? $state->getGivenActions() + $actions : 0),
+            );
+        }
+    }
+
+    /**
+     * The player the next action opportunities have been given to gets one, one less to come; null when no opportunity
+     * has been given. Only in an action window: the caller checks it (an enter listener reads the place it leaves).
+     */
+    public function takeGivenActionOpportunity(Game $game): ?Player
+    {
+        foreach ($game->getPlayers() as $player) {
+            if ($this->playerStateManager->getState($player)->getGivenActions() > 0) {
+                $this->playerStateManager->withState(
+                    $player,
+                    fn (PlayerState $state): PlayerState => $state->setGivenActions($state->getGivenActions() - 1),
+                );
+
+                return $player;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -210,6 +258,13 @@ readonly class OpportunityService
      */
     public function pass(Game $game, Player $player): void
     {
+        // passing in an action window loses the action opportunities given to the player
+        if ($this->isActionWindow($game)) {
+            $this->playerStateManager->withState(
+                $player,
+                fn (PlayerState $state): PlayerState => $state->setGivenActions(0),
+            );
+        }
         $this->gameStateManager->withState(
             $game,
             fn (GameState $state): GameState => $state->deactivatePlayer($player),
@@ -219,9 +274,13 @@ readonly class OpportunityService
         }
     }
 
+    /**
+     * The player the next action opportunities have been given to, else the next player who has not passed.
+     */
     private function activateNextPlayer(Game $game, Player $player): void
     {
-        $nextPlayer = $this->getNextPlayerToAct($game, $player);
+        $nextPlayer = ($this->isActionWindow($game) ? $this->takeGivenActionOpportunity($game) : null)
+            ?? $this->getNextPlayerToAct($game, $player);
         if ($nextPlayer instanceof Player) {
             $this->gameStateManager->withState(
                 $game,

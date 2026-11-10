@@ -392,6 +392,7 @@ final class GameBuilder
                 ->setPendingHonorBid($builder->getPendingHonorBid())
                 ->setPassed($builder->isPassed())
                 ->setActed($builder->hasActed())
+                ->setGivenActions($builder->getGivenActions())
                 ->setResolutions($builder->getResolutions())
                 ->setConflictOpportunities($builder->getConflictOpportunities())
                 ->setDeclaredConflictTypes($builder->getDeclaredConflictTypes());

@@ -45,6 +45,7 @@ final class PlayerBuilder
 
     private bool $passed = false;
     private bool $acted = false;
+    private int $givenActions = 0;
     /**
      * @var list<Resolution>
      */
@@ -152,6 +153,16 @@ final class PlayerBuilder
     public function acted(): self
     {
         $this->acted = true;
+
+        return $this;
+    }
+
+    /**
+     * Records the next action opportunities given to the player by a card effect (GiveActionOpportunity).
+     */
+    public function givenActions(int $givenActions): self
+    {
+        $this->givenActions = $givenActions;
 
         return $this;
     }
@@ -404,6 +415,11 @@ final class PlayerBuilder
     public function hasActed(): bool
     {
         return $this->acted;
+    }
+
+    public function getGivenActions(): int
+    {
+        return $this->givenActions;
     }
 
     /**

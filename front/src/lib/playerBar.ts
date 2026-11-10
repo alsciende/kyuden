@@ -61,6 +61,7 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
     favor: game.imperial_favor_holder_id === player.id,
     notes: [
       hasPassed(game, player) ? 'Passed' : null,
+      player.given_actions > 0 ? `Next ${actionsText(player.given_actions)}` : null,
       bidding && player.honor_bid !== null ? `Bid ${player.honor_bid}` : null,
       player.honor_bid_selected ? 'Has bid' : null,
       player.glory_count !== null ? `Glory ${player.glory_count}` : null,
@@ -81,6 +82,15 @@ export function honorBidText(player: PlayerView): string {
 
   return player.honor_bid === null ? 'No honor bid yet' : `Honor bid: ${player.honor_bid}`
 }
+
+/** "action", "2 actions" */
+function actionsText(actions: number): string {
+  return actions === 1 ? 'action' : `${actions} actions`
+}
+
+/** the next action opportunities given to a player: one, two or three (Hawk Tattoo, Current of the Beryt, Austere
+ * Exemplar) */
+const GIVEN_ACTIONS = [1, 2, 3]
 
 /** the stronghold province can be attacked once three of the other provinces of its player are broken */
 const BROKEN_FOR_STRONGHOLD = 3
@@ -265,9 +275,17 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
         },
       ]
       break
-    // the viewer's own name: conceding the game
+    // the name of a player: the next action opportunities given to them; the viewer's own: conceding the game
     case 'player':
       effects = [
+        ...GIVEN_ACTIONS.map((actions): Effect => ({
+          type: 'give_action_opportunity',
+          label:
+            player.id === game.viewer_id
+              ? `Take the next ${actionsText(actions)}`
+              : `Give Opp. the next ${actionsText(actions)}`,
+          payload: { ...target, actions },
+        })),
         player.id === game.viewer_id && {
           type: 'concede_game',
           label: 'Concede',
