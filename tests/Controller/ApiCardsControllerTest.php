@@ -64,7 +64,7 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
             'strength_bonus' => null,
             'ability_timings' => ['action'],
             'ability_granted_to_attached' => false,
-            'image_url' => 'https://d2qmv0gg5fizll.cloudfront.net/l5r/L5C01_84.jpg',
+            'image_url' => 'https://images.kyuden.app/v1/cards/01-adept-of-the-waves.webp',
         ], $this->decode($response));
     }
 

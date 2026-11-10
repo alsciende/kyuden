@@ -42,7 +42,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - **Scaling**: each long-poll holds a FrankenPHP thread for up to 30 s (classic mode, 20 threads); the OAuth state, the rate limiter and the MCP sessions live in filesystem caches (one host only; MCP sessions lost on restart).
 - **Security**: a Mercure subscriber token outlives a revoked session by up to an hour; no rate limit on creating guests and accounts; deleting an account asks no re-authentication (Symfony 8.2 brings one).
 - **Decks of EmeraldDB**: the decks of the Emerald Legacy card pool are refused (their new cards are unknown to the engine); a deck whose page EmeraldDB does not show (private, not published) cannot be downloaded: only what `/api/decklists/<id>` answers without authentication.
-- **Data**: card images point at FFG's CloudFront name (`d2qmv0gg5fizll.cloudfront.net`: the FFG CDN name has a mismatched certificate), which may change; the banned and restricted lists are not checked, and copies are counted by title where EmeraldDB counts by version.
+- **Data**: the images of the cards are ours (`images.kyuden.app`, Cloudflare R2: README, "Other services"): a card added to the fixtures needs its image uploaded, else a 404 (nothing checks it); the banned and restricted lists are not checked, and copies are counted by title where EmeraldDB counts by version.
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; the fix is a breaking downgrade, wait for an update.
 
 ## Next steps

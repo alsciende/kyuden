@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\View;
 
 use App\Entity\LogicalCard;
-use App\Entity\Printing;
 use App\Service\CardScript\CardScriptRegistry;
 use App\View\Model\LogicalCardView;
 
@@ -16,6 +15,7 @@ final readonly class LogicalCardViewFactory
 {
     public function __construct(
         private CardScriptRegistry $cardScriptRegistry,
+        private string $cardImagesUrl,
     ) {
     }
 
@@ -53,18 +53,11 @@ final readonly class LogicalCardViewFactory
     }
 
     /**
-     * The engine does not use the images: it hands the clients the one of the first printing (by id) that has one.
+     * The engine does not use the images: the clients read them from the CDN of the cards, named by their code (the
+     * image of a printing, `Printing::imageUrl`, is not used).
      */
-    private function getImageUrl(LogicalCard $card): ?string
+    private function getImageUrl(LogicalCard $card): string
     {
-        $printings = $card->getPrintings()->toArray();
-        usort($printings, static fn (Printing $a, Printing $b): int => $a->getId() <=> $b->getId());
-        foreach ($printings as $printing) {
-            if ($printing->getImageUrl() !== null) {
-                return $printing->getImageUrl();
-            }
-        }
-
-        return null;
+        return rtrim($this->cardImagesUrl, '/') . '/cards/' . $card->getId() . '.webp';
     }
 }
