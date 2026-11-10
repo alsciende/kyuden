@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AppFooter from '@/components/AppFooter.vue'
@@ -7,6 +8,9 @@ import GameInProgressBanner from '@/components/GameInProgressBanner.vue'
 import { inverted } from '@/lib/page'
 
 const route = useRoute()
+
+// the minimal width of the page depends on the screen (base.css)
+watchEffect(() => document.body.classList.toggle('fullscreen', route.meta.fullscreen === true))
 </script>
 
 <template>

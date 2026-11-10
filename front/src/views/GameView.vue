@@ -363,6 +363,8 @@ const problem = computed(() => {
   grid-template-columns: minmax(0, 1fr) 340px;
   grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
+  /* the visible height: Safari on iPad counts its toolbars in 100vh */
+  height: 100dvh;
   overflow: hidden;
   background: var(--board);
 }

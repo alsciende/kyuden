@@ -108,6 +108,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* the screens of a game (full window: the game, its replay) fit an iPad mini in landscape */
+body.fullscreen {
+  min-width: 1133px;
+}
+
 a {
   color: var(--ink);
 }
@@ -321,4 +326,13 @@ p {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* a long press on an element with a tooltip shows it (lib/tooltip): no callout nor selection on a touch screen */
+@media (hover: none) {
+  .has-tip {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }

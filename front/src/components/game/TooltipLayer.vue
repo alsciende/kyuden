@@ -4,7 +4,7 @@ import { computed, nextTick, ref, useTemplateRef, watch, type CSSProperties } fr
 import { TOOLTIP_WIDTH, tooltip, tooltipPosition } from '@/lib/tooltip'
 
 /**
- * The text of the element under the pointer (see lib/tooltip).
+ * The text of the element under the pointer, or held under the finger (see lib/tooltip).
  */
 const element = useTemplateRef<HTMLElement>('element')
 const height = ref(0)
@@ -23,7 +23,13 @@ const style = computed((): CSSProperties => {
   if (tooltip.rect === null) {
     return {}
   }
-  const { left, top } = tooltipPosition(tooltip.rect, height.value, window.innerWidth, window.innerHeight)
+  const { left, top } = tooltipPosition(
+    tooltip.rect,
+    height.value,
+    window.innerWidth,
+    window.innerHeight,
+    tooltip.above,
+  )
 
   return {
     left: `${left}px`,

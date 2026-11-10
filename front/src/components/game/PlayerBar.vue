@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
+import conflictBack from '@/assets/images/card-back-conflit.webp'
+import dynastyBack from '@/assets/images/card-back-dynasty.webp'
+
 import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
@@ -16,10 +19,11 @@ import { vTip } from '@/lib/tooltip'
 /**
  * The bar of a player, above the board for the opponent and below it for the viewer: the player (their name on the tint
  * of their clan, honor, fate, conflicts left, claimed rings), their dynasty cards (intact provinces, deck, discard
- * pile) and their conflict cards (hand, deck, discard pile), then the cards they have removed from the game, once there
- * are some (mockup: screen 1 of `LdtL4NT1SnDLTzRZpz376x`). A click on a value opens a popover with the effects on it,
- * or the cards of a discard pile, which open like the cards of the board; a click on a claimed ring opens its window,
- * as in the bar on the right.
+ * pile) and their conflict cards (hand, deck, discard pile), each headed by the back of its cards, then the cards they
+ * have removed from the game, once there are some (mockup: screen 1 of `LdtL4NT1SnDLTzRZpz376x`); the Imperial Favor
+ * and the first player token one above the other, so that the bar fits the width of an iPad mini. A click on a value
+ * opens a popover with the effects on it, or the cards of a discard pile, which open like the cards of the board; a
+ * click on a claimed ring opens its window, as in the bar on the right.
  */
 const props = defineProps<{
   game: GameView
@@ -92,11 +96,17 @@ const conflict = computed((): Stat[] => [
 ])
 
 const sections = computed(() => [
-  { name: 'Dynasty', stats: dynasty.value },
-  { name: 'Conflict', stats: conflict.value },
+  { name: 'Dynasty', back: dynastyBack, stats: dynasty.value },
+  { name: 'Conflict', back: conflictBack, stats: conflict.value },
   // a pile few games use: shown once it has cards
   ...(bar.value.removed.length
-    ? [{ name: 'Removed', stats: [{ key: 'removed', label: 'Cards', value: bar.value.removed.length } as Stat] }]
+    ? [
+        {
+          name: 'Removed',
+          back: null,
+          stats: [{ key: 'removed', label: 'Cards', value: bar.value.removed.length } as Stat],
+        },
+      ]
     : []),
 ])
 
@@ -257,7 +267,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         {{ player.name }}
       </button>
       <span v-else class="name" :style="{ background: tint }">{{ player.name }}</span>
-      <span v-if="!game.spectating" class="caption">{{ mine ? 'You' : 'Opp.' }}</span>
     </div>
 
     <!-- the values of the player, centered in the bar -->
@@ -316,7 +325,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </div>
 
       <div v-for="section in sections" :key="section.name" class="section" role="group" :aria-label="section.name">
-        <span class="caption seal">{{ section.name }}</span>
+        <img
+          v-if="section.back"
+          v-tip="`${section.name} cards`"
+          class="back"
+          :src="section.back"
+          :alt="`${section.name} cards`"
+          tabindex="0"
+        />
+        <span v-else class="caption seal">{{ section.name }}</span>
         <template v-for="stat in section.stats" :key="stat.label">
           <button
             v-if="stat.key"
@@ -342,38 +359,41 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
     <div class="badges">
       <span v-for="note in bar.notes" :key="note" class="badge">{{ note }}</span>
-      <span v-if="bar.favor && readOnly(game)" class="badge">
-        <span v-if="game.imperial_favor_side" class="icon" aria-hidden="true">{{
-          CONFLICT_ICONS[game.imperial_favor_side]
-        }}</span>
-        Imperial Favor
-      </span>
-      <button
-        v-else-if="bar.favor || unclaimedFavor"
-        v-tip="bar.favor ? '' : 'Nobody has the Imperial Favor'"
-        type="button"
-        class="badge"
-        :class="{ on: open === 'imperial_favor', unclaimed: !bar.favor }"
-        :aria-label="bar.favor ? undefined : 'Imperial Favor, unclaimed'"
-        :aria-expanded="open === 'imperial_favor'"
-        @click="toggle('imperial_favor', $event)"
-      >
-        <span v-if="bar.favor && game.imperial_favor_side" class="icon" aria-hidden="true">{{
-          CONFLICT_ICONS[game.imperial_favor_side]
-        }}</span>
-        Imperial Favor
-      </button>
-      <span v-if="bar.firstPlayer && readOnly(game)" class="badge first">First player</span>
-      <button
-        v-else-if="bar.firstPlayer"
-        type="button"
-        class="badge first"
-        :class="{ on: open === 'first_player' }"
-        :aria-expanded="open === 'first_player'"
-        @click="toggle('first_player', $event)"
-      >
-        First player
-      </button>
+      <!-- the tokens one above the other -->
+      <div v-if="bar.favor || unclaimedFavor || bar.firstPlayer" class="tokens">
+        <span v-if="bar.favor && readOnly(game)" class="badge">
+          <span v-if="game.imperial_favor_side" class="icon" aria-hidden="true">{{
+            CONFLICT_ICONS[game.imperial_favor_side]
+          }}</span>
+          Imperial Favor
+        </span>
+        <button
+          v-else-if="bar.favor || unclaimedFavor"
+          v-tip="bar.favor ? '' : 'Nobody has the Imperial Favor'"
+          type="button"
+          class="badge"
+          :class="{ on: open === 'imperial_favor', unclaimed: !bar.favor }"
+          :aria-label="bar.favor ? undefined : 'Imperial Favor, unclaimed'"
+          :aria-expanded="open === 'imperial_favor'"
+          @click="toggle('imperial_favor', $event)"
+        >
+          <span v-if="bar.favor && game.imperial_favor_side" class="icon" aria-hidden="true">{{
+            CONFLICT_ICONS[game.imperial_favor_side]
+          }}</span>
+          Imperial Favor
+        </button>
+        <span v-if="bar.firstPlayer && readOnly(game)" class="badge first">First player</span>
+        <button
+          v-else-if="bar.firstPlayer"
+          type="button"
+          class="badge first"
+          :class="{ on: open === 'first_player' }"
+          :aria-expanded="open === 'first_player'"
+          @click="toggle('first_player', $event)"
+        >
+          First player
+        </button>
+      </div>
     </div>
 
     <RingPopover
@@ -661,7 +681,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .badges {
   justify-self: end;
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tokens .badge {
+  justify-content: center;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+/* the back of the cards of a section, in place of its name */
+.back {
+  flex: none;
+  height: 36px;
+  margin-right: 6px;
+  border-radius: 2px;
 }
 
 .badge {
