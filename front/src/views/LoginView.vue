@@ -208,12 +208,14 @@ h1 {
 
 .providers {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* two buttons side by side, one per line when they would not fit (an iPad) */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
 }
 
 .providers .btn {
   padding: 0 20px;
+  white-space: nowrap;
 }
 
 .actions {

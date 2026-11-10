@@ -158,7 +158,8 @@ h1 {
 .columns,
 .game {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px 120px 140px;
+  /* narrower on a tablet, so that the names of the players fit */
+  grid-template-columns: minmax(0, 1fr) clamp(200px, 17vw, 260px) clamp(96px, 7.8vw, 120px) clamp(120px, 9.1vw, 140px);
   align-items: center;
   gap: 24px;
 }

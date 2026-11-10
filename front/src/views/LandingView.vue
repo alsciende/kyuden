@@ -196,7 +196,7 @@ function play(): void {
 }
 
 h1 {
-  font-size: 60px;
+  font-size: 58px;
   line-height: 1.08;
 }
 

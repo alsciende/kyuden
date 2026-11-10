@@ -773,7 +773,9 @@ h2.form-label {
 .kanji {
   font-family: 'Shippori Mincho', serif;
   font-weight: 700;
-  font-size: 30px;
+  /* the three kanji of the Unicorn on one line, down to an iPad mini */
+  font-size: clamp(24px, 2.3vw, 30px);
+  white-space: nowrap;
   line-height: 1;
   min-height: 30px;
 }

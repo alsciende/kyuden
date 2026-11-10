@@ -142,8 +142,14 @@ h2 {
 .tile-actions {
   margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
+  gap: 12px 24px;
+}
+
+/* a narrow tile (an iPad) puts a link on the next line rather than cutting it */
+.tile-actions > * {
+  white-space: nowrap;
 }
 
 .games {

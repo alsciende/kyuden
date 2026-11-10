@@ -100,17 +100,12 @@ body {
 }
 
 body {
-  /* desktop only: designed for 1536px */
-  min-width: 1280px;
+  /* desktop and tablet: designed for 1536px, down to an iPad mini in landscape */
+  min-width: 1133px;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
-}
-
-/* the screens of a game (full window: the game, its replay) fit an iPad mini in landscape */
-body.fullscreen {
-  min-width: 1133px;
 }
 
 a {
