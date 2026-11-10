@@ -77,7 +77,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 
 .image {
-  width: min(400px, calc(100vw - 48px), calc((100vh - 120px) * 0.716));
+  width: min(365px, calc(100vw - 48px), calc((100vh - 120px) * 0.716));
   aspect-ratio: 300 / 419;
   border-radius: 14px;
   display: block;
