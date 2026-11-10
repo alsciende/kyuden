@@ -137,8 +137,9 @@ class CardWorkflowTest extends AbstractKernelTestCase
         $scenario = $this->scenarioWithCardsToPlay();
         $spear = $scenario->card('spear');
 
+        // a character on the stack of another one is attached to it (play_as_attachment)
         $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('enters play in a new stack');
+        $this->expectExceptionMessage('should be in place in_play but its stack and orientation put it in place attached');
 
         self::service(Registry::class)->get($spear)->apply($spear, 'play_card', [
             'player' => $scenario->player('john'),

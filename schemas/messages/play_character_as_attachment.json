@@ -1,0 +1,27 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "play_character_as_attachment",
+    "description": "The active player plays a character as an attachment during an action window, attached to a character in play of any player (Tattooed Wanderer, Togashi Kazue, Serene Ise Zumi…; Voice of the Ancestors from the dynasty discard pile): from where a character is played (a hand, a deck, a discard pile, a province, set aside), of any player. The card is an attachment while it is attached: it does not participate in conflicts, and its printed skills do not modify those of the character (glossary, Attachment Cards); it is discarded when that character leaves play, unless a player detaches it first (`detach_as_character`: Promising Youth). The player controls it, whoever owns it, and says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Character played as an attachment: in a hand, a deck, a discard pile, face up in a province, or set aside.",
+            "type": "string"
+        },
+        "target_card_id": {
+            "description": "Character in play the card is attached to.",
+            "type": "string"
+        },
+        "card_cost": {
+            "description": "Fate paid for the card.",
+            "type": "integer",
+            "minimum": 0
+        }
+    },
+    "required": [
+        "card_id",
+        "target_card_id",
+        "card_cost"
+    ],
+    "additionalProperties": false
+}

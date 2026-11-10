@@ -5,7 +5,7 @@
     "type": "object",
     "properties": {
         "card_id": {
-            "description": "Attachment in play.",
+            "description": "Attachment in play, or a character played as an attachment.",
             "type": "string"
         },
         "target_card_id": {

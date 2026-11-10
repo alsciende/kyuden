@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use App\Entity\CardTypes\StrongholdCard;
 use App\Enum\StackType;
-use App\Enum\Type;
 use App\Exception\Rules\DeckConstructionException;
 use App\Repository\PlayerRepository;
 use App\State\Model\StatefulInterface;
@@ -110,16 +109,16 @@ class Player implements StatefulInterface
     }
 
     /**
-     * @return list<PhysicalCard> the characters in play controlled by the player: each one is in a stack of its controller
+     * @return list<PhysicalCard> the characters in play controlled by the player: each one is the first card of a stack
+     *                            of its controller, the cards above it being attached to it
      */
     public function getCharactersInPlay(): array
     {
         $characters = [];
         foreach ($this->getStacks(StackType::InPlay) as $stack) {
-            foreach ($stack->getCards() as $card) {
-                if ($card->getLogicalCard()->getType() === Type::Character) {
-                    $characters[] = $card;
-                }
+            $character = $stack->getOrderedCards()[0] ?? null;
+            if ($character instanceof PhysicalCard) {
+                $characters[] = $character;
             }
         }
 

@@ -7,7 +7,7 @@ import dynastyBack from '@/assets/images/card-back-dynasty.webp'
 import provinceBack from '@/assets/images/card-back-province.webp'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
-import { hasSkill, printed, shownSkill, type Cards } from '@/lib/board'
+import { hasSkill, printed, printedSkill, shownSkill, type Cards } from '@/lib/board'
 import { CONFLICT_ICONS } from '@/lib/icons'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { useResolvingCards } from '@/lib/resolutions'
@@ -38,6 +38,9 @@ const props = withDefaults(
     attachments?: CardView[]
     /** marked when a player resolves its event or its ability (false: the card shown beside what is resolved) */
     marksResolution?: boolean
+    /** what the card is in play, whatever it is printed as: a character played as an attachment shows no skill, an
+     * attachment turned into a character shows its skills (Togashi Hoshi); its printed type elsewhere */
+    inPlayAs?: 'character' | 'attachment' | null
   }>(),
   {
     size: 'normal',
@@ -47,6 +50,7 @@ const props = withDefaults(
     showCost: false,
     attachments: () => [],
     marksResolution: true,
+    inPlayAs: null,
   },
 )
 
@@ -64,7 +68,9 @@ const broken = computed(() => props.card.orientation === 'upside_down')
 /** a card the viewer knows although it is face down (their own provinces) */
 const secret = computed(() => !hidden.value && props.card.orientation === 'face_down')
 
-const isCharacter = computed(() => printedCard.value?.type === 'character')
+const isCharacter = computed(() =>
+  props.inPlayAs === null ? printedCard.value?.type === 'character' : props.inPlayAs === 'character',
+)
 
 const BACKS: Partial<Record<Side, string>> = { conflict: conflictBack, dynasty: dynastyBack, province: provinceBack }
 
@@ -100,7 +106,7 @@ const changedSkills = computed(() => {
   }
 
   return (['military', 'political'] as const).some(
-    (type) => shown[type].recorded || (hasSkill(card, type) && shown[type].value !== printed(card[type])),
+    (type) => shown[type].recorded || (hasSkill(card, type) && shown[type].value !== printed(printedSkill(card, type))),
   )
 })
 

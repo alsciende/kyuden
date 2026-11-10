@@ -343,6 +343,9 @@ const HINTS: Partial<Record<string, string>> = {
     'With the contested ring, which leaves the province it was at. Reveal a facedown province before passing.',
   add_attacked_province: 'Each attacked province is broken separately. Reveal a facedown province before passing.',
   restore_province: 'Face up and unbroken again, with what lies on it.',
+  play_character_as_attachment:
+    'It does not participate in conflicts, and its skills do not count; it is discarded with the character it is on.',
+  detach_as_character: 'A character at home, ready, under the control of its controller.',
 }
 
 const specialGroups = computed(() =>
@@ -351,6 +354,7 @@ const specialGroups = computed(() =>
     ...(props.menu.intoProvince.length ? ['put_holding_into_province'] : []),
     ...(props.menu.moveAttachment && hosts.value.length ? ['move_attachment'] : []),
     ...(props.menu.attachIntoPlay && targets.value.length ? ['put_attachment_into_play'] : []),
+    ...(props.menu.playAsAttachment && targets.value.length ? ['play_character_as_attachment'] : []),
     ...(props.menu.switchWith.length ? ['switch_province_cards'] : []),
     ...(props.menu.putIntoProvince.length ? ['put_card_into_province'] : []),
     ...(props.menu.moveStatusToken && tokenTargets.value.length ? ['move_status_token'] : []),
@@ -633,6 +637,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               </fieldset>
               <button type="submit" class="btn btn-ghost" :disabled="sending || hostId === null">Move it</button>
             </form>
+
+            <PlayForm
+              v-if="group.form && group.type === 'play_character_as_attachment' && menu.playAsAttachment"
+              :action="menu.playAsAttachment"
+              :card-id="view.id"
+              :game="game"
+              :cards="cards"
+              :sending="sending"
+              @play="confirmPlay"
+              @back="specialOpen = false"
+            />
 
             <form
               v-if="group.form && group.type === 'put_attachment_into_play'"

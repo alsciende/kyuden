@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "detach_as_character",
+    "description": "Detaches an attachment from the character it is attached to and turns it into a character in play, ready, at home, under the control of its controller: a character played as an attachment (Promising Youth, when the character it is attached to leaves play), or an attachment (Togashi Hoshi: its skills are its printed modifiers, which the players declare). The cards can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "card_id": {
+            "description": "Attachment attached to a character in play, or a character played as an attachment.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "card_id"
+    ],
+    "additionalProperties": false
+}

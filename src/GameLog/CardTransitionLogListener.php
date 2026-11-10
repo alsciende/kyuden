@@ -20,7 +20,9 @@ use Symfony\Component\Workflow\Event\LeaveEvent;
  * - `from`, `to`: the stacks the card leaves and goes to (the same for a transition that does not move it);
  * - `controller`: the player given in the `controller` key of the transition context, if any (take_control);
  * - `player`: the player given in the `player` key of the transition context, if any (the player playing the card);
- * - `host`: the card it goes under, when it goes to an Underneath stack (place_under).
+ * - `host`: the card it goes under, when it goes to an Underneath stack (place_under);
+ * - `character`: when the template names it, the character the card is attached to as an attachment
+ *   (play_as_attachment), or detached from (detach).
  *
  * Written when the card leaves its place, before the consequences of the transition (LeavePlayListener), which write
  * their own entries: the position the card goes to is read from the metadata of the transition, as
@@ -56,12 +58,18 @@ final readonly class CardTransitionLogListener
         $toType = $toType instanceof StackType ? $toType : $from->getType();
         $orientation = $event->getMetadata('orientation', $transition);
         $orientation = $orientation instanceof Orientation ? $orientation : $card->getOrientation();
-        $to = $this->getTargetStack($card, $from, $toType, $event->getContext());
+        $to = $event->getMetadata('character', $transition) === true
+            ? null // a new stack (detach)
+            : $this->getTargetStack($card, $from, $toType, $event->getContext());
         $toOwner = $to?->getPlayer() ?? $card->getPlayer();
 
         $game = $card->getGame();
         // the card it goes under (place_under)
         $host = $to?->getHost();
+        // the character it is attached to, or detached from
+        $character = str_contains($template, '{character}')
+            ? ($to?->getOrderedCards()[0] ?? null) ?? $card->getAttachedCharacter()
+            : null;
         $controller = $event->getContext()['controller'] ?? null;
         // the player playing the card, whoever owns it
         $player = $event->getContext()['player'] ?? null;
@@ -77,6 +85,7 @@ final readonly class CardTransitionLogListener
             'from' => $from,
             'to' => LogParam::stackOf($toType, $toOwner, $to),
             ...($host instanceof PhysicalCard ? ['host' => $this->cardParam($host, $host->getStack())] : []),
+            ...($character instanceof PhysicalCard ? ['character' => $this->cardParam($character, $character->getStack())] : []),
             ...($controller instanceof Player ? ['controller' => $controller] : []),
             ...($player instanceof Player ? ['player' => $player] : []),
         ]);

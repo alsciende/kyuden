@@ -227,6 +227,16 @@ export interface DeclareProvinceStrength {
 }
 
 /**
+ * Detaches an attachment from the character it is attached to and turns it into a character in play, ready, at home, under the control of its controller: a character played as an attachment (Promising Youth, when the character it is attached to leaves play), or an attachment (Togashi Hoshi: its skills are its printed modifiers, which the players declare). The cards can belong to any player: the engine does not apply card effects.
+ */
+export interface DetachAsCharacter {
+  /**
+   * Attachment attached to a character in play, or a character played as an attachment.
+   */
+  card_id: string
+}
+
+/**
  * Discards a card from hand, from play or from a province to its owner's discard pile, e.g. a dynasty card from a broken province or during the fate phase, a card discarded by an effect, a character with no fate.
  *
  * The card can belong to any player: effects often target an opponent's card.
@@ -492,7 +502,7 @@ export interface LoseHonor {
  */
 export interface MoveAttachment {
   /**
-   * Attachment in play.
+   * Attachment in play, or a character played as an attachment.
    */
   card_id: string
   /**
@@ -747,6 +757,24 @@ export interface PlayCharacter {
    * Whether the character enters play into the conflict, on the side of the player.
    */
   into_conflict: boolean
+}
+
+/**
+ * The active player plays a character as an attachment during an action window, attached to a character in play of any player (Tattooed Wanderer, Togashi Kazue, Serene Ise Zumi…; Voice of the Ancestors from the dynasty discard pile): from where a character is played (a hand, a deck, a discard pile, a province, set aside), of any player. The card is an attachment while it is attached: it does not participate in conflicts, and its printed skills do not modify those of the character (glossary, Attachment Cards); it is discarded when that character leaves play, unless a player detaches it first (`detach_as_character`: Promising Youth). The player controls it, whoever owns it, and says what they pay (`card_cost`), since card effects may modify costs. The player resolves what follows with other actions, then ends their action (`end_resolution`), which ends their opportunity to act.
+ */
+export interface PlayCharacterAsAttachment {
+  /**
+   * Character played as an attachment: in a hand, a deck, a discard pile, face up in a province, or set aside.
+   */
+  card_id: string
+  /**
+   * Character in play the card is attached to.
+   */
+  target_card_id: string
+  /**
+   * Fate paid for the card.
+   */
+  card_cost: number
 }
 
 /**
@@ -1337,6 +1365,7 @@ export interface MessagePayloads {
   declare_next_conflict: DeclareNextConflict
   declare_no_defenders: DeclareNoDefenders
   declare_province_strength: DeclareProvinceStrength
+  detach_as_character: DetachAsCharacter
   discard_card: DiscardCard
   discard_duplicate: DiscardDuplicate
   discard_imperial_favor: DiscardImperialFavor
@@ -1375,6 +1404,7 @@ export interface MessagePayloads {
   play_action_event: PlayActionEvent
   play_attachment: PlayAttachment
   play_character: PlayCharacter
+  play_character_as_attachment: PlayCharacterAsAttachment
   play_character_from_province: PlayCharacterFromProvince
   play_interrupt_event: PlayInterruptEvent
   play_reaction_event: PlayReactionEvent

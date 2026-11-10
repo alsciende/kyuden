@@ -8,15 +8,18 @@ use App\Entity\PhysicalCard;
 use App\Entity\Stack;
 use App\Enum\Orientation;
 use App\Enum\StackType;
+use App\Enum\Type;
 use App\Factory\StackFactory;
+use App\Service\ControlService;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 
 /**
  * Applies the move described in the metadata of a card transition:
  * - `stack`: the StackType the card moves to. The target Stack is:
- *   - for a card entering play: a new stack for a character, the Stack given in the `stack` key of the
- *     transition context otherwise (e.g. the stack of the character or province an attachment is put on);
+ *   - for a card entering play: the Stack given in the `stack` key of the transition context (the stack of the
+ *     character or province an attachment is put on, a character played as an attachment included), else a new stack
+ *     of its controller for a character, or for a card the transition turns into one (metadata `character`: detach);
  *   - for a unique stack type: the stack given in the context, or else the player's stack;
  *   - for another stack type: the stack given in the context.
  *   Whether the card can be in the target stack is checked by CardMarkingStore.
@@ -31,6 +34,7 @@ readonly class CardTransitionListener
 {
     public function __construct(
         private StackFactory $stackFactory,
+        private ControlService $controlService,
     ) {
     }
 
@@ -54,7 +58,7 @@ readonly class CardTransitionListener
 
             // on top of the stack, unless the transition puts it at the bottom (a card can move within its stack)
             $above = $event->getMetadata('position', $event->getTransition()) !== 'bottom';
-            $stack = $this->getTargetStack($card, $stackType, $event->getContext());
+            $stack = $this->getTargetStack($card, $stackType, $event->getContext(), $event->getMetadata('character', $event->getTransition()) === true);
             if ($card->getStack() === $stack) {
                 $stack->moveCard($card, $above);
             } else {
@@ -70,23 +74,19 @@ readonly class CardTransitionListener
     /**
      * @param array<mixed> $context
      */
-    private function getTargetStack(PhysicalCard $card, StackType $stackType, array $context): Stack
+    private function getTargetStack(PhysicalCard $card, StackType $stackType, array $context, bool $asCharacter): Stack
     {
         $stack = $context['stack'] ?? null;
         if ($stack !== null && ! $stack instanceof Stack) {
             throw new \LogicException("The 'stack' key of the transition context must be a Stack.");
         }
 
-        if ($stackType === StackType::InPlay && $card->entersPlayInNewStack()) {
-            if ($stack !== null) {
-                throw new \LogicException(sprintf('Card %s enters play in a new stack: no stack must be given.', $card->getId()));
-            }
-
-            return $this->stackFactory->createStack($card->getPlayer(), $stackType);
-        }
-
         if ($stack !== null) {
             return $stack;
+        }
+
+        if ($stackType === StackType::InPlay && ($card->getLogicalCard()->getType() === Type::Character || $asCharacter)) {
+            return $this->stackFactory->createStack($this->controlService->getController($card), $stackType);
         }
 
         if ($stackType->isUnique()) {

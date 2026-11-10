@@ -41,6 +41,19 @@ final class WorkflowConfig
     }
 
     /**
+     * A transition that keeps the card in its place, from each of the places given (take_control, move_attachment).
+     *
+     * @param list<string>         $places
+     * @param array<string, mixed> $metadata
+     *
+     * @return list<TransitionConfig>
+     */
+    public static function inPlace(string $name, array $places, array $metadata): array
+    {
+        return array_map(fn (string $place): array => self::transition($name, $place, $place, $metadata), $places);
+    }
+
+    /**
      * Every place the transitions start from or lead to, in order of appearance.
      *
      * @param list<TransitionConfig> $transitions

@@ -626,9 +626,22 @@ export function printed(value: string | number | null | undefined): number {
   return Number.isNaN(number) ? 0 : number
 }
 
+/**
+ * The printed skill of a character: its skill modifier for an attachment turned into a character (Togashi Hoshi), its
+ * skill otherwise.
+ */
+export function printedSkill(card: Card | undefined, type: ConflictType): string | null | undefined {
+  if (card?.type === 'attachment') {
+    // no modifier: 0
+    return (type === 'military' ? card.military_bonus : card.political_bonus) ?? '0'
+  }
+
+  return card?.[type]
+}
+
 /** whether a character has a skill of that type at all (a dash is no skill) */
 export function hasSkill(card: Card | undefined, type: ConflictType): boolean {
-  const value = card?.[type]
+  const value = printedSkill(card, type)
 
   return value !== null && value !== undefined && value !== '-'
 }
@@ -646,9 +659,10 @@ export function skillOf(character: Pick<Character, 'card' | 'attachments'>, card
   if (!hasSkill(card, type)) {
     return 0
   }
-  let skill = printed(card![type])
+  let skill = printed(printedSkill(card, type))
   for (const attachment of character.attachments) {
     const attached = attachment.code ? cards[attachment.code] : undefined
+    // the skills of a character played as an attachment are no modifiers (glossary, Attachment Cards)
     skill += printed(type === 'military' ? attached?.military_bonus : attached?.political_bonus)
   }
   const glory = printed(card!.glory)

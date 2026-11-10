@@ -48,6 +48,7 @@ function click(id: string, selectable: string[] | null): void {
             :mine="mine"
             :size="size"
             :attachments="character.attachments"
+            in-play-as="character"
             :selected="selectedIds.includes(character.card.id)"
             :muted="selectable !== null && !selectable.includes(character.card.id)"
             :tag="selectedIds.includes(character.card.id) ? selectedTag : (tags[character.card.id] ?? null)"
@@ -65,7 +66,14 @@ function click(id: string, selectable: string[] | null): void {
           size="small"
           @open="emit('open', $event)"
         >
-          <GameCard :card="attachment" :cards="cards" :mine="mine" size="small" @click="emit('open', attachment.id)" />
+          <GameCard
+            :card="attachment"
+            :cards="cards"
+            :mine="mine"
+            size="small"
+            in-play-as="attachment"
+            @click="emit('open', attachment.id)"
+          />
         </UnderPile>
       </div>
     </div>

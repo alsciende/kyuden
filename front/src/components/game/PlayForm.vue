@@ -8,8 +8,9 @@ import type { PlayAction } from '@/lib/cardActions'
 
 /**
  * Playing a card: what the player pays (the printed cost prefilled, card effects may modify it), the fate placed on a
- * character, whether it enters play into the conflict, the character an attachment goes on. Shared by the card opened
- * (`CardDialog`) and the cards looked at (`InspectionWindow`): a card of a deck is played from there.
+ * character, whether it enters play into the conflict, the character an attachment (or a character played as one) goes
+ * on. Shared by the card opened (`CardDialog`) and the cards looked at (`InspectionWindow`): a card of a deck is played
+ * from there.
  */
 const props = defineProps<{
   action: PlayAction
@@ -24,6 +25,8 @@ const emit = defineEmits<{ play: [message: Message]; back: [] }>()
 const play = reactive({ cost: props.action.cost, fate: 0, intoConflict: false, target: null as string | null })
 
 const isCharacter = computed(() => props.action.kind === 'from_province' || props.action.kind === 'character')
+/** the card goes on a character */
+const attaches = computed(() => props.action.kind === 'attachment' || props.action.kind === 'as_attachment')
 
 /** the characters an attachment may go on */
 const targets = computed(() =>
@@ -65,6 +68,7 @@ function confirm(): void {
       })
       break
     case 'attachment':
+    case 'as_attachment':
       if (play.target !== null) {
         emit('play', { type: action.type, payload: { card_id, target_card_id: play.target, card_cost: play.cost } })
       }
@@ -90,7 +94,7 @@ function confirm(): void {
     <label v-if="action.kind === 'character' && viewerInConflict" class="check">
       <input v-model="play.intoConflict" type="checkbox" /> Into the conflict
     </label>
-    <fieldset v-if="action.kind === 'attachment'" class="choices">
+    <fieldset v-if="attaches" class="choices">
       <legend class="label">Attach it to</legend>
       <label v-for="target in targets" :key="target.id" class="choice">
         <input v-model="play.target" type="radio" name="target" :value="target.id" />
@@ -100,11 +104,7 @@ function confirm(): void {
     <span class="hint">You pay {{ play.cost + (isCharacter ? play.fate : 0) }} fate.</span>
     <div class="row">
       <button type="button" class="btn btn-ghost" @click="emit('back')">Back</button>
-      <button
-        type="submit"
-        class="btn btn-primary"
-        :disabled="sending || (action.kind === 'attachment' && play.target === null)"
-      >
+      <button type="submit" class="btn btn-primary" :disabled="sending || (attaches && play.target === null)">
         Play
       </button>
     </div>

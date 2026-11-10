@@ -19,7 +19,7 @@ final readonly class MoveAttachment implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
-        #[Description('Attachment in play.')]
+        #[Description('Attachment in play, or a character played as an attachment.')]
         private string $cardId,
         #[Description('Character in play or province the attachment is moved to.')]
         private string $targetCardId,

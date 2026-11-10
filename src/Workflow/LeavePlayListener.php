@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Workflow;
 
-use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Enum\PersonalHonor;
 use App\Event\FateRemovedFromCardEvent;
@@ -26,11 +25,12 @@ use Symfony\Component\Workflow\Transition;
 
 /**
  * Consequences of a card leaving play ("Leaves Play" in the glossary), for any card transition from `in_play` to
- * another place (discarded, returned to hand…):
+ * another place (discarded, returned to hand…), or from `attached` (a character in play as an attachment):
  * - the controller of an honored character gains 1 honor, of a dishonored one loses 1 honor;
  * - the tokens on the card return to the general token pool and the control by another player ends (its CardState is
  *   reset): the card goes to an out-of-play area of its owner;
- * - the attachments on a character are discarded (ancestral attachments are not returned to hand);
+ * - the attachments on a character are discarded, the characters attached to it as attachments too (ancestral
+ *   attachments are not returned to hand);
  * - the character no longer participates in the conflict.
  */
 #[AsEventListener(event: 'workflow.leave')]
@@ -55,11 +55,12 @@ readonly class LeavePlayListener
     {
         $card = $event->getSubject();
         $transition = $event->getTransition();
-        // every card workflow names its in-play place the same way
+        // every card workflow names its in-play places the same way; an attachment turned into a character (detach) stays
+        // in play
         if (! $card instanceof PhysicalCard
-            || $card->getCurrentPlace() !== DynastyCard::STATE_IN_PLAY
+            || ! in_array($card->getCurrentPlace(), PhysicalCard::IN_PLAY_PLACES, true)
             || ! $transition instanceof Transition
-            || in_array(DynastyCard::STATE_IN_PLAY, $transition->getTos(), true)) {
+            || PhysicalCard::hasInPlayPlace($transition->getTos())) {
             return;
         }
 
@@ -89,7 +90,7 @@ readonly class LeavePlayListener
             $this->eventDispatcher->dispatch(new PersonalHonorChangedEvent($card->getGame(), $card, PersonalHonor::Ordinary));
         }
 
-        if ($card->entersPlayInNewStack()) {
+        if ($card->isCharacterInPlay()) {
             foreach ($card->getStack()->getCards()->getValues() as $attachment) {
                 if ($attachment !== $card) {
                     $this->workflowRegistry->get($attachment)->apply($attachment, 'discard_card');

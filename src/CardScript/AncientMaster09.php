@@ -9,6 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
 use App\Message\LookAtCards;
+use App\Message\PlayCharacterAsAttachment;
 use App\Message\RevealCard;
 use App\Message\ShuffleConflictDeck;
 
@@ -32,6 +33,6 @@ final readonly class AncientMaster09 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [AddCardToHand::class, LookAtCards::class, RevealCard::class, ShuffleConflictDeck::class];
+        return [AddCardToHand::class, LookAtCards::class, PlayCharacterAsAttachment::class, RevealCard::class, ShuffleConflictDeck::class];
     }
 }

@@ -24,10 +24,10 @@ use Symfony\Component\Workflow\Registry;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * Rules about playing a card during an action window (PlayCharacter, PlayAttachment and the events), from its hand or
- * from elsewhere: a card of any player, from a hand, a deck or a discard pile (a conflict card), from a province face
- * up, a deck or a discard pile (a dynasty character), or from out of play (removed from the game, under a card: Stolen
- * Secrets, Daidoji Uji, Back-Alley Hideaway). The engine does not check the effect allowing it (Artisan
+ * Rules about playing a card during an action window (PlayCharacter, PlayAttachment, PlayCharacterAsAttachment and the
+ * events), from its hand or from elsewhere: a card of any player, from a hand, a deck or a discard pile (a conflict
+ * card), from a province face up, a deck or a discard pile (a dynasty character), or from out of play (removed from the
+ * game, under a card: Stolen Secrets, Daidoji Uji, Back-Alley Hideaway). The engine does not check the effect allowing it (Artisan
  * Academy, Kunshu, Prepared Ambush…): the player playing it controls it, and an event goes to the discard pile of its
  * owner.
  */
@@ -104,13 +104,19 @@ readonly class PlayService
      * when they play it, else it changes control once in play (`take_control`). A province it leaves is refilled once
      * the action is ended, if still empty.
      *
+     * A character played as an attachment (`asAttachment`: PlayCharacterAsAttachment) is `attached` once in play.
+     *
      * @param array<string, mixed> $context the context of the transition (the `stack` of an attachment)
      */
-    public function enterPlay(PhysicalCard $card, Player $player, array $context = []): void
+    public function enterPlay(PhysicalCard $card, Player $player, array $context = [], bool $asAttachment = false): void
     {
         $from = $card->getStack();
         $workflow = $this->workflowRegistry->get($card);
-        $workflow->apply($card, $card instanceof DynastyCard ? 'play' : 'play_card', [
+        $workflow->apply($card, match (true) {
+            $asAttachment => 'play_as_attachment',
+            $card instanceof DynastyCard => 'play',
+            default => 'play_card',
+        }, [
             ...$context,
             'player' => $player,
         ]);

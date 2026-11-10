@@ -15,6 +15,8 @@ interface PlayTypes {
   from_province: 'play_character_from_province'
   character: 'play_character'
   attachment: 'play_attachment'
+  /** a character played as an attachment (Tattooed Wanderer, Voice of the Ancestors): a special action */
+  as_attachment: 'play_character_as_attachment'
   event: 'play_action_event' | 'play_interrupt_event' | 'play_reaction_event'
 }
 
@@ -37,6 +39,8 @@ export interface CardMenu {
   mine: boolean
   abilities: SimpleAction[]
   plays: PlayAction[]
+  /** a character played as an attachment, from where it is played (a special action, with the form of `plays`) */
+  playAsAttachment: PlayAction | null
   state: SimpleAction[]
   /** the skills of a character in play can be recorded */
   skill: boolean
@@ -310,6 +314,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     mine: view.controller_id === game.viewer_id,
     abilities: [],
     plays: [],
+    playAsAttachment: null,
     state: [],
     skill: false,
     duel: false,
@@ -425,8 +430,21 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       })
     }
   }
+  // an attachment, or a character played as one (to a character only, as the form offers)
   const moveAttachment = () => {
-    menu.moveAttachment = card?.type === 'attachment' && available.has('move_attachment')
+    menu.moveAttachment =
+      (card?.type === 'attachment' || (stack.type === 'in_play' && under !== null)) && available.has('move_attachment')
+  }
+  // a character played where it is played from, as an attachment (Tattooed Wanderer, Togashi Kazue)
+  const playAsAttachment = () => {
+    if (card?.type === 'character' && menu.plays.length > 0 && available.has('play_character_as_attachment')) {
+      menu.playAsAttachment = {
+        type: 'play_character_as_attachment',
+        kind: 'as_attachment',
+        label: 'Play it as an attachment',
+        cost: card.cost ?? 0,
+      }
+    }
   }
   // a face-up province that is not broken yet, by an effect (Endless Plains); a broken one restored (Ethereal
   // Alignment)
@@ -513,6 +531,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
   switch (stack.type) {
     case 'hand':
       menu.plays = playActions(card, available)
+      playAsAttachment()
       if (menu.mine) {
         add(menu.state, 'reveal_card', 'Reveal it')
       }
@@ -552,6 +571,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         if (card?.type === 'character') {
           // during a conflict too (Prepared Ambush, Wind's Path)
           menu.plays = playActions(card, available, true)
+          playAsAttachment()
         }
         // a character has abilities once in play; a holding has them in its province
         if (card?.type !== 'character') {
@@ -646,6 +666,8 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       }
       if (under !== null) {
         moveAttachment()
+        // detached and turned into a character (Promising Youth, Togashi Hoshi)
+        add(menu.more, 'detach_as_character', 'Turn it into a character')
       }
       if (under === null) {
         intoProvince()
@@ -660,6 +682,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     case 'conflict_discard_pile':
       // Kunshu, Guidance of the Ancestors, Exposed Courtyard
       menu.plays = playActions(card, available)
+      playAsAttachment()
       putIntoPlay()
       attachIntoPlay()
       add(menu.removals, 'add_card_to_hand', menu.mine ? 'Take it back into your hand' : "Put it back into Opp.'s hand")
@@ -671,6 +694,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       // Gateway to Meido
       if (card?.type === 'character') {
         menu.plays = playActions(card, available)
+        playAsAttachment()
       }
       putIntoPlay()
       holdingIntoProvince()
@@ -686,6 +710,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       // not check the effect
       lookAt()
       menu.plays = playActions(card, available)
+      playAsAttachment()
       putIntoPlay()
       attachIntoPlay()
       holdingIntoProvince()

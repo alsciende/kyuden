@@ -103,7 +103,8 @@ readonly class ConflictService
     }
 
     /**
-     * A character in play, controlled by the player if one is given.
+     * A character in play, controlled by the player if one is given: the first card of a stack in play, not a character
+     * played as an attachment, but an attachment turned into a character (PhysicalCard::isCharacterInPlay()).
      */
     public function assertCharacterInPlay(PhysicalCard $card, ?Player $player = null): void
     {
@@ -111,11 +112,12 @@ readonly class ConflictService
             throw new NotControlledCardException($card, $player);
         }
 
-        if ($card->getLogicalCard()->getType() !== Type::Character) {
+        $inPlay = $card->getStack()->getType() === StackType::InPlay;
+        if ($inPlay ? ! $card->isCharacterInPlay() : $card->getLogicalCard()->getType() !== Type::Character) {
             throw new WrongCardTypeException($card, Type::Character);
         }
 
-        if ($card->getStack()->getType() !== StackType::InPlay) {
+        if (! $inPlay) {
             throw new NotInPlayException($card);
         }
     }

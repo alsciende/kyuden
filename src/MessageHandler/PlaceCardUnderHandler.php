@@ -77,8 +77,8 @@ final readonly class PlaceCardUnderHandler implements PlayerActionHandlerInterfa
     {
         return match (true) {
             $host instanceof ProvinceCard, $host instanceof StrongholdCard => true,
-            $host instanceof ConflictCard => $host->getCurrentPlace() === ConflictCard::STATE_IN_PLAY,
-            $host instanceof DynastyCard => in_array($host->getCurrentPlace(), [DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_PROVINCE_FACEUP], true),
+            $host instanceof ConflictCard => in_array($host->getCurrentPlace(), PhysicalCard::IN_PLAY_PLACES, true),
+            $host instanceof DynastyCard => in_array($host->getCurrentPlace(), [...PhysicalCard::IN_PLAY_PLACES, DynastyCard::STATE_PROVINCE_FACEUP], true),
             default => false,
         };
     }

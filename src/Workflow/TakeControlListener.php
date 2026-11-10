@@ -50,7 +50,7 @@ readonly class TakeControlListener
             fn (CardState $state): CardState => $state->setControllerId($controller === $card->getPlayer() ? null : $controller->getId()),
         );
 
-        if (! $card->entersPlayInNewStack()) {
+        if (! $card->isCharacterInPlay()) {
             return;
         }
 

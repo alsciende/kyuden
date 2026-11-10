@@ -17,6 +17,9 @@ class DynastyCard extends PhysicalCard
     public const string STATE_PROVINCE_FACEDOWN = 'on_province_facedown';
     public const string STATE_PROVINCE_FACEUP = 'on_province_faceup';
     public const string STATE_IN_PLAY = 'in_play';
+    // a character in play as an attachment, attached to another character (PhysicalCard::getCurrentPlace(): the stack
+    // and the orientation are those of an attachment)
+    public const string STATE_ATTACHED = 'attached';
     public const string STATE_DISCARD_PILE = 'dynasty_discard_pile';
     // out of play, face up or face down: the transitions are the same
     public const string STATE_REMOVED_FROM_GAME = 'removed_from_game';

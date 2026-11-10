@@ -26,7 +26,7 @@ class InitiateDuelHandlerTest extends AbstractKernelTestCase
         return $this->scenario()
             ->atPlace($place)
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(3)->inPlay(['toturi' => '01-akodo-toturi']))
-            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(1)->inPlay(['spear' => '01-master-of-the-spear', 'hotaru' => '01-doji-hotaru']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->honorBid(1)->inPlay(['spear' => '01-master-of-the-spear'])->inPlay(['hotaru' => '01-doji-hotaru']))
             ->activePlayer('john');
     }
 
@@ -112,7 +112,7 @@ class InitiateDuelHandlerTest extends AbstractKernelTestCase
         $scenario = $this->scenarioInActionWindow('conflict_action_window')
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->honorBid(1)
-                ->inPlay(['spear' => '01-master-of-the-spear', 'hotaru' => '01-doji-hotaru'])
+                ->inPlay(['spear' => '01-master-of-the-spear'])->inPlay(['hotaru' => '01-doji-hotaru'])
                 ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceUp))
             ->conflict('john', 'province', attackers: ['toturi'], defenders: ['spear'])
             ->persist();

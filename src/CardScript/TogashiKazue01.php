@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
+use App\Message\PlayCharacterAsAttachment;
 
 /**
  * Togashi Kazue.
@@ -29,6 +30,6 @@ final readonly class TogashiKazue01 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [MoveFate::class];
+        return [MoveFate::class, PlayCharacterAsAttachment::class];
     }
 }

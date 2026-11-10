@@ -57,7 +57,8 @@ final readonly class BoardReader
 
         $skill = (int) $printed;
         foreach ($character->getStack()->getCards() as $attachment) {
-            if ($attachment->getLogicalCard()->getType() === Type::Attachment) {
+            // a character played as an attachment has no skill modifier (glossary, Attachment Cards)
+            if ($attachment !== $character && $attachment->getLogicalCard()->getType() === Type::Attachment) {
                 $skill += (int) ($type === ConflictType::Military ? $attachment->getLogicalCard()->getMilitaryBonus() : $attachment->getLogicalCard()->getPoliticalBonus());
             }
         }
@@ -174,7 +175,11 @@ final readonly class BoardReader
 
     private function printedSkill(PhysicalCard $character, ConflictType $type): ?string
     {
-        $printed = $type === ConflictType::Military ? $character->getLogicalCard()->getMilitary() : $character->getLogicalCard()->getPolitical();
+        $card = $character->getLogicalCard();
+        // an attachment turned into a character (Togashi Hoshi): its skills are its printed modifiers, 0 without one
+        $printed = $card->getType() === Type::Attachment
+            ? ($type === ConflictType::Military ? $card->getMilitaryBonus() : $card->getPoliticalBonus()) ?? '0'
+            : ($type === ConflictType::Military ? $card->getMilitary() : $card->getPolitical());
 
         return $printed === null || $printed === '-' ? null : $printed;
     }

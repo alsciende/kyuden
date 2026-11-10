@@ -569,6 +569,43 @@ describe('cardMenu', () => {
     expect(cardMenu(view, withKatana, kaezin.id)!.moveAttachment).toBe(false)
   })
 
+  it('plays a character as an attachment, and detaches it, apart with the special actions', () => {
+    const kaezin = card('kaezin')
+    const scout = card('scout')
+    const attached = card('scout')
+    const katana = card('katana')
+    const view = game(
+      player('me', [stack('in_play', [kaezin, attached, katana]), stack('hand', [scout])]),
+      player('opp'),
+      {
+        available_actions: ['play_character', 'play_character_as_attachment', 'detach_as_character', 'move_attachment'],
+        special_actions: [
+          { type: 'play_character_as_attachment', card_ids: [scout.id] },
+          { type: 'detach_as_character', card_ids: [] },
+          { type: 'move_attachment', card_ids: [] },
+        ],
+      },
+    )
+    const withKatana = { ...cards, katana: printed('katana', { type: 'attachment' }) }
+
+    expect(cardMenu(view, withKatana, scout.id)!.playAsAttachment).toEqual({
+      type: 'play_character_as_attachment',
+      kind: 'as_attachment',
+      label: 'Play it as an attachment',
+      cost: 1,
+    })
+    // a character played as an attachment is moved and detached like an attachment
+    const menu = cardMenu(view, withKatana, attached.id)!
+    expect(menu.playAsAttachment).toBeNull()
+    expect(menu.moveAttachment).toBe(true)
+    expect(menu.more).toEqual([
+      { type: 'detach_as_character', label: 'Turn it into a character', payload: { card_id: attached.id } },
+    ])
+    expect(cardMenu(view, withKatana, katana.id)!.more.map((action) => action.type)).toEqual(['detach_as_character'])
+    expect(cardMenu(view, withKatana, kaezin.id)!.more).toEqual([])
+    expect(cardMenu(view, withKatana, kaezin.id)!.moveAttachment).toBe(false)
+  })
+
   it('puts an attachment out of play into play, from a hand, a discard pile or set aside', () => {
     const kaezin = card('kaezin')
     const inHand = card('katana')

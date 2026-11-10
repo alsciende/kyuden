@@ -6,6 +6,7 @@ namespace App\Workflow;
 
 use App\Entity\CardTypes\ConflictCard;
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\PhysicalCard;
 use App\Service\SetAsideStacks;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Workflow\Event\LeaveEvent;
@@ -37,7 +38,9 @@ readonly class HostLeaveListener
         $transition = $event->getTransition();
         if (! ($card instanceof ConflictCard || $card instanceof DynastyCard)
             || ! $transition instanceof Transition
-            || in_array($card->getCurrentPlace(), $transition->getTos(), true)) {
+            || in_array($card->getCurrentPlace(), $transition->getTos(), true)
+            // an attachment turned into a character (detach) stays in play
+            || (in_array($card->getCurrentPlace(), PhysicalCard::IN_PLAY_PLACES, true) && PhysicalCard::hasInPlayPlace($transition->getTos()))) {
             return;
         }
 

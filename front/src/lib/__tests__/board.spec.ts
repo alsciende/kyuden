@@ -169,6 +169,19 @@ describe('skills', () => {
     expect(skillOf(charactersInPlay(me)[0]!, cards, 'military')).toBe(2 + 2 + 1)
   })
 
+  it('adds nothing for a character played as an attachment, and reads the modifiers of an attachment turned into one', () => {
+    const me = player('me', [
+      stack('in_play', [card('samurai'), card('courtier')]),
+      stack('in_play', [card('katana', { personal_honor: 'honored' })]),
+    ])
+    const [samurai, katana] = charactersInPlay(me)
+
+    expect(skillOf(samurai!, cards, 'military')).toBe(2)
+    // Togashi Hoshi: its skills are its printed modifiers, its glory 0
+    expect(skillOf(katana!, cards, 'military')).toBe(2)
+    expect(shownSkill(katana!, cards, 'political')).toEqual({ value: 0, recorded: false })
+  })
+
   it('subtracts the glory of a dishonored character, down to 0', () => {
     const me = player('me', [stack('in_play', [card('courtier', { personal_honor: 'dishonored' })])])
 

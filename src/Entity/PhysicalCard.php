@@ -31,6 +31,12 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table('physical_cards')]
 abstract class PhysicalCard implements StatefulInterface
 {
+    /**
+     * The places of a card in play, in the conflict and dynasty card workflows: a character or an attachment (`in_play`),
+     * a character attached to another one as an attachment (`attached`).
+     */
+    public const array IN_PLAY_PLACES = [DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_ATTACHED];
+
     public const array DISCRIMINATOR_MAP = [
         Side::Conflict->value => ConflictCard::class,
         Side::Dynasty->value => DynastyCard::class,
@@ -83,6 +89,16 @@ abstract class PhysicalCard implements StatefulInterface
     }
 
     /**
+     * Whether one of the places (the places a transition leads to) is a place in play.
+     *
+     * @param array<mixed> $places
+     */
+    public static function hasInPlayPlace(array $places): bool
+    {
+        return array_any($places, fn (mixed $place): bool => in_array($place, self::IN_PLAY_PLACES, true));
+    }
+
+    /**
      * Orientation of a card of this type when the game starts. Later on, the transitions of the workflow
      * set the orientation of the card.
      */
@@ -116,22 +132,49 @@ abstract class PhysicalCard implements StatefulInterface
     }
 
     /**
+     * The place given by its stack and orientation (getPlace()), except for a character attached to another one as an
+     * attachment (PlayCharacterAsAttachment), which is `attached` rather than `in_play`.
+     *
      * @throws \LogicException if the card is in a stack or orientation it cannot have
      */
     public function getCurrentPlace(): string
     {
         $stackType = $this->stack->getType();
+        $place = static::getPlace($stackType, $this->orientation) ?? throw new \LogicException(sprintf('Card %s (%s) cannot be %s in stack %s.', $this->title ?? $this->id, static::class, $this->orientation->value, $stackType->name));
 
-        return static::getPlace($stackType, $this->orientation) ?? throw new \LogicException(sprintf('Card %s (%s) cannot be %s in stack %s.', $this->title ?? $this->id, static::class, $this->orientation->value, $stackType->name));
+        return $place === DynastyCard::STATE_IN_PLAY && $this->isAttachedCharacter() ? DynastyCard::STATE_ATTACHED : $place;
     }
 
     /**
-     * A character enters play in a stack of its own; any other card (e.g. an attachment) joins the stack
-     * of the card or game element it is put on.
+     * Whether the card is a character in play: the first card of a stack in play, whatever its printed type (an
+     * attachment turned into a character: Togashi Hoshi). The cards above it are attached to it.
      */
-    public function entersPlayInNewStack(): bool
+    public function isCharacterInPlay(): bool
     {
-        return $this->logicalCard->getType() === Type::Character;
+        return $this->stack->getType() === StackType::InPlay && $this->stack->getOrderedCards()[0] === $this;
+    }
+
+    /**
+     * The character in play the card is attached to (an attachment, or a card played as one), null for a card that is
+     * not attached to a character (a character in play, an attachment on a province, a card out of play).
+     */
+    public function getAttachedCharacter(): ?self
+    {
+        if ($this->stack->getType() !== StackType::InPlay) {
+            return null;
+        }
+
+        $character = $this->stack->getOrderedCards()[0] ?? null;
+
+        return $character === $this ? null : $character;
+    }
+
+    /**
+     * Whether the card is printed as a character and in play as an attachment, attached to another character.
+     */
+    public function isAttachedCharacter(): bool
+    {
+        return $this->logicalCard->getType() === Type::Character && $this->getAttachedCharacter() instanceof self;
     }
 
     public function getOrientation(): Orientation
