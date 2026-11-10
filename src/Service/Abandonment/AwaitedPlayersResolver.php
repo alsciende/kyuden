@@ -9,6 +9,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\StackType;
 use App\Exception\Data\WorkflowException;
+use App\Exception\Rules\AttackedProvinceFacedownException;
 use App\Exception\Rules\RulesException;
 use App\Message\BidHonor;
 use App\Message\ChooseStrongholdProvince;
@@ -35,7 +36,9 @@ use App\State\Manager\GameStateManager;
  * AvailableActionsResolver): passing their opportunity, ending what they resolve, bidding, declaring a conflict, its
  * defenders, a total, a dueling statistic, ending a duel…; and in the two steps that end once the cards are face up,
  * the defending player while the attacked province is face down, the players with a face-down dynasty card in a
- * province while they are revealed. The effects on the board, available to every player in every step, move nothing on.
+ * province while they are revealed; a player who would pass or end what they resolve but for a facedown province the
+ * conflict has moved to, which they reveal. The effects on the board, available to every player in every step, move
+ * nothing on.
  */
 final readonly class AwaitedPlayersResolver
 {
@@ -98,6 +101,9 @@ final readonly class AwaitedPlayersResolver
             try {
                 $this->availableActionsResolver->getHandler($messageClass)->assertAvailable($game, $player);
 
+                return true;
+            } catch (AttackedProvinceFacedownException) {
+                // they would move the game on, once they have revealed the province the conflict is moved to (checked last)
                 return true;
             } catch (RulesException|WorkflowException) {
             }

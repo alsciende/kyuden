@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\RemoveFromGame;
+use App\Message\RestoreProvince;
 
 /**
  * Ethereal Alignment.
@@ -29,6 +30,6 @@ final readonly class EtherealAlignment30 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [RemoveFromGame::class];
+        return [RemoveFromGame::class, RestoreProvince::class];
     }
 }

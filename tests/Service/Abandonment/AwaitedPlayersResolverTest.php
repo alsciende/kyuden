@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Abandonment;
 
+use App\Enum\Orientation;
 use App\Entity\Player;
 use App\Enum\AbilityTiming;
 use App\Service\Abandonment\AwaitedPlayersResolver;
@@ -89,5 +90,21 @@ class AwaitedPlayersResolverTest extends AbstractKernelTestCase
         $scenario = $this->scenario()->atPlace('join_game')->withPlayer('john')->build();
 
         self::assertSame([], $this->awaited($scenario));
+    }
+
+    public function testTheGameWaitsForThePlayerWhoMustRevealTheProvinceTheConflictIsMovedTo(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->acted()
+                ->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceDown))
+            ->conflict('john', 'province', attackers: ['toturi'])
+            ->activePlayer('john')
+            ->build();
+
+        self::assertSame(['john'], $this->awaited($scenario));
     }
 }

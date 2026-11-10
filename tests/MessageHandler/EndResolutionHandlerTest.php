@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Exception\Rules\AttackedProvinceFacedownException;
+use App\Enum\Orientation;
 use App\Enum\AbilityTiming;
 use App\Exception\Rules\DuelInProgressException;
 use App\Exception\Rules\NothingToResolveException;
@@ -185,5 +187,42 @@ class EndResolutionHandlerTest extends AbstractKernelTestCase
             ->activePlayer('john')
             ->duel('john', ['toturi'], ['spear'])
             ->persist();
+    }
+
+    public function testRejectsEndingWhileTheConflictIsAtAFacedownProvince(): void
+    {
+        // Chasing the Sun moved the conflict to a facedown province: a player reveals it first (RevealProvince)
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->acted()
+                ->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', as: 'province'))
+            ->conflict('john', 'province', attackers: ['toturi'])
+            ->activePlayer('john')
+            ->persist();
+
+        $this->expectException(AttackedProvinceFacedownException::class);
+
+        $this->end($scenario, 'john');
+    }
+
+    public function testAnInterruptIsEndedWhileTheAttackedProvinceIsStillToRevealInItsStep(): void
+    {
+        // Know the Terrain, before the attacked province is revealed
+        $scenario = $this->scenario()
+            ->atPlace('reveal_attacked_province')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->resolving(AbilityTiming::Interrupt)
+                ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceDown))
+            ->conflict('john', 'province', attackers: ['toturi'])
+            ->activePlayer('jane')
+            ->persist();
+
+        $this->end($scenario, 'jane');
+
+        self::assertFalse($this->playerStateManager->getState($scenario->player('jane'))->isResolving());
     }
 }

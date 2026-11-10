@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "restore_province",
+    "description": "Restores a broken province: it is face up and unbroken again (Ethereal Alignment, Public Forum, Akodo Toshiro). A broken stronghold province ends the game at once: it cannot be restored.\n\nThe province can belong to any player: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "province_id": {
+            "description": "Broken province, of any player.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "province_id"
+    ],
+    "additionalProperties": false
+}

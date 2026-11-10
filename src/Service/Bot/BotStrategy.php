@@ -111,8 +111,9 @@ final readonly class BotStrategy
             }
         }
 
-        // RevealProvince is accepted anytime: the step tells when it is due
-        if ($game->getCurrentPlace() === 'reveal_attacked_province') {
+        // RevealProvince is accepted anytime: due in the step `reveal_attacked_province`, or once the conflict is moved
+        // to a facedown province of the bot, which nobody passes before it is revealed
+        if ($this->gameStateManager->getState($game)->conflict !== null) {
             $province = $this->findFacedownAttackedProvince($game, $player);
             if ($province instanceof PhysicalCard) {
                 return new RevealProvince($gameId, $playerId, $province->getId());

@@ -7,6 +7,8 @@ import CardText from '@/components/game/CardText.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import {
+  BROKEN_TO_ATTACK_STRONGHOLD,
+  strongholdTooEarly,
   stepOf,
   charactersInPlay,
   gameEnded,
@@ -168,6 +170,14 @@ const declaration = computed(() => {
   return { complete, skill }
 })
 
+/** the stronghold province chosen before 3 other provinces are broken: only an effect allows it (Scouted Terrain) */
+const strongholdEarly = computed(
+  () =>
+    opp.value !== undefined &&
+    props.selection.provinceId !== null &&
+    strongholdTooEarly(opp.value, props.selection.provinceId),
+)
+
 function declareConflict(): void {
   const { ring, type, provinceId } = props.selection
   // the button is enabled once the declaration is complete
@@ -180,6 +190,7 @@ function declareConflict(): void {
     province_id: provinceId,
     attacker_ids: props.selection.attackerIds,
     evaded_ids: [],
+    ignore_stronghold_restriction: strongholdEarly.value,
   })
 }
 
@@ -389,7 +400,13 @@ const nothing = computed(
         </dd>
         <dt>Province</dt>
         <dd>
-          <template v-if="selection.provinceId">{{ cardName(selection.provinceId) }}</template>
+          <template v-if="selection.provinceId">
+            {{ cardName(selection.provinceId) }}
+            <span v-if="strongholdEarly" class="aside"
+              >· fewer than {{ BROKEN_TO_ATTACK_STRONGHOLD }} other provinces are broken: only an effect allows it
+              (Scouted Terrain)</span
+            >
+          </template>
           <span v-else class="missing">Choose a province</span>
         </dd>
         <dt>Attackers</dt>

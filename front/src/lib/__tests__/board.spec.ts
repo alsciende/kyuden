@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  attackableProvinces,
   cardsUnder,
   setAsideNote,
   nameOf,
@@ -19,6 +20,7 @@ import {
   skillOf,
   stepOf,
   strongholdFate,
+  strongholdTooEarly,
   switchableRings,
   resultTitle,
   victoryText,
@@ -35,6 +37,33 @@ const cards = {
   garden: printed('garden', { type: 'province', strength: 4 }),
   raid: printed('raid', { type: 'province', strength: 3 }),
 }
+
+describe('attackable provinces', () => {
+  it('lists the unbroken provinces, the stronghold province too, which is attacked early by an effect only', () => {
+    const raid = card('raid')
+    const broken = card('raid', { orientation: 'upside_down' })
+    const garden = card('garden')
+    const opp = player('opp', [
+      stack('regular_province', [raid]),
+      stack('regular_province', [broken]),
+      stack('stronghold_province', [card('stronghold'), garden]),
+    ])
+
+    expect(attackableProvinces(opp)).toEqual([raid.id, garden.id])
+    expect(strongholdTooEarly(opp, garden.id)).toBe(true)
+    expect(strongholdTooEarly(opp, raid.id)).toBe(false)
+  })
+
+  it('allows the stronghold province once 3 other provinces are broken', () => {
+    const garden = card('garden')
+    const opp = player('opp', [
+      ...[1, 2, 3].map(() => stack('regular_province', [card('raid', { orientation: 'upside_down' })])),
+      stack('stronghold_province', [card('stronghold'), garden]),
+    ])
+
+    expect(strongholdTooEarly(opp, garden.id)).toBe(false)
+  })
+})
 
 describe('provinces', () => {
   it('reads the province at the bottom of each stack, the stronghold province last', () => {
@@ -298,8 +327,17 @@ describe('the state of the game', () => {
     expect(provinceToReveal(view)).toBe(facedown.id)
     // the attacker waits for the defender
     expect(provinceToReveal({ ...view, conflict: { ...view.conflict!, defending_player_id: 'opp' } })).toBeNull()
-    // a later step
-    expect(provinceToReveal({ ...view, place: 'react_to_conflict_declaration' })).toBeNull()
+    // a later step: the conflict moved to a facedown province, which any player reveals
+    const moved = { ...view, place: 'conflict_action_window' }
+    expect(provinceToReveal({ ...moved, conflict: { ...view.conflict!, defending_player_id: 'opp' } })).toBe(
+      facedown.id,
+    )
+    // nothing once it is face up, nor for a spectator
+    const revealed = { ...facedown, orientation: 'face_up' as const }
+    expect(
+      provinceToReveal({ ...moved, players: [player('me', [stack('regular_province', [revealed])]), player('opp')] }),
+    ).toBeNull()
+    expect(provinceToReveal({ ...moved, available_actions: [] })).toBeNull()
   })
 
   it('has no rings before the game starts', () => {

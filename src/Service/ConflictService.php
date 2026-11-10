@@ -36,11 +36,12 @@ readonly class ConflictService
     }
 
     /**
-     * An unbroken province of an opponent; the stronghold province only once enough other provinces are broken.
+     * An unbroken province of an opponent; the stronghold province only once enough other provinces are broken, unless
+     * an effect lifts the restriction (Scouted Terrain).
      *
      * @return Player the defending player
      */
-    public function assertAttackable(PhysicalCard $province, Player $attacker): Player
+    public function assertAttackable(PhysicalCard $province, Player $attacker, bool $ignoreStrongholdRestriction = false): Player
     {
         if (! $province instanceof ProvinceCard) {
             throw new WrongCardTypeException($province, Type::Province);
@@ -55,7 +56,7 @@ readonly class ConflictService
             throw new ProvinceNotAttackableException($province, 'it is broken');
         }
 
-        if ($this->isStrongholdProvince($province) && $this->countBrokenProvinces($defender) < self::BROKEN_PROVINCES_TO_ATTACK_STRONGHOLD) {
+        if (! $ignoreStrongholdRestriction && $this->isStrongholdProvince($province) && $this->countBrokenProvinces($defender) < self::BROKEN_PROVINCES_TO_ATTACK_STRONGHOLD) {
             throw new ProvinceNotAttackableException($province, sprintf('fewer than %d other provinces are broken', self::BROKEN_PROVINCES_TO_ATTACK_STRONGHOLD));
         }
 
@@ -117,6 +118,19 @@ readonly class ConflictService
         if ($card->getStack()->getType() !== StackType::InPlay) {
             throw new NotInPlayException($card);
         }
+    }
+
+    /**
+     * The printed strength of a province, plus the strength bonus of the stronghold for the stronghold province.
+     */
+    public function printedStrength(ProvinceCard $province): int
+    {
+        $strength = (int) $province->getLogicalCard()->getStrength();
+        if ($this->isStrongholdProvince($province)) {
+            $strength += (int) $province->getPlayer()->getStronghold()->getLogicalCard()->getStrengthBonus();
+        }
+
+        return $strength;
     }
 
     public function isStrongholdProvince(ProvinceCard $province): bool

@@ -13,6 +13,7 @@ use App\Exception\Rules\NotInOpportunitiesStepException;
 use App\Message\PassOpportunity;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\AttackedProvinceService;
 use App\Service\OpportunityService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -35,6 +36,7 @@ final readonly class PassOpportunityHandler implements PlayerActionHandlerInterf
         private GameStateManager $gameStateManager,
         private PlayerStateManager $stateManager,
         private OpportunityService $opportunityService,
+        private AttackedProvinceService $attackedProvinceService,
         private EventDispatcherInterface $eventDispatcher,
     ) {
     }
@@ -52,6 +54,8 @@ final readonly class PassOpportunityHandler implements PlayerActionHandlerInterf
         }
 
         $this->opportunityService->assertNotResolving($player);
+        // last, so that AwaitedPlayersResolver tells a player waited for to reveal it
+        $this->attackedProvinceService->assertRevealed($game);
     }
 
     public function __invoke(PassOpportunity $message): void

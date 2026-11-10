@@ -117,6 +117,30 @@ export function provinceCards(province: Province): CardView[] {
   return [...province.cards].reverse().concat(province.stronghold === null ? [] : [province.stronghold])
 }
 
+/** the stronghold province can be attacked once that many other provinces of its owner are broken */
+export const BROKEN_TO_ATTACK_STRONGHOLD = 3
+
+/**
+ * The provinces of a player the opponent may attack: the unbroken ones, the stronghold province too, which an effect
+ * may allow attacking before enough other provinces are broken (Scouted Terrain: `strongholdTooEarly()`).
+ */
+export function attackableProvinces(player: PlayerView): string[] {
+  return provinces(player)
+    .filter((province) => !province.broken)
+    .flatMap((province) => (province.province ? [province.province.id] : []))
+}
+
+/** the province is the stronghold province of the player, and fewer than 3 other provinces of theirs are broken */
+export function strongholdTooEarly(player: PlayerView, provinceId: string): boolean {
+  const list = provinces(player)
+  const stronghold = list.find((province) => province.stronghold !== null)
+
+  return (
+    stronghold?.province?.id === provinceId &&
+    list.filter((province) => province.stronghold === null && province.broken).length < BROKEN_TO_ATTACK_STRONGHOLD
+  )
+}
+
 /** the provinces a player may put under their stronghold, during setup */
 export function strongholdCandidates(player: PlayerView): CardView[] {
   return cardsOf(stackOf(player, 'stronghold_province')).slice(1)
@@ -443,13 +467,16 @@ const RESULT_PLACES = [
   'conflict_ends',
 ]
 
-/** the attacked province the viewer, as the defender, has to reveal now; null when there is none */
+/**
+ * The attacked province the viewer has to reveal now; null when there is none. In the step of the revelation, the
+ * defender reveals it; later, a province the conflict is moved to face down (Chasing the Sun, A War on Two Fronts) is
+ * revealed by any player, nobody passing nor ending what they resolve before.
+ */
 export function provinceToReveal(game: GameView): string | null {
   const conflict = game.conflict
   if (
-    game.place !== 'reveal_attacked_province' ||
     conflict === null ||
-    conflict.defending_player_id !== game.viewer_id ||
+    (game.place === 'reveal_attacked_province' && conflict.defending_player_id !== game.viewer_id) ||
     !game.available_actions.includes('reveal_province')
   ) {
     return null

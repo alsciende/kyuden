@@ -8,6 +8,7 @@ import GameCard from '@/components/game/GameCard.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import ProvinceRow from '@/components/game/ProvinceRow.vue'
 import {
+  attackableProvinces,
   cardsOf,
   charactersInPlay,
   conflictsLeft,
@@ -81,17 +82,8 @@ const oppHome = computed(() =>
 const ready = (ids: { card: { id: string; orientation: string } }[]) =>
   ids.filter((character) => character.card.orientation !== 'sideways').map((character) => character.card.id)
 
-const attackable = computed(() => {
-  if (opp.value === undefined) {
-    return []
-  }
-  const list = provinces(opp.value)
-  const broken = list.filter((province) => province.broken).length
-
-  return list
-    .filter((province) => !province.broken && (province.stronghold === null || broken >= 3))
-    .flatMap((province) => (province.province ? [province.province.id] : []))
-})
+// the stronghold province too: an effect may allow attacking it early (Scouted Terrain), the panel says so
+const attackable = computed(() => (opp.value === undefined ? [] : attackableProvinces(opp.value)))
 
 const defending = computed(() => available.value.has('declare_defenders'))
 const defendable = computed(() =>
@@ -160,7 +152,7 @@ function openInMyProvinces(id: string): void {
   emit('open', id)
 }
 
-/** once a conflict is declared, a click of the defender on the face-down attacked province reveals it */
+/** once a conflict is declared, a click on the face-down attacked province to reveal reveals it (`provinceToReveal()`) */
 function openInConflict(id: string): void {
   if (provinceToReveal(props.game) === id) {
     emit('reveal', 'reveal_province', id)

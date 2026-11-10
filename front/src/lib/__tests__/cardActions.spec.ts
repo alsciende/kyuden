@@ -495,6 +495,68 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, hidden.id)!.state).toEqual([])
   })
 
+  it('restores a broken province', () => {
+    const raid = card('raid', { side: 'province' })
+    const broken = card('raid', { side: 'province', orientation: 'upside_down' })
+    const view = game(
+      player('me', [stack('regular_province', [raid]), stack('regular_province', [broken])]),
+      player('opp'),
+      { available_actions: ['restore_province'] },
+    )
+
+    expect(cardMenu(view, cards, broken.id)!.state).toEqual([
+      { type: 'restore_province', label: 'Restore it', payload: { province_id: broken.id } },
+    ])
+    expect(cardMenu(view, cards, raid.id)!.state).toEqual([])
+  })
+
+  it('moves the conflict to a province of the defending player, or makes it also there', () => {
+    const attacked = card('raid', { side: 'province' })
+    const other = card('raid', { side: 'province' })
+    const hidden = card(null, { side: 'province', orientation: 'face_down' })
+    const broken = card('raid', { side: 'province', orientation: 'upside_down' })
+    const mine = card('raid', { side: 'province' })
+    const view = game(
+      player('me', [stack('regular_province', [mine])]),
+      player('opp', [
+        stack('regular_province', [attacked]),
+        stack('regular_province', [other]),
+        stack('regular_province', [hidden]),
+        stack('regular_province', [broken]),
+      ]),
+      {
+        available_actions: ['move_conflict', 'add_attacked_province'],
+        conflict: {
+          attacking_player_id: 'me',
+          defending_player_id: 'opp',
+          ring: 'air',
+          type: 'military',
+          province_id: attacked.id,
+          attacked_province_ids: [attacked.id],
+          attacker_ids: [],
+          defender_ids: [],
+          evaded_ids: [],
+          attacker_skill: null,
+          defender_skill: null,
+          province_strengths: {},
+          declared_strength_province_ids: [],
+          winner_id: null,
+          broken_province_ids: [],
+        },
+      },
+    )
+    const types = (id: string) => cardMenu(view, cards, id)!.state.map((action) => action.type)
+
+    expect(cardMenu(view, cards, other.id)!.state).toEqual([
+      { type: 'move_conflict', label: 'Move the conflict here', payload: { province_id: other.id } },
+      { type: 'add_attacked_province', label: 'Make the conflict also here', payload: { province_id: other.id } },
+    ])
+    expect(types(hidden.id)).toEqual(['move_conflict', 'add_attacked_province'])
+    expect(types(attacked.id)).toEqual([])
+    expect(types(broken.id)).toEqual([])
+    expect(types(mine.id)).toEqual([])
+  })
+
   it('moves an attachment in play', () => {
     const kaezin = card('kaezin')
     const katana = card('katana')

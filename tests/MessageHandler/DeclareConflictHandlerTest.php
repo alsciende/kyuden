@@ -57,6 +57,7 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
         ConflictType $type = ConflictType::Military,
         array $evaded = [],
         string $player = 'john',
+        bool $ignoreStrongholdRestriction = false,
     ): void {
         self::service(DeclareConflictHandler::class)(new DeclareConflict(
             $scenario->game()->getId(),
@@ -66,6 +67,7 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
             $scenario->card($province)->getId(),
             array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $attackers),
             array_map(fn (string $alias): string => $scenario->card($alias)->getId(), $evaded),
+            $ignoreStrongholdRestriction,
         ));
     }
 
@@ -202,6 +204,18 @@ class DeclareConflictHandlerTest extends AbstractKernelTestCase
         $this->expectException(ProvinceNotAttackableException::class);
 
         $this->declare($scenario, province: 'stronghold-province');
+    }
+
+    public function testAnEffectAllowsAttackingTheStrongholdProvinceBeforeThreeOtherProvincesAreBroken(): void
+    {
+        // Scouted Terrain
+        $scenario = $this->builder(jane: fn (PlayerBuilder $p): PlayerBuilder => $p
+            ->strongholdProvince('01-ancestral-lands', as: 'stronghold-province'))
+            ->persist();
+
+        $this->declare($scenario, province: 'stronghold-province', ignoreStrongholdRestriction: true);
+
+        self::assertSame('reveal_attacked_province', $scenario->game()->getCurrentPlace());
     }
 
     public function testTheStrongholdProvinceCanBeAttackedOnceThreeOtherProvincesAreBroken(): void

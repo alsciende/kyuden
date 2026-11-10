@@ -70,7 +70,7 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
         }
 
         $province = $this->cardRepository->get($message->getProvinceId(), $game);
-        $defender = $this->conflictService->assertAttackable($province, $player);
+        $defender = $this->conflictService->assertAttackable($province, $player, $message->isIgnoreStrongholdRestriction());
 
         $attackerIds = array_values(array_unique($message->getAttackerIds()));
         if ($attackerIds === []) {

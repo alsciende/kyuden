@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "move_conflict",
+    "description": "Moves the conflict being resolved, with its contested ring, to another province of the defending player, which is now the attacked province in place of the province the ring leaves (Chasing the Sun, Talisman of the Sun, Matsu Agetoki, Shrug Off Despair, Golden Plains). The other provinces the conflict is also at stay attacked. A facedown province is revealed with RevealProvince, which every player waits for: nobody passes nor ends what they resolve meanwhile.\n\nAccepted from any player during a conflict: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "province_id": {
+            "description": "Unbroken province of the defending player, not attacked yet.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "province_id"
+    ],
+    "additionalProperties": false
+}

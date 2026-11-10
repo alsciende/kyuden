@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\PlaceHonorTokens;
+use App\Message\RestoreProvince;
 
 /**
  * Public Forum.
@@ -29,6 +30,6 @@ final readonly class PublicForum04 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [PlaceHonorTokens::class];
+        return [PlaceHonorTokens::class, RestoreProvince::class];
     }
 }

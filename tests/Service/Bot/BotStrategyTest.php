@@ -152,12 +152,32 @@ class BotStrategyTest extends AbstractKernelTestCase
         self::assertNull($this->nextAction($build('john')));
     }
 
+    public function testRevealsTheProvinceOfItsOwnTheConflictIsMovedTo(): void
+    {
+        // the opponent moved the conflict to a facedown province of the bot (Chasing the Sun): nobody passes before it
+        // is revealed
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['kisada' => '01-hida-kisada'])
+                ->province('01-the-art-of-peace', 'bots-province'))
+            ->conflict('john', 'bots-province', ['toturi'])
+            ->activePlayer(self::BOT)
+            ->build();
+
+        $action = $this->nextAction($scenario);
+
+        self::assertInstanceOf(RevealProvince::class, $action);
+        self::assertSame($scenario->card('bots-province')->getId(), $action->getCardId());
+    }
+
     public function testDeclaresNoDefenders(): void
     {
         $scenario = $this->scenario()
             ->atPlace('declare_defenders')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
-            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p->province('01-the-art-of-peace', 'province'))
+            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p->province('01-the-art-of-peace', 'province', orientation: Orientation::FaceUp))
             ->conflict('john', 'province', ['toturi'])
             ->activePlayer(self::BOT)
             ->build();
@@ -171,7 +191,7 @@ class BotStrategyTest extends AbstractKernelTestCase
             ->atPlace('determine_result')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
             ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p
-                ->province('01-the-art-of-peace', 'province')
+                ->province('01-the-art-of-peace', 'province', orientation: Orientation::FaceUp)
                 ->inPlay(['kisada' => '01-hida-kisada'])
                 ->inPlay(['beiona' => '01-matsu-beiona'], bowed: true))
             ->conflict('john', 'province', ['toturi'], ['kisada', 'beiona'])
@@ -366,7 +386,7 @@ class BotStrategyTest extends AbstractKernelTestCase
             ->atPlace('determine_result')
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
             ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p
-                ->province('01-the-art-of-peace', 'province')
+                ->province('01-the-art-of-peace', 'province', orientation: Orientation::FaceUp)
                 ->inPlay(['kisada' => '01-hida-kisada', '01-fine-katana'])
                 ->inPlay(['beiona' => '01-matsu-beiona'], personalHonor: PersonalHonor::Honored))
             ->conflict('john', 'province', ['toturi'], ['kisada', 'beiona'])

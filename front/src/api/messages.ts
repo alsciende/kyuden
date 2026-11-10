@@ -3,6 +3,18 @@
  */
 
 /**
+ * The conflict being resolved is also at another province of the defending player, which becomes an attacked province beside the others (A War on Two Fronts): each one is broken separately. A facedown province is revealed with RevealProvince, which every player waits for: nobody passes nor ends what they resolve meanwhile.
+ *
+ * Accepted from any player during a conflict: the engine does not apply card effects.
+ */
+export interface AddAttackedProvince {
+  /**
+   * Unbroken province of the defending player, not attacked yet.
+   */
+  province_id: string
+}
+
+/**
  * Adds a conflict card to the hand of its owner from their conflict deck (a card searched for: Agasha Swordsmith, Shrewd Yasuki) or their conflict discard pile (an ancestral attachment, a card taken back), e.g. to resolve an effect. A card of the deck is known by its id once a player has looked at it (`look_at_cards`).
  *
  * The card can belong to any player: the engine does not apply card effects.
@@ -107,7 +119,7 @@ export interface ConcedeGame {
 }
 
 /**
- * The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the conflict, the attacked province of an opponent and the ready characters declared as attackers. `evaded_ids` are the characters of the defending player chosen with covert: the engine does not check the covert keyword.
+ * The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the conflict, the attacked province of an opponent and the ready characters declared as attackers. `evaded_ids` are the characters of the defending player chosen with covert: the engine does not check the covert keyword. An effect may allow attacking the stronghold province before enough other provinces are broken (Scouted Terrain): the engine does not check it.
  */
 export interface DeclareConflict {
   /**
@@ -130,6 +142,10 @@ export interface DeclareConflict {
    * Characters of the defending player chosen with covert.
    */
   evaded_ids?: string[]
+  /**
+   * An effect allows attacking the stronghold province before 3 other provinces are broken (Scouted Terrain).
+   */
+  ignore_stronghold_restriction?: boolean
 }
 
 /**
@@ -462,6 +478,18 @@ export interface MoveAttachment {
    * Character in play or province the attachment is moved to.
    */
   target_card_id: string
+}
+
+/**
+ * Moves the conflict being resolved, with its contested ring, to another province of the defending player, which is now the attacked province in place of the province the ring leaves (Chasing the Sun, Talisman of the Sun, Matsu Agetoki, Shrug Off Despair, Golden Plains). The other provinces the conflict is also at stay attacked. A facedown province is revealed with RevealProvince, which every player waits for: nobody passes nor ends what they resolve meanwhile.
+ *
+ * Accepted from any player during a conflict: the engine does not apply card effects.
+ */
+export interface MoveConflict {
+  /**
+   * Unbroken province of the defending player, not attacked yet.
+   */
+  province_id: string
 }
 
 /**
@@ -967,6 +995,18 @@ export interface ResetCharacterSkill {
 }
 
 /**
+ * Restores a broken province: it is face up and unbroken again (Ethereal Alignment, Public Forum, Akodo Toshiro). A broken stronghold province ends the game at once: it cannot be restored.
+ *
+ * The province can belong to any player: the engine does not apply card effects.
+ */
+export interface RestoreProvince {
+  /**
+   * Broken province, of any player.
+   */
+  province_id: string
+}
+
+/**
  * Returns a card in play (a character, an attachment) to its owner's hand. A dynasty card is put into its owner's dynasty discard pile instead.
  *
  * The card can belong to any player: effects often target an opponent's card.
@@ -1257,6 +1297,7 @@ export interface TurnProvinceFacedown {
 
 /** the payload of each type of message */
 export interface MessagePayloads {
+  add_attacked_province: AddAttackedProvince
   add_card_to_hand: AddCardToHand
   bid_honor: BidHonor
   bow_card: BowCard
@@ -1294,6 +1335,7 @@ export interface MessagePayloads {
   lose_fate: LoseFate
   lose_honor: LoseHonor
   move_attachment: MoveAttachment
+  move_conflict: MoveConflict
   move_fate: MoveFate
   move_home: MoveHome
   move_status_token: MoveStatusToken
@@ -1326,6 +1368,7 @@ export interface MessagePayloads {
   remove_from_game: RemoveFromGame
   remove_honor_tokens: RemoveHonorTokens
   reset_character_skill: ResetCharacterSkill
+  restore_province: RestoreProvince
   return_card_to_hand: ReturnCardToHand
   return_ring: ReturnRing
   reveal_card: RevealCard

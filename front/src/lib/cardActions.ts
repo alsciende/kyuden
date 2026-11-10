@@ -428,12 +428,30 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
   const moveAttachment = () => {
     menu.moveAttachment = card?.type === 'attachment' && available.has('move_attachment')
   }
-  // a face-up province that is not broken yet, by an effect (Endless Plains)
+  // a face-up province that is not broken yet, by an effect (Endless Plains); a broken one restored (Ethereal
+  // Alignment)
   const breakProvince = () => {
     if (view.orientation === 'face_up') {
       add(menu.state, 'break_province', 'Break it', { province_id: id })
       // unbroken (Kitsuki Yaruma, Untamed Steppe); the engine does not check Eminent
       add(menu.state, 'turn_province_facedown', 'Turn it facedown')
+    } else if (view.orientation === 'upside_down') {
+      add(menu.state, 'restore_province', 'Restore it', { province_id: id })
+    }
+    conflictProvince()
+  }
+  // an unbroken province of the defending player the conflict is not at: the conflict moved to it (Chasing the Sun,
+  // Golden Plains) or also at it (A War on Two Fronts); a face-down one is then revealed (`provinceToReveal()`)
+  const conflictProvince = () => {
+    const conflict = game.conflict
+    if (
+      conflict !== null &&
+      located.player.id === conflict.defending_player_id &&
+      view.orientation !== 'upside_down' &&
+      !conflict.attacked_province_ids.includes(id)
+    ) {
+      add(menu.state, 'move_conflict', 'Move the conflict here', { province_id: id })
+      add(menu.state, 'add_attacked_province', 'Make the conflict also here', { province_id: id })
     }
   }
   // the dynasty cards of the other provinces of its owner (Borderlands Fortifications)
@@ -515,6 +533,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
         } else {
           add(menu.state, 'reveal_province', 'Reveal it')
           lookAt()
+          conflictProvince()
         }
         statusTokens()
         honorTokens()
@@ -578,6 +597,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
       } else {
         add(menu.state, 'reveal_province', 'Reveal it')
         lookAt()
+        conflictProvince()
         statusTokens()
         honorTokens()
       }

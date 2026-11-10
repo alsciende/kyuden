@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "declare_conflict",
-    "description": "The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the conflict, the attacked province of an opponent and the ready characters declared as attackers. `evaded_ids` are the characters of the defending player chosen with covert: the engine does not check the covert keyword.",
+    "description": "The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the conflict, the attacked province of an opponent and the ready characters declared as attackers. `evaded_ids` are the characters of the defending player chosen with covert: the engine does not check the covert keyword. An effect may allow attacking the stronghold province before enough other provinces are broken (Scouted Terrain): the engine does not check it.",
     "type": "object",
     "properties": {
         "ring": {
@@ -41,6 +41,11 @@
                 "type": "string"
             },
             "default": []
+        },
+        "ignore_stronghold_restriction": {
+            "description": "An effect allows attacking the stronghold province before 3 other provinces are broken (Scouted Terrain).",
+            "type": "boolean",
+            "default": false
         }
     },
     "required": [

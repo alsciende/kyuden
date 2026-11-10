@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
+use App\Message\RevealProvince;
+use App\MessageHandler\RevealProvinceHandler;
+use App\Entity\CardTypes\ProvinceCard;
+use App\Exception\Rules\AttackedProvinceFacedownException;
+use App\Enum\Orientation;
 use App\Entity\Game;
 use App\Enum\AbilityTiming;
 use App\Enum\ConflictType;
@@ -249,5 +254,31 @@ class PassOpportunityHandlerTest extends AbstractKernelTestCase
         $this->expectException(ResolutionInProgressException::class);
 
         self::service(PassOpportunityHandler::class)($this->pass($scenario, 'john'));
+    }
+
+    public function testNobodyPassesBeforeTheFacedownProvinceTheConflictIsMovedToIsRevealed(): void
+    {
+        // Golden Plains moved the conflict to a facedown province
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['toturi' => '01-akodo-toturi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', as: 'province', orientation: Orientation::FaceDown))
+            ->conflict('john', 'province', attackers: ['toturi'])
+            ->activePlayer('jane')
+            ->persist();
+
+        try {
+            self::service(PassOpportunityHandler::class)($this->pass($scenario, 'jane'));
+            self::fail('The pass is rejected while the province is facedown.');
+        } catch (AttackedProvinceFacedownException) {
+        }
+
+        // any player reveals it
+        self::service(RevealProvinceHandler::class)(new RevealProvince($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->card('province')->getId()));
+        self::service(PassOpportunityHandler::class)($this->pass($scenario, 'jane'));
+
+        self::assertSame(ProvinceCard::STATE_UNBROKEN, $scenario->card('province')->getCurrentPlace());
+        self::assertTrue($this->playerStateManager->getState($scenario->player('jane'))->isPassed());
     }
 }

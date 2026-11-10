@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "add_attacked_province",
+    "description": "The conflict being resolved is also at another province of the defending player, which becomes an attacked province beside the others (A War on Two Fronts): each one is broken separately. A facedown province is revealed with RevealProvince, which every player waits for: nobody passes nor ends what they resolve meanwhile.\n\nAccepted from any player during a conflict: the engine does not apply card effects.",
+    "type": "object",
+    "properties": {
+        "province_id": {
+            "description": "Unbroken province of the defending player, not attacked yet.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "province_id"
+    ],
+    "additionalProperties": false
+}

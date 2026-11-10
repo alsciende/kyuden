@@ -40,10 +40,9 @@ readonly class DetermineResultEnterListener
         $conflict = $state->currentConflict();
         foreach ($conflict->attackedProvinceIds as $provinceId) {
             $province = $this->cardRepository->get($provinceId, $game);
-            $strength = (int) $province->getLogicalCard()->getStrength();
-            if ($province instanceof ProvinceCard && $this->conflictService->isStrongholdProvince($province)) {
-                $strength += (int) $province->getPlayer()->getStronghold()->getLogicalCard()->getStrengthBonus();
-            }
+            $strength = $province instanceof ProvinceCard
+                ? $this->conflictService->printedStrength($province)
+                : (int) $province->getLogicalCard()->getStrength();
 
             $conflict->provinceStrengths[$provinceId] = $strength;
             $this->eventDispatcher->dispatch(new ProvinceStrengthComputedEvent($game, $province, $strength));

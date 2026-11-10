@@ -9,6 +9,7 @@ use App\Entity\Player;
 use App\Message\EndResolution;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\AttackedProvinceService;
 use App\Service\OpportunityService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -23,6 +24,7 @@ final readonly class EndResolutionHandler implements PlayerActionHandlerInterfac
         private GameRepository $gameRepository,
         private PlayerRepository $playerRepository,
         private OpportunityService $opportunityService,
+        private AttackedProvinceService $attackedProvinceService,
     ) {
     }
 
@@ -30,6 +32,8 @@ final readonly class EndResolutionHandler implements PlayerActionHandlerInterfac
     public function assertAvailable(Game $game, Player $player): void
     {
         $this->opportunityService->assertCanEndResolution($game, $player);
+        // last, so that AwaitedPlayersResolver tells a player waited for to reveal it
+        $this->attackedProvinceService->assertRevealed($game);
     }
 
     public function __invoke(EndResolution $message): void

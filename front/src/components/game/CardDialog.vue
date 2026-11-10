@@ -339,6 +339,10 @@ const HINTS: Partial<Record<string, string>> = {
   redistribute_province_cards:
     'You look at every card of these provinces, then choose where each one goes. They are all put back face down.',
   turn_province_facedown: 'It keeps its cards and its tokens. An Eminent province cannot be turned facedown.',
+  move_conflict:
+    'With the contested ring, which leaves the province it was at. Reveal a facedown province before passing.',
+  add_attacked_province: 'Each attacked province is broken separately. Reveal a facedown province before passing.',
+  restore_province: 'Face up and unbroken again, with what lies on it.',
 }
 
 const specialGroups = computed(() =>

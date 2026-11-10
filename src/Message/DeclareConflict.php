@@ -12,7 +12,9 @@ use App\Enum\Element;
 /**
  * The active player declares a conflict (3.2): the contested ring, taken from the unclaimed ring pool, the type of the
  * conflict, the attacked province of an opponent and the ready characters declared as attackers. `evadedIds` are the
- * characters of the defending player chosen with covert: the engine does not check the covert keyword.
+ * characters of the defending player chosen with covert: the engine does not check the covert keyword. An effect may
+ * allow attacking the stronghold province before enough other provinces are broken (Scouted Terrain): the engine does
+ * not check it.
  */
 #[AppAction]
 final readonly class DeclareConflict implements PlayerActionInterface
@@ -34,6 +36,8 @@ final readonly class DeclareConflict implements PlayerActionInterface
         private array $attackerIds,
         #[Description('Characters of the defending player chosen with covert.')]
         private array $evadedIds = [],
+        #[Description('An effect allows attacking the stronghold province before 3 other provinces are broken (Scouted Terrain).')]
+        private bool $ignoreStrongholdRestriction = false,
     ) {
     }
 
@@ -78,5 +82,10 @@ final readonly class DeclareConflict implements PlayerActionInterface
     public function getEvadedIds(): array
     {
         return $this->evadedIds;
+    }
+
+    public function isIgnoreStrongholdRestriction(): bool
+    {
+        return $this->ignoreStrongholdRestriction;
     }
 }

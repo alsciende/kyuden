@@ -68,6 +68,17 @@ const province = computed(() => {
   }
 })
 
+/** the other provinces the conflict is also at (A War on Two Fronts), after the contested one */
+const others = computed(() =>
+  conflict.value.attacked_province_ids
+    .filter((id) => id !== conflict.value.province_id)
+    .flatMap((id) => {
+      const card = locate(props.game, id)?.card
+
+      return card === undefined ? [] : [card]
+    }),
+)
+
 /** the Imperial Favor, when it is on the side of the type of the conflict */
 const favor = computed(() => {
   const holder = props.game.imperial_favor_holder_id
@@ -171,6 +182,17 @@ const outcome = computed(() => {
             tag="Contested"
             @click="emit('open', province.card.id)"
           />
+          <template v-if="top.defending">
+            <GameCard
+              v-for="other in others"
+              :key="other.id"
+              :card="other"
+              :cards="cards"
+              :mine="false"
+              tag="Attacked"
+              @click="emit('open', other.id)"
+            />
+          </template>
         </CharacterRow>
       </div>
 
@@ -255,6 +277,17 @@ const outcome = computed(() => {
             tag="Contested"
             @click="emit('open', province.card.id)"
           />
+          <template v-if="bottom.defending">
+            <GameCard
+              v-for="other in others"
+              :key="other.id"
+              :card="other"
+              :cards="cards"
+              :mine="true"
+              tag="Attacked"
+              @click="emit('open', other.id)"
+            />
+          </template>
         </CharacterRow>
       </div>
     </div>
