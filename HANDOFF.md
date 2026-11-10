@@ -10,7 +10,7 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - **Randomness and visibility** are the only places where the engine does more than move pieces: every draw goes through the generator of the game (replay), and what a player sees depends only on the state, secrets stored apart (`pendingHonorBid` / `honorBid`).
 - **A card gets a new id when the players lose track of it** (a shuffle), never otherwise: a card returned to hand or put on a deck without a shuffle stays known, as at a real table.
 - **The event log is replayed**: the replay of a game rebuilds it from its events (see below), so they are a contract now. A message renamed or changed must stay deserializable (keep the old class or name as an alias) and play the same; an engine that changes how a message plays makes the games played before diverge (the replay says so, from the version it fails at). The games played before the ids were salted (`Game::generateId()`, November 2026) and before the earlier renames (`EndResolution`, `PlayActionEvent`…) cannot be replayed.
-- **Interrupts and reactions** are accepted from any player in any place and ended with `EndResolution`; the interrupt and reaction windows of the rules (first player first, consecutive passes) are not modeled. The `react_to_*` places of the conflict are generous on purpose: to lock down once the game has been tested.
+- **Interrupts and reactions** are accepted from any player in any place and ended with `EndResolution`; the interrupt and reaction windows of the rules (first player first, consecutive passes) are not modeled. The `react_to_*` places of the conflict are generous on purpose, and stay so (decided before 1.0): locking them down later would make the games played before diverge on replay, and the engine is a board.
 - **Accounts**: no email nor personal data; an account is recovered through the providers it is linked to, which the site should press players to link. Only a bot gets API keys, so that a program is always known as a bot; a human helped by an AI is a matter of the terms of use. The `playerId` is public, never a credential.
 - **Mercure announces, the clients read**: the hub carries the version of the game, not its state, which would have to be published per player (secrets), kept in the history of the hub, and computed for every message; the delays of reading the game again are not felt.
 - **Mockups first** for the screens of the web client: the board and the cards looked at (Claude artifact `GiPbGSPNcvLD2r9eFKKNp5`), the accounts, the queue, the friendly games and the spectators (`LBUBwNBPdSopj5NMj5GLTL`, row "Watch a game in progress"), the cards set aside (`LdtL4NT1SnDLTzRZpz376x`: the cards removed from the game in the bar, the cards under a card, the card opened), the history and the replay (`KZMDhHY4oeLxaTvx2hE8bE`: the replay stopped before an action, the states of its panel, the page of the games played).
@@ -36,8 +36,8 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 ## Known limitations
 
 - **Rules not enforced**: uniqueness, the Limited keyword and "max X per conflict / round", covert (the keyword and the number of evaded characters), ancestral attachments (discarded with their character). The end of a lasting effect is not handled: a player takes control back with `TakeControl` (Blackmail).
-- **Spectators**: the list of the games has no round number (nor has the board); a spectator sees the same layouts as the player at the bottom (the declaration of a conflict folds their hand and provinces), and a few texts of the board still speak to the player; the players are told who watches but cannot refuse it.
-- **Web client**: the province choices of a character in play are those of its controller (the view does not tell the owner: a character whose control was taken is refused); covert is not offered (`evaded_ids` sent empty); a multi-province conflict shows its first province only; no round number; no layout of its own for the draw and fate phases, the duels and the reaction windows.
+- **Spectators**: a spectator sees the same layouts as the player at the bottom (the declaration of a conflict folds their hand and provinces), and a few texts of the board still speak to the player; the players are told who watches but cannot refuse it.
+- **Web client**: the province choices of a character in play are those of its controller (the view does not tell the owner: a character whose control was taken is refused); covert is not offered (`evaded_ids` sent empty); a multi-province conflict shows its first province only; no layout of its own for the duels.
 - **House bot**: plays no conflict card and triggers no ability, always puts the Imperial Favor on its military side, never discards from its provinces, never ends a duel. It plays in the worker (`PlayHouseBotTurn`); while the worker is stopped, its opponent waits (no turn is played elsewhere); a failure makes it pass, else concede, the reason in the event for the developers only.
 - **Agents (MCP)**: no game played by an agent yet; an agent that stops without conceding is ended by its opponent (`end_abandoned_game` for an agent left alone), or by the platform after an hour when both have left; the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
 - **Scaling**: each long-poll holds a FrankenPHP thread for up to 30 s (classic mode, 20 threads); the OAuth state, the rate limiter and the MCP sessions live in filesystem caches (one host only; MCP sessions lost on restart).
@@ -47,6 +47,16 @@ Every phase of the round is modeled: a game loops from round to round until a vi
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; the fix is a breaking downgrade, wait for an update.
 
 ## Next steps
+
+### 1.0
+
+1.0 means a stable contract: the HTTP API, the MCP tools (named after the messages) and the event log, which is replayed. A message or an optional field added later is a minor release; a message changed or removed, or a rule enforced on what is accepted today, breaks it. Hence, before tagging `v1.0.0`:
+
+- **Agents**: a whole game played by an agent through `agent/play.sh`, and what it reports fixed (the names and the arguments of the tools are the contract).
+- **Authentication**: sessions expiring, renewed by the web client; a rate limit on the creation of guests and accounts.
+- **Messages proposed** (below), the five of them: random cards of a hand, the conflicts (attacked provinces added or moved, a province restored, the stronghold province attacked early; the web client then shows every attacked province), `GiveActionOpportunity`, `CancelDuel` (with a layout for the duels), and the characters as attachments.
+
+The rest of these next steps can come after 1.0.
 
 ### Cards not playable yet
 
@@ -100,19 +110,18 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 
 - The trash button (Discard) of a card stays as it is (decided before 1.0).
 - Done before 1.0: the face-down provinces known to their owner say so under their name ("Face down"), the attachments lie in a row below their character (its skills readable), and a click on the name of either player tells their honor bid (the dial last revealed, or the one being chosen), outside the steps of a bid too.
-- Dedicated layouts for the remaining steps (see the limitations), and a component test of `GameView`.
+- A layout for the duels (see the limitations), and a component test of `GameView`.
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
 - Accounts: list and edit their decks.
-- Spectators: the round in the list of the games; a component test of the spectator mode of `GameView`.
+- Spectators: a component test of the spectator mode of `GameView`.
 - Mobile: the client is installable (a PWA: manifest, service worker precaching its shell) but laid out for a desktop (at least 1280px wide); next, a layout for tablets in landscape, then phones (a mockup first), touch instead of hovering (the tooltips are done: their texts written where a click leads, the hover styles for devices that hover; the previews of the cards on the board remain), and notifications of the turn of the player (Web Push: VAPID keys, subscriptions stored, sent by the worker), which Mercure cannot do once the page is closed.
 
 ### API and platform
 
 - **Agents**: play a game against `agent/play.sh` and fix what it reports; a timeout for an agent that stops; a compact view if the context fills.
-- **Feedback**: read the reasons of the concessions (payload of the `ConcedeGame` events): a console command or a listener of `GameConcededEvent`.
 - **Decks**: a deck of EmeraldDB is imported from the URL of its page (`EmeraldDbDeckFetcher`: `POST /api/decks` with `url`, `app:deck:import`, and the field of the queue screen, friendly games included: mockup in the row "Play a game: the queue" of `LBUBwNBPdSopj5NMj5GLTL`); importing does not join the queue, the player still clicks. A user deletes their own decks (`DELETE /api/decks/{id}`, soft-deleted once played, restored when imported again; the button on the tiles of the queue: mockups "hovering one of your decks shows Delete", "confirm before deleting a deck", "deck deleted"), and identical decks are found by their content hash (`Deck::contentHash`, not indexed: an index across users when statistics need it). Then: the text export of EmeraldDB, the banned and restricted lists.
 - **Authentication**: rate limit the creation of guests and accounts; press the players to link a provider; sessions expiring after a few hours, renewed by the client.
 - **npm**: update the npm of the stack (the service `node` and the stage `front` of the production image, `node:24-alpine`, ship npm 11; npm 12 is out), then check `make front-install`, `make front-build` and the CI.
 - **Ranking** of the games that are not friendly.
 - **Rewinding a game** (`app:game:rewind <game> <version>`): deleting events changes nothing (the state lives in the entities), so replay instead, with `GameReplayer` (the copy, the ids translated, `ReplayStamp`), then swap the copy for the game. Caveats: a deck or an engine changed since makes the replay diverge (`ReplayDivergedException`).
-- **Replay**: two steps sent at once on the same replay are not serialized (lock the copy); the replay of a game whose decks were edited since diverges (decks are only deleted today); the round number in the panel and the list of games; a component test of `GameReplayView`; replaying a game as a spectator (the public view of the copy).
+- **Replay**: two steps sent at once on the same replay are not serialized (lock the copy); the replay of a game whose decks were edited since diverges (decks are only deleted today); a component test of `GameReplayView`; replaying a game as a spectator (the public view of the copy).

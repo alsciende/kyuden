@@ -38,6 +38,28 @@ class EventRepository extends ServiceEntityRepository
     }
 
     /**
+     * The last events of a message across the games (not the replays), the latest first, with their game.
+     *
+     * @param class-string $name
+     *
+     * @return list<Event>
+     */
+    public function findLatestOf(string $name, int $limit): array
+    {
+        /** @var list<Event> */
+        return $this->createQueryBuilder('e')
+            ->addSelect('g')
+            ->join('e.game', 'g')
+            ->andWhere('e.name = :name')
+            ->andWhere('g.replayOf IS NULL')
+            ->setParameter('name', $name)
+            ->orderBy('e.id', \SortDirection::Descending)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The last events of the game, the latest first.
      *
      * @return list<Event>

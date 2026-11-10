@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Entity\Event;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\VictoryCondition;
+use App\Message\ConcedeGame;
+use App\Message\PassOpportunity;
 use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -138,6 +141,37 @@ class GameCommandsTest extends AbstractKernelTestCase
 
         $this->expectExceptionMessage('A dynasty card cannot be face_up in stack Hand.');
         $tester->execute(['card' => $banzai, 'code' => '01-otomo-courtier']);
+    }
+
+    public function testListsTheLastConcessionsWithTheirReason(): void
+    {
+        $scenario = $this->scenario()->atPlace(Game::STATE_ENDED)->withPlayer('john')->withPlayer('jane')->persist();
+        $game = $scenario->game();
+        $concede = fn (int $version, string $player, ?string $reason): Event => new Event($game, $version, ConcedeGame::class, (string) json_encode([
+            'game_id' => $game->getId(),
+            'player_id' => $scenario->player($player)->getId(),
+            'reason' => $reason,
+        ]));
+        $entityManager = self::service(EntityManagerInterface::class);
+        $entityManager->persist(new Event($game, 1, PassOpportunity::class, '{}'));
+        $entityManager->persist($concede(2, 'jane', 'The engine refused my action'));
+        $entityManager->persist($concede(3, 'john', null));
+        $entityManager->flush();
+        $tester = $this->tester('app:game:concessions');
+
+        $tester->execute([]);
+
+        $display = $tester->getDisplay();
+        self::assertStringContainsString('The engine refused my action', $display);
+        self::assertStringContainsString("[{$scenario->player('jane')->getUser()->getId()}]", $display);
+        self::assertStringContainsString("[{$scenario->player('john')->getUser()->getId()}]", $display);
+        self::assertStringContainsString('—', $display);
+        self::assertStringNotContainsString('PassOpportunity', $display);
+
+        // the latest first
+        $tester->execute(['--limit' => '1']);
+        self::assertStringNotContainsString('The engine refused my action', $tester->getDisplay());
+        self::assertStringContainsString("[{$scenario->player('john')->getUser()->getId()}]", $tester->getDisplay());
     }
 
     private function reload(string $id): PhysicalCard
