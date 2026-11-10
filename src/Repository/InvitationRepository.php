@@ -27,6 +27,16 @@ class InvitationRepository extends ServiceEntityRepository
         return $this->findOneBy(['host' => $host, 'gameId' => null]);
     }
 
+    /**
+     * The invitation of a host still waiting for its guest: not used, not expired.
+     */
+    public function findPendingOfHost(User $host, \DateTimeImmutable $now): ?Invitation
+    {
+        $invitation = $this->findUnusedOfHost($host);
+
+        return $invitation?->isPending($now) === true ? $invitation : null;
+    }
+
     public function findOneByCode(string $code): ?Invitation
     {
         return $this->findOneBy(['code' => $code]);

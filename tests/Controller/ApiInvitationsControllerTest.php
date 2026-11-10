@@ -233,6 +233,20 @@ class ApiInvitationsControllerTest extends AbstractKernelTestCase
         self::assertSame('expired', $status['state']);
     }
 
+    public function testTheHostNoLongerReadsAnExpiredInvitation(): void
+    {
+        $this->emptyQueue();
+        $clock = self::mockTime();
+        $this->invite('john', 'friend');
+
+        $clock->sleep(24 * 3600);
+
+        // the web client offers a new invitation instead of entering the queue with this one
+        $this->assertProblem($this->request('GET', '/api/self/invitation', 'john'), Response::HTTP_NOT_FOUND, 'invitation_not_found');
+        // it can still be cancelled
+        self::assertSame(Response::HTTP_NO_CONTENT, $this->request('DELETE', '/api/self/invitation', 'john')->getStatusCode());
+    }
+
     public function testTheHostLeavingTheQueueCancelsTheirInvitation(): void
     {
         $this->emptyQueue();

@@ -64,12 +64,12 @@ class ApiInvitationsController extends AbstractController
     }
 
     /**
-     * The invitation of the user that has not led to a game yet: its key is not sent again.
+     * The invitation of the user still waiting for its guest (neither used nor expired): its key is not sent again.
      */
     #[Route('/api/self/invitation', name: 'app_api_self_invitation', methods: ['GET'])]
     public function current(#[CurrentUser] User $user): Response
     {
-        $invitation = $this->invitationRepository->findUnusedOfHost($user);
+        $invitation = $this->invitationRepository->findPendingOfHost($user, $this->clock->now());
         if (! $invitation instanceof Invitation) {
             return $this->problem(Response::HTTP_NOT_FOUND, 'invitation_not_found', 'The user has no invitation waiting.');
         }
