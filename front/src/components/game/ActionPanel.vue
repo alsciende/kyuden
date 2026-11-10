@@ -635,13 +635,13 @@ const nothing = computed(
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   box-sizing: border-box;
   border: 1.5px solid var(--seal);
   border-radius: 50%;
   color: var(--seal);
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .ring-text {

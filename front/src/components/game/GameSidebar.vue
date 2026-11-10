@@ -572,8 +572,9 @@ h1 {
 
 .ring {
   font: inherit;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   box-sizing: border-box;
   border-radius: 50%;
   border: 1.5px solid var(--ink);
@@ -583,7 +584,7 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 26px;
   position: relative;
 }
 

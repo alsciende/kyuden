@@ -419,7 +419,7 @@ const outcome = computed(() => {
   border: 1.5px solid var(--ink);
   background: var(--card);
   color: var(--ink);
-  font-size: 17px;
+  font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;

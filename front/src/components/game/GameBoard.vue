@@ -239,23 +239,12 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
                 :class="[ring.status, { selected: selection.ring === ring.element }]"
                 :disabled="ring.status !== 'unclaimed'"
                 :aria-pressed="selection.ring === ring.element"
-                :aria-label="`${ELEMENT_NAMES[ring.element]} ring${ring.fate ? `, ${ring.fate} fate` : ''}`"
+                :aria-label="`${ELEMENT_NAMES[ring.element]} ring${ring.status === 'yours' ? ', claimed by you' : ring.status === 'theirs' ? ', claimed by the opponent' : ring.fate ? `, ${ring.fate} fate` : ''}`"
                 @click="emit('ring', ring.element)"
               >
                 <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
                 <span v-if="ring.status === 'unclaimed' && ring.fate" class="ring-fate">{{ ring.fate }}</span>
               </button>
-              <span class="ring-status">
-                {{
-                  ring.status === 'unclaimed'
-                    ? ring.fate
-                      ? `${ring.fate} fate`
-                      : 'No fate'
-                    : ring.status === 'yours'
-                      ? 'You'
-                      : 'Opp.'
-                }}
-              </span>
             </div>
           </div>
           <span class="aside ring-effect">{{
@@ -562,7 +551,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
 .choice {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 48px;
   padding: 20px 0;
   border-top: 1px solid var(--line);
@@ -588,13 +577,15 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 }
 
 .ring {
-  width: 64px;
-  height: 64px;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 1.5px solid var(--ink);
   background: var(--card);
   color: var(--ink);
-  font-size: 30px;
+  font-size: 38px;
   position: relative;
   display: flex;
   align-items: center;
@@ -637,11 +628,6 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   justify-content: center;
 }
 
-.ring-status {
-  font-size: 12px;
-  color: var(--ink-2);
-}
-
 .segmented {
   display: flex;
   border: 1.5px solid var(--ink);
@@ -651,15 +637,22 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
 
 .segmented button {
   font: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 52px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border: 0;
   background: transparent;
   color: var(--ink);
   cursor: pointer;
   text-transform: capitalize;
+}
+
+.segmented .icon {
+  font-size: 22px;
 }
 
 .segmented button.on {
