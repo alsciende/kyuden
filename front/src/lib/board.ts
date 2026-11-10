@@ -243,6 +243,16 @@ const STEPS: Record<string, Step> = {
     help: 'Choose the province placed under your stronghold. The others are placed face down at random.',
     hint: 'Click the province to put under your stronghold.',
   },
+  dynasty_mulligan: {
+    phase: 'setup',
+    title: 'Mulligan your dynasty cards',
+    help: 'In player order, each player may set aside any of the cards on their provinces, replaced from their dynasty deck, then shuffled back into it.',
+  },
+  conflict_mulligan: {
+    phase: 'setup',
+    title: 'Mulligan your starting hand',
+    help: 'In player order, each player may set aside any of the cards of their hand, replaced from their conflict deck, then shuffled back into it.',
+  },
   reveal_facedown_dynasty_cards: {
     phase: 'dynasty',
     title: 'Reveal your dynasty cards',
@@ -365,6 +375,14 @@ const SPECTATOR_STEPS: Record<string, Pick<Step, 'title' | 'help'>> = {
   choose_stronghold: {
     title: 'Choose the stronghold provinces',
     help: 'Each player chooses the province placed under their stronghold. The others are placed face down at random.',
+  },
+  dynasty_mulligan: {
+    title: 'Mulligan the dynasty cards',
+    help: 'In player order, each player may set aside any of the cards on their provinces, replaced from their dynasty deck, then shuffled back into it.',
+  },
+  conflict_mulligan: {
+    title: 'Mulligan the starting hands',
+    help: 'In player order, each player may set aside any of the cards of their hand, replaced from their conflict deck, then shuffled back into it.',
   },
   reveal_facedown_dynasty_cards: {
     title: 'Reveal the dynasty cards',

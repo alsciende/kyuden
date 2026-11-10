@@ -29,6 +29,7 @@ readonly class BotGameLauncher
     {
         $gameId = Uuid::v4()->toString();
         $playerId = Uuid::v4()->toString();
+        // no mulligan in a game of the house bot: the introductory game goes straight to the board
         $this->bus->dispatch(CreateGame::withRandomSeed($gameId));
         $this->bus->dispatch(new JoinGame($gameId, $playerId, $user->getId(), $deck->getId()));
         $this->bus->dispatch(new JoinGame($gameId, Uuid::v4()->toString(), $bot->getId(), $botDeck->getId()));

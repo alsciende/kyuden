@@ -136,10 +136,10 @@ abstract class AbstractKernelTestCase extends KernelTestCase
         );
     }
 
-    protected function createGame(): ?Game
+    protected function createGame(bool $mulligan = false): ?Game
     {
         $gameId = Uuid::v4()->toString();
-        $message = CreateGame::withRandomSeed($gameId);
+        $message = CreateGame::withRandomSeed($gameId, mulligan: $mulligan);
         $this->messageBus->dispatch($message);
 
         return $this->gameRepository->find($gameId);

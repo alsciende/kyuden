@@ -525,6 +525,26 @@ export interface MoveToConflict {
 }
 
 /**
+ * Mulligans conflict cards during setup (glossary, Mulligan): the cards chosen in the starting hand of the player are set aside, as many cards are drawn from the top of their conflict deck, then the cards set aside are shuffled back into it. Once only, in player order; no card keeps the cards.
+ */
+export interface MulliganConflictCards {
+  /**
+   * Cards in the hand of the player, those to set aside; none to keep every card.
+   */
+  card_ids?: string[]
+}
+
+/**
+ * Mulligans dynasty cards during setup (glossary, Mulligan): the cards chosen among the face-down cards of the provinces of the player are set aside, each province is filled again from the top of their dynasty deck, then the cards set aside are shuffled back into it. Once only, in player order; no card keeps the cards. The player then looks at the cards of their provinces again: they may not afterwards.
+ */
+export interface MulliganDynastyCards {
+  /**
+   * Face-down dynasty cards in regular provinces of the player, those to set aside; none to keep every card.
+   */
+  card_ids?: string[]
+}
+
+/**
  * The active player passes a conflict opportunity (3.2): they forfeit it, whatever its type.
  */
 export type PassConflict = Record<string, never>
@@ -1270,6 +1290,8 @@ export interface MessagePayloads {
   move_home: MoveHome
   move_status_token: MoveStatusToken
   move_to_conflict: MoveToConflict
+  mulligan_conflict_cards: MulliganConflictCards
+  mulligan_dynasty_cards: MulliganDynastyCards
   pass_conflict: PassConflict
   pass_opportunity: PassOpportunity
   place_card_under: PlaceCardUnder

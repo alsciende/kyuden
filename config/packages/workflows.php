@@ -29,7 +29,11 @@ use App\Workflow\WorkflowConfig;
 // we are in a different place if the phase of the game is different AND the available player actions are different
 $gameTransitions = [
     WorkflowConfig::transition('start_game', 'join_game', 'choose_stronghold', ['auto' => true, 'log' => 'The game starts']), // select first player
-    WorkflowConfig::transition('setup_game', 'choose_stronghold', 'dynasty_phase_begins', ['auto' => true, 'log' => 'The players set up the game']),
+    WorkflowConfig::transition('setup_game', 'choose_stronghold', 'dynasty_mulligan', ['auto' => true, 'log' => 'The players set up the game']),
+    // setup 6 and 7: in player order, each player mulligans the cards of their provinces, then of their starting hand;
+    // passed at once in a game without mulligan (the house bot)
+    WorkflowConfig::transition('dynasty_mulligan_ended', 'dynasty_mulligan', 'conflict_mulligan', ['auto' => true, 'log' => 'The players draw their starting hand']),
+    WorkflowConfig::transition('conflict_mulligan_ended', 'conflict_mulligan', 'dynasty_phase_begins', ['auto' => true, 'log' => 'The setup is over']),
     WorkflowConfig::transition('dynasty_phase_began', 'dynasty_phase_begins', 'reveal_facedown_dynasty_cards', ['auto' => true, 'log' => 'The dynasty phase begins']),
     WorkflowConfig::transition('dynasty_cards_revealed', 'reveal_facedown_dynasty_cards', 'collect_fate', ['auto' => true, 'log' => 'The facedown dynasty cards are revealed']),
     WorkflowConfig::transition('fate_collected', 'collect_fate', 'play_cards_from_provinces', ['auto' => true, 'log' => 'Every player has collected fate']),

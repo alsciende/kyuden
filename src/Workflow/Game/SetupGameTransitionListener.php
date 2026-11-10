@@ -11,7 +11,6 @@ use App\Enum\StackType;
 use App\Event\ProvincePlacedEvent;
 use App\Exception\Data\DataException;
 use App\Factory\StackFactory;
-use App\Message\DrawConflictCards;
 use App\Message\FillProvince;
 use App\Message\SetHonor;
 use App\Message\ShuffleConflictDeck;
@@ -25,8 +24,6 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
 #[AsTransitionListener(workflow: 'game', transition: 'setup_game')]
 readonly class SetupGameTransitionListener
 {
-    public const int STARTING_CARDS = 4;
-
     public function __construct(
         private MessageBusInterface $transitionBus,
         private PlayerStateManager $stateManager,
@@ -51,7 +48,9 @@ readonly class SetupGameTransitionListener
      * Shuffle decks.
      * Set Starting Honor.
      * Fill Provinces.
-     * Draw Starting Hand.
+     *
+     * The starting hand is drawn once the players have mulliganed their dynasty cards
+     * (DynastyMulliganEndedTransitionListener).
      */
     private function setup(Player $player): void
     {
@@ -87,10 +86,5 @@ readonly class SetupGameTransitionListener
                 new FillProvince($player->getGame()->getId(), $player->getId(), $card->getId())
             );
         }
-
-        // draw starting hand
-        $this->transitionBus->dispatch(
-            new DrawConflictCards($player->getGame()->getId(), $player->getId(), $player->getId(), self::STARTING_CARDS)
-        );
     }
 }

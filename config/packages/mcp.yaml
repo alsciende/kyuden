@@ -78,6 +78,11 @@ mcp:
 
                 Card ids change when a deck is shuffled: always take them from the latest view.
 
+                Setup ends with two mulligans, in player order (places dynasty_mulligan, then conflict_mulligan). Your
+                face-down dynasty cards are hidden from you in the view: the log of the dynasty mulligan gives them to
+                you (looks at … in a province). Send mulligan_dynasty_cards, then mulligan_conflict_cards, with the cards
+                to replace, or none to keep them.
+
                 The view gives cards by code: read them with get_cards (several codes at once), once per card. A card
                 has its name, type, cost, text, skills (military, political, glory), strength, ability_timings (action,
                 interrupt, reaction). Read your deck once the game starts (the codes of list_decks), and the opponent's

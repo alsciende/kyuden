@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "mulligan_dynasty_cards",
+    "description": "Mulligans dynasty cards during setup (glossary, Mulligan): the cards chosen among the face-down cards of the provinces of the player are set aside, each province is filled again from the top of their dynasty deck, then the cards set aside are shuffled back into it. Once only, in player order; no card keeps the cards. The player then looks at the cards of their provinces again: they may not afterwards.",
+    "type": "object",
+    "properties": {
+        "card_ids": {
+            "description": "Face-down dynasty cards in regular provinces of the player, those to set aside; none to keep every card.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true,
+            "default": []
+        }
+    },
+    "additionalProperties": false
+}

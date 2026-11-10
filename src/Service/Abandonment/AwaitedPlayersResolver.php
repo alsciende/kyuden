@@ -22,6 +22,8 @@ use App\Message\DeclareGloryCount;
 use App\Message\DeclareProvinceStrength;
 use App\Message\EndDuel;
 use App\Message\EndResolution;
+use App\Message\MulliganConflictCards;
+use App\Message\MulliganDynastyCards;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Service\AvailableActionsResolver;
@@ -45,6 +47,8 @@ final readonly class AwaitedPlayersResolver
         EndResolution::class,
         BidHonor::class,
         ChooseStrongholdProvince::class,
+        MulliganDynastyCards::class,
+        MulliganConflictCards::class,
         CollectFate::class,
         DeclareConflict::class,
         PassConflict::class,

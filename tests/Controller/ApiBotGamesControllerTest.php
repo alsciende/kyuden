@@ -8,6 +8,7 @@ use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Game;
 use App\Entity\Player;
+use App\State\Manager\GameStateManager;
 use App\Task\PlayHouseBotTurn;
 use App\Tests\AbstractKernelTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -62,6 +63,8 @@ class ApiBotGamesControllerTest extends AbstractKernelTestCase
         $game = $this->gameRepository->find($data['game_id']);
         self::assertInstanceOf(Game::class, $game);
         self::assertSame('choose_stronghold', $game->getCurrentPlace());
+        // no mulligan against the house bot
+        self::assertFalse(self::service(GameStateManager::class)->getState($game)->mulligan);
         $players = $game->getPlayers()->getValues();
         self::assertSame(['john', 'kyuden-bot'], array_map(fn (Player $player): string => $player->getUserId(), $players));
         self::assertSame($data['player_id'], $players[0]->getId());

@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "mulligan_conflict_cards",
+    "description": "Mulligans conflict cards during setup (glossary, Mulligan): the cards chosen in the starting hand of the player are set aside, as many cards are drawn from the top of their conflict deck, then the cards set aside are shuffled back into it. Once only, in player order; no card keeps the cards.",
+    "type": "object",
+    "properties": {
+        "card_ids": {
+            "description": "Cards in the hand of the player, those to set aside; none to keep every card.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true,
+            "default": []
+        }
+    },
+    "additionalProperties": false
+}

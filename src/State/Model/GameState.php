@@ -21,6 +21,12 @@ class GameState
     public ?string $firstPlayerId = null;
 
     /**
+     * The players mulligan during setup (CreateGame): not in the games of the house bot, nor in the games created before
+     * the mulligan.
+     */
+    public bool $mulligan = false;
+
+    /**
      * Players who have the opportunity to act. Set when a step with opportunities begins: a single player in steps
      * resolved in player order, every player in steps where they act simultaneously.
      *

@@ -10,6 +10,7 @@ use App\Entity\Deck;
 use App\Entity\Player;
 use App\Entity\User;
 use App\Repository\CandidateRepository;
+use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -94,6 +95,7 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
         self::assertSame($akodo->getGame(), $hida->getGame());
         self::assertSame(AppFixtures::LION_STARTER_DECK, $akodo->getDeck()->getId());
         self::assertSame('choose_stronghold', $akodo->getGame()->getCurrentPlace());
+        self::assertTrue(self::service(GameStateManager::class)->getState($akodo->getGame())->mulligan);
         // the creation of the game, then each player joining
         self::assertSame(3, $akodo->getGame()->getVersion());
     }

@@ -25,6 +25,8 @@ use App\Message\DeclareDuelStatistic;
 use App\Message\DeclareGloryCount;
 use App\Message\DeclareNoDefenders;
 use App\Message\EndResolution;
+use App\Message\MulliganConflictCards;
+use App\Message\MulliganDynastyCards;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Message\PlayCharacterFromProvince;
@@ -90,6 +92,15 @@ final readonly class BotStrategy
 
         if (in_array('choose_stronghold_province', $available, true) && $playerState->getStrongholdProvinceId() === null) {
             return new ChooseStrongholdProvince($gameId, $playerId, $this->chooseStrongholdProvince($player)->getId());
+        }
+
+        // the house bot plays games without mulligan: should it ever have one, it keeps its cards
+        if (in_array('mulligan_dynasty_cards', $available, true)) {
+            return new MulliganDynastyCards($gameId, $playerId);
+        }
+
+        if (in_array('mulligan_conflict_cards', $available, true)) {
+            return new MulliganConflictCards($gameId, $playerId);
         }
 
         // RevealDynastyCard is accepted anytime: the step tells when it is due

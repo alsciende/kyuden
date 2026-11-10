@@ -7,6 +7,8 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Event\GameCreatedEvent;
 use App\Message\CreateGame;
+use App\State\Manager\GameStateManager;
+use App\State\Model\GameState;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -21,6 +23,7 @@ final readonly class CreateGameHandler
         #[Target('game')]
         private WorkflowInterface $gameStateMachine,
         private EventDispatcherInterface $eventDispatcher,
+        private GameStateManager $stateManager,
     ) {
     }
 
@@ -28,6 +31,11 @@ final readonly class CreateGameHandler
     {
         $game = new Game($message->getGameId(), hex2bin($message->getSeed()) ?: throw new \InvalidArgumentException('The seed must be hex encoded.'), $message->isFriendly());
         $this->gameStateMachine->getMarking($game);
+        $this->stateManager->withState($game, function (GameState $state) use ($message): GameState {
+            $state->mulligan = $message->hasMulligan();
+
+            return $state;
+        });
         $this->entityManager->persist($game);
         $this->eventDispatcher->dispatch(new GameCreatedEvent($game));
 

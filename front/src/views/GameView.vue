@@ -13,12 +13,14 @@ import GameSidebar from '@/components/game/GameSidebar.vue'
 import InspectionWindow from '@/components/game/InspectionWindow.vue'
 import RedistributionWindow from '@/components/game/RedistributionWindow.vue'
 import LogDrawer from '@/components/game/LogDrawer.vue'
+import MulliganWindow from '@/components/game/MulliganWindow.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf, isRedistribution } from '@/lib/inspection'
+import { mulliganWindow } from '@/lib/mulligan'
 import { closeCardImage, viewedCode } from '@/lib/cardImage'
 import { hidePreview } from '@/lib/preview'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
@@ -123,9 +125,32 @@ const inspection = computed(() => {
   return inspectionsOf(log.value, game.value.viewer_id).find((candidate) => candidate.version > since) ?? null
 })
 
+/**
+ * The mulligan of the viewer during setup, until they are done with their new cards: the results of the messages read
+ * when the page opens are not shown again.
+ */
+const mulliganShownAfter = ref<number | null>(null)
+watch(log, (messages, previous) => {
+  if (mulliganShownAfter.value === null && previous.length === 0 && messages.length > 0) {
+    mulliganShownAfter.value = messages.at(-1)!.version
+  }
+})
+const mulligan = computed(() =>
+  game.value === null || mulliganShownAfter.value === null
+    ? null
+    : mulliganWindow(game.value, log.value, mulliganShownAfter.value),
+)
+
+function mulliganDone(): void {
+  if (mulligan.value?.version != null) {
+    mulliganShownAfter.value = mulligan.value.version
+  }
+  error.value = null
+}
+
 // nothing else is open over the window
-watch(inspection, (current) => {
-  if (current !== null) {
+watch([inspection, () => mulligan.value !== null], ([current, mulliganOpen]) => {
+  if (current !== null || mulliganOpen) {
     openCardId.value = null
     logOpen.value = false
     error.value = null
@@ -266,7 +291,7 @@ const problem = computed(() => {
       :user-id="session?.userId ?? null"
       :selection="selection"
       :sending="sending"
-      :error="openCardId || barOpen || inspection ? null : error"
+      :error="openCardId || barOpen || inspection || mulligan ? null : error"
       :send="send"
       @open-log="logOpen = true"
       @switch-sides="switchSides"
@@ -323,8 +348,19 @@ const problem = computed(() => {
       @close="openCardId = null"
     />
     <LogDrawer v-if="logOpen" :game="game" :cards="cards" :log="log" @close="logOpen = false" />
+    <MulliganWindow
+      v-if="mulligan"
+      :key="`mulligan-${mulligan.step}-${mulligan.phase === 'result'}`"
+      :game="game"
+      :cards="cards"
+      :window="mulligan"
+      :sending="sending"
+      :error="error"
+      :send="send"
+      @done="mulliganDone"
+    />
     <RedistributionWindow
-      v-if="inspection && isRedistribution(inspection)"
+      v-else-if="inspection && isRedistribution(inspection)"
       :key="`redistribution-${inspection.version}`"
       :game="game"
       :cards="cards"
