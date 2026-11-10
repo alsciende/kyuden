@@ -299,8 +299,10 @@ h2.form-label {
   cursor: pointer;
 }
 
-.option:hover {
-  border-color: var(--ink);
+@media (hover: hover) {
+  .option:hover {
+    border-color: var(--ink);
+  }
 }
 
 .option:disabled {

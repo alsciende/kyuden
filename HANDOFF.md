@@ -105,7 +105,7 @@ Not planned, since the cards are few and the changes deep: Seven Stings Keep (th
 - Discard piles: point at their cards, and highlight the card pointed at for the opponent (from the last log entry).
 - Accounts: list and edit their decks.
 - Spectators: the round in the list of the games; a component test of the spectator mode of `GameView`.
-- Mobile: the client is installable (a PWA: manifest, service worker precaching its shell) but laid out for a desktop (at least 1280px wide); next, a layout for tablets in landscape, then phones (a mockup first), touch instead of hovering (previews, tooltips), and notifications of the turn of the player (Web Push: VAPID keys, subscriptions stored, sent by the worker), which Mercure cannot do once the page is closed.
+- Mobile: the client is installable (a PWA: manifest, service worker precaching its shell) but laid out for a desktop (at least 1280px wide); next, a layout for tablets in landscape, then phones (a mockup first), touch instead of hovering (the tooltips are done: their texts written where a click leads, the hover styles for devices that hover; the previews of the cards on the board remain), and notifications of the turn of the player (Web Push: VAPID keys, subscriptions stored, sent by the worker), which Mercure cannot do once the page is closed.
 
 ### API and platform
 

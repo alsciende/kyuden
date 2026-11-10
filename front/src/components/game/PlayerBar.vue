@@ -48,6 +48,7 @@ const TITLES: Record<BarStat, string> = {
   hand: 'Hand',
   dynasty_deck: 'Dynasty deck',
   conflict_deck: 'Conflict deck',
+  provinces: 'Provinces',
   dynasty_discard: 'Dynasty discard pile',
   conflict_discard: 'Conflict discard pile',
   removed: 'Removed from the game',
@@ -74,7 +75,8 @@ const general = computed((): Stat[] => [
 ])
 const dynasty = computed((): Stat[] => [
   {
-    key: null,
+    // its window tells the stronghold, for a spectator too
+    key: 'provinces',
     label: 'Provinces',
     value: bar.value.intactProvinces,
     of: bar.value.provinces,
@@ -148,6 +150,11 @@ function ringLabel(element: Element): string {
 
   return `${ELEMENT_NAMES[element]} ring${type ? `, claimed in a ${type} conflict` : ''}`
 }
+
+/** whose value the popover is about: nobody for the Imperial Favor nobody has (in the bar of the viewer) */
+const heading = computed(() =>
+  open.value === 'imperial_favor' && !bar.value.favor ? 'Nobody has it' : playerName(props.game, props.player),
+)
 
 function close(): void {
   hidePreview()
@@ -313,13 +320,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <template v-for="stat in section.stats" :key="stat.label">
           <button
             v-if="stat.key"
+            v-tip="stat.tip ?? ''"
             type="button"
             class="stat"
             :class="{ on: open === stat.key }"
             :aria-expanded="open === stat.key"
             @click="toggle(stat.key, $event)"
           >
-            <b>{{ stat.value }}</b
+            <b
+              >{{ stat.value }}<small v-if="stat.of !== undefined">/{{ stat.of }}</small></b
             ><span>{{ stat.label }}</span>
           </button>
           <div v-else v-tip="stat.tip ?? ''" class="stat fixed" :tabindex="stat.tip ? 0 : undefined">
@@ -389,7 +398,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         :aria-label="`${TITLES[open]} · ${playerName(game, player, false)}`"
       >
         <div class="head">
-          <span class="caption">{{ TITLES[open] }} · {{ playerName(game, player) }}</span>
+          <span class="caption">{{ TITLES[open] }} · {{ heading }}</span>
           <button type="button" class="close" aria-label="Close" @click="close">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
               <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" fill="none" />
@@ -421,6 +430,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           </template>
           <p v-else class="hint">The pile is empty.</p>
         </template>
+
+        <p v-else-if="open === 'provinces'" class="tip-text">{{ bar.strongholdTip }}</p>
 
         <template v-else>
           <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
@@ -555,8 +566,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.stat:hover {
-  background: var(--paper-3);
+@media (hover: hover) {
+  .stat:hover {
+    background: var(--paper-3);
+  }
 }
 
 .stat.on {
@@ -568,8 +581,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: default;
 }
 
-.stat.fixed:hover {
-  background: transparent;
+@media (hover: hover) {
+  .stat.fixed:hover {
+    background: transparent;
+  }
 }
 
 .stat b {
@@ -622,10 +637,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.stat .ring:hover,
 .stat .ring.on {
   background: var(--ink);
   color: var(--paper);
+}
+
+@media (hover: hover) {
+  .stat .ring:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
 }
 
 .stat b.none {
@@ -676,9 +697,14 @@ button.badge {
   cursor: pointer;
 }
 
-button.badge:hover,
 button.badge.on {
   background: var(--paper-2);
+}
+
+@media (hover: hover) {
+  button.badge:hover {
+    background: var(--paper-2);
+  }
 }
 
 .backdrop {
@@ -729,8 +755,10 @@ button.badge.on {
   cursor: pointer;
 }
 
-.close:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--paper-2);
+  }
 }
 
 .amount {
@@ -783,8 +811,10 @@ button.badge.on {
   cursor: pointer;
 }
 
-.effect:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .effect:hover {
+    background: var(--paper-2);
+  }
 }
 
 button.name {
@@ -794,10 +824,16 @@ button.name {
   text-align: left;
 }
 
-button.name:hover,
 button.name:focus-visible {
   outline: 1.5px solid var(--ink);
   outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  button.name:hover {
+    outline: 1.5px solid var(--ink);
+    outline-offset: 2px;
+  }
 }
 
 button.name.on {
@@ -826,6 +862,10 @@ button.name.on {
   color: var(--ink-2);
 }
 
+.tip-text {
+  font-size: 14px;
+}
+
 .pile {
   display: flex;
   flex-direction: column;
@@ -850,8 +890,10 @@ button.name.on {
   cursor: pointer;
 }
 
-.pile-card:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .pile-card:hover {
+    background: var(--paper-2);
+  }
 }
 
 .pile-name {

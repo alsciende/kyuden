@@ -209,8 +209,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   transform: none;
 }
 
-.badge:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .badge:hover {
+    background: var(--paper-2);
+  }
 }
 
 .badge.open {
@@ -276,8 +278,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.close:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--paper-2);
+  }
 }
 
 .hint {
@@ -308,8 +312,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.pile-card:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .pile-card:hover {
+    background: var(--paper-2);
+  }
 }
 
 .pile-card.hidden {

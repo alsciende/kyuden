@@ -16,7 +16,7 @@ import {
   viewer,
   type Cards,
 } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } from '@/lib/icons'
 import { vTip } from '@/lib/tooltip'
 
 /**
@@ -204,6 +204,7 @@ const outcome = computed(() => {
           }}</span>
           {{ ELEMENT_NAMES[conflict.ring] }} ring
         </h2>
+        <p class="ring-effect">{{ RING_EFFECTS[conflict.ring] }}</p>
         <p v-if="favor" class="favor">
           {{ favor }} the Imperial Favor for
           <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[conflict.type] }}</span>
@@ -222,15 +223,18 @@ const outcome = computed(() => {
                 <button
                   v-for="ring in ringChoices"
                   :key="ring.element"
-                  v-tip="ringTip(ring.element)"
                   type="button"
-                  class="switch-ring"
-                  :class="ring.status"
+                  class="switch-choice"
                   :aria-label="`The ${ELEMENT_NAMES[ring.element]} ring${ring.fate ? `, ${ring.fate} fate` : ''}`"
                   @click="switchRing(ring.element)"
                 >
-                  <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
-                  <span v-if="ring.fate" class="ring-fate">{{ ring.fate }}</span>
+                  <span class="switch-ring" :class="ring.status">
+                    <span class="icon">{{ ELEMENT_ICONS[ring.element] }}</span>
+                    <span v-if="ring.fate" class="ring-fate">{{ ring.fate }}</span>
+                  </span>
+                  <span class="switch-text"
+                    ><b>{{ ELEMENT_NAMES[ring.element] }}</b> {{ RING_EFFECTS[ring.element] }}</span
+                  >
                 </button>
               </div>
             </template>
@@ -315,6 +319,12 @@ const outcome = computed(() => {
   border-bottom: 1px solid var(--line);
 }
 
+.ring-effect {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
 .favor {
   margin-top: 4px;
   font-size: 14px;
@@ -339,9 +349,14 @@ const outcome = computed(() => {
   border-radius: 2px;
 }
 
-.trigger:hover,
 .trigger[aria-expanded='true'] {
   color: var(--seal);
+}
+
+@media (hover: hover) {
+  .trigger:hover {
+    color: var(--seal);
+  }
 }
 
 .backdrop {
@@ -365,13 +380,38 @@ const outcome = computed(() => {
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.15);
 }
 
+/* each ring with its effect, written out */
 .switch-rings {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 300px;
+}
+
+.switch-choice {
+  font: inherit;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.switch-text {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.switch-text b {
+  color: var(--ink);
 }
 
 .switch-ring {
+  flex: none;
   position: relative;
   width: 34px;
   height: 34px;
@@ -383,7 +423,6 @@ const outcome = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
 /* a ring of the claimed ring pool of the attacking player */
@@ -393,9 +432,11 @@ const outcome = computed(() => {
   color: var(--paper);
 }
 
-.switch-ring:hover {
-  outline: 2px solid var(--seal);
-  outline-offset: 2px;
+@media (hover: hover) {
+  .switch-choice:hover .switch-ring {
+    outline: 2px solid var(--seal);
+    outline-offset: 2px;
+  }
 }
 
 .ring-fate {

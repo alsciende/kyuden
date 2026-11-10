@@ -179,8 +179,10 @@ h1 {
   border-radius: 2px;
 }
 
-.game:hover {
-  border-color: var(--ink);
+@media (hover: hover) {
+  .game:hover {
+    border-color: var(--ink);
+  }
 }
 
 .players {

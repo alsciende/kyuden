@@ -231,10 +231,16 @@ h1 {
     border-color 0.15s;
 }
 
-.clan:hover,
 .clan.is-selected {
   --mon-color: var(--clan-color);
   background: var(--paper-2);
+}
+
+@media (hover: hover) {
+  .clan:hover {
+    --mon-color: var(--clan-color);
+    background: var(--paper-2);
+  }
 }
 
 .clan.is-selected {

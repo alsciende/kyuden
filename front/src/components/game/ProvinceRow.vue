@@ -284,8 +284,10 @@ function clickProvince(id: string, selectable: boolean): void {
   font-size: 11px;
 }
 
-.more:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .more:hover {
+    background: var(--paper-2);
+  }
 }
 
 .more.open {
@@ -351,8 +353,10 @@ function clickProvince(id: string, selectable: boolean): void {
   cursor: pointer;
 }
 
-.close:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--paper-2);
+  }
 }
 
 .hint {
@@ -383,8 +387,10 @@ function clickProvince(id: string, selectable: boolean): void {
   cursor: pointer;
 }
 
-.pile-card:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .pile-card:hover {
+    background: var(--paper-2);
+  }
 }
 
 .pile-card.hidden {
@@ -486,8 +492,10 @@ function clickProvince(id: string, selectable: boolean): void {
   cursor: pointer;
 }
 
-.tag:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .tag:hover {
+    background: var(--paper-2);
+  }
 }
 
 .tag-name {

@@ -6,6 +6,7 @@ import type { ConflictType, Element } from '@/api/game'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import CardDialog from '@/components/game/CardDialog.vue'
+import CardImageViewer from '@/components/game/CardImageViewer.vue'
 import CardPreview from '@/components/game/CardPreview.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
 import GameSidebar from '@/components/game/GameSidebar.vue'
@@ -18,6 +19,7 @@ import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
 import { inspectionsOf, isRedistribution } from '@/lib/inspection'
+import { closeCardImage, viewedCode } from '@/lib/cardImage'
 import { hidePreview } from '@/lib/preview'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
@@ -204,6 +206,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   hidePreview()
   hideTooltip()
+  closeCardImage()
 })
 
 const problem = computed(() => {
@@ -305,6 +308,7 @@ const problem = computed(() => {
     </div>
 
     <CardPreview :cards="cards" :board-right="boardRight" />
+    <CardImageViewer v-if="viewedCode" :key="viewedCode" :cards="cards" :code="viewedCode" />
     <TooltipLayer />
 
     <CardDialog
@@ -496,8 +500,10 @@ h1 {
   border-color: var(--paper);
 }
 
-.back:hover {
-  background: var(--paper);
-  color: var(--ink);
+@media (hover: hover) {
+  .back:hover {
+    background: var(--paper);
+    color: var(--ink);
+  }
 }
 </style>

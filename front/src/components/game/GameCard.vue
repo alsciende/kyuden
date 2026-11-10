@@ -261,8 +261,10 @@ function enter(): void {
     transform 0.15s;
 }
 
-.card:hover {
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .small {

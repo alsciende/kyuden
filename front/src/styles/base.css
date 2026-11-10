@@ -112,8 +112,10 @@ a {
   color: var(--ink);
 }
 
-a:hover {
-  color: var(--seal);
+@media (hover: hover) {
+  a:hover {
+    color: var(--seal);
+  }
 }
 
 :focus-visible {
@@ -166,9 +168,11 @@ p {
   color: var(--paper);
 }
 
-.btn-primary:hover {
-  background: var(--ink-hover);
-  color: var(--paper);
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--ink-hover);
+    color: var(--paper);
+  }
 }
 
 .btn-ghost {
@@ -176,8 +180,10 @@ p {
   color: var(--ink);
 }
 
-.btn-ghost:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .btn-ghost:hover {
+    background: var(--paper-2);
+  }
 }
 
 .btn:disabled,
@@ -207,8 +213,10 @@ p {
   text-decoration-thickness: 1px;
 }
 
-.btn-link:hover {
-  color: var(--seal);
+@media (hover: hover) {
+  .btn-link:hover {
+    color: var(--seal);
+  }
 }
 
 .field {

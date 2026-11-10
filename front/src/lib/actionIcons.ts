@@ -47,6 +47,19 @@ export const ACTION_ICONS = {
 
 export type ActionIconName = keyof typeof ACTION_ICONS
 
+/** the label written under the icon on a touch screen, where its tooltip does not show */
+export const ACTION_SHORT_LABELS: Record<ActionIconName, string> = {
+  point: 'Point',
+  top: 'Top',
+  bottom: 'Bottom',
+  shuffle: 'Shuffle',
+  discard: 'Discard',
+  hand: 'To hand',
+  sacrifice: 'Sacrifice',
+  control: 'Control',
+  duplicate: 'Duplicate',
+}
+
 /** the icon of an action on a card, none for an action that keeps its label */
 export function actionIcon(action: Message): ActionIconName | null {
   switch (action.type) {

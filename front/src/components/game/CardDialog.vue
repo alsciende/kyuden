@@ -6,7 +6,7 @@ import type { Message, MessageType } from '@/api/messages'
 import ActionIcon from '@/components/ActionIcon.vue'
 import PlayForm from '@/components/game/PlayForm.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
-import { actionIcon } from '@/lib/actionIcons'
+import { ACTION_SHORT_LABELS, actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
 import { CONFLICT_ICONS } from '@/lib/icons'
@@ -536,7 +536,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             :disabled="sending"
             @click="runAction(action)"
           >
-            <ActionIcon v-if="icon" :name="icon" />
+            <template v-if="icon">
+              <ActionIcon :name="icon" />
+              <span class="short" aria-hidden="true">{{ ACTION_SHORT_LABELS[icon] }}</span>
+            </template>
             <template v-else>{{ action.label }}</template>
           </button>
           <button
@@ -563,6 +566,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <path d="M5 12h14" />
               <path v-if="!specialOpen" d="M12 5v14" />
             </svg>
+            <span class="short" aria-hidden="true">More</span>
             <span v-if="neededSpecial && !specialOpen" class="badge" aria-hidden="true">{{ neededSpecial }}</span>
           </button>
         </div>
@@ -1006,8 +1010,10 @@ h2 {
   color: var(--seal);
 }
 
-.removals .btn:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .removals .btn:hover {
+    background: var(--paper-2);
+  }
 }
 
 .removals .btn:disabled {
@@ -1027,6 +1033,30 @@ h2 {
 .text-action {
   flex: 1;
   font-size: 15px;
+}
+
+/* the label under the icon, on a touch screen only: its tooltip does not show there */
+.short {
+  display: none;
+}
+
+@media (hover: none) {
+  .removals {
+    flex-wrap: wrap;
+  }
+
+  .icon-action {
+    flex: 0 0 64px;
+    min-height: 56px;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .short {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+  }
 }
 
 .removals .start {

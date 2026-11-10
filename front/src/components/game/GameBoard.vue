@@ -258,6 +258,9 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
               </span>
             </div>
           </div>
+          <span class="aside ring-effect">{{
+            selection.ring ? ringTip(selection.ring) : 'Choose the ring to contest'
+          }}</span>
         </div>
         <div class="choice-group">
           <span class="label">Type</span>
@@ -675,6 +678,11 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   color: var(--ink-2);
 }
 
+/* the effect of the ring chosen, under the rings: as wide as them */
+.ring-effect {
+  max-width: 400px;
+}
+
 .strips {
   margin-top: auto;
   display: flex;
@@ -719,9 +727,11 @@ div.strip {
   cursor: pointer;
 }
 
-.strip:hover {
-  border-color: var(--ink-3);
-  background: var(--paper-2);
+@media (hover: hover) {
+  .strip:hover {
+    border-color: var(--ink-3);
+    background: var(--paper-2);
+  }
 }
 
 .strip-toggle {

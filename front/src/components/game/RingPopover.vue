@@ -5,10 +5,9 @@ import type { Element, GameView, PayloadArgs, Send } from '@/api/game'
 import type { MessageType } from '@/api/messages'
 import SpecialEffects from '@/components/game/SpecialEffects.vue'
 import { rings, type Cards } from '@/lib/board'
-import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS, ringTip } from '@/lib/icons'
+import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, RING_EFFECTS } from '@/lib/icons'
 import type { Effect } from '@/lib/playerBar'
 import { ringEffects, ringsToSwitchWith } from '@/lib/rings'
-import { vTip } from '@/lib/tooltip'
 
 /**
  * The window of a ring, opened by a click on it in the bar on the right (under the rings) or in the bar of a player
@@ -122,15 +121,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <button
             v-for="choice in switchChoices"
             :key="choice.element"
-            v-tip="ringTip(choice.element)"
             type="button"
-            class="switch-ring"
-            :class="choice.status"
+            class="switch-choice"
             :disabled="sending"
             :aria-label="`Switch with the ${ELEMENT_NAMES[choice.element]} ring`"
             @click="run('switch_ring', { ring: element, other_ring: choice.element })"
           >
-            <span class="icon">{{ ELEMENT_ICONS[choice.element] }}</span>
+            <span class="switch-ring" :class="choice.status"
+              ><span class="icon">{{ ELEMENT_ICONS[choice.element] }}</span></span
+            >
+            <span class="switch-text"
+              ><b>{{ ELEMENT_NAMES[choice.element] }}</b> {{ RING_EFFECTS[choice.element] }}</span
+            >
           </button>
         </div>
       </template>
@@ -191,8 +193,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.close:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--paper-2);
+  }
 }
 
 .claimed {
@@ -215,13 +219,37 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   color: var(--ink-3);
 }
 
+/* each ring with its effect, written out */
 .switch-rings {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.switch-choice {
+  font: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.switch-text {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.switch-text b {
+  color: var(--ink);
 }
 
 .switch-ring {
-  font: inherit;
+  flex: none;
   width: 40px;
   height: 40px;
   box-sizing: border-box;
@@ -233,7 +261,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
 .switch-ring.contested {
@@ -252,9 +279,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   border: 1.5px dashed var(--ink-3);
 }
 
-.switch-ring:hover {
-  outline: 2px solid var(--seal);
-  outline-offset: 2px;
+@media (hover: hover) {
+  .switch-choice:hover .switch-ring {
+    outline: 2px solid var(--seal);
+    outline-offset: 2px;
+  }
 }
 
 .amount {
@@ -307,8 +336,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
 }
 
-.effect:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .effect:hover {
+    background: var(--paper-2);
+  }
 }
 
 .effect.primary {
@@ -318,7 +349,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 .step:disabled,
 .effect:disabled,
-.switch-ring:disabled {
+.switch-choice:disabled {
   opacity: 0.5;
   cursor: default;
 }

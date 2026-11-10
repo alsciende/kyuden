@@ -179,7 +179,9 @@ section a {
   text-underline-offset: 3px;
 }
 
-section a:hover {
-  color: var(--seal);
+@media (hover: hover) {
+  section a:hover {
+    color: var(--seal);
+  }
 }
 </style>

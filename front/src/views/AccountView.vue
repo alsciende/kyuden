@@ -665,10 +665,12 @@ h1 {
   color: var(--seal-ink);
 }
 
-.btn-seal:hover {
-  background: var(--seal);
-  color: var(--seal-ink);
-  filter: brightness(0.92);
+@media (hover: hover) {
+  .btn-seal:hover {
+    background: var(--seal);
+    color: var(--seal-ink);
+    filter: brightness(0.92);
+  }
 }
 
 .status {

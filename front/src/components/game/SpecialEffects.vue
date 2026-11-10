@@ -196,8 +196,10 @@ const sections = computed(() => {
   cursor: pointer;
 }
 
-.effect:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .effect:hover {
+    background: var(--paper-2);
+  }
 }
 
 .effect:disabled {

@@ -506,8 +506,10 @@ h2 {
   cursor: pointer;
 }
 
-.action:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .action:hover {
+    background: var(--paper-2);
+  }
 }
 
 .action.primary {
@@ -576,7 +578,9 @@ h2 {
   cursor: pointer;
 }
 
-.done:hover {
-  background: var(--paper-3);
+@media (hover: hover) {
+  .done:hover {
+    background: var(--paper-3);
+  }
 }
 </style>

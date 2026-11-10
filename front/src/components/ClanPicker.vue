@@ -82,10 +82,16 @@ function browse(event: KeyboardEvent): void {
     border-color 0.2s;
 }
 
-.clan:hover,
 .clan.is-selected {
   --mon-color: var(--clan-color);
   background: var(--paper-2);
+}
+
+@media (hover: hover) {
+  .clan:hover {
+    --mon-color: var(--clan-color);
+    background: var(--paper-2);
+  }
 }
 
 .clan.is-selected {

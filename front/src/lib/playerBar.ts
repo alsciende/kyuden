@@ -98,6 +98,8 @@ export type BarStat =
   | 'hand'
   | 'dynasty_deck'
   | 'conflict_deck'
+  /** the intact provinces: how many must still be broken before the stronghold can be attacked, no effect */
+  | 'provinces'
   | 'dynasty_discard'
   | 'conflict_discard'
   /** the cards removed from the game */
@@ -110,7 +112,7 @@ export type BarStat =
   | 'player'
 
 /** the values whose effects take no amount */
-export const WITHOUT_AMOUNT: BarStat[] = ['first_player', 'imperial_favor', 'conflicts', 'player']
+export const WITHOUT_AMOUNT: BarStat[] = ['provinces', 'first_player', 'imperial_favor', 'conflicts', 'player']
 
 const SIDES: ConflictType[] = ['military', 'political']
 

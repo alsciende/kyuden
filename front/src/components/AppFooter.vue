@@ -47,7 +47,9 @@ const discordUrl = import.meta.env.VITE_DISCORD_URL || null
   gap: 6px;
 }
 
-.footer a:hover {
-  color: var(--seal);
+@media (hover: hover) {
+  .footer a:hover {
+    color: var(--seal);
+  }
 }
 </style>

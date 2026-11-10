@@ -194,6 +194,7 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
         <span
           >resolves the <span v-tip="othersRing.text" class="ring-name">{{ othersRing.name }}</span> effect.</span
         >
+        <span class="ring-text">{{ othersRing.text }}</span>
       </p>
     </section>
 
@@ -301,8 +302,10 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   cursor: pointer;
 }
 
-.eye:hover {
-  border-color: var(--ink);
+@media (hover: hover) {
+  .eye:hover {
+    border-color: var(--ink);
+  }
 }
 
 .eye.on {
@@ -346,8 +349,10 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   border-radius: 2px;
 }
 
-.close:hover {
-  background: var(--paper-2);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--paper-2);
+  }
 }
 
 .audience-list ul {
@@ -402,6 +407,13 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   gap: 4px 8px;
   margin: 0;
   font-size: 14px;
+}
+
+/* the effect of the ring the opponent resolves, written out: dimmed, on a line of its own */
+.ring-text {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--ink-2);
 }
 
 .acting {
@@ -459,8 +471,10 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   flex: none;
 }
 
-.swap:hover {
-  background: var(--paper-3);
+@media (hover: hover) {
+  .swap:hover {
+    background: var(--paper-3);
+  }
 }
 
 .leave {
@@ -589,10 +603,16 @@ h1 {
   border: 1.5px dashed var(--ink-3);
 }
 
-.ring:hover,
 .ring.on {
   outline: 2px solid var(--seal);
   outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .ring:hover {
+    outline: 2px solid var(--seal);
+    outline-offset: 2px;
+  }
 }
 
 .ring-fate {

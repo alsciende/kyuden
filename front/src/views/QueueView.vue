@@ -669,8 +669,10 @@ h2.form-label {
   cursor: pointer;
 }
 
-.deck:hover {
-  border-color: var(--ink);
+@media (hover: hover) {
+  .deck:hover {
+    border-color: var(--ink);
+  }
 }
 
 .slot {
@@ -687,7 +689,7 @@ h2.form-label {
   padding-right: 28px;
 }
 
-/* shown while the deck is hovered or focused */
+/* always shown: a touch screen has no hover */
 .trash {
   position: absolute;
   top: 6px;
@@ -702,18 +704,18 @@ h2.form-label {
   border-radius: 2px;
   color: var(--ink-3);
   cursor: pointer;
-  opacity: 0;
 }
 
-.slot:hover .trash,
-.slot:focus-within .trash {
-  opacity: 1;
-}
-
-.trash:hover,
 .trash:focus-visible {
   color: var(--seal);
   background: var(--paper-2);
+}
+
+@media (hover: hover) {
+  .trash:hover {
+    color: var(--seal);
+    background: var(--paper-2);
+  }
 }
 
 .confirm {
@@ -749,10 +751,12 @@ h2.form-label {
   color: var(--seal-ink);
 }
 
-.btn-seal:hover {
-  background: var(--seal);
-  color: var(--seal-ink);
-  filter: brightness(0.92);
+@media (hover: hover) {
+  .btn-seal:hover {
+    background: var(--seal);
+    color: var(--seal-ink);
+    filter: brightness(0.92);
+  }
 }
 
 .confirm-actions .btn {
@@ -861,10 +865,12 @@ h2.form-label {
   animation: turn 3.2s linear infinite;
 }
 
-.waiting .btn-ghost:hover {
-  color: var(--seal);
-  border-color: var(--seal);
-  background: transparent;
+@media (hover: hover) {
+  .waiting .btn-ghost:hover {
+    color: var(--seal);
+    border-color: var(--seal);
+    background: transparent;
+  }
 }
 
 @keyframes turn {
