@@ -110,6 +110,20 @@ class QueueToolsTest extends AbstractMcpTestCase
         self::assertTrue($result['isError']);
     }
 
+    public function testTheBotFinishesItsGameBeforeJoiningTheQueue(): void
+    {
+        $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('akodo-bot')
+            ->withPlayer('hida-bot')
+            ->persist();
+
+        $result = $this->callTool('join_queue', ['deck_id' => AppFixtures::CRAB_STARTER_DECK]);
+
+        self::assertTrue($result['isError']);
+        self::assertFalse($this->isQueued('akodo-bot'));
+    }
+
     public function testTheDeckMustBeUsable(): void
     {
         $result = $this->callTool('join_queue', ['deck_id' => 'unknown']);

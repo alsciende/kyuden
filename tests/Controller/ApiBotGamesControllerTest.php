@@ -8,9 +8,12 @@ use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Entity\User;
+use App\Service\MatchMaking\MatchMakingQueue;
 use App\State\Manager\GameStateManager;
 use App\Task\PlayHouseBotTurn;
 use App\Tests\AbstractKernelTestCase;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -71,6 +74,32 @@ class ApiBotGamesControllerTest extends AbstractKernelTestCase
         self::assertSame(AppFixtures::CRAB_STARTER_DECK, $players[0]->getDeck()->getId());
         // the bot plays in the worker
         self::assertEquals([new PlayHouseBotTurn($data['game_id'])], $this->sentTasks());
+    }
+
+    public function testAUserFinishesTheirGameBeforeFacingTheHouseBot(): void
+    {
+        $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john')
+            ->withPlayer('jane')
+            ->persist();
+
+        $response = $this->request(['deck_id' => AppFixtures::CRAB_STARTER_DECK]);
+
+        self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('game_in_progress', $this->decode($response)['type']);
+    }
+
+    public function testAUserLeavesTheQueueBeforeFacingTheHouseBot(): void
+    {
+        $john = self::service(EntityManagerInterface::class)->find(User::class, 'john');
+        self::assertInstanceOf(User::class, $john);
+        self::service(MatchMakingQueue::class)->join($john, AppFixtures::CRAB_STARTER_DECK);
+
+        $response = $this->request(['deck_id' => AppFixtures::CRAB_STARTER_DECK]);
+
+        self::assertSame(Response::HTTP_CONFLICT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('already_queued', $this->decode($response)['type']);
     }
 
     public function testRejectsADeckTheUserCannotUse(): void

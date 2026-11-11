@@ -4,14 +4,17 @@ import { RouterLink } from 'vue-router'
 
 import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
+import QueueWaiting from '@/components/queue/QueueWaiting.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
+import { waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
 import { useGamesInProgress } from '@/lib/useGamesInProgress'
 import { spectatorsLabel } from '@/lib/watch'
 
 /**
  * The start of an account: play a game (the queue, the house bot, a friendly game), or watch one of the games in
- * progress, the first ones shown, read again from time to time.
+ * progress, the first ones shown, read again from time to time. While the user waits in the queue, the tile "Play"
+ * tells the wait: they may watch a game meanwhile.
  */
 const SHOWN = 2
 
@@ -28,7 +31,8 @@ const more = computed(() => Math.max((games.value?.length ?? 0) - SHOWN, 0))
       <h1>{{ session?.name }}</h1>
     </div>
     <div class="tiles">
-      <section class="tile" aria-labelledby="play">
+      <QueueWaiting v-if="waiting !== null" :waiting="waiting" tile />
+      <section v-else class="tile" aria-labelledby="play">
         <div class="form-label">Play</div>
         <h2 id="play">Play a game</h2>
         <p class="lead">

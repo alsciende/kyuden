@@ -7,6 +7,7 @@ import ClanPicker from '@/components/ClanPicker.vue'
 import { CLANS, findClan, type ClanId } from '@/data/clans'
 import { drawCourtName, MAX_NAME_LENGTH } from '@/lib/names'
 import { newcomer } from '@/lib/newcomer'
+import { startWaiting } from '@/lib/queueing'
 import { guestSession, session } from '@/lib/session'
 
 /**
@@ -67,6 +68,11 @@ async function enter(): Promise<void> {
     const guest = await guestSession(chosenName)
     newcomer.clanId = clan.value.id
     await joinQueue(guest.token, clan.value.deckId, { invitation_code: code })
+    startWaiting(
+      guest.userId,
+      { id: clan.value.deckId, name: clan.value.name, starter: true },
+      { kind: 'host', hostName: hostName.value },
+    )
     await router.push({ name: 'queue', query: { code } })
   } catch (problem) {
     if (problem instanceof ApiProblem && problem.type === 'invalid_invitation') {

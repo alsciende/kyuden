@@ -9,41 +9,38 @@ import {
   fetchCard,
   fetchDecks,
   fetchInvitationStatus,
-  fetchQueue,
   fetchSelfGames,
   fetchSelfInvitation,
   importDeck,
   joinQueue,
-  leaveQueue,
   type Card,
   type Invitation,
   type QueueInvitation,
 } from '@/api/client'
-import enso from '@/assets/mons/neutral.svg'
 import ActionIcon from '@/components/ActionIcon.vue'
-import ClanMon from '@/components/ClanMon.vue'
+import QueueWaiting from '@/components/queue/QueueWaiting.vue'
 import { CLANS } from '@/data/clans'
 import { HOUSE_BOT } from '@/data/houseBot'
-import { follow } from '@/lib/hub'
-import { timeLeft } from '@/lib/invitation'
 import { newcomer } from '@/lib/newcomer'
 import { inverted } from '@/lib/page'
 import {
   deckChoice,
   deckChoices,
   importProblem,
-  waitingTime,
   withImported,
   withoutDeck,
   type DeckChoice,
   type DeckChoices,
   type ImportProblem,
 } from '@/lib/queue'
-import { session } from '@/lib/session'
+import { checkQueue, startWaiting, waiting, type Friendly } from '@/lib/queueing'
+import { isGuest, session } from '@/lib/session'
 
 /**
- * The matchmaking queue of the players who have an account: they choose a deck and join the queue, then wait (the
- * page in reverse) until the hub tells them a game of theirs has started (`game_started` on their topic), which opens.
+ * The matchmaking queue: the user chooses a deck and joins the queue. An account then waits where it likes (the home
+ * tells the wait, and a game may be watched meanwhile); a guest, who cannot watch, waits here (the page in reverse).
+ * The game opens wherever they are once the queue has matched them (`lib/queueing.ts`, `QueueFollower`). A user who
+ * plays a game that has not ended finishes it first.
  * A deck of EmeraldDB is imported from the URL of its page, then chosen: the player still joins the queue themselves.
  * Their own decks are deleted from here, once confirmed in the tile of the deck.
  *
@@ -61,13 +58,11 @@ const invitationQuery = typeof route.query.invitation === 'string' ? route.query
 const codeQuery = typeof route.query.code === 'string' ? route.query.code : null
 
 /** null while the queue is read */
-const state = ref<'choosing' | 'waiting' | null>(null)
+const state = ref<'choosing' | null>(null)
 const choices = ref<DeckChoices>({ mine: [], starters: [], preselected: null })
 const chosen = ref<string | null>(null)
-/** the deck the user waits with */
-const waitingWith = ref<string | null>(null)
-const since = ref(Date.now())
-const now = ref(Date.now())
+/** a game of the user has not ended: they finish it first */
+const gameInProgress = ref(false)
 const error = ref<string | null>(null)
 const sending = ref(false)
 /** the URL of a deck of EmeraldDB to import */
@@ -82,12 +77,11 @@ const deleting = ref(false)
 /** the strongholds of the clans, by code, read from the API */
 const strongholds = reactive<Record<string, Card>>({})
 
-let unfollow: (() => void) | null = null
-let ticking: ReturnType<typeof setInterval> | null = null
-
 const allChoices = computed(() => [...choices.value.mine, ...choices.value.starters])
 const chosenDeck = computed(() => allChoices.value.find((choice) => choice.deck.id === chosen.value))
-const waitingDeck = computed(() => allChoices.value.find((choice) => choice.deck.id === waitingWith.value))
+/** a guest waits on this page; an account goes home */
+const account = computed(() => session.value !== null && !isGuest(session.value))
+const waitingHere = computed(() => waiting.value !== null && !account.value)
 
 const hostInvitation = computed(() =>
   friendly.value !== null && 'host' in friendly.value ? friendly.value.host : null,
@@ -110,15 +104,18 @@ const eyebrow = computed(() => {
 
   return invitedBy.value !== null ? 'A friendly game' : 'Play a game'
 })
-const waitingFor = computed(() => {
-  if (hostInvitation.value !== null) {
-    return hostInvitation.value.kind === 'bot' ? 'Waiting for your bot' : 'Waiting for your friend'
-  }
 
-  return invitedBy.value !== null ? `Waiting for ${invitedBy.value}` : 'Waiting for an opponent'
-})
-
-watch(state, (current) => (inverted.value = current === 'waiting'))
+watch(waitingHere, (current) => (inverted.value = current), { immediate: true })
+// once in the queue, an account goes home
+watch(
+  () => waiting.value !== null && account.value,
+  (gone) => {
+    if (gone) {
+      void router.push({ name: 'landing' })
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   const token = session.value?.token
@@ -132,17 +129,6 @@ onMounted(async () => {
         // the deck is shown without its stronghold
       })
   }
-  unfollow = follow(
-    token,
-    (subscription) => [subscription.topic],
-    (data) => {
-      if (data.event === 'game_started' && typeof data.id === 'string' && state.value === 'waiting') {
-        void open(data.id)
-      }
-    },
-  )
-  ticking = setInterval(() => (now.value = Date.now()), 1000)
-
   try {
     if (!(await readInvitation(token))) {
       return
@@ -151,21 +137,18 @@ onMounted(async () => {
     // a guest invited plays their clan of the way, if any
     choices.value = deckChoices(decks, session.value?.preferredClan ?? newcomer.clanId)
     chosen.value = choices.value.preselected
-    await readQueue(token)
+    gameInProgress.value = (await fetchSelfGames(token)).some((game) => !game.ended)
+    await checkQueue(token, session.value!.userId)
   } catch (problem) {
     if (!(problem instanceof ApiProblem)) {
       throw problem
     }
     error.value = problem.detail
-    state.value = 'choosing'
   }
+  state.value = 'choosing'
 })
 
 onBeforeUnmount(() => {
-  unfollow?.()
-  if (ticking !== null) {
-    clearInterval(ticking)
-  }
   inverted.value = false
 })
 
@@ -205,6 +188,17 @@ async function readInvitation(token: string): Promise<boolean> {
   return true
 }
 
+/** whom the user waits for in a friendly game */
+function friendlyWait(): Friendly | null {
+  if (hostInvitation.value !== null) {
+    const { kind, bot, expires_at: expiresAt } = hostInvitation.value
+
+    return kind === 'bot' ? { kind, botName: bot?.name ?? null, expiresAt } : { kind, expiresAt }
+  }
+
+  return invitedBy.value !== null ? { kind: 'host', hostName: invitedBy.value } : null
+}
+
 function queueInvitation(): QueueInvitation | undefined {
   if (hostInvitation.value !== null) {
     return { invitation_id: hostInvitation.value.id }
@@ -213,42 +207,16 @@ function queueInvitation(): QueueInvitation | undefined {
   return codeQuery !== null ? { invitation_code: codeQuery } : undefined
 }
 
-/**
- * Whether the user waits in the queue; once they have joined (`joined`), not waiting means the queue has matched
- * them already: their last game opens.
- */
-async function readQueue(token: string, joined = false): Promise<void> {
-  try {
-    waitingWith.value = (await fetchQueue(token)).deck_id
-    if (state.value !== 'waiting') {
-      since.value = Date.now()
-    }
-    state.value = 'waiting'
-  } catch (problem) {
-    if (!(problem instanceof ApiProblem) || problem.status !== 404) {
-      throw problem
-    }
-    if (joined) {
-      const games = await fetchSelfGames(token)
-      if (games[0]) {
-        await open(games[0].id)
-
-        return
-      }
-    }
-    state.value = 'choosing'
-  }
-}
-
 async function join(): Promise<void> {
-  const token = session.value?.token
-  if (!token || chosen.value === null || sending.value) {
+  const current = session.value
+  const deck = chosenDeck.value
+  if (current === null || deck === undefined || sending.value || gameInProgress.value) {
     return
   }
   sending.value = true
   error.value = null
   try {
-    await joinQueue(token, chosen.value, queueInvitation())
+    await joinQueue(current.token, deck.deck.id, queueInvitation())
   } catch (problem) {
     // already in the queue (another tab): wait with that deck
     if (!(problem instanceof ApiProblem) || problem.type !== 'already_queued') {
@@ -258,9 +226,14 @@ async function join(): Promise<void> {
       return
     }
   }
+  startWaiting(
+    current.userId,
+    { id: deck.deck.id, name: deck.name, starter: deck.deck.owner_id === null },
+    friendlyWait(),
+  )
   try {
     // matched at once when another player waited, maybe before the hub could tell
-    await readQueue(token, true)
+    await checkQueue(current.token, current.userId)
   } catch {
     error.value = 'The queue cannot be read.'
   } finally {
@@ -323,38 +296,12 @@ async function removeDeck(choice: DeckChoice): Promise<void> {
   }
 }
 
-async function leave(): Promise<void> {
-  const token = session.value?.token
-  if (!token || sending.value) {
-    return
-  }
-  sending.value = true
-  error.value = null
-  try {
-    await leaveQueue(token)
-    state.value = 'choosing'
-    // leaving cancelled the invitation
-    if (hostInvitation.value !== null) {
-      await router.push({ name: 'invite' })
-    }
-  } catch (problem) {
-    if (problem instanceof ApiProblem && problem.status === 404) {
-      // matched meanwhile: the game opens, or it is the last one
-      await readQueue(token, true)
-    } else {
-      error.value = 'The queue cannot be left.'
-    }
-  } finally {
-    sending.value = false
-  }
-}
-
 /**
  * A game against the house bot with the deck chosen, without the queue.
  */
 async function faceHouseBot(): Promise<void> {
   const token = session.value?.token
-  if (!token || chosen.value === null || sending.value) {
+  if (!token || chosen.value === null || sending.value || gameInProgress.value) {
     return
   }
   sending.value = true
@@ -370,7 +317,6 @@ async function faceHouseBot(): Promise<void> {
 }
 
 async function open(gameId: string): Promise<void> {
-  state.value = null
   await router.push({ name: 'game', params: { id: gameId } })
 }
 
@@ -380,7 +326,8 @@ function stronghold(choice: DeckChoice): string | undefined {
 </script>
 
 <template>
-  <div v-if="state === 'choosing'" class="queue screen">
+  <QueueWaiting v-if="waitingHere && waiting !== null" :waiting="waiting" />
+  <div v-else-if="state === 'choosing' && waiting === null" class="queue screen">
     <div class="heading">
       <div class="eyebrow">{{ eyebrow }}</div>
       <h1>Choose your deck</h1>
@@ -482,7 +429,12 @@ function stronghold(choice: DeckChoice): string | undefined {
     </section>
 
     <div class="actions">
-      <button type="button" class="btn btn-primary btn-large" :disabled="!chosenDeck || sending" @click="join">
+      <button
+        type="button"
+        class="btn btn-primary btn-large"
+        :disabled="!chosenDeck || sending || gameInProgress"
+        @click="join"
+      >
         {{ friendly === null ? 'Join the queue' : 'Enter the queue' }}
       </button>
       <span v-if="chosenDeck" class="with">
@@ -493,7 +445,7 @@ function stronghold(choice: DeckChoice): string | undefined {
         <button
           type="button"
           class="btn btn-ghost btn-large bot"
-          :disabled="!chosenDeck || sending"
+          :disabled="!chosenDeck || sending || gameInProgress"
           :aria-label="`Face ${HOUSE_BOT.name}, a bot${chosenDeck ? `, with ${chosenDeck.name}` : ''}`"
           @click="faceHouseBot"
         >
@@ -501,6 +453,9 @@ function stronghold(choice: DeckChoice): string | undefined {
           <span class="bot-title">{{ HOUSE_BOT.role }} · a bot, to train</span>
         </button>
       </template>
+      <p v-if="gameInProgress" class="form-error in-progress" role="alert">
+        Your game is still in progress: finish it before starting another one.
+      </p>
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <RouterLink v-if="hostInvitation !== null" :to="{ name: 'invite' }" class="btn-link aside">
         Back to the invitation
@@ -509,38 +464,6 @@ function stronghold(choice: DeckChoice): string | undefined {
         Play a friendly game
       </RouterLink>
     </div>
-  </div>
-
-  <div v-else-if="state === 'waiting'" class="waiting screen">
-    <ClanMon :src="enso" :size="168" class="enso" />
-    <div class="status" role="status">
-      <div class="eyebrow">
-        <template v-if="friendly !== null">A friendly game · </template>In the queue ·
-        {{ waitingTime((now - since) / 1000) }}
-      </div>
-      <h1>{{ waitingFor }}</h1>
-      <p class="lead">
-        <template v-if="waitingDeck">
-          You play the <strong>{{ waitingDeck.name }}</strong
-          >{{ waitingDeck.deck.owner_id === null ? ' starter deck' : '' }}.
-        </template>
-        <template v-if="hostInvitation?.kind === 'bot'">
-          The game opens as soon as your bot enters the queue with its key.
-        </template>
-        <template v-else-if="hostInvitation !== null">
-          The game opens as soon as your friend enters the queue with the link.
-        </template>
-        <template v-else-if="invitedBy !== null">The game opens as soon as {{ invitedBy }} enters the queue.</template>
-        <template v-else>The game opens as soon as another player joins.</template>
-      </p>
-    </div>
-    <p v-if="hostInvitation !== null" class="expiry">
-      The invitation expires in {{ timeLeft(hostInvitation.expires_at, now) }} if nobody comes.
-    </p>
-    <button type="button" class="btn btn-ghost" :disabled="sending" @click="leave">
-      {{ hostInvitation !== null ? 'Leave the queue and cancel the invitation' : 'Leave the queue' }}
-    </button>
-    <p v-if="error" class="form-error" role="alert">{{ error }}</p>
   </div>
 </template>
 
@@ -836,54 +759,7 @@ h2.form-label {
   margin-left: auto;
 }
 
-.expiry {
-  font-size: 14px;
-  color: var(--ink-3);
-}
-
-.waiting {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 40px 96px 72px;
-  text-align: center;
-}
-
-.status {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-}
-
-.waiting .lead {
-  max-width: 560px;
-}
-
-.enso {
-  animation: turn 3.2s linear infinite;
-}
-
-@media (hover: hover) {
-  .waiting .btn-ghost:hover {
-    color: var(--seal);
-    border-color: var(--seal);
-    background: transparent;
-  }
-}
-
-@keyframes turn {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .enso {
-    animation-duration: 12s;
-  }
+.in-progress {
+  flex-basis: 100%;
 }
 </style>

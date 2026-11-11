@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Invitation;
 use App\Entity\User;
 use App\Exception\Api\AlreadyQueuedException;
+use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
 use App\Exception\Api\NotQueuedException;
 use App\Exception\Data\DeckNotFoundException;
@@ -87,6 +88,8 @@ class ApiQueueController extends AbstractController
             return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_invitation', $exception->getMessage());
         } catch (AlreadyQueuedException $exception) {
             return $this->problem(Response::HTTP_CONFLICT, 'already_queued', $exception->getMessage());
+        } catch (GameInProgressException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'game_in_progress', $exception->getMessage());
         }
 
         return new Response(status: Response::HTTP_NO_CONTENT);

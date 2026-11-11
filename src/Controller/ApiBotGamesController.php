@@ -8,8 +8,10 @@ use App\Entity\Deck;
 use App\Entity\User;
 use App\Enum\UserType;
 use App\Repository\DeckRepository;
+use App\Repository\GameRepository;
 use App\Service\Bot\HouseBot;
 use App\Service\GameLauncher\BotGameLauncher;
+use App\Service\MatchMaking\MatchMakingQueue;
 use App\View\Model\BotGameOpponentView;
 use App\View\Model\BotGameView;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,7 +25,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 /**
  * Games against the house bot (HouseBot), without the queue: the authenticated user plays one of the decks they can use
  * (`{"deck_id": ...}`), the bot plays another starter deck, drawn at random. The game starts at once; the bot plays
- * once the response is sent. Errors are problem details (RFC 9457).
+ * once the response is sent. A user who plays a game that has not ended finishes it first, and a user waiting in the
+ * queue leaves it first (409). Errors are problem details (RFC 9457).
  */
 class ApiBotGamesController extends AbstractController
 {
@@ -31,6 +34,8 @@ class ApiBotGamesController extends AbstractController
 
     public function __construct(
         private readonly DeckRepository $deckRepository,
+        private readonly GameRepository $gameRepository,
+        private readonly MatchMakingQueue $queue,
         private readonly BotGameLauncher $botGameLauncher,
         private readonly HouseBot $houseBot,
         private readonly EntityManagerInterface $entityManager,
@@ -51,6 +56,13 @@ class ApiBotGamesController extends AbstractController
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'The body must only have a string "deck_id".', [
                 'violations' => [['property_path' => 'deck_id', 'message' => 'The id of a deck of the user, or of a starter deck.']],
             ]);
+        }
+
+        if ($this->gameRepository->hasInProgress($user->getId())) {
+            return $this->problem(Response::HTTP_CONFLICT, 'game_in_progress', 'The user plays a game that has not ended: finish it before starting another one.');
+        }
+        if ($this->queue->findDeckId($user) !== null) {
+            return $this->problem(Response::HTTP_CONFLICT, 'already_queued', 'The user waits in the queue: leave it before facing the house bot.');
         }
 
         $deck = $this->deckRepository->findUsable($deckId, $user);

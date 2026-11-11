@@ -3,31 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { inverted } from '@/lib/page'
+import { found, waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
 import QueueView from '@/views/QueueView.vue'
-
-class FakeEventSource {
-  static readonly CLOSED = 2
-  static opened: FakeEventSource[] = []
-
-  readonly url: URL
-  readyState = 1
-  onmessage: ((message: MessageEvent<string>) => void) | null = null
-  onerror: (() => void) | null = null
-
-  constructor(url: URL) {
-    this.url = url
-    FakeEventSource.opened.push(this)
-  }
-
-  close(): void {
-    this.readyState = FakeEventSource.CLOSED
-  }
-
-  receive(data: unknown): void {
-    this.onmessage?.(new MessageEvent('message', { data: JSON.stringify(data) }))
-  }
-}
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -54,6 +32,7 @@ async function mountQueue(path = '/queue') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: '/', name: 'landing', component: { template: '<div />' } },
       { path: '/queue', name: 'queue', component: QueueView },
       { path: '/invite', name: 'invite', component: { template: '<div />' } },
       { path: '/join/:code', name: 'join', component: { template: '<div />' } },
@@ -73,6 +52,8 @@ describe('QueueView', () => {
   /** the answers of the queue, in order; the decks, the cards and the subscription are always answered */
   let queue: (() => Response)[]
   let games: unknown[]
+  /** the games of the user once they have joined the queue */
+  let gamesOnceJoined: unknown[] | null
   /** the answer to a deck imported */
   let importAnswer: () => Response
 
@@ -86,12 +67,13 @@ describe('QueueView', () => {
       theme: 'auto',
       token: 'l5r_a',
     }
-    FakeEventSource.opened = []
     queue = []
     games = []
+    gamesOnceJoined = null
+    waiting.value = null
+    found.value = null
     importAnswer = () =>
       json(201, { id: 'deck-9', name: 'Moist Crane Duel', owner_id: 'john', cards: { '01-shizuka-toshi': 1 } })
-    vi.stubGlobal('EventSource', FakeEventSource)
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockImplementation(async (input, init) => {
       const path = String(input)
@@ -108,6 +90,10 @@ describe('QueueView', () => {
         return json(200, games)
       }
       if (path === '/api/queue') {
+        if (init?.method === 'POST' && gamesOnceJoined !== null) {
+          games = gamesOnceJoined
+        }
+
         return init?.method === 'POST' || init?.method === 'DELETE'
           ? new Response(null, { status: 204 })
           : (queue.shift() ?? notQueued)()
@@ -130,6 +116,8 @@ describe('QueueView', () => {
     fetchMock.mockReset()
     vi.unstubAllGlobals()
     inverted.value = false
+    waiting.value = null
+    found.value = null
   })
 
   it('offers the decks of the user, their own deck of their clan chosen', async () => {
@@ -142,9 +130,9 @@ describe('QueueView', () => {
     expect(inverted.value).toBe(false)
   })
 
-  it('joins the queue with the deck chosen, then waits in reverse', async () => {
+  it('joins the queue with the deck chosen, then goes home to wait', async () => {
     queue = [() => notQueued(), () => json(200, { deck_id: 'crane-starter-deck' })]
-    const { wrapper } = await mountQueue()
+    const { wrapper, router } = await mountQueue()
 
     const crane = wrapper.findAll('button.deck').find((button) => button.text().includes('Crane'))!
     await crane.trigger('click')
@@ -153,52 +141,69 @@ describe('QueueView', () => {
 
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!
     expect(post[1]!.body).toBe(JSON.stringify({ deck_id: 'crane-starter-deck' }))
-    expect(wrapper.find('.waiting').text()).toContain('Waiting for an opponent')
-    expect(wrapper.find('.waiting').text()).toContain('Crane starter deck')
-    expect(inverted.value).toBe(true)
-  })
-
-  it('opens the game the hub tells about', async () => {
-    queue = [() => json(200, { deck_id: 'deck-1' })]
-    const { wrapper, router } = await mountQueue()
-    expect(wrapper.find('.waiting').exists()).toBe(true)
-
-    expect(FakeEventSource.opened[0]!.url.searchParams.getAll('match')).toEqual(['/users/john'])
-    FakeEventSource.opened[0]!.receive({
-      event: 'game_started',
-      id: 'game-1',
-      player_ids: { john: 'player-1', jane: 'player-2' },
+    expect(waiting.value).toMatchObject({
+      userId: 'john',
+      deckId: 'crane-starter-deck',
+      deckName: 'Crane',
+      starter: true,
     })
-    await flushPromises()
-
-    expect(router.currentRoute.value.fullPath).toBe('/games/game-1')
+    expect(waiting.value!.friendly).toBeNull()
+    expect(router.currentRoute.value.fullPath).toBe('/')
+    expect(inverted.value).toBe(false)
   })
 
-  it('opens the last game when the queue matched the user at once', async () => {
-    games = [{ id: 'game-2', player_id: 'player-2', version: 3, ended: false, players: ['jane', 'john'] }]
-    const { wrapper, router } = await mountQueue()
+  it('sends an account already waiting home', async () => {
+    queue = [() => json(200, { deck_id: 'deck-1' })]
+    const { router } = await mountQueue()
+
+    expect(waiting.value).toMatchObject({ deckId: 'deck-1', deckName: 'Crab starter deck', starter: false })
+    expect(router.currentRoute.value.fullPath).toBe('/')
+  })
+
+  it('finds the last game when the queue matched the user at once', async () => {
+    gamesOnceJoined = [{ id: 'game-2', player_id: 'player-2', version: 3, ended: false, players: ['jane', 'john'] }]
+    const { wrapper } = await mountQueue()
 
     await wrapper.find('.actions .btn-primary').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.fullPath).toBe('/games/game-2')
+    expect(found.value).toBe('game-2')
+    expect(waiting.value).toBeNull()
   })
 
-  it('leaves the queue', async () => {
-    queue = [() => json(200, { deck_id: 'deck-1' })]
+  it('offers no game while a game of the user is in progress', async () => {
+    games = [{ id: 'game-2', player_id: 'player-2', version: 3, ended: false, players: ['jane', 'john'] }]
     const { wrapper } = await mountQueue()
+
+    expect(wrapper.find('.actions .btn-primary').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('.actions .bot').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('.in-progress').text()).toContain('Your game is still in progress')
+  })
+
+  it('makes a guest wait in reverse, then leave the queue', async () => {
+    session.value = { ...session.value!, userId: 'harry', username: null, preferredClan: null }
+    queue = [() => notQueued(), () => json(200, { deck_id: 'deck-1' })]
+    const { wrapper, router } = await mountQueue('/queue?code=KX7-QM4-T9P')
+
+    await wrapper.find('.actions .btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/queue?code=KX7-QM4-T9P')
+    expect(wrapper.find('.waiting').text()).toContain('Waiting for Doji Hayaku')
+    expect(wrapper.find('.waiting').text()).toContain('Crab starter deck')
+    expect(inverted.value).toBe(true)
 
     await wrapper.find('.waiting .btn-ghost').trigger('click')
     await flushPromises()
 
-    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true)
+    expect(fetchMock.mock.calls.some(([path, init]) => path === '/api/queue' && init?.method === 'DELETE')).toBe(true)
     expect(wrapper.find('.queue').exists()).toBe(true)
     expect(inverted.value).toBe(false)
   })
 
-  it('enters the queue with the invitation of the host, then waits for their bot', async () => {
+  it('enters the queue with the invitation of the host, then waits for their bot at home', async () => {
     queue = [() => notQueued(), () => json(200, { deck_id: 'deck-1' })]
-    const { wrapper } = await mountQueue('/queue?invitation=invitation-1')
+    const { wrapper, router } = await mountQueue('/queue?invitation=invitation-1')
 
     expect(wrapper.find('.queue').text()).toContain("You face Hida Takeshi's bot, and nobody else.")
     await wrapper.find('.actions .btn-primary').trigger('click')
@@ -206,18 +211,12 @@ describe('QueueView', () => {
 
     const post = fetchMock.mock.calls.find(([path, init]) => path === '/api/queue' && init?.method === 'POST')!
     expect(post[1]!.body).toBe(JSON.stringify({ deck_id: 'deck-1', invitation_id: 'invitation-1' }))
-    expect(wrapper.find('.waiting').text()).toContain('Waiting for your bot')
-    expect(wrapper.find('.waiting .btn-ghost').text()).toBe('Leave the queue and cancel the invitation')
-  })
-
-  it('goes back to the invitations when leaving the queue cancels the invitation', async () => {
-    queue = [() => json(200, { deck_id: 'deck-1' })]
-    const { wrapper, router } = await mountQueue('/queue?invitation=invitation-1')
-
-    await wrapper.find('.waiting .btn-ghost').trigger('click')
-    await flushPromises()
-
-    expect(router.currentRoute.value.fullPath).toBe('/invite')
+    expect(waiting.value!.friendly).toEqual({
+      kind: 'bot',
+      botName: "Hida Takeshi's bot",
+      expiresAt: '2099-01-01T00:00:00+00:00',
+    })
+    expect(router.currentRoute.value.fullPath).toBe('/')
   })
 
   it('enters the queue with the code of a friend', async () => {
@@ -229,7 +228,7 @@ describe('QueueView', () => {
 
     const post = fetchMock.mock.calls.find(([path, init]) => path === '/api/queue' && init?.method === 'POST')!
     expect(post[1]!.body).toBe(JSON.stringify({ deck_id: 'deck-1', invitation_code: 'KX7-QM4-T9P' }))
-    expect(wrapper.find('.waiting').text()).toContain('Waiting for Doji Hayaku')
+    expect(waiting.value!.friendly).toEqual({ kind: 'host', hostName: 'Doji Hayaku' })
   })
 
   it('sends the host of another invitation back to their invitations', async () => {

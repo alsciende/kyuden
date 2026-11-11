@@ -6,6 +6,7 @@ namespace App\Mcp;
 
 use App\Entity\User;
 use App\Exception\Api\AlreadyQueuedException;
+use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
 use App\Exception\Data\DeckNotFoundException;
 use App\Service\MatchMaking\MatchMakingQueue;
@@ -29,7 +30,8 @@ final readonly class JoinQueueTool
     /**
      * Joins the matchmaking queue with one of your decks (list_decks): you are matched with the next player waiting,
      * at once if one waits already. A game is then created for you both: wait for it with wait_for_game. With the key of
-     * an invitation, you are matched with the player who invited you only.
+     * an invitation, you are matched with the player who invited you only. A game of yours that has not ended is
+     * finished first.
      *
      * @param string $deck_id the id of a deck you can use
      *
@@ -43,7 +45,7 @@ final readonly class JoinQueueTool
 
         try {
             $this->queue->join($user, $deck_id);
-        } catch (DeckNotFoundException|AlreadyQueuedException|InvalidInvitationException $exception) {
+        } catch (DeckNotFoundException|AlreadyQueuedException|GameInProgressException|InvalidInvitationException $exception) {
             throw new ToolCallException($exception->getMessage(), previous: $exception);
         }
 

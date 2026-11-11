@@ -8,9 +8,11 @@ import CardName from '@/components/game/CardName.vue'
 import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
+import QueueBanner from '@/components/queue/QueueBanner.vue'
 import { PHASES, playerById, rings, type Cards } from '@/lib/board'
 import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
+import { waiting } from '@/lib/queueing'
 import { othersResolving, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 import { vTip } from '@/lib/tooltip'
@@ -89,6 +91,8 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
 
 <template>
   <aside class="sidebar" aria-label="Game">
+    <!-- a game watched or replayed while waiting in the queue -->
+    <QueueBanner v-if="waiting !== null" :waiting="waiting" compact />
     <div class="audience">
       <span class="eyebrow">{{ game.replaying ? 'Replay' : game.spectating ? 'Spectating' : 'Your game' }}</span>
       <div v-if="!game.replaying" class="audience-anchor">

@@ -9,11 +9,13 @@ use App\Entity\Deck;
 use App\Entity\Invitation;
 use App\Entity\User;
 use App\Exception\Api\AlreadyQueuedException;
+use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
 use App\Exception\Api\NotQueuedException;
 use App\Exception\Data\DeckNotFoundException;
 use App\Repository\CandidateRepository;
 use App\Repository\DeckRepository;
+use App\Repository\GameRepository;
 use App\Security\CurrentAccessToken;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,13 +28,14 @@ use Symfony\Component\Clock\ClockInterface;
  *
  * The host of an invitation and its guest join it with the invitation, to be matched together only; the bot of an
  * invitation always joins with it (the invitation its key is limited to). The host leaving the queue cancels their
- * invitation.
+ * invitation. A user who plays a game that has not ended finishes it first.
  */
 final readonly class MatchMakingQueue
 {
     public function __construct(
         private CandidateRepository $candidateRepository,
         private DeckRepository $deckRepository,
+        private GameRepository $gameRepository,
         private MatchMakingInterface $matchMaking,
         private EntityManagerInterface $entityManager,
         private CurrentAccessToken $currentAccessToken,
@@ -51,6 +54,7 @@ final readonly class MatchMakingQueue
     /**
      * @throws DeckNotFoundException       the deck does not exist or belongs to another user
      * @throws AlreadyQueuedException
+     * @throws GameInProgressException    the user plays a game that has not ended
      * @throws InvalidInvitationException the invitation is not pending, is not for this user, or its guest waits already
      */
     public function join(User $user, string $deckId, ?Invitation $invitation = null): void
@@ -64,6 +68,9 @@ final readonly class MatchMakingQueue
 
         if ($this->candidateRepository->count(['user' => $user]) > 0) {
             throw new AlreadyQueuedException();
+        }
+        if ($this->gameRepository->hasInProgress($user->getId())) {
+            throw new GameInProgressException();
         }
 
         $candidate = new Candidate();

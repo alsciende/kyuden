@@ -109,6 +109,15 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * Whether a user plays a game that has started and not ended (not a replay): they finish it before starting another
+     * one.
+     */
+    public function hasInProgress(string $userId): bool
+    {
+        return $this->findInProgressPlayersOf($userId) !== [];
+    }
+
+    /**
      * The games a user plays that have started and not ended (not the replays), as the ids of the game and of their player: no game is
      * loaded, so that a message can then be dispatched on it (GameLockMiddleware).
      *

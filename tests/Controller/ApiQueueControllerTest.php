@@ -7,6 +7,7 @@ namespace App\Tests\Controller;
 use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Deck;
+use App\Entity\Game;
 use App\Entity\Player;
 use App\Entity\User;
 use App\Repository\CandidateRepository;
@@ -121,6 +122,35 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
         $response = $this->request('POST', ['deck_id' => AppFixtures::LION_STARTER_DECK]);
 
         $this->assertProblem($response, Response::HTTP_CONFLICT, 'already_queued');
+    }
+
+    public function testAUserFinishesTheirGameBeforeJoiningTheQueue(): void
+    {
+        $this->emptyQueue();
+        $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('akodo-bot')
+            ->withPlayer('hida-bot')
+            ->persist();
+
+        $response = $this->request('POST', ['deck_id' => AppFixtures::LION_STARTER_DECK]);
+
+        $this->assertProblem($response, Response::HTTP_CONFLICT, 'game_in_progress');
+        self::assertSame(0, self::service(CandidateRepository::class)->count([]));
+    }
+
+    public function testAUserWhoseGamesHaveEndedJoinsTheQueue(): void
+    {
+        $this->emptyQueue();
+        $this->scenario()
+            ->atPlace(Game::STATE_ENDED)
+            ->withPlayer('akodo-bot')
+            ->withPlayer('hida-bot')
+            ->persist();
+
+        $response = $this->request('POST', ['deck_id' => AppFixtures::LION_STARTER_DECK]);
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
     }
 
     public function testTheDeckIsOneTheUserCanUse(): void
