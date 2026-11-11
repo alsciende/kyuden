@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Deck;
 
+use App\DataFixtures\UserFixtures;
 use App\Service\Deck\DeckConstructionValidator;
 use App\Service\Deck\EmeraldDbDeckFormat;
 use App\Tests\AbstractKernelTestCase;
@@ -131,5 +132,30 @@ class DeckConstructionValidatorTest extends AbstractKernelTestCase
         $deck['01-ready-for-battle'] = 3;
 
         self::assertSame(['The out-of-clan conflict cards must come from a single clan.'], $this->validate($deck));
+    }
+
+    /**
+     * @return array<string, int> quantity by card code
+     */
+    private static function userDeck(string $id): array
+    {
+        return UserFixtures::userDecks(\dirname(__DIR__, 3))[$id]['cards'];
+    }
+
+    public function testACardLimitedToSomeClansCostsInfluenceToTheOthersOfThem(): void
+    {
+        // Isawa Tadaka, "[clan-crab] and [clan-phoenix] only", a Phoenix card: 2 influence each for Crab
+        $deck = self::userDeck('john-crab-phoenix');
+        $deck['20-isawa-tadaka'] = 3;
+
+        self::assertSame(['The out-of-clan cards cost 13 influence, the deck has 10.'], $this->validate($deck));
+    }
+
+    public function testACardLimitedToSomeClansIsOnlyIncludedInTheirDecks(): void
+    {
+        $deck = self::userDeck('jane-unicorn-crane');
+        $deck['20-isawa-tadaka'] = 1;
+
+        self::assertSame(['Isawa Tadaka can only be included in a crab or phoenix deck.'], $this->validate($deck));
     }
 }

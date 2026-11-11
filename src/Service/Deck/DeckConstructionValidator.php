@@ -15,7 +15,9 @@ use App\Repository\LogicalCardRepository;
  * The deckbuilding rules of the Stronghold format (glossary, "Deckbuilding"): 1 stronghold, at most 1 role, 5
  * provinces (one per element, in-clan or neutral, different titles), dynasty and conflict decks of 40 to 45 cards
  * (dynasty cards in-clan or neutral, conflict cards in-clan, neutral, or bought with influence from a single other
- * clan), at most 3 copies by title (or the deck limit of the card), and the role restrictions.
+ * clan), at most 3 copies by title (or the deck limit of the card), and the role restrictions. A card of a clan is
+ * in-clan for that clan only: a card limited to some clans ("[clan-crab] and [clan-phoenix] only", its allowed clans)
+ * is only included in a deck of one of them, and bought with influence by the others.
  *
  * Roles change these rules: a Keeper role adds 3 influence, a Seeker role allows to replace a province with an
  * additional province of its element, a Support role adds 8 influence that can only be spent on the cards of its clan.
@@ -228,7 +230,8 @@ readonly class DeckConstructionValidator
 
     /**
      * Provinces and dynasty cards in-clan or neutral; conflict cards in-clan, neutral, or out-of-clan with an influence
-     * cost, from a single other clan, within the influence of the stronghold and the role.
+     * cost, from a single other clan, within the influence of the stronghold and the role; a card limited to some
+     * clans only in a deck of one of them.
      *
      * @param list<string>                  $roleTraits
      * @param list<array{LogicalCard, int}> $cards
@@ -258,6 +261,10 @@ readonly class DeckConstructionValidator
                 $errors[] = sprintf('%s is not in-clan nor neutral.', $card->getName());
                 continue;
             }
+            if (! $this->isAllowedIn($card, $clan)) {
+                $errors[] = sprintf('%s can only be included in a %s deck.', $card->getName(), implode(' or ', $card->getAllowedClans() ?? []));
+                continue;
+            }
             $spent += $card->getInfluenceCost() * $quantity;
             $splashedClans[$card->getClan()->value ?? ''] = true;
         }
@@ -277,8 +284,16 @@ readonly class DeckConstructionValidator
 
     private function isInClanOrNeutral(LogicalCard $card, Clan $clan): bool
     {
-        return $card->getClan() === Clan::Neutral
-            || $card->getClan() === $clan
-            || in_array($clan->value, $card->getAllowedClans() ?? [], true);
+        return $card->getClan() === Clan::Neutral || $card->getClan() === $clan;
+    }
+
+    /**
+     * The allowed clans of a card: every clan (`*`, or none given), or the clans it is limited to.
+     */
+    private function isAllowedIn(LogicalCard $card, Clan $clan): bool
+    {
+        $allowedClans = $card->getAllowedClans() ?? [];
+
+        return $allowedClans === [] || in_array('*', $allowedClans, true) || in_array($clan->value, $allowedClans, true);
     }
 }
