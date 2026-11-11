@@ -117,6 +117,11 @@ export function provinceCards(province: Province): CardView[] {
   return [...province.cards].reverse().concat(province.stronghold === null ? [] : [province.stronghold])
 }
 
+/** the role of a player, beside their stronghold province; null when their deck has none */
+export function roleOf(player: PlayerView): CardView | null {
+  return cardsOf(stackOf(player, 'role'))[0] ?? null
+}
+
 /** the stronghold province can be attacked once that many other provinces of its owner are broken */
 export const BROKEN_TO_ATTACK_STRONGHOLD = 3
 

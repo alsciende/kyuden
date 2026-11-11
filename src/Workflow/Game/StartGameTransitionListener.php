@@ -6,6 +6,7 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\Side;
 use App\Enum\StackType;
 use App\Event\FirstPlayerChangedEvent;
 use App\Factory\CardFactory;
@@ -66,7 +67,9 @@ readonly class StartGameTransitionListener
     }
 
     /**
-     * Create all unique stacks for the player and fill them with cards.
+     * Create all unique stacks for the player and fill them with cards. The stronghold is created first, at the bottom
+     * of the stronghold province stack, under the provinces; the ids are drawn in the order of the deck all the same,
+     * so that the games created before replay with the same ids.
      */
     private function initPlayer(Player $player): void
     {
@@ -77,13 +80,18 @@ readonly class StartGameTransitionListener
             }
         }
 
-        foreach ($player->getDeck()->getCardCodes() as $id) {
-            $logicalCard = $this->cardFactory->getLogicalCard($id);
+        $cards = [];
+        foreach ($player->getDeck()->getCardCodes() as $code) {
+            $cards[] = [$player->getGame()->generateId(), $this->cardFactory->getLogicalCard($code)];
+        }
+        usort($cards, static fn (array $a, array $b): int => ($b[1]->getSide() === Side::Stronghold) <=> ($a[1]->getSide() === Side::Stronghold));
+
+        foreach ($cards as [$id, $logicalCard]) {
             $stackType = $logicalCard->getInitialStackType();
             $this->cardFactory->createCard(
-                physicalCardId: $player->getGame()->generateId(),
+                physicalCardId: $id,
                 logicalCard: $logicalCard,
-                stack: $stacks[$stackType->value] ?? throw new \LogicException(sprintf('The initial stack %s of card %s is not unique.', $stackType->name, $id)),
+                stack: $stacks[$stackType->value] ?? throw new \LogicException(sprintf('The initial stack %s of card %s is not unique.', $stackType->name, $logicalCard->getId())),
             );
         }
     }

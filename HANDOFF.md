@@ -70,6 +70,11 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 - Conditions on the special actions where they only make sense somewhere (a duel from a character in play only…).
 - New hooks of `AbstractCardScript`: the constant skill bonuses (computed twice today, by `board.ts` and `BoardReader`); the triggering conditions of reactions and interrupts, to point the player at the cards that can react.
 
+### Role cards
+
+- Done: the role is shown beside the stronghold province (`ProvinceRow.vue`), its abilities triggered from the card opened (`trigger_ability` of the workflow `role_card`, the timings from the scripts of the Keeper and Seeker roles).
+- Left: the house bot does not use its role (it triggers no ability).
+
 ### Web client
 
 - Component tests of `GameView` (player and spectator modes) and `GameReplayView`.

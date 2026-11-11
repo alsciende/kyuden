@@ -449,9 +449,7 @@ return App::config([
             'role_card' => WorkflowConfig::cardWorkflow(
                 RoleCard::class,
                 [RoleCard::STATE_IN_PLAY],
-                [WorkflowConfig::transition('noop', RoleCard::STATE_IN_PLAY, RoleCard::STATE_IN_PLAY, [
-                    'log' => '{card} is unchanged',
-                ])],
+                WorkflowConfig::triggerAbility(RoleCard::STATE_IN_PLAY),
             ),
             'stronghold_card' => WorkflowConfig::cardWorkflow(
                 StrongholdCard::class,

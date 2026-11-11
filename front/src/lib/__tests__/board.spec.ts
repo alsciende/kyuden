@@ -15,6 +15,7 @@ import {
   provinceCards,
   provinces,
   rings,
+  roleOf,
   shownSkill,
   sideSkill,
   skillOf,
@@ -62,6 +63,15 @@ describe('attackable provinces', () => {
     ])
 
     expect(strongholdTooEarly(opp, garden.id)).toBe(false)
+  })
+})
+
+describe('roleOf', () => {
+  it('reads the role of a player, none when their deck has none', () => {
+    const keeper = card('keeper', { side: 'role', orientation: 'face_up' })
+
+    expect(roleOf(player('me', [stack('role', [keeper])]))).toBe(keeper)
+    expect(roleOf(player('me'))).toBeNull()
   })
 })
 

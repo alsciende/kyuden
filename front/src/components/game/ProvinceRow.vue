@@ -6,7 +6,7 @@ import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import GameCard from '@/components/game/GameCard.vue'
 import UnderPile from '@/components/game/UnderPile.vue'
-import { printed, provinceCards, provinces, type Cards } from '@/lib/board'
+import { printed, provinceCards, provinces, roleOf, type Cards } from '@/lib/board'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { vTip } from '@/lib/tooltip'
 import { useCardsUnder } from '@/lib/underneath'
@@ -17,6 +17,7 @@ import { useCardsUnder } from '@/lib/underneath'
  * the others behind it and a badge with their number, which opens their list, the top first; a card of the list opens
  * like a card of the board. The cards placed under the card on top or under the province (`UnderPile.vue`) show below
  * that card, or by a badge on the name of the province. In a selection, the provinces that can be chosen are the targets of the click.
+ * The role of the player follows their stronghold province, smaller: its abilities are used in their defense.
  */
 const props = withDefaults(
   defineProps<{
@@ -35,6 +36,8 @@ const emit = defineEmits<{ open: [id: string]; select: [id: string] }>()
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
 const cardsUnder = useCardsUnder()
+
+const role = computed(() => roleOf(props.player))
 
 const list = computed(() =>
   provinces(props.player).map((province) => {
@@ -238,6 +241,28 @@ function clickProvince(id: string, selectable: boolean): void {
           </div>
         </div>
       </template>
+    </div>
+    <div v-if="role" class="province role">
+      <div class="slot">
+        <GameCard
+          :card="role"
+          :cards="cards"
+          :mine="mine"
+          size="small"
+          :muted="selectable !== null"
+          @click="emit('open', role.id)"
+        />
+      </div>
+      <button
+        type="button"
+        class="tag"
+        :class="{ muted: selectable !== null }"
+        @click="emit('open', role.id)"
+        @mouseenter="showPreview(role.code, $event.currentTarget as HTMLElement, mine)"
+        @mouseleave="hidePreview"
+      >
+        <span class="tag-name">Role</span>
+      </button>
     </div>
   </div>
 </template>
@@ -446,6 +471,15 @@ function clickProvince(id: string, selectable: boolean): void {
 
 .small .province {
   width: 81px;
+}
+
+/* the role, smaller than the provinces: the size of the cards of a small row */
+.province.role {
+  width: 81px;
+}
+
+.small .province.role {
+  width: 64px;
 }
 
 /* room for the edges of the cards under the card on top, and its badge */

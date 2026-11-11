@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\MessageHandler;
 
 use App\Entity\CardTypes\DynastyCard;
+use App\Entity\CardTypes\RoleCard;
 use App\Enum\AbilityTiming;
 use App\MessageHandler\TriggerReactionAbilityHandler;
 use App\Message\TriggerReactionAbility;
@@ -39,5 +40,24 @@ class TriggerReactionAbilityHandlerTest extends AbstractKernelTestCase
         self::assertSame(1, $this->playerStateManager->getState($scenario->player('jane'))->countInterruptsAndReactions());
         self::assertFalse($this->playerStateManager->getState($scenario->player('jane'))->hasActed());
         self::assertEquals([new Resolution($gunso->getId(), AbilityTiming::Reaction)], $this->playerStateManager->getState($scenario->player('jane'))->getResolutions());
+    }
+
+    public function testAPlayerTriggersTheAbilityOfTheirRole(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('play_cards_from_provinces')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p->role('01-keeper-of-air', 'keeper'))
+            ->persist();
+        $keeper = $scenario->card('keeper');
+
+        self::service(TriggerReactionAbilityHandler::class)(new TriggerReactionAbility(
+            $scenario->game()->getId(),
+            $scenario->player('jane')->getId(),
+            $keeper->getId(),
+        ));
+
+        self::assertSame(RoleCard::STATE_IN_PLAY, $keeper->getCurrentPlace());
+        self::assertEquals([new Resolution($keeper->getId(), AbilityTiming::Reaction)], $this->playerStateManager->getState($scenario->player('jane'))->getResolutions());
     }
 }
