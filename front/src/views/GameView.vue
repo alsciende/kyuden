@@ -19,6 +19,7 @@ import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
+import { gameProblem } from '@/lib/gameAccess'
 import { inspectionsOf, isRedistribution } from '@/lib/inspection'
 import { mulliganWindow } from '@/lib/mulligan'
 import type { Effect } from '@/lib/playerBar'
@@ -244,19 +245,9 @@ onBeforeUnmount(() => {
 
 const problem = computed(() => {
   const current = loadError.value
-  if (current === null) {
-    return null
-  }
-  switch (current.status) {
-    case 401:
-      return 'This game is played from another browser.'
-    case 403:
-      return 'Only an account watches the games of others.'
-    case 404:
-      return 'There is no such game.'
-    default:
-      return current.detail
-  }
+  return current === null
+    ? null
+    : gameProblem(current.status, current.detail, String(route.params.id), isGuest(session.value))
 })
 </script>
 
@@ -395,8 +386,15 @@ const problem = computed(() => {
   <div v-else class="waiting screen">
     <ClanMon :src="enso" :size="120" color="var(--paper)" />
     <template v-if="problem">
-      <h1>{{ problem }}</h1>
-      <RouterLink to="/" class="btn back">Back to the start</RouterLink>
+      <h1>{{ problem.title }}</h1>
+      <p v-if="problem.text" class="problem-text">{{ problem.text }}</p>
+      <div v-if="problem.signIn || problem.signUp" class="problem-actions">
+        <RouterLink v-if="problem.signIn" :to="problem.signIn" class="btn btn-primary">Sign in</RouterLink>
+        <RouterLink v-if="problem.signUp" :to="problem.signUp" class="btn back">Create an account</RouterLink>
+      </div>
+      <RouterLink to="/" :class="problem.signIn || problem.signUp ? 'btn-link start' : 'btn back'">
+        Back to the start
+      </RouterLink>
     </template>
     <p v-else class="soon">The table is being set</p>
   </div>
@@ -531,6 +529,32 @@ const problem = computed(() => {
 
 h1 {
   font-size: 40px;
+}
+
+.problem-text {
+  max-width: 440px;
+  color: #c8bca8;
+}
+
+.problem-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.problem-actions .back {
+  margin-top: 0;
+}
+
+/* the screen is dark: the primary button is paper */
+.problem-actions .btn-primary {
+  background: var(--paper);
+  border-color: var(--paper);
+  color: var(--ink);
+}
+
+.start {
+  color: #a89c88;
 }
 
 .soon {

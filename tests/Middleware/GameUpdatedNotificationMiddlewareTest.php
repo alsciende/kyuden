@@ -11,11 +11,15 @@ use App\Notification\NotificationInterface;
 use App\Notifier\NotifierInterface;
 use App\Repository\GameRepository;
 use App\Repository\SpectatorRepository;
+use App\Service\Discord\GameAnnouncer;
 use App\Service\Spectating\SpectatorRegistry;
+use App\Task\AnnounceGame;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\Scenario;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Messenger\Middleware\StackMiddleware;
@@ -27,7 +31,7 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
      */
     private \ArrayObject $notifications;
 
-    private function middleware(): GameUpdatedNotificationMiddleware
+    private function middleware(string $webhookUrl = ''): GameUpdatedNotificationMiddleware
     {
         $this->notifications = new \ArrayObject();
         $notifier = new readonly class($this->notifications) implements NotifierInterface {
@@ -50,7 +54,16 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
             self::service(GameRepository::class),
             $notifier,
             new SpectatorRegistry(self::service(SpectatorRepository::class), $notifier, self::service(ClockInterface::class)),
+            $this->announcer($webhookUrl),
         );
+    }
+
+    private function announcer(string $webhookUrl): GameAnnouncer
+    {
+        $taskBus = static::getContainer()->get('task.bus');
+        self::assertInstanceOf(MessageBusInterface::class, $taskBus);
+
+        return new GameAnnouncer(self::service(GameRepository::class), $taskBus, new MockHttpClient(), $webhookUrl, 'https://kyuden.app');
     }
 
     private function scenarioWithJohn(): Scenario
@@ -117,14 +130,25 @@ class GameUpdatedNotificationMiddlewareTest extends AbstractKernelTestCase
         ], $notification->getData());
     }
 
+    public function testAnnouncesTheGameOnceTheLastOneHasJoined(): void
+    {
+        $scenario = $this->scenarioWithJohn();
+        $gameId = $scenario->game()->getId();
+
+        $this->middleware('https://discord.com/api/webhooks/1/secret')->handle(new Envelope(new JoinGame($gameId, $scenario->player('jane')->getId(), 'jane', 'deck')), new StackMiddleware());
+
+        self::assertEquals([new AnnounceGame($gameId)], $this->sentTasks());
+    }
+
     public function testDoesNotTellAPlayerWhoJoinsAGameWaitingForOthers(): void
     {
         $scenario = $this->scenario()->atPlace('join_game')->withPlayer('john')->persist();
         $gameId = $scenario->game()->getId();
 
-        $this->middleware()->handle(new Envelope(new JoinGame($gameId, $scenario->player('john')->getId(), 'john', 'deck')), new StackMiddleware());
+        $this->middleware('https://discord.com/api/webhooks/1/secret')->handle(new Envelope(new JoinGame($gameId, $scenario->player('john')->getId(), 'john', 'deck')), new StackMiddleware());
 
         self::assertCount(1, $this->notifications);
+        self::assertSame([], $this->sentTasks());
     }
 
     public function testDoesNotNotifyAMessageThatFailed(): void

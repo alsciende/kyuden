@@ -11,6 +11,7 @@ use App\Notification\GameStartedNotification;
 use App\Notification\GameUpdatedNotification;
 use App\Notifier\NotifierInterface;
 use App\Repository\GameRepository;
+use App\Service\Discord\GameAnnouncer;
 use App\Service\Spectating\SpectatorRegistry;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
@@ -19,7 +20,8 @@ use Symfony\Component\Messenger\Middleware\StackInterface;
 /**
  * Notifies the players and the spectators that the game has changed, once the transaction is committed: a player
  * reading the game on notification sees the new version. Once the last player has joined a game, it has started: every player is also told
- * on their topic, so that a user matched by the queue finds their game. A replay (ReplayStamp) is not notified.
+ * on their topic, so that a user matched by the queue finds their game, and it is announced on the Discord server
+ * (GameAnnouncer). A replay (ReplayStamp) is not notified.
  */
 readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
 {
@@ -27,6 +29,7 @@ readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
         private GameRepository $gameRepository,
         private NotifierInterface $notifier,
         private SpectatorRegistry $spectatorRegistry,
+        private GameAnnouncer $gameAnnouncer,
     ) {
     }
 
@@ -41,6 +44,7 @@ readonly class GameUpdatedNotificationMiddleware implements MiddlewareInterface
             $this->notifier->notify(new GameUpdatedNotification($game, $this->spectatorRegistry->getSpectatorIds($game)));
             if ($message instanceof JoinGame && $game->getCurrentPlace() !== 'join_game') {
                 $this->notifier->notify(new GameStartedNotification($game));
+                $this->gameAnnouncer->schedule($game);
             }
         }
 

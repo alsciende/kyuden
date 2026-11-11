@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { ApiProblem } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
@@ -8,14 +8,18 @@ import ClanMon from '@/components/ClanMon.vue'
 import ClanPicker from '@/components/ClanPicker.vue'
 import { findClan, type ClanId } from '@/data/clans'
 import { formErrors, passwordProblem, usernameProblem, type FormErrors } from '@/lib/credentials'
+import { nextPage } from '@/lib/gameAccess'
 import { isGuest, session, signUp, suggestedClan } from '@/lib/session'
 
 /**
  * Creates an account: the preferred clan, which gives a copy of its starter deck, then a username and a password. A
  * guest keeps their name at court and their games, and is offered the clan of their last game; anyone else gets a clan
- * drawn at random, and a name at court drawn from its families, which they change from their account.
+ * drawn at random, and a name at court drawn from its families, which they change from their account. Once created,
+ * the account goes back to the page it came from (`?next=`: a game to watch), else to its page.
  */
+const route = useRoute()
 const router = useRouter()
+const next = nextPage(route.query.next)
 
 const guest = computed(() => (isGuest(session.value) ? session.value : null))
 const clanId = ref<ClanId | null>(null)
@@ -56,7 +60,7 @@ async function submit(): Promise<void> {
   sending.value = true
   try {
     await signUp(username.value, password.value, clan.value)
-    await router.push({ name: 'account', query: { created: '1' } })
+    await router.push(next ?? { name: 'account', query: { created: '1' } })
   } catch (problem) {
     errors.value =
       problem instanceof ApiProblem && problem.status === 429

@@ -32,7 +32,9 @@
         </li>
         <li>
           The <strong>games</strong> you play: every move, so that a game can be followed and resumed. Your opponent
-          sees your name at court, your clan and your moves, never your hand nor your secret choices.
+          sees your name at court, your clan and your moves, never your hand nor your secret choices. Every game can be
+          watched by the accounts of the site, and is announced on the official Discord server when it starts: the names
+          at court and the clans of its players, with a link to watch it.
         </li>
       </ul>
       <p>A guest, who plays without an account, has only a name at court and their games.</p>

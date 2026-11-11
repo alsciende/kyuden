@@ -28,6 +28,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - **Abandonment**: the time is checked before sending the message, the handler checks the state only (so that it replays). The house bot never claims (a human pausing would lose). A game everybody left ends after an hour without a winner rather than with a loser.
 - **Worker**: the tasks are on `task.bus`, without the middlewares of the actions (their transaction would hold the lock of a game); one worker (the scheduler needs a single consumer). `default.bus` keeps its name (decided before 1.0).
 - **Web client**: the trash button of a card stays (decided before 1.0). Mockups first; the references: board `GiPbGSPNcvLD2r9eFKKNp5`, accounts/queue/friendly games/spectators `LBUBwNBPdSopj5NMj5GLTL`, waiting in the queue `KJWPhVGdXGkiftvaAB5XFH`, cards set aside `LdtL4NT1SnDLTzRZpz376x`, history and replay `KZMDhHY4oeLxaTvx2hE8bE`, mulligan `K178dcmNYPeiY9es4xob8F`, duel `E8u3G7M7AU4ZeEqkbGXdwf`.
+- **Free play, nothing secret**: every game can be watched and is announced on Discord (the games of the house bot too: the activity of the site shows there), with no consent asked; keeping one's games private may come later, as a paid option.
 - **The house bot** is Kyūden no Karō, "the steward of the palace": a title rather than a name, being a bot.
 
 ## Known limitations
@@ -80,8 +81,11 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 
 - **Agents**: a timeout for an agent that stops; a compact view if the context fills.
 - **Decks**: the text export of EmeraldDB; the banned and restricted lists; an index on `contentHash` when statistics need it.
-- **Authentication**: press the players to link a provider; list the sessions of an account to revoke them.
+- **Authentication**: press the players to link a provider; list the sessions of an account to revoke them; once Symfony 8.2 is out, reset one's password after a recent authentication (sudo mode).
 - **npm**: move the stack to npm 12 (`node:24-alpine` ships 11), then check `make front-install`, `make front-build` and the CI.
 - **Ranking** of the games that are not friendly.
+- **Discord**: edit the announcement of a game once it ends (the winner, a link to its replay): post with `?wait=true`, keep the id of the message, PATCH it on `game_ended`.
+- **Trophies** awarded to the players who reach goals, to lead them to explore what the site offers.
+- **Tournaments**: create a tournament and play in one.
 - **Rewinding a game** (`app:game:rewind <game> <version>`): replay with `GameReplayer` up to the version, then swap the copy for the game (deleting events changes nothing: the state lives in the entities); it diverges if a deck or the engine changed since.
 - **Replay**: lock the copy (two steps at once are not serialized); replaying as a spectator (the public view of the copy).

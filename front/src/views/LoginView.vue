@@ -7,6 +7,7 @@ import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import ProviderLogo from '@/components/ProviderLogo.vue'
 import { formErrors } from '@/lib/credentials'
+import { nextPage } from '@/lib/gameAccess'
 import { enabledProviders, isProvider, providerName, startOAuth } from '@/lib/oauth'
 import { signIn } from '@/lib/session'
 
@@ -65,10 +66,7 @@ const error = ref<string | null>(null)
 const sending = ref(false)
 
 /** where the visitor goes once signed in: a page of the site they came from (an invitation), else their account */
-const next =
-  typeof route.query.next === 'string' && route.query.next.startsWith('/') && !route.query.next.startsWith('//')
-    ? route.query.next
-    : null
+const next = nextPage(route.query.next)
 
 async function submit(): Promise<void> {
   if (sending.value) {
@@ -133,7 +131,10 @@ async function submit(): Promise<void> {
         </div>
         <div class="actions">
           <button type="submit" class="btn btn-primary btn-large" :disabled="sending">Sign in</button>
-          <span class="other">No account yet? <RouterLink :to="{ name: 'signup' }">Create one</RouterLink></span>
+          <span class="other"
+            >No account yet?
+            <RouterLink :to="{ name: 'signup', query: next ? { next } : {} }">Create one</RouterLink></span
+          >
         </div>
       </form>
       <template v-if="providers.length > 0">

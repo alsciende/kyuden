@@ -11,6 +11,10 @@ parameters:
     env(OAUTH_GOOGLE_CLIENT_SECRET): ''
     # the images of the cards, <base>/cards/<code>.webp (the bucket R2 kyuden-images behind Cloudflare)
     env(CARD_IMAGES_URL): 'https://images.kyuden.app/v1'
+    # the URL of the site, without a trailing slash, for the links sent out of it (the announcements on Discord)
+    env(SITE_URL): 'http://localhost:8080'
+    # the webhook of the channel of the Discord server where the games that start are announced (empty: none)
+    env(DISCORD_GAMES_WEBHOOK_URL): ''
 
 services:
     # default configuration for services in *this* file

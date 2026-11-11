@@ -6,16 +6,17 @@ import { newcomer } from '@/lib/newcomer'
 import { session } from '@/lib/session'
 import SignupView from '@/views/SignupView.vue'
 
-async function mountSignup() {
+async function mountSignup(path = '/signup') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'landing', component: { template: '<div />' } },
       { path: '/signup', name: 'signup', component: SignupView },
       { path: '/account', name: 'account', component: { template: '<div />' } },
+      { path: '/games/:id', name: 'game', component: { template: '<div />' } },
     ],
   })
-  await router.push('/signup')
+  await router.push(path)
   const wrapper = mount(SignupView, { global: { plugins: [router] } })
   await flushPromises()
 
@@ -103,6 +104,27 @@ describe('SignupView', () => {
     expect(router.currentRoute.value.query.created).toBe('1')
     expect(session.value?.username).toBe('takeshi_2')
     expect(JSON.parse(fetchMock.mock.calls[2]![1]!.body as string)).toMatchObject({ clan: 'crab' })
+  })
+
+  it('goes back to the game the visitor came to watch once the account is created', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(201, {
+        user_id: 'user-1',
+        name: 'Hida Takeshi',
+        username: 'takeshi',
+        preferred_clan: 'crab',
+        settings: { card_display: 'drawn', theme: 'auto' },
+        token: 'l5r_b',
+      }),
+    )
+    const { wrapper, router } = await mountSignup('/signup?next=/games/g1')
+
+    await wrapper.find('#username').setValue('takeshi')
+    await wrapper.find('#password').setValue('wallmusthold')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/games/g1')
   })
 
   it('offers the clan of the guest, which they change before creating the account', async () => {
