@@ -14,12 +14,13 @@ import {
   importDeck,
   joinQueue,
   type Card,
+  type Deck,
   type Invitation,
   type QueueInvitation,
 } from '@/api/client'
 import ActionIcon from '@/components/ActionIcon.vue'
+import ClanMon from '@/components/ClanMon.vue'
 import QueueWaiting from '@/components/queue/QueueWaiting.vue'
-import { CLANS } from '@/data/clans'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { newcomer } from '@/lib/newcomer'
 import { inverted } from '@/lib/page'
@@ -74,7 +75,7 @@ const notice = ref<{ before: string; name: string; after: string } | null>(null)
 /** the deck of the user whose deletion is asked to be confirmed */
 const confirmingDeletion = ref<string | null>(null)
 const deleting = ref(false)
-/** the strongholds of the clans, by code, read from the API */
+/** the strongholds of the decks, by code, read from the API */
 const strongholds = reactive<Record<string, Card>>({})
 
 const allChoices = computed(() => [...choices.value.mine, ...choices.value.starters])
@@ -122,13 +123,6 @@ onMounted(async () => {
   if (!token) {
     return
   }
-  for (const clan of CLANS) {
-    fetchCard(clan.strongholdCode)
-      .then((card) => (strongholds[clan.strongholdCode] = card))
-      .catch(() => {
-        // the deck is shown without its stronghold
-      })
-  }
   try {
     if (!(await readInvitation(token))) {
       return
@@ -136,6 +130,7 @@ onMounted(async () => {
     const decks = await fetchDecks(token)
     // a guest invited plays their clan of the way, if any
     choices.value = deckChoices(decks, session.value?.preferredClan ?? newcomer.clanId)
+    loadStrongholds(decks)
     chosen.value = choices.value.preselected
     gameInProgress.value = (await fetchSelfGames(token)).some((game) => !game.ended)
     await checkQueue(token, session.value!.userId)
@@ -255,6 +250,7 @@ async function importFromUrl(): Promise<void> {
   notice.value = null
   try {
     const deck = await importDeck(token, url)
+    loadStrongholds([deck])
     const result = withImported(choices.value, deck)
     choices.value = result.choices
     chosen.value = deck.id
@@ -320,8 +316,22 @@ async function open(gameId: string): Promise<void> {
   await router.push({ name: 'game', params: { id: gameId } })
 }
 
+/** reads the strongholds of the decks not read yet */
+function loadStrongholds(decks: Deck[]): void {
+  for (const code of new Set(decks.map((deck) => deck.stronghold))) {
+    if (code === null || code in strongholds) {
+      continue
+    }
+    fetchCard(code)
+      .then((card) => (strongholds[code] = card))
+      .catch(() => {
+        // the deck is shown without its stronghold
+      })
+  }
+}
+
 function stronghold(choice: DeckChoice): string | undefined {
-  return choice.clan ? strongholds[choice.clan.strongholdCode]?.name : undefined
+  return choice.deck.stronghold === null ? undefined : strongholds[choice.deck.stronghold]?.name
 }
 </script>
 
@@ -392,7 +402,9 @@ function stronghold(choice: DeckChoice): string | undefined {
               :aria-pressed="chosen === choice.deck.id"
               @click="chosen = choice.deck.id"
             >
-              <span class="kanji" :style="{ color: choice.clan?.color }">{{ choice.clan?.kanji ?? '' }}</span>
+              <span class="mon-slot">
+                <ClanMon v-if="choice.clan" :src="choice.clan.mon" :color="choice.clan.color" :size="36" />
+              </span>
               <span class="name">{{ choice.name }}</span>
               <span class="detail">{{ [choice.clan?.name, stronghold(choice)].filter(Boolean).join(' · ') }}</span>
             </button>
@@ -421,7 +433,9 @@ function stronghold(choice: DeckChoice): string | undefined {
           :aria-pressed="chosen === choice.deck.id"
           @click="chosen = choice.deck.id"
         >
-          <span class="kanji" :style="{ color: choice.clan?.color }">{{ choice.clan?.kanji ?? '' }}</span>
+          <span class="mon-slot">
+            <ClanMon v-if="choice.clan" :src="choice.clan.mon" :color="choice.clan.color" :size="36" />
+          </span>
           <span class="name">{{ choice.name }}</span>
           <span class="detail">{{ stronghold(choice) }}</span>
         </button>
@@ -693,14 +707,9 @@ h2.form-label {
   background: var(--selected);
 }
 
-.kanji {
-  font-family: 'Shippori Mincho', serif;
-  font-weight: 700;
-  /* the three kanji of the Unicorn on one line, down to an iPad mini */
-  font-size: clamp(24px, 2.3vw, 30px);
-  white-space: nowrap;
-  line-height: 1;
-  min-height: 30px;
+.mon-slot {
+  display: flex;
+  min-height: 36px;
 }
 
 .name {

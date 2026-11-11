@@ -266,7 +266,24 @@ class ApiDecksControllerTest extends AbstractKernelTestCase
         $response = $this->request('GET', '/api/decks/deck-of-akodo-bot');
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        self::assertSame(['id' => 'deck-of-akodo-bot', 'name' => null, 'owner_id' => 'akodo-bot', 'cards' => ['01-banzai' => 3]], $this->decode($response));
+        self::assertSame(['id' => 'deck-of-akodo-bot', 'name' => null, 'owner_id' => 'akodo-bot', 'cards' => ['01-banzai' => 3], 'stronghold' => null, 'clan' => null], $this->decode($response));
+    }
+
+    public function testADeckComesWithItsStrongholdAndItsClan(): void
+    {
+        $deck = $this->createDeckOf('akodo-bot');
+        $deck->setCards(['01-banzai' => 3, '26-kyuden-hida' => 1]);
+        self::service(EntityManagerInterface::class)->flush();
+
+        $response = $this->request('GET', '/api/decks');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $views = array_column($this->decode($response), null, 'id');
+        self::assertIsArray($views['deck-of-akodo-bot']);
+        self::assertSame('26-kyuden-hida', $views['deck-of-akodo-bot']['stronghold']);
+        self::assertSame('crab', $views['deck-of-akodo-bot']['clan']);
+        self::assertIsArray($views[AppFixtures::LION_STARTER_DECK]);
+        self::assertSame('lion', $views[AppFixtures::LION_STARTER_DECK]['clan']);
     }
 
     public function testTheDecksOfOtherUsersAreNotFound(): void

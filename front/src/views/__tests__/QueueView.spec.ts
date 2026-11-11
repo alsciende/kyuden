@@ -23,9 +23,30 @@ const invitation = {
 const notQueued = () => json(404, { type: 'not_queued', detail: 'The user is not in the queue.' })
 
 const decks = [
-  { id: 'deck-1', name: 'Crab starter deck', owner_id: 'john', cards: { '01-shiro-nishiyama': 1 } },
-  { id: 'crab-starter-deck', name: 'crab-starter-deck', owner_id: null, cards: { '01-shiro-nishiyama': 1 } },
-  { id: 'crane-starter-deck', name: 'crane-starter-deck', owner_id: null, cards: { '01-shizuka-toshi': 1 } },
+  {
+    id: 'deck-1',
+    name: 'Crab starter deck',
+    owner_id: 'john',
+    cards: { '01-shiro-nishiyama': 1 },
+    stronghold: '01-shiro-nishiyama',
+    clan: 'crab',
+  },
+  {
+    id: 'crab-starter-deck',
+    name: 'crab-starter-deck',
+    owner_id: null,
+    cards: { '01-shiro-nishiyama': 1 },
+    stronghold: '01-shiro-nishiyama',
+    clan: 'crab',
+  },
+  {
+    id: 'crane-starter-deck',
+    name: 'crane-starter-deck',
+    owner_id: null,
+    cards: { '01-shizuka-toshi': 1 },
+    stronghold: '01-shizuka-toshi',
+    clan: 'crane',
+  },
 ]
 
 async function mountQueue(path = '/queue') {
@@ -73,7 +94,14 @@ describe('QueueView', () => {
     waiting.value = null
     found.value = null
     importAnswer = () =>
-      json(201, { id: 'deck-9', name: 'Moist Crane Duel', owner_id: 'john', cards: { '01-shizuka-toshi': 1 } })
+      json(201, {
+        id: 'deck-9',
+        name: 'Moist Crane Duel',
+        owner_id: 'john',
+        cards: { '01-shizuka-toshi': 1 },
+        stronghold: '01-shizuka-toshi',
+        clan: 'crane',
+      })
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockImplementation(async (input, init) => {
       const path = String(input)

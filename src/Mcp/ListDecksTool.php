@@ -28,7 +28,8 @@ final readonly class ListDecksTool
 
     /**
      * The decks you can join the queue with: your own decks and the starter decks (`<clan>-starter-deck`), each with
-     * its id, its name, its owner (null for a starter deck) and its cards (quantity by card code).
+     * its id, its name, its owner (null for a starter deck), its cards (quantity by card code), its stronghold (a card
+     * code) and the clan of its stronghold.
      *
      * @return array<mixed>
      */
@@ -38,9 +39,6 @@ final readonly class ListDecksTool
         $user = $this->security->getUser();
         \assert($user instanceof User);
 
-        return ['decks' => $this->normalizer->normalize(array_map(
-            $this->deckViewFactory->create(...),
-            $this->deckRepository->findUsableBy($user),
-        ))];
+        return ['decks' => $this->normalizer->normalize($this->deckViewFactory->createAll($this->deckRepository->findUsableBy($user)))];
     }
 }

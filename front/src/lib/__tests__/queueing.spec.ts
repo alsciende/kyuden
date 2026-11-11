@@ -80,7 +80,14 @@ describe('checkQueue', () => {
       }
       if (path === '/api/decks') {
         return json(200, [
-          { id: 'lion-starter-deck', name: 'lion-starter-deck', owner_id: null, cards: { '01-shiro-no-yogasha': 1 } },
+          {
+            id: 'lion-starter-deck',
+            name: 'lion-starter-deck',
+            owner_id: null,
+            cards: { '01-shiro-no-yogasha': 1 },
+            stronghold: '01-shiro-no-yogasha',
+            clan: 'lion',
+          },
         ])
       }
 

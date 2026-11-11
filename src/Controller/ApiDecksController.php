@@ -54,7 +54,7 @@ class ApiDecksController extends AbstractController
     #[Route('/api/decks', name: 'app_api_decks', methods: ['GET'])]
     public function list(#[CurrentUser] User $user): Response
     {
-        return $this->json(array_map($this->deckViewFactory->create(...), $this->deckRepository->findUsableBy($user)));
+        return $this->json($this->deckViewFactory->createAll($this->deckRepository->findUsableBy($user)));
     }
 
     #[Route('/api/decks/{id}', name: 'app_api_deck', methods: ['GET'])]

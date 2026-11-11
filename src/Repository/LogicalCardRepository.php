@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\LogicalCard;
+use App\Enum\Type;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,6 +32,29 @@ class LogicalCardRepository extends ServiceEntityRepository
             ->leftJoin('card.printings', 'printing')
             ->addSelect('printing')
             ->orderBy('card.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The strongholds among some cards, in a single query.
+     *
+     * @param list<string> $codes
+     *
+     * @return array<string, LogicalCard> by code
+     */
+    public function findStrongholdsAmong(array $codes): array
+    {
+        if ($codes === []) {
+            return [];
+        }
+
+        /** @var array<string, LogicalCard> */
+        return $this->createQueryBuilder('card', 'card.id')
+            ->where('card.id IN (:codes)')
+            ->andWhere('card.type = :type')
+            ->setParameter('codes', $codes)
+            ->setParameter('type', Type::Stronghold)
             ->getQuery()
             ->getResult();
     }

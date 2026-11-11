@@ -19,10 +19,10 @@ export interface DeckChoice {
 }
 
 /**
- * The clan of a deck, read from its stronghold.
+ * The clan of a deck, the clan of its stronghold (told by the API).
  */
 export function deckClan(deck: Deck): Clan | undefined {
-  return CLANS.find((clan) => (deck.cards[clan.strongholdCode] ?? 0) > 0)
+  return CLANS.find((clan) => clan.id === deck.clan)
 }
 
 export function deckChoice(deck: Deck): DeckChoice {

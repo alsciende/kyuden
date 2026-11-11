@@ -170,6 +170,10 @@ export interface Deck {
   owner_id: string | null
   /** quantity by card code */
   cards: Record<string, number>
+  /** the code of its stronghold, null for a deck without one */
+  stronghold: string | null
+  /** the clan of its stronghold */
+  clan: string | null
 }
 
 /**

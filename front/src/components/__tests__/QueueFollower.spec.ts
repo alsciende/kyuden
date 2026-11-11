@@ -62,7 +62,16 @@ describe('QueueFollower', () => {
         return json(200, { deck_id: 'deck-1' })
       }
       if (path === '/api/decks') {
-        return json(200, [{ id: 'deck-1', name: 'Crab deck', owner_id: 'john', cards: { '01-shiro-nishiyama': 1 } }])
+        return json(200, [
+          {
+            id: 'deck-1',
+            name: 'Crab deck',
+            owner_id: 'john',
+            cards: { '01-shiro-nishiyama': 1 },
+            stronghold: '01-shiro-nishiyama',
+            clan: 'crab',
+          },
+        ])
       }
 
       return json(404, {})

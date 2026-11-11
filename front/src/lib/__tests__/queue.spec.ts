@@ -8,6 +8,8 @@ const starter = (clan: string, stronghold: string): Deck => ({
   name: `${clan}-starter-deck`,
   owner_id: null,
   cards: { [stronghold]: 1, '01-fine-katana': 3 },
+  stronghold,
+  clan,
 })
 const crab = starter('crab', '01-shiro-nishiyama')
 const crane = starter('crane', '01-shizuka-toshi')
@@ -17,7 +19,8 @@ const myCrane: Deck = { ...crane, id: 'deck-2', name: null, owner_id: 'john' }
 describe('deckClan', () => {
   it('reads the clan of a deck from its stronghold', () => {
     expect(deckClan(crane)?.id).toBe('crane')
-    expect(deckClan({ ...crane, cards: { '01-fine-katana': 3 } })).toBeUndefined()
+    expect(deckClan({ ...crab, stronghold: '26-kyuden-hida' })?.id).toBe('crab')
+    expect(deckClan({ ...crane, stronghold: null, clan: null })).toBeUndefined()
   })
 })
 
