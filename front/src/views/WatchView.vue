@@ -1,48 +1,16 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { ApiProblem } from '@/api/client'
-import { fetchGamesInProgress } from '@/api/game'
 import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
-import { session } from '@/lib/session'
-import { spectatorsLabel, watchableGameRow, type WatchableGameRow } from '@/lib/watch'
+import { useGamesInProgress } from '@/lib/useGamesInProgress'
+import { spectatorsLabel } from '@/lib/watch'
 
 /**
  * The games in progress, which an account watches: who plays, where they are, how many watch. The user joins their
  * own games as their player. The list is read again from time to time, as games start and end.
  */
-const REFRESH_DELAY = 15_000
-
-/** null while the games are read */
-const games = ref<WatchableGameRow[] | null>(null)
-const error = ref<string | null>(null)
-let timer: ReturnType<typeof setInterval> | null = null
-
-async function read(): Promise<void> {
-  const current = session.value
-  if (current === null) {
-    return
-  }
-  try {
-    games.value = (await fetchGamesInProgress(current.token)).map((game) => watchableGameRow(game, current.userId))
-    error.value = null
-  } catch (problem) {
-    error.value = problem instanceof ApiProblem ? problem.detail : 'The games cannot be read.'
-  }
-}
-
-onMounted(() => {
-  void read()
-  timer = setInterval(() => void read(), REFRESH_DELAY)
-})
-
-onBeforeUnmount(() => {
-  if (timer !== null) {
-    clearInterval(timer)
-  }
-})
+const { games, error } = useGamesInProgress()
 </script>
 
 <template>

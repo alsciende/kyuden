@@ -1,37 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { fetchGamesInProgress } from '@/api/game'
 import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { session } from '@/lib/session'
-import { watchableGameRow, spectatorsLabel, type WatchableGameRow } from '@/lib/watch'
+import { useGamesInProgress } from '@/lib/useGamesInProgress'
+import { spectatorsLabel } from '@/lib/watch'
 
 /**
  * The start of an account: play a game (the queue, the house bot, a friendly game), or watch one of the games in
- * progress, the first ones shown.
+ * progress, the first ones shown, read again from time to time.
  */
 const SHOWN = 2
 
-/** null while the games are read, or when they cannot be */
-const games = ref<WatchableGameRow[] | null>(null)
-
+/** the tile leads to the list, which tells when the games cannot be read */
+const { games } = useGamesInProgress()
 const shown = computed(() => games.value?.slice(0, SHOWN) ?? [])
 const more = computed(() => Math.max((games.value?.length ?? 0) - SHOWN, 0))
-
-onMounted(async () => {
-  const current = session.value
-  if (current === null) {
-    return
-  }
-  try {
-    games.value = (await fetchGamesInProgress(current.token)).map((game) => watchableGameRow(game, current.userId))
-  } catch {
-    // the tile leads to the list, which tells
-  }
-})
 </script>
 
 <template>
