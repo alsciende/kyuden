@@ -241,7 +241,7 @@ onBeforeUnmount(hidePreview)
           </div>
         </div>
 
-        <aside class="panel" aria-label="What to do with the card">
+        <aside class="panel daylight" aria-label="What to do with the card">
           <template v-if="selected">
             <div class="chosen">
               <span class="label">Selected · #{{ selectedIndex + 1 }}</span>
@@ -437,15 +437,6 @@ h2 {
 
 /* the panel of the actions stays light, as the dialog of a card */
 .panel {
-  --paper: #f4eee2;
-  --paper-2: #ebe3d3;
-  --paper-3: #e2d8c4;
-  --line: #d3c7b0;
-  --ink: #1f1b16;
-  --ink-2: #4f473d;
-  --ink-3: #6b6155;
-  --seal: #b3311f;
-
   width: 300px;
   flex: none;
   border-radius: 4px;
@@ -455,7 +446,6 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  color-scheme: light;
 }
 
 .label {

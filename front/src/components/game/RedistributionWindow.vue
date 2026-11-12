@@ -163,7 +163,7 @@ onBeforeUnmount(hidePreview)
           </section>
         </div>
 
-        <aside class="panel" aria-label="Redistribution">
+        <aside class="panel daylight" aria-label="Redistribution">
           <template v-if="selected">
             <div class="chosen">
               <span class="label">Chosen, in {{ provinceName(placement[selected.id] ?? selected.fromId) }}</span>
@@ -347,14 +347,6 @@ h3 {
 
 /* the panel stays light, as the dialog of a card */
 .panel {
-  --paper: #f4eee2;
-  --paper-2: #ebe3d3;
-  --line: #d3c7b0;
-  --ink: #1f1b16;
-  --ink-2: #4f473d;
-  --ink-3: #6b6155;
-  --seal: #b3311f;
-
   width: 300px;
   flex: none;
   border-radius: 4px;
@@ -364,7 +356,6 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  color-scheme: light;
 }
 
 .label {

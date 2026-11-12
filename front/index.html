@@ -5,8 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f4eee2" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1f1b16" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- one per scheme: the one of the theme of the player is kept (src/lib/theme.ts) -->
+    <meta name="theme-color" content="#f4eee2" media="(prefers-color-scheme: light)" data-scheme="light" />
+    <meta name="theme-color" content="#1f1b16" media="(prefers-color-scheme: dark)" data-scheme="dark" />
+    <!-- the theme the player chose, before the first paint: the application sets it again once loaded -->
+    <script>
+      try {
+        var theme = JSON.parse(localStorage.getItem('kyuden.session')).theme
+        if (theme === 'light' || theme === 'dark') {
+          document.documentElement.dataset.theme = theme
+        }
+      } catch (e) {}
+    </script>
     <meta name="apple-mobile-web-app-title" content="Kyūden" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="description" content="Play Legend of the Five Rings in your browser." />

@@ -21,4 +21,24 @@ describe('applyTheme', () => {
 
     expect(root.hasAttribute('data-theme')).toBe(false)
   })
+
+  it('keeps the color of the browser of a forced theme, else the one of the system', () => {
+    document.head.innerHTML =
+      '<meta name="theme-color" content="#f4eee2" media="(prefers-color-scheme: light)" data-scheme="light">' +
+      '<meta name="theme-color" content="#1f1b16" media="(prefers-color-scheme: dark)" data-scheme="dark">'
+    const media = () =>
+      [...document.head.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map((meta) => meta.media)
+
+    applyTheme('dark')
+    expect(media()).toEqual(['not all', 'all'])
+
+    applyTheme('light')
+    expect(media()).toEqual(['all', 'not all'])
+
+    applyTheme('auto')
+    expect(media()).toEqual(['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)'])
+
+    document.head.innerHTML = ''
+    delete document.documentElement.dataset.theme
+  })
 })

@@ -8,6 +8,7 @@
 }
 
 :root {
+  /* the day: all there is for a browser without light-dark() (Safari before 17.5), which shows no night */
   --paper: #f4eee2;
   --paper-2: #ebe3d3;
   --paper-3: #e2d8c4;
@@ -33,59 +34,51 @@
 }
 
 /*
- * Night: light ink on a dark ground, when the player chooses it (`data-theme` on the root, from their settings) or
- * when their system is dark and they did not choose the day. The tokens swap, the components follow.
+ * Day and night: each color is its value of the day and its value of the night (light ink on a dark ground), which
+ * the color scheme of the element chooses. The scheme is that of the system, unless the player chose the day or the
+ * night (`data-theme` on the root, from their settings: lib/theme); an element changes it for what it holds.
  */
-:root[data-theme='dark'] {
-  --paper: #1f1b16;
-  --paper-2: #2a251f;
-  --paper-3: #3a332b;
-  --line: #4a4238;
-  --ink: #f4eee2;
-  --ink-2: #cfc5b3;
-  --ink-3: #b3a894;
-  --ink-hover: #fff;
-  --seal: #ec6a52;
-  --selected: #3a2a22;
-  --board: #26211b;
-  --card: #2f2922;
+@supports (color: light-dark(#000, #fff)) {
+  :root {
+    --paper: light-dark(#f4eee2, #1f1b16);
+    --paper-2: light-dark(#ebe3d3, #2a251f);
+    --paper-3: light-dark(#e2d8c4, #3a332b);
+    --line: light-dark(#d3c7b0, #4a4238);
+    --ink: light-dark(#1f1b16, #f4eee2);
+    --ink-2: light-dark(#4f473d, #cfc5b3);
+    --ink-3: light-dark(#6b6155, #b3a894);
+    --seal: light-dark(#b3311f, #ec6a52);
+    --board: light-dark(#faf7f1, #26211b);
+    --card: light-dark(#fbf6ec, #2f2922);
+    --ink-hover: light-dark(#000, #fff);
+    --selected: light-dark(#fbf3ea, #3a2a22);
 
-  color-scheme: dark;
-}
+    color-scheme: light dark;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --paper: #1f1b16;
-    --paper-2: #2a251f;
-    --paper-3: #3a332b;
-    --line: #4a4238;
-    --ink: #f4eee2;
-    --ink-2: #cfc5b3;
-    --ink-3: #b3a894;
-    --ink-hover: #fff;
-    --seal: #ec6a52;
-    --selected: #3a2a22;
-    --board: #26211b;
-    --card: #2f2922;
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
 
+  :root[data-theme='dark'] {
     color-scheme: dark;
+  }
+
+  /* the night whatever the theme (the wait in the queue, a window over the board) */
+  .inverted {
+    color-scheme: dark;
+  }
+
+  /* the day whatever the theme (the panel of the actions of a window) */
+  .daylight {
+    color-scheme: light;
   }
 }
 
-/* light ink on a dark ground whatever the theme (the wait in the queue): the tokens swap, the components follow */
-.inverted {
-  --paper: #1f1b16;
-  --paper-2: #2a251f;
-  --paper-3: #3a332b;
-  --line: #4a4238;
-  --ink: #f4eee2;
-  --ink-2: #cfc5b3;
-  --ink-3: #b3a894;
-  --ink-hover: #fff;
-  --seal: #ec6a52;
-  --selected: #3a2a22;
-
-  color-scheme: dark;
+/* the ink is inherited as the color it was for the parent: read again in the scheme of the element */
+.inverted,
+.daylight {
+  color: var(--ink);
 }
 
 *,
