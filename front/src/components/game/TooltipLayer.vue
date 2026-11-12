@@ -2,9 +2,11 @@
 import { computed, nextTick, ref, useTemplateRef, watch, type CSSProperties } from 'vue'
 
 import { TOOLTIP_WIDTH, tooltip, tooltipPosition } from '@/lib/tooltip'
+import { vTopLayer } from '@/lib/topLayer'
 
 /**
- * The text of the element under the pointer, or held under the finger (see lib/tooltip).
+ * The text of the element under the pointer, or held under the finger (see lib/tooltip), in the top layer: above the
+ * windows too.
  */
 const element = useTemplateRef<HTMLElement>('element')
 const height = ref(0)
@@ -41,7 +43,7 @@ const style = computed((): CSSProperties => {
 </script>
 
 <template>
-  <div v-if="tooltip.text && tooltip.rect" ref="element" class="tooltip" role="tooltip" :style="style">
+  <div v-if="tooltip.text && tooltip.rect" ref="element" v-top-layer class="tooltip" role="tooltip" :style="style">
     {{ tooltip.text }}
   </div>
 </template>

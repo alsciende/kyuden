@@ -5,13 +5,16 @@ import type { GameView, LoggedMessage } from '@/api/game'
 import LogLine from '@/components/game/LogLine.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
 import type { Cards } from '@/lib/board'
+import { isModalOpen } from '@/lib/topLayer'
 
 /**
- * The whole log of the game, over the sidebar: each message handled, by whom, and what it changed.
+ * The whole log of the game, over the sidebar: each message handled, by whom, and what it changed. Not modal: the
+ * board stays in use beside it.
  */
 const props = defineProps<{ game: GameView; cards: Cards; log: LoggedMessage[] }>()
 const emit = defineEmits<{ close: [] }>()
 
+const drawer = useTemplateRef<HTMLDialogElement>('drawer')
 const list = useTemplateRef<HTMLElement>('list')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
@@ -25,13 +28,19 @@ const messages = computed(() =>
 )
 
 function onKey(event: KeyboardEvent): void {
-  if (event.key === 'Escape') {
+  // a window open over the page takes the key
+  if (event.key === 'Escape' && !isModalOpen()) {
     emit('close')
   }
 }
 
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
+  if (typeof drawer.value?.show === 'function') {
+    drawer.value.show()
+  } else {
+    drawer.value?.setAttribute('open', '')
+  }
   closeButton.value?.focus()
   await nextTick()
   list.value?.scrollTo({ top: list.value.scrollHeight })
@@ -41,7 +50,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <aside class="drawer" role="dialog" aria-modal="true" aria-label="Log of the game">
+  <dialog ref="drawer" class="drawer" aria-label="Log of the game">
     <header class="head">
       <h2>Log</h2>
       <button ref="closeButton" type="button" class="btn btn-ghost" @click="emit('close')">Close</button>
@@ -55,22 +64,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <LogLine v-for="(entry, index) in message.entries" :key="index" :entry="entry" :game="game" :cards="cards" />
       </li>
     </ol>
-  </aside>
+  </dialog>
 </template>
 
 <style scoped>
 .drawer {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0 0 0 auto;
   width: 420px;
+  height: auto;
+  margin: 0;
+  padding: 0;
   z-index: 30;
   background: var(--paper-2);
+  color: var(--ink);
+  border: 0;
   border-left: 1px solid var(--ink);
   box-shadow: -18px 0 40px rgba(31, 27, 22, 0.18);
-  display: flex;
   flex-direction: column;
+}
+
+.drawer[open] {
+  display: flex;
 }
 
 .head {

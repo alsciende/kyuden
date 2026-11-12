@@ -5,6 +5,7 @@ import type { CardView, GameView, Send, Side } from '@/api/game'
 import type { Message } from '@/api/messages'
 import GameCard from '@/components/game/GameCard.vue'
 import PlayForm from '@/components/game/PlayForm.vue'
+import ModalDialog from '@/components/ModalDialog.vue'
 import { charactersInPlay, playerById, type Cards } from '@/lib/board'
 import { hostChoices, provinceChoices, type PlayAction } from '@/lib/cardActions'
 import {
@@ -201,7 +202,7 @@ onBeforeUnmount(hidePreview)
 </script>
 
 <template>
-  <div class="veil" role="dialog" aria-modal="true" aria-labelledby="inspection-title">
+  <ModalDialog class="veil" aria-labelledby="inspection-title">
     <section class="window inverted">
       <header class="head">
         <span class="badge">
@@ -329,14 +330,11 @@ onBeforeUnmount(hidePreview)
         </button>
       </footer>
     </section>
-  </div>
+  </ModalDialog>
 </template>
 
 <style scoped>
 .veil {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
   background: rgb(18 15 11 / 0.82);
   display: flex;
   align-items: center;

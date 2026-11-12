@@ -7,6 +7,7 @@ import ClanMon from '@/components/ClanMon.vue'
 import { follow } from '@/lib/hub'
 import { CHECK_DELAY, FOUND_DELAY, checkQueue, found, gameFound, now, waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
+import { vTopLayer } from '@/lib/topLayer'
 import { visiblePolling, type VisiblePolling } from '@/lib/visiblePolling'
 
 /**
@@ -106,7 +107,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="found !== null" class="found inverted" role="status">
+  <div v-if="found !== null" v-top-layer class="found inverted" role="status">
     <ClanMon :src="enso" :size="120" color="var(--seal)" />
     <h1>Opponent found</h1>
     <p class="lead">Your game opens.</p>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, reactive, ref, useTemplateRef } from 'vue'
 
 import type { ConflictType, GameView, PayloadArgs, Send } from '@/api/game'
 import type { Message, MessageType } from '@/api/messages'
 import ActionIcon from '@/components/ActionIcon.vue'
 import PlayForm from '@/components/game/PlayForm.vue'
 import PlayerChip from '@/components/game/PlayerChip.vue'
+import ModalDialog from '@/components/ModalDialog.vue'
 import { ACTION_SHORT_LABELS, actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
@@ -389,23 +390,14 @@ const specialSections = computed(() => {
   ]
 })
 
-function onKey(event: KeyboardEvent): void {
-  if (event.key === 'Escape') {
-    emit('close')
-  }
-}
-
 onMounted(() => {
   resetSkillFields()
   closeButton.value?.focus()
-  window.addEventListener('keydown', onKey)
 })
-
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="overlay" role="dialog" aria-modal="true" :aria-label="name" @click.self="emit('close')">
+  <ModalDialog class="overlay" dismissable :aria-label="name" @close="emit('close')" @click.self="emit('close')">
     <button ref="closeButton" type="button" class="close" @click="emit('close')">
       <svg
         aria-hidden="true"
@@ -779,14 +771,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         </button>
       </section>
     </div>
-  </div>
+  </ModalDialog>
 </template>
 
 <style scoped>
 .overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
   background: rgba(18, 15, 11, 0.76);
   display: flex;
   align-items: center;

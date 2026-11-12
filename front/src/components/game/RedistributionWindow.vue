@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 
 import type { CardView, GameView, Send, Side } from '@/api/game'
 import GameCard from '@/components/game/GameCard.vue'
+import ModalDialog from '@/components/ModalDialog.vue'
 import type { Cards } from '@/lib/board'
 import type { Inspection } from '@/lib/inspection'
 import { hidePreview } from '@/lib/preview'
@@ -112,7 +113,7 @@ onBeforeUnmount(hidePreview)
 </script>
 
 <template>
-  <div class="veil" role="dialog" aria-modal="true" aria-labelledby="redistribution-title">
+  <ModalDialog class="veil" aria-labelledby="redistribution-title">
     <section class="window">
       <header class="head">
         <span class="badge">
@@ -207,14 +208,11 @@ onBeforeUnmount(hidePreview)
         <button type="button" class="done" @click="close">Close</button>
       </footer>
     </section>
-  </div>
+  </ModalDialog>
 </template>
 
 <style scoped>
 .veil {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
   background: rgb(18 15 11 / 0.82);
   display: flex;
   align-items: center;

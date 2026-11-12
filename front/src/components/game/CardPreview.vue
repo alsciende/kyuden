@@ -3,9 +3,11 @@ import { computed } from 'vue'
 
 import type { Cards } from '@/lib/board'
 import { PREVIEW_HEIGHT, PREVIEW_WIDTH, preview, previewPosition } from '@/lib/preview'
+import { vTopLayer } from '@/lib/topLayer'
 
 /**
  * The image of the card under the pointer (see lib/preview), kept inside the board: `boardRight` is its right edge.
+ * In the top layer: above the windows too.
  */
 const props = defineProps<{ cards: Cards; boardRight: number }>()
 
@@ -22,7 +24,7 @@ const style = computed(() => {
 </script>
 
 <template>
-  <img v-if="image && preview.rect" class="preview" :src="image" alt="" :style="style" />
+  <img v-if="image && preview.rect" v-top-layer class="preview" :src="image" alt="" :style="style" />
 </template>
 
 <style scoped>

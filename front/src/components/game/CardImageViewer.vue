@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 
+import ModalDialog from '@/components/ModalDialog.vue'
 import type { Cards } from '@/lib/board'
 import { closeCardImage } from '@/lib/cardImage'
 
@@ -14,21 +15,11 @@ const card = computed(() => props.cards[props.code] ?? null)
 const name = computed(() => card.value?.name ?? 'Unknown card')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
-function onKey(event: KeyboardEvent): void {
-  if (event.key === 'Escape') {
-    closeCardImage()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onKey)
-  closeButton.value?.focus()
-})
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onMounted(() => closeButton.value?.focus())
 </script>
 
 <template>
-  <div class="overlay" role="dialog" aria-modal="true" :aria-label="name" @click="closeCardImage">
+  <ModalDialog class="overlay" dismissable :aria-label="name" @close="closeCardImage" @click="closeCardImage">
     <button ref="closeButton" type="button" class="close" aria-label="Close">
       <svg
         aria-hidden="true"
@@ -44,14 +35,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </button>
     <img v-if="card?.image_url" class="image" :src="card.image_url" :alt="name" />
     <div v-else class="image blank">{{ name }}</div>
-  </div>
+  </ModalDialog>
 </template>
 
 <style scoped>
 .overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
   background: rgba(18, 15, 11, 0.76);
   display: flex;
   align-items: center;

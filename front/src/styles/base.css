@@ -323,6 +323,22 @@ p {
   white-space: nowrap;
 }
 
+/*
+ * what shows in the top layer, above the windows (lib/topLayer): drawn by its own styles, none of those of a popover
+ * (no specificity: the styles of the component win)
+ */
+:where([popover='manual']) {
+  inset: auto;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  color: inherit;
+}
+
 /* a long press on an element with a tooltip shows it (lib/tooltip): no callout nor selection on a touch screen */
 @media (hover: none) {
   .has-tip {
