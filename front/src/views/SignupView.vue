@@ -6,8 +6,9 @@ import { ApiProblem } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
 import ClanPicker from '@/components/ClanPicker.vue'
+import PasswordField from '@/components/PasswordField.vue'
 import { findClan, type ClanId } from '@/data/clans'
-import { formErrors, passwordProblem, usernameProblem, type FormErrors } from '@/lib/credentials'
+import { formErrors, MIN_PASSWORD_LENGTH, passwordProblem, usernameProblem, type FormErrors } from '@/lib/credentials'
 import { nextPage } from '@/lib/gameAccess'
 import { isGuest, session, signUp, suggestedClan } from '@/lib/session'
 
@@ -15,7 +16,9 @@ import { isGuest, session, signUp, suggestedClan } from '@/lib/session'
  * Creates an account: the preferred clan, which gives a copy of its starter deck, then a username and a password. A
  * guest keeps their name at court and their games, and is offered the clan of their last game; anyone else gets a clan
  * drawn at random, and a name at court drawn from its families, which they change from their account. Once created,
- * the account goes back to the page it came from (`?next=`: a game to watch), else to its page.
+ * the account goes back to the page it came from (`?next=`: a game to watch), else to its page. The fields say what
+ * they require (`required`, `minlength`) to the browser and the screen readers; the form checks them itself
+ * (`novalidate`), so that its own messages show under the fields.
  */
 const route = useRoute()
 const router = useRouter()
@@ -110,7 +113,9 @@ async function submit(): Promise<void> {
           class="field field-ui"
           autocomplete="username"
           autocapitalize="off"
+          autocorrect="off"
           spellcheck="false"
+          required
           maxlength="32"
           :aria-invalid="errors.username !== undefined"
           aria-describedby="username-hint"
@@ -120,12 +125,12 @@ async function submit(): Promise<void> {
       </div>
       <div class="form-field">
         <label for="password">Password</label>
-        <input
+        <PasswordField
           id="password"
           v-model="password"
-          class="field field-ui"
-          type="password"
           autocomplete="new-password"
+          required
+          :minlength="MIN_PASSWORD_LENGTH"
           :aria-invalid="errors.password !== undefined"
           aria-describedby="password-hint"
         />

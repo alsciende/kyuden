@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ApiProblem, type OAuthProvider } from '@/api/client'
 import enso from '@/assets/mons/neutral.svg'
 import ClanMon from '@/components/ClanMon.vue'
+import PasswordField from '@/components/PasswordField.vue'
 import ProviderLogo from '@/components/ProviderLogo.vue'
 import { formErrors } from '@/lib/credentials'
 import { nextPage } from '@/lib/gameAccess'
@@ -113,20 +114,14 @@ async function submit(): Promise<void> {
             class="field field-ui"
             autocomplete="username"
             autocapitalize="off"
+            autocorrect="off"
             spellcheck="false"
             required
           />
         </div>
         <div class="form-field">
           <label for="password">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            class="field field-ui"
-            type="password"
-            autocomplete="current-password"
-            required
-          />
+          <PasswordField id="password" v-model="password" autocomplete="current-password" required />
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
         </div>
         <div class="actions">
