@@ -1,0 +1,33 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": null,
+    "deck_limit": 1,
+    "elements": [
+        "air"
+    ],
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-temple-of-jikoju",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Temple of Jikoju",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "province",
+    "strength": "4",
+    "strength_bonus": null,
+    "text": "This province gets +2 strength for each claimed [element-air] ring.<br><b>Forced Reaction:</b> After an attack is declared against this province - place 1 fate on each unclaimed [element-air] ring.",
+    "traits": [
+        "temple"
+    ],
+    "type": "province",
+    "uniqueness": false
+}

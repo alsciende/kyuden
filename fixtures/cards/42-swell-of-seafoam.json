@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "dragon",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-swell-of-seafoam",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Swell of Seafoam",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> During a conflict, choose a participating <em>Monk</em> character – that character does not bow as the result of this conflict's resolution. If you have played another <em>Kihō</em> in this conflict, also honor that character.",
+    "traits": [
+        "kiho",
+        "water"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

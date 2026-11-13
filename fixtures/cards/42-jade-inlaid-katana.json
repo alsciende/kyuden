@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-jade-inlaid-katana",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+2",
+    "name": "Jade-Inlaid Katana",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Restricted. Support.<br>Attached character gains: \"<b>Reaction:</b> After this character wins a conflict, choose a participating character with 1 or more status tokens on it - remove 1 fate from that character.\"",
+    "traits": [
+        "jade",
+        "weapon"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

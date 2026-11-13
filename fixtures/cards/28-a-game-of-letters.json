@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crane",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-a-game-of-letters",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "A Game of Letters",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> During a [conflict-political] conflict, choose a participating character and a status token on a character controlled by a different player -<br>- if you chose an honored status token, honor the chosen character.<br>- if you chose a dishonored status token, dishonor the chosen character.",
+    "traits": [],
+    "type": "event",
+    "uniqueness": false
+}

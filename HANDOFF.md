@@ -30,6 +30,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - **Web client**: the trash button of a card stays (decided before 1.0). Mockups first; the references: board `GiPbGSPNcvLD2r9eFKKNp5`, accounts/queue/friendly games/spectators `LBUBwNBPdSopj5NMj5GLTL`, waiting in the queue `KJWPhVGdXGkiftvaAB5XFH`, cards set aside `LdtL4NT1SnDLTzRZpz376x`, history and replay `KZMDhHY4oeLxaTvx2hE8bE`, mulligan `K178dcmNYPeiY9es4xob8F`, duel `E8u3G7M7AU4ZeEqkbGXdwf`. The windows over the page are native modal `<dialog>`s rather than `div`s with a role (the focus kept in the window and given back, no `z-index` to order); the popovers of the bars stay `div`s until the oldest iPadOS to support is decided (`popover`: 18.3). The colors are written once (`light-dark()`); a Safari before 17.5 shows the day only, nothing dark: decided, rather than keeping every color three times for it.
 - **Free play, nothing secret**: every game can be watched and is announced on Discord (the games of the house bot too: the activity of the site shows there), with no consent asked; keeping one's games private may come later, as a paid option.
 - **The house bot** is Kyūden no Karō, "the steward of the palace": a title rather than a name, being a bot.
+- **Card database**: every pack of FFG, the Stronghold cards only: Clan War (`28-`) without its treaties (Team Conquest), Under Fu Leng's Shadow (`42-`, its number at FFG, L5C42) without the Shadowlands faction (cooperative play, no clan to build a deck). The cards of these two came from EmeraldDB (`api/cards`), its text as is (`\n` as `<br>`); a cost `X` is null; Support is kept, a keyword without effect between two players.
 
 ## Known limitations
 
@@ -41,7 +42,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - **Scaling**: each long-poll holds a FrankenPHP thread up to 30 s (20 threads); OAuth state, rate limiter and MCP sessions in filesystem caches (one host; MCP sessions lost on restart).
 - **Security**: a Mercure token outlives its session by up to an hour; account sessions have no maximum lifetime; the user creation limit is by IP only (a tournament network may hit it); deleting an account asks no re-authentication (Symfony 8.2 brings one).
 - **EmeraldDB**: Emerald Legacy cards unknown; private decks cannot be downloaded.
-- **Data**: a card added to the fixtures needs its image uploaded (nothing checks it); banned and restricted lists not checked; copies counted by title, not by version.
+- **Data**: a card added to the fixtures needs its image uploaded (nothing checks it); the cards of these two packs not reviewed for the effects the players cannot apply (no script yet: special actions, timings), nor tainted cards (Corrupted, taint: not modeled); banned and restricted lists not checked; copies counted by title, not by version.
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; wait for an update.
 
 ## Next steps

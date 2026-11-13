@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crane",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-masashigi-s-sacrifice",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Masashigi's Sacrifice",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> During a conflict, sacrifice a <i>(friendly)</i> character with 1 or more status tokens on it - each defending character does not bow as a result of this conflict's resolution.",
+    "traits": [],
+    "type": "event",
+    "uniqueness": false
+}

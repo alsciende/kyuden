@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "dragon"
+    ],
+    "clan": "dragon",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "28-ascetic-of-the-north-wall",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Ascetic of the North Wall",
+    "political": "2",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "While you have claimed the [element-earth] ring, this character cannot lose fate or be discarded outside the fate phase.",
+    "traits": [
+        "monk",
+        "tattooed"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

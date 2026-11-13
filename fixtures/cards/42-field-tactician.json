@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "lion"
+    ],
+    "clan": "lion",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 2,
+    "honor": null,
+    "id": "42-field-tactician",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Field Tactician",
+    "political": "1",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Reaction:</b> After you play a <em>Tactic</em> card, choose a card in any player's conflict discard pile - place it into that player's conflict deck third from the top.",
+    "traits": [
+        "bushi",
+        "commander"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

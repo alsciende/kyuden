@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "unicorn",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-daikyu",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+0",
+    "name": "Daikyū",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Restricted. Support.<br>While you are the first player, attached character gets +2[conflict-military].<br>Attached character gains: \"<b>Reaction:</b> After a character either commits to or moves to a [conflict-military] conflict this character is participating in, choose a participating character with lower [conflict-military] skill than this character - bow it.\"",
+    "traits": [
+        "weapon"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

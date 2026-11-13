@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "dragon",
+    "cost": 3,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-impossible-koan",
+    "influence_cost": 3,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Impossible Kōan",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> During a conflict - set each character's base [conflict-military] and base [conflict-political] skills to 1 until the end of the conflict.",
+    "traits": [],
+    "type": "event",
+    "uniqueness": false
+}

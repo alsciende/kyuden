@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "crane"
+    ],
+    "clan": "crane",
+    "cost": null,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-negotiation-table",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Negotiation Table",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": "+1",
+    "text": "<b>Action:</b> In turn order each opponent may select 1 or more of the following -<br>- draw 1 card.<br>- choose and ready a character.<br>- gain 1 fate.<br>Then, you do each option once for each opponent that selected that option.",
+    "traits": [],
+    "type": "holding",
+    "uniqueness": false
+}

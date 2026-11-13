@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "lion",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-take-up-command",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+0",
+    "name": "Take Up Command",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Attached character gains the <em>Commander</em> trait and: \"<b>Action:</b> During a conflict in which this character is participating, choose a <em>Bushi</em> character you control with printed cost 2 or lower - ready that character and move it to the conflict.\"",
+    "traits": [
+        "condition"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

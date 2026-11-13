@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-jade-talisman",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+0",
+    "name": "Jade Talisman",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Attach to a character you control.<br><b>Interrupt:</b> When a ring effect would initiate, if it chooses attached character as a target, sacrifice this attachment - cancel that ring effect.",
+    "traits": [
+        "jade",
+        "item"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

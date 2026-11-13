@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-kobo-ichi-kai-jujutsu",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+X",
+    "name": "Kobo Ichi-Kai Jujutsu",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Restricted. <i>(No more than two restricted attachments per character.)</i><br>X is equal to the greatest number of rings claimed by a single opponent.",
+    "traits": [
+        "technique"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

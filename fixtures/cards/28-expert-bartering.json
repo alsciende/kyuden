@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "unicorn",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-expert-bartering",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+1",
+    "name": "Expert Bartering",
+    "political": null,
+    "political_bonus": "+1",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> You may spend 1 fate. Choose another attachment (you may only choose one an opponent controls if you spent 1 fate) - switch this attachment with the chosen attachment. If you do not control the chosen attachment, exchange control of them as well.",
+    "traits": [
+        "technique"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

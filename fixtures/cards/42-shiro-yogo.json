@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "scorpion"
+    ],
+    "clan": "scorpion",
+    "cost": null,
+    "deck_limit": 1,
+    "elements": null,
+    "fate": 7,
+    "glory": null,
+    "honor": 10,
+    "id": "42-shiro-yogo",
+    "influence_cost": null,
+    "influence_pool": 10,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Shiro Yogo",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "stronghold",
+    "strength": null,
+    "strength_bonus": "+2",
+    "text": "<b>Action:</b> Bow this stronghold. Choose a dishonored character - abilities on that character cannot be triggered this phase.",
+    "traits": [
+        "castle"
+    ],
+    "type": "stronghold",
+    "uniqueness": true
+}

@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-hige-s-sermon",
+    "influence_cost": 0,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Hige's Sermon",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Limited. <i>(No more than one limited card can be played by each player each round.)</i><br><b>Action:</b> During the draw phase, each player in turn order chooses a different character they do not control - bow each of those characters.",
+    "traits": [
+        "heresy"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "42-fearless-sailor",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Fearless Sailor",
+    "political": "1",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action: </b>During a conflict, in which this character is participating, choose a participating character with 1 or more status tokens on it - that character gets -2[conflict-military] until the end of the conflict.",
+    "traits": [
+        "bushi",
+        "mantis-clan"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

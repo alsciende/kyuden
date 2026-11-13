@@ -1,0 +1,33 @@
+{
+    "allowed_clans": [
+        "unicorn"
+    ],
+    "clan": "unicorn",
+    "cost": 3,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "28-forthright-ide",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "1",
+    "military_bonus": null,
+    "name": "Forthright Ide",
+    "political": "3",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br>(<b>Action:</b> During a conflict in which this character is participating, choose a character with printed cost 3 or lower - ready that character. If you control that character, discard 1 card from you hand.",
+    "traits": [
+        "courtier",
+        "cavalry",
+        "merchant"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

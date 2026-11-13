@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "crane"
+    ],
+    "clan": "crane",
+    "cost": 4,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 2,
+    "honor": null,
+    "id": "42-daidoji-strategist",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "4",
+    "military_bonus": null,
+    "name": "Daidoji Strategist",
+    "political": "3",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> During a conflict in which this character is participating, choose an honored character - move that character home.",
+    "traits": [
+        "bushi",
+        "commander"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

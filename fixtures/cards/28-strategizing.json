@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "lion"
+    ],
+    "clan": "lion",
+    "cost": null,
+    "deck_limit": 1,
+    "elements": [
+        "water"
+    ],
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-strategizing",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Strategizing",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "province",
+    "strength": "5",
+    "strength_bonus": null,
+    "text": "<b>Reaction:</b> After a province you control is revealed - redistribute the rings claimed on your provinces among eligible provinces you control.",
+    "traits": [],
+    "type": "province",
+    "uniqueness": false
+}

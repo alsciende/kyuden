@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "phoenix",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-dance-of-chikusho-do",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Dance of Chikushō-dō",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> Choose any number of non-[clan-shadowlands] players - each of those players fills each of their unbroken non-stronghold provinces with 2 facedown dynasty cards. (Max 1 per round.)",
+    "traits": [
+        "spell",
+        "air"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "dragon"
+    ],
+    "clan": "dragon",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "42-discerning-yoriki",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "1",
+    "military_bonus": null,
+    "name": "Discerning Yoriki",
+    "political": "2",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Courtesy.<br><b>Reaction:</b> After you look at 1 or more cards in an opponent's hand (or those are revealed), choose a character - honor it.",
+    "traits": [
+        "courtier"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

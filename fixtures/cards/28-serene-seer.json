@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "phoenix"
+    ],
+    "clan": "phoenix",
+    "cost": 3,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 2,
+    "honor": null,
+    "id": "28-serene-seer",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "3",
+    "military_bonus": null,
+    "name": "Serene Seer",
+    "political": "3",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> For each opponent that has claimed the [element-void] ring, choose a facedown province that player controls - look at each chosen province.",
+    "traits": [
+        "shugenja",
+        "void"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

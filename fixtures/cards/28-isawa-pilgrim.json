@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "phoenix"
+    ],
+    "clan": "phoenix",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 2,
+    "honor": null,
+    "id": "28-isawa-pilgrim",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Isawa Pilgrim",
+    "political": "2",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Pride.<br><b>Action:</b> Choose another player who has claimed the [element-water] ring – that player gains control of this character.",
+    "traits": [
+        "shugenja",
+        "water"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

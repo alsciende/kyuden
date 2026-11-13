@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-fulfill-your-duty",
+    "influence_cost": 3,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Fulfill Your Duty",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> During a conflict, sacrifice a <i>(friendly)</i> character - the attacked province gets +X strength until the end of the conflict, where X is the sacrificed character's [conflict-military] skill <i>(including modifiers)</i>.",
+    "traits": [],
+    "type": "event",
+    "uniqueness": false
+}

@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crane",
+    "cost": null,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-favorable-alliance",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Favorable Alliance",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support.<br><b>Action:</b> Set aside cards from the top of up to two conflict decks, yours and the that of the player who supports you, until X cards are set aside. Those cards are faceup and out of play. Both you and the player who supports you may play those cards as if they were in their hand.",
+    "traits": [],
+    "type": "event",
+    "uniqueness": false
+}

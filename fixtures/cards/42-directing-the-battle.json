@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "lion",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-directing-the-battle",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Directing the Battle",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support.<br><b>Action:</b> During a conflict, choose a character. That character's controller selects one -<br>- move that character home.<br>-that character gets +3[conflict-military] until the end of the conflict.<br>-that character can't be bowed by opponents' card effects during this conflict.",
+    "traits": [
+        "tactic"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

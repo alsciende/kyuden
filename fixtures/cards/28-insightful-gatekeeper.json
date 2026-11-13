@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "28-insightful-gatekeeper",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Insightful Gatekeeper",
+    "political": "1",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "While participating in a conflict against a player with more claimed rings than you, this character gets +2[conflict-military].",
+    "traits": [
+        "bushi",
+        "dragonfly-clan"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

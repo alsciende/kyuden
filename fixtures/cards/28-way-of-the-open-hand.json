@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "unicorn",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-way-of-the-open-hand",
+    "influence_cost": 4,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Way of the Open Hand",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> During a conflict against a non-stronghold province, choose a participating character you do not control - move that character home and put 1 fate on it.",
+    "traits": [
+        "philosophy"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

@@ -1,0 +1,29 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "phoenix",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-spell-scroll",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+0",
+    "name": "Spell Scroll",
+    "political": null,
+    "political_bonus": "+0",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "While attached character is participating in a conflict whose element matches one of attached character's <em>Traits</em>, it gets +3[conflict-political]<br><b>Action:</b> Choose a non-character card in your conflict discard pile that shares a <em>Trait</em> with attached character - add it to your hand and sacrifice this attachment.",
+    "traits": [],
+    "type": "attachment",
+    "uniqueness": false
+}

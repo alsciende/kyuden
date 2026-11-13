@@ -1,0 +1,33 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-accursed-summoning",
+    "influence_cost": 0,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Accursed Summoning",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "This card's fate cost can only be paid for with fate on character you control.<br><b>Action:</b> During a conflict, lose X honor. Choose a non-unique [clan-shadowlands] character you own from outside the game with printed cost X - put that character into play in the conflict. When it would leave play, remove it from the game instead.",
+    "traits": [
+        "maho",
+        "spell",
+        "earth"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

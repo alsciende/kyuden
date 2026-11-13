@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "dragon"
+    ],
+    "clan": "dragon",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 2,
+    "honor": null,
+    "id": "42-togashi-dreamer",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Togashi Dreamer",
+    "political": "2",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Support.<br><b>Reaction:</b> After you play a <em>Kihō</em> event during a conflict in which this character is participating, choose a participating character with 1 or more status tokens on it and choose an unclaimed ring - move 1 fate from the chosen character to the chosen ring.",
+    "traits": [
+        "monk",
+        "tattooed"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

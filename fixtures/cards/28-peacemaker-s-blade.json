@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "phoenix",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-peacemaker-s-blade",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": "+3",
+    "name": "Peacemaker's Blade",
+    "political": null,
+    "political_bonus": "+1",
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "This attachment cannot be played on an attacking character.<br>Restricted. <i>(No more than two restricted attachments per character.)</i><br>Attached character cannot be declared as an attacker.",
+    "traits": [
+        "weapon"
+    ],
+    "type": "attachment",
+    "uniqueness": false
+}

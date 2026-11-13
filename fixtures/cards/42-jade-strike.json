@@ -1,0 +1,33 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "crab",
+    "cost": 1,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-jade-strike",
+    "influence_cost": 3,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Jade Strike",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Play only if you control a <em>Shugenja</em> character.<br><b>Action:</b> During a conflict, choose a participating character with 1 or more status tokens on it - set its base [conflict-military] and [conflict-political] skills to 0 until the end of the conflict. If that character is tainted, also remove 1 fate from it.",
+    "traits": [
+        "jade",
+        "spell",
+        "earth"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

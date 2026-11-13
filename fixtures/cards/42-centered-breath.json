@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "dragon",
+    "cost": 0,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-centered-breath",
+    "influence_cost": 1,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Centered Breath",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "<b>Action:</b> During a conflict, choose a participating <em>Monk</em> character – You may trigger each ability printed on that character an additional time this round (or specified period). If you have played another <em>Kihō</em> in this conflict, take another action after this one.",
+    "traits": [
+        "kiho",
+        "air"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

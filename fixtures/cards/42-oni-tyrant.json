@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "neutral",
+    "cost": 4,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 0,
+    "honor": null,
+    "id": "42-oni-tyrant",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "4",
+    "military_bonus": null,
+    "name": "Oni Tyrant",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Corrupted. <i>(This character enters play tainted.)</i><br><b>Action:</b> During a conflict in which this character is participating, lose 1 honor. Choose a [clan-shadowlands] character you own from outside the game with printed cost 2 or lower - put that character into play in the conflict. When it would leave play, remove it from the game instead.",
+    "traits": [
+        "oni",
+        "shadowlands"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

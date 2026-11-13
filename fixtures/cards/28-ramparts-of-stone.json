@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "phoenix",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "28-ramparts-of-stone",
+    "influence_cost": 3,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Ramparts of Stone",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Limited. <i>(No more than one limited card can be played by each player each round.)</i><br><b>Action:</b> During a conflict, the attacking player must select one - either bow each participating character they control, or discard 3 cards from their hand.",
+    "traits": [
+        "spell",
+        "earth"
+    ],
+    "type": "event",
+    "uniqueness": false
+}

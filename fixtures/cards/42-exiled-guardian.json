@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "crab"
+    ],
+    "clan": "crab",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 0,
+    "honor": null,
+    "id": "42-exiled-guardian",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "2",
+    "military_bonus": null,
+    "name": "Exiled Guardian",
+    "political": "1",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Corrupted. <i>(This character enters play tainted.)</i><br>Support. <i>(Another player may help pay this card's fate cost.)</i><br><b>Action:</b> Sacrifice this character. Choose a status token on a character or province - discard that status token.",
+    "traits": [
+        "bushi",
+        "shadowlands"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

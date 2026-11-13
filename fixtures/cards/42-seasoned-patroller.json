@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "unicorn"
+    ],
+    "clan": "unicorn",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": 1,
+    "honor": null,
+    "id": "42-seasoned-patroller",
+    "influence_cost": null,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": "3",
+    "military_bonus": null,
+    "name": "Seasoned Patroller",
+    "political": "1",
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "dynasty",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "While this character is attacking, the attacked province's strength cannot be increased. <i>(This includes by holdings, strongholds, attachments, lasting effects and status tokens.)</i>",
+    "traits": [
+        "bushi",
+        "cavalry"
+    ],
+    "type": "character",
+    "uniqueness": false
+}

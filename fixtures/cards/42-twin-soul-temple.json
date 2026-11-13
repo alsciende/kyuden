@@ -1,0 +1,31 @@
+{
+    "allowed_clans": [
+        "phoenix"
+    ],
+    "clan": "phoenix",
+    "cost": null,
+    "deck_limit": 1,
+    "elements": null,
+    "fate": 7,
+    "glory": null,
+    "honor": 12,
+    "id": "42-twin-soul-temple",
+    "influence_cost": null,
+    "influence_pool": 10,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Twin Soul Temple",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "stronghold",
+    "strength": null,
+    "strength_bonus": "+2",
+    "text": "<b>Action:</b> Bow this stronghold. Choose an element symbol on a card in play - replace that symbol with the symbol of a different element until the end of the phase.",
+    "traits": [
+        "temple"
+    ],
+    "type": "stronghold",
+    "uniqueness": true
+}

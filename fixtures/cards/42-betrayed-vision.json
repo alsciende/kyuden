@@ -1,0 +1,32 @@
+{
+    "allowed_clans": [
+        "*"
+    ],
+    "clan": "scorpion",
+    "cost": 2,
+    "deck_limit": 3,
+    "elements": null,
+    "fate": null,
+    "glory": null,
+    "honor": null,
+    "id": "42-betrayed-vision",
+    "influence_cost": 2,
+    "influence_pool": null,
+    "is_restricted": false,
+    "military": null,
+    "military_bonus": null,
+    "name": "Betrayed Vision",
+    "political": null,
+    "political_bonus": null,
+    "role_restriction": null,
+    "side": "conflict",
+    "strength": null,
+    "strength_bonus": null,
+    "text": "Play only if you control a <em>Shugenja</em> character.<br>Support.<br><b>Action:</b> During a conflict, choose a participating character an opponent controls and a different non-unique character - the participating character becomes a copy of the non-unique character until the end of the conflict.",
+    "traits": [
+        "spell",
+        "air"
+    ],
+    "type": "event",
+    "uniqueness": false
+}
