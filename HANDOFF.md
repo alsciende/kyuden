@@ -2,10 +2,11 @@
 
 ## Current status
 
-A full Stronghold game is playable, from setup (mulligans included) to a victory condition, round after round. The engine is a board (see README): the players apply the cards with generic effect messages, which cover every card of the fixtures except those listed under "Cards not playable yet". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, Google and Discord), the queue, friendly games, spectators, the history and the replay of the games, the web client (desktop and tablet, installable) and the production stack, deployed at kyuden.app by each tag `vX.Y.Z` of `main`. How it all works is in the README; what follows is why, and what comes next.
+A full Stronghold game is playable, from setup (mulligans included) to a victory condition, round after round. The engine is a board (see README): the players apply the cards with generic effect messages, which cover every card of the fixtures except those listed under "Cards not playable yet". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, Google and Discord), the queue, friendly games, spectators, the history and the replay of the games, the web client (desktop and tablet, installable) and the production stack, deployed at kyuden.app by each tag `vX.Y.Z` of `main`. Version 1.0 is released, after a full game played against an agent through the MCP server. How it all works is in the README; what follows is why, and what comes next.
 
 ## Decisions to keep
 
+- **1.0 is a stable contract**: the HTTP API, the MCP tools (their names and arguments) and the event log. Adding is minor; changing or removing a message, or enforcing a rule on what is accepted today, breaks it.
 - **The engine moves pieces, the players apply the cards.** Effects are accepted in any place, from any player, on any card (many cards make the opponent act during the player's action). Values that cards modify (skills, strengths, glory, dueling statistic, costs) are declared by the players, prefilled by the clients. Not checked: triggering conditions, timings of abilities, limits, restrictions, the ring effect matching the ring.
 - **Randomness and visibility** are where the engine does more: every draw goes through the generator of the game, and what a player sees depends only on the state (secrets stored apart).
 - **A new id only when the players lose track of a card** (a shuffle, the redistribution of the provinces); a province turned face down keeps its id. No `TurnDynastyCardFacedown`: a new id in place would hide nothing.
@@ -44,7 +45,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - **Spectators**: same layouts as the player at the bottom, a few texts still speak to the player; players cannot refuse them.
 - **Web client**: the provinces offered to a character in play are those of its controller; covert is not offered (`evaded_ids` empty); a province does not show its status token (the view has it: `personal_honor` of the province, e.g. dishonored by Return from Shadows).
 - **House bot**: no conflict card, no ability, the Imperial Favor always military, never discards from its provinces, never ends a duel; its opponent waits while the worker is stopped.
-- **Agents (MCP)**: no full game played by an agent yet; the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
+- **Agents (MCP)**: the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
 - **Scaling**: each long-poll holds a FrankenPHP thread up to 30 s (20 threads); OAuth state, rate limiter and MCP sessions in filesystem caches (one host; MCP sessions lost on restart).
 - **Security**: a Mercure token outlives its session by up to an hour; account sessions have no maximum lifetime; the user creation limit is by IP only (a tournament network may hit it); deleting an account asks no re-authentication (Symfony 8.2 brings one).
 - **EmeraldDB**: Emerald Legacy cards unknown; private decks cannot be downloaded.
@@ -52,13 +53,6 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - `npm audit`: 4 high vulnerabilities in the lint tooling (`braces`), not shipped; wait for an update.
 
 ## Next steps
-
-### 1.0
-
-1.0 is a stable contract: the HTTP API, the MCP tools and the event log. Adding is minor; changing or removing a message, or enforcing a rule on what is accepted today, breaks it. Left before tagging `v1.0.0`:
-
-- **A whole game played by an agent** through `agent/play.sh`, and what it reports fixed (the names and arguments of the tools are the contract).
-- **A message "search the dynasty deck"**: a `LookAtCards` of the whole deck under its own name (Emperor's Summons, Favorable Dealbroker…), so that the log tells a search and not a look at N cards.
 
 ### Cards not playable yet
 
@@ -92,6 +86,7 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 
 ### API and platform
 
+- **Searching a deck**: a message "search the dynasty deck", a `LookAtCards` of the whole deck under its own name (Emperor's Summons, Favorable Dealbroker…), so that the log tells a search and not a look at N cards.
 - **Agents**: a timeout for an agent that stops; a compact view if the context fills.
 - **Decks**: the text export of EmeraldDB; the banned and restricted lists; an index on `contentHash` when statistics need it.
 - **Authentication**: press the players to link a provider; list the sessions of an account to revoke them; once Symfony 8.2 is out, reset one's password after a recent authentication (sudo mode).
