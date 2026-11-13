@@ -48,6 +48,8 @@ mcp:
 
                 - Always send expected_version: the version of the view you decided on. If the game changed meanwhile,
                   the action is rejected (stale_version): read the view again and decide again; never resend blindly.
+                  What you do on your own while the opponent does the same (revealing your dynasty cards, choosing
+                  your stronghold province, an honor bid, a total you declare) is never rejected this way.
                 - After each action you send, the game may move on by itself (automatic steps): read the view again
                   before the next action, do not chain actions from an old view.
                 - wait_for_update waits 30 s at most and returns an empty log when nothing changed: call it again.

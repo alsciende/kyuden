@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Each player declares the total glory of the ready characters they control, with every modifier applied
  * (3.4.1): the engine adds 1 for each ring in their claimed ring pool.
  */
-#[AppAction]
+#[AppAction(independent: true)]
 final readonly class DeclareGloryCount implements PlayerActionInterface
 {
     public function __construct(

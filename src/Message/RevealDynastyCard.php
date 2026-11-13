@@ -10,7 +10,7 @@ use App\Attribute\Description;
 /**
  * Turns a face-down dynasty card in a province face up, e.g. during the dynasty phase.
  */
-#[AppAction]
+#[AppAction(independent: true)]
 class RevealDynastyCard implements PlayerActionInterface
 {
     public function __construct(

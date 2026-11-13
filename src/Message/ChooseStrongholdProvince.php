@@ -10,7 +10,7 @@ use App\Attribute\Description;
 /**
  * The player chooses, during setup, the province put under their stronghold.
  */
-#[AppAction]
+#[AppAction(independent: true)]
 final readonly class ChooseStrongholdProvince implements PlayerActionInterface
 {
     public function __construct(

@@ -20,6 +20,12 @@ readonly class AppAction
          * AbstractCardScript::getSpecialActions(). The engine accepts it like any other action.
          */
         public bool $special = false,
+        /**
+         * Whether its handling does not depend on what the other players did since its sender read the game (what
+         * each player does on their own in a step where they act at once: a secret bid, a total, their own cards to
+         * reveal): it is never rejected for a stale version (GameVersionMiddleware), only by what its handler checks.
+         */
+        public bool $independent = false,
     ) {
     }
 }

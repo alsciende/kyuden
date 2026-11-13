@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Middleware;
 
 use App\Exception\Api\StaleVersionException;
+use App\Entity\CardTypes\DynastyCard;
 use App\Message\LoseHonor;
+use App\Message\RevealDynastyCard;
 use App\Middleware\Stamp\ExpectedVersionStamp;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -50,5 +52,30 @@ class GameVersionMiddlewareTest extends AbstractKernelTestCase
 
         self::assertSame(9, $this->playerStateManager->getState($scenario->player('john'))->getHonor());
         self::assertSame(1, $scenario->game()->getVersion());
+    }
+
+    public function testPlayersRevealTheirDynastyCardsAtOnce(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('reveal_facedown_dynasty_cards')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', dynasty: '01-akodo-toturi', dynastyAs: 'toturi')
+                ->province('01-night-raid', dynasty: '01-matsu-berserker', dynastyAs: 'berserker'))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-fertile-fields', dynasty: '01-doji-challenger', dynastyAs: 'challenger'))
+            ->persist();
+        $gameId = $scenario->game()->getId();
+
+        // both players have read the version 0 of the game, and the opponent of each reveals a card meanwhile
+        foreach ([['john', 'toturi'], ['jane', 'challenger'], ['john', 'berserker']] as [$player, $card]) {
+            $this->messageBus->dispatch(
+                new RevealDynastyCard($gameId, $scenario->player($player)->getId(), $scenario->card($card)->getId()),
+                [new ExpectedVersionStamp(0)],
+            );
+        }
+
+        foreach (['toturi', 'challenger', 'berserker'] as $card) {
+            self::assertSame(DynastyCard::STATE_PROVINCE_FACEUP, $scenario->card($card)->getCurrentPlace());
+        }
     }
 }

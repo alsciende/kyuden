@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * The player secretly selects a number on their honor dial (honor bid of the draw phase or of a duel).
  */
-#[AppAction]
+#[AppAction(independent: true)]
 final readonly class BidHonor implements PlayerActionInterface
 {
     public const int MINIMUM_BID = 1;

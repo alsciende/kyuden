@@ -21,6 +21,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 - **What is resolved**: events and abilities are recorded, not characters and attachments played (no reminder needed).
 - **Mulligan** in player order (the glossary); none in the games of the house bot (the introductory game goes straight to the board).
 - **Accounts**: no email nor personal data; an account is recovered through its linked providers (to be pressed on players). Sessions of accounts slide over 30 days rather than short sessions and a refresh token (stolen together, for nothing). Only bots get API keys; a human helped by an AI is a matter of the terms. The `playerId` is never a credential.
+- **Independent messages** (`AppAction::$independent`) ignore the expected version: what a player does on their own where both act at once (revealing their dynasty cards, the stronghold province, honor bids, declared totals). Decided by message, not by place; passing and the effects on the board stay checked (they may answer what the opponent did).
 - **Mercure announces, the clients read**: no state on the hub (secrets per player, history of the hub, cost per message).
 - **Nobody plays two games at once** (replays apart); waiting in the queue, an account may watch.
 - **Spectators** are accounts only, outside the game (no event, no log, no version), and see only what is public.
@@ -35,8 +36,13 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 ## Known limitations
 
 - **Rules not enforced**: uniqueness, Limited, "max X per conflict / round", covert, ancestral attachments; lasting effects do not end (a player takes control back with `TakeControl`).
+- **Abilities of a broken province** (bug, seen in a game against an agent): `trigger_ability` of `province_card` only leaves `unbroken` (`config/packages/workflows.php`), and the province is already broken in `react_to_broken_province`: an interrupt or a reaction to its own breaking (Upholding Authority: "When this province is broken") is refused ("Cannot apply transition "trigger_ability" on workflow "province_card""), in the window as after it.
+- **Glory count counted twice for the rings** (bug, seen in a game against an agent): the web client prefills the glory count with the claimed rings (`gloryCount()` of `front/src/lib/board.ts`), and the engine adds them again (`GloryCountedTransitionListener`; `DeclareGloryCount` asks for the glory "without the claimed rings"): a player of the web client with no ready character and 2 rings declared 2 and won the Imperial Favor against an agent declaring 0 with 2 rings too (4 against 2, a tie by the rules).
+- **Abilities triggered from a hand** (bug, seen in a game against an agent): `trigger_ability` of `conflict_card` does not leave the hand: the reaction of Vengeful Oathkeeper ("put this character into play from your hand") is refused (`not_enabled_transition`); the agent applied the effect with `put_character_into_play`, the instructions of the server telling it to concede on a rejected action.
+- **Key of an invitation after the game** (seen in a game against an agent): the key is refused (401 `invalid_token`) as soon as the game has ended, so that the agent cannot read the result (`get_game`, `list_my_games`, the last `wait_for_update`) the instructions ask it to tell. To do: keep the key valid for a while after the end (an hour: the invitation is used, the queue refuses it, the game rejects every action), then delete the keys by batch in the worker, beside `DeleteExpiredSessions` (`App\Schedule`); a batch alone changes nothing while the validity is checked against the game on each request (to check in `AccessTokenHandler`). Check `end_abandoned_game` and the reads of the other games of the bot meanwhile.
+- **Stale versions in reaction windows**: passing (`PassOpportunity`) is still rejected (`stale_version`) when the opponent acted meanwhile, on purpose: the player may want to react to what the opponent just did.
 - **Spectators**: same layouts as the player at the bottom, a few texts still speak to the player; players cannot refuse them.
-- **Web client**: the provinces offered to a character in play are those of its controller; covert is not offered (`evaded_ids` empty).
+- **Web client**: the provinces offered to a character in play are those of its controller; covert is not offered (`evaded_ids` empty); a province does not show its status token (the view has it: `personal_honor` of the province, e.g. dishonored by Return from Shadows).
 - **House bot**: no conflict card, no ability, the Imperial Favor always military, never discards from its provinces, never ends a duel; its opponent waits while the worker is stopped.
 - **Agents (MCP)**: no full game played by an agent yet; the view is sent whole on each `get_game`; check that clients keep the whole `instructions` (about 9 kB).
 - **Scaling**: each long-poll holds a FrankenPHP thread up to 30 s (20 threads); OAuth state, rate limiter and MCP sessions in filesystem caches (one host; MCP sessions lost on restart).
@@ -52,6 +58,7 @@ A full Stronghold game is playable, from setup (mulligans included) to a victory
 1.0 is a stable contract: the HTTP API, the MCP tools and the event log. Adding is minor; changing or removing a message, or enforcing a rule on what is accepted today, breaks it. Left before tagging `v1.0.0`:
 
 - **A whole game played by an agent** through `agent/play.sh`, and what it reports fixed (the names and arguments of the tools are the contract).
+- **A message "search the dynasty deck"**: a `LookAtCards` of the whole deck under its own name (Emperor's Summons, Favorable Dealbroker…), so that the log tells a search and not a look at N cards.
 
 ### Cards not playable yet
 

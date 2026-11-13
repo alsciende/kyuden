@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * The defending player declares the strength of an attacked province, with every modifier applied, when it differs
  * from its printed strength (3.2.5). To be sent before the skill totals, which determine the result.
  */
-#[AppAction]
+#[AppAction(independent: true)]
 final readonly class DeclareProvinceStrength implements PlayerActionInterface
 {
     public function __construct(
