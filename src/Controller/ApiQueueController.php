@@ -11,6 +11,7 @@ use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
 use App\Exception\Api\NotQueuedException;
 use App\Exception\Data\DeckNotFoundException;
+use App\Repository\CandidateRepository;
 use App\Repository\InvitationRepository;
 use App\Security\InvitationCode;
 use App\Service\MatchMaking\MatchMakingQueue;
@@ -24,7 +25,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 /**
  * The matchmaking queue (MatchMakingQueue): the authenticated user joins it with one of the decks they can use
  * (`{"deck_id": ...}`), and is matched with the next candidate at once. The host of an invitation joins it with its id
- * (`invitation_id`), a friend with its code (`invitation_code`): they are matched together only. Errors are problem
+ * (`invitation_id`), a friend with its code (`invitation_code`): they are matched together only. `GET /api/queue/count`
+ * tells how many players wait in the open queue. Errors are problem
  * details (RFC 9457).
  */
 class ApiQueueController extends AbstractController
@@ -34,6 +36,7 @@ class ApiQueueController extends AbstractController
     public function __construct(
         private readonly MatchMakingQueue $queue,
         private readonly InvitationRepository $invitationRepository,
+        private readonly CandidateRepository $candidateRepository,
     ) {
     }
 
@@ -46,6 +49,19 @@ class ApiQueueController extends AbstractController
         }
 
         return $this->json(['deck_id' => $deckId]);
+    }
+
+    /**
+     * How many players wait in the open queue for an opponent, the user left out (those of an invitation wait for each
+     * other only), so that a player sees that joining it starts a game at once.
+     */
+    #[Route('/api/queue/count', name: 'app_api_queue_count', methods: ['GET'])]
+    public function count(#[CurrentUser] User $user): Response
+    {
+        $response = $this->json(['waiting' => $this->candidateRepository->countOpenQueueExcept($user)]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[Route('/api/queue', name: 'app_api_queue_join', methods: ['POST'])]

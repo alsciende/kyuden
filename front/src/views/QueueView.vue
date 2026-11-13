@@ -20,6 +20,7 @@ import {
 } from '@/api/client'
 import ActionIcon from '@/components/ActionIcon.vue'
 import ClanMon from '@/components/ClanMon.vue'
+import QueueCount from '@/components/queue/QueueCount.vue'
 import QueueWaiting from '@/components/queue/QueueWaiting.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { newcomer } from '@/lib/newcomer'
@@ -36,6 +37,7 @@ import {
 } from '@/lib/queue'
 import { checkQueue, startWaiting, waiting, type Friendly } from '@/lib/queueing'
 import { isGuest, session } from '@/lib/session'
+import { useQueueCount } from '@/lib/useQueueCount'
 
 /**
  * The matchmaking queue: the user chooses a deck and joins the queue. An account then waits where it likes (the home
@@ -66,6 +68,8 @@ const chosen = ref<string | null>(null)
 const gameInProgress = ref(false)
 const error = ref<string | null>(null)
 const sending = ref(false)
+/** how many players wait in the open queue, told above the button that joins it */
+const queueCount = useQueueCount()
 /** the URL of a deck of EmeraldDB to import */
 const deckUrl = ref('')
 const importing = ref(false)
@@ -443,6 +447,7 @@ function stronghold(choice: DeckChoice): string | undefined {
     </section>
 
     <div class="actions">
+      <QueueCount v-if="friendly === null && queueCount !== null" :count="queueCount" inline class="count" />
       <button
         type="button"
         class="btn btn-primary btn-large"
@@ -730,8 +735,13 @@ h2.form-label {
   padding-top: 24px;
   border-top: 1px solid var(--line);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
+  gap: 16px 24px;
+}
+
+.count {
+  flex-basis: 100%;
 }
 
 .with {

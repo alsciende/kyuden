@@ -4,17 +4,19 @@ import { RouterLink } from 'vue-router'
 
 import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
+import QueueCount from '@/components/queue/QueueCount.vue'
 import QueueWaiting from '@/components/queue/QueueWaiting.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
 import { useGamesInProgress } from '@/lib/useGamesInProgress'
+import { useQueueCount } from '@/lib/useQueueCount'
 import { spectatorsLabel } from '@/lib/watch'
 
 /**
  * The start of an account: play a game (the queue, the house bot, a friendly game), or watch one of the games in
  * progress, the first ones shown, read again from time to time. While the user waits in the queue, the tile "Play"
- * tells the wait: they may watch a game meanwhile.
+ * tells the wait: they may watch a game meanwhile; otherwise it tells how many players wait in the queue.
  */
 const SHOWN = 2
 
@@ -22,6 +24,7 @@ const SHOWN = 2
 const { games } = useGamesInProgress()
 const shown = computed(() => games.value?.slice(0, SHOWN) ?? [])
 const more = computed(() => Math.max((games.value?.length ?? 0) - SHOWN, 0))
+const queueCount = useQueueCount()
 </script>
 
 <template>
@@ -40,6 +43,7 @@ const more = computed(() => Math.max((games.value?.length ?? 0) - SHOWN, 0))
           <strong>{{ HOUSE_BOT.name }}</strong
           >, {{ HOUSE_BOT.title }}.
         </p>
+        <QueueCount v-if="queueCount !== null" :count="queueCount" />
         <div class="tile-actions">
           <RouterLink :to="{ name: 'queue' }" class="btn btn-primary btn-large">Choose a deck</RouterLink>
           <RouterLink :to="{ name: 'invite' }" class="btn-link">Play a friendly game</RouterLink>
