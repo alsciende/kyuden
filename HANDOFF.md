@@ -2,7 +2,7 @@
 
 ## Current status
 
-A full Stronghold game is playable, from setup (mulligans included) to a victory condition, round after round. The engine is a board (see README): the players apply the cards with generic effect messages, which cover every card of the fixtures except those listed under "Cards not playable yet". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, Google and Discord), the queue, friendly games, spectators, the history and the replay of the games, the web client (desktop and tablet, installable) and the production stack, deployed at kyuden.app by each tag `vX.Y.Z` of `main`. Version 1.0 is released, after a full game played against an agent through the MCP server. How it all works is in the README; what follows is why, and what comes next.
+A full Stronghold game is playable, from setup (mulligans included) to a victory condition, round after round. The engine is a board (see README): the players apply the cards with generic effect messages, which cover every card of the fixtures except those listed under "Cards not playable yet". Around it: the HTTP API, the MCP server for bots, the house bot, accounts (guests, password, Google and Discord), the queue, friendly games, spectators, the history and the replay of the games, the web client (desktop and tablet, phones in landscape, installable) and the production stack, deployed at kyuden.app by each tag `vX.Y.Z` of `main`. Version 1.0 is released, after a full game played against an agent through the MCP server. How it all works is in the README; what follows is why, and what comes next.
 
 ## Decisions to keep
 
@@ -83,7 +83,7 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 - Component tests of `GameView` (player and spectator modes) and `GameReplayView`.
 - Discard piles: point at their cards; highlight for the opponent the card pointed at.
 - Accounts: list and edit their decks.
-- Phones (mockup first); touch previews of the cards on the board; notifications of the player's turn (Web Push: VAPID keys, subscriptions stored, sent by the worker).
+- A layout of their own for phones (mockup first): they get the layout of a tablet scaled down (about 0.46 on an iPhone with a notch: the smallest texts near 6pt, the small icons hard to touch), decided as a first step rather than a second web client; touch previews of the cards on the board; notifications of the player's turn (Web Push: VAPID keys, subscriptions stored, sent by the worker).
 
 ### API and platform
 

@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import AppFooter from '@/components/AppFooter.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import GameInProgressBanner from '@/components/GameInProgressBanner.vue'
+import PortraitNotice from '@/components/PortraitNotice.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import QueueFollower from '@/components/QueueFollower.vue'
 import { inverted } from '@/lib/page'
@@ -35,6 +36,7 @@ const showsQueueBanner = computed(
     <AppFooter />
   </div>
   <QueueFollower />
+  <PortraitNotice />
 </template>
 
 <style scoped>
