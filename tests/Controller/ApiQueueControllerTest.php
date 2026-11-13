@@ -10,7 +10,9 @@ use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Entity\User;
+use App\Enum\InvitationKind;
 use App\Repository\CandidateRepository;
+use App\Service\Invitation\InvitationIssuer;
 use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,7 +24,7 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
     /**
      * @param array<mixed>|string|null $body
      */
-    private function request(string $method, array|string|null $body = null, ?string $user = 'akodo-bot'): Response
+    private function request(string $method, array|string|null $body = null, ?string $user = 'akodo-bot', string $path = '/api/queue'): Response
     {
         $client = self::getContainer()->get('test.client');
         self::assertInstanceOf(KernelBrowser::class, $client);
@@ -30,7 +32,7 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
 
         $client->request(
             $method,
-            '/api/queue',
+            $path,
             server: array_filter([
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_AUTHORIZATION' => $user === null ? null : 'Bearer ' . UserFixtures::TOKENS[$user],
@@ -185,6 +187,48 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
         self::assertSame(0, self::service(CandidateRepository::class)->count([]));
         $this->assertProblem($this->request('GET'), Response::HTTP_NOT_FOUND, 'not_queued');
         $this->assertProblem($this->request('DELETE'), Response::HTTP_NOT_FOUND, 'not_queued');
+    }
+
+    private function waitingFor(string $user): int
+    {
+        $response = $this->request('GET', user: $user, path: '/api/queue/count');
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $count = json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($count);
+        self::assertIsInt($count['waiting']);
+
+        return $count['waiting'];
+    }
+
+    public function testTheCountTellsThePlayersWaitingForAnOpponent(): void
+    {
+        $this->emptyQueue();
+        self::assertSame(0, $this->waitingFor('john'));
+
+        $this->request('POST', ['deck_id' => AppFixtures::LION_STARTER_DECK], 'akodo-bot');
+
+        self::assertSame(1, $this->waitingFor('john'));
+        // the user waiting is not counted: the next player is matched with them
+        self::assertSame(0, $this->waitingFor('akodo-bot'));
+    }
+
+    public function testTheCountLeavesOutTheCandidatesOfAnInvitation(): void
+    {
+        $this->emptyQueue();
+        $john = self::service(EntityManagerInterface::class)->find(User::class, 'john');
+        self::assertInstanceOf(User::class, $john);
+        [$invitation] = self::service(InvitationIssuer::class)->issue($john, InvitationKind::Friend);
+
+        $response = $this->request('POST', ['deck_id' => AppFixtures::LION_STARTER_DECK, 'invitation_id' => $invitation->getId()], 'john');
+
+        self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame(0, $this->waitingFor('jane'));
+    }
+
+    public function testTheCountRequiresAToken(): void
+    {
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->request('GET', user: null, path: '/api/queue/count')->getStatusCode());
     }
 
     public function testTheQueueRequiresAToken(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Candidate;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,6 +22,21 @@ class CandidateRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Candidate::class);
+    }
+
+    /**
+     * The number of the candidates waiting in the open queue (not those of an invitation, who wait for each other
+     * only), the user given left out.
+     */
+    public function countOpenQueueExcept(User $user): int
+    {
+        return (int) $this->createQueryBuilder('candidate')
+            ->select('COUNT(candidate.id)')
+            ->where('candidate.invitation IS NULL')
+            ->andWhere('candidate.user != :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**

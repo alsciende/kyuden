@@ -11,10 +11,13 @@ import './styles/base.css'
 import { createApp } from 'vue'
 
 import App from './App.vue'
+import { followPhoneViewport } from './lib/phoneViewport'
 import { followRefusedTokens } from './lib/session'
 import { followTheme } from './lib/theme'
 import { router } from './router'
 
+// a phone gets the layout of a tablet, scaled down: before the first render
+followPhoneViewport()
 followTheme()
 // an account whose token is refused signs in again, then comes back to the page it was on
 followRefusedTokens(() => {

@@ -361,6 +361,13 @@ export function fetchQueue(token: string): Promise<{ deck_id: string }> {
 }
 
 /**
+ * How many players wait in the open queue for an opponent, the user left out (not those of an invitation).
+ */
+export function fetchQueueCount(token: string): Promise<{ waiting: number }> {
+  return request<{ waiting: number }>('/api/queue/count', { token })
+}
+
+/**
  * Joins the queue: the user is matched at once when another player waits, and told on their topic once the game has started (`game_started`).
  */
 export function joinQueue(token: string, deckId: string, invitation?: QueueInvitation): Promise<void> {
