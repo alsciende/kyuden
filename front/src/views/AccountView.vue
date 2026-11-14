@@ -359,8 +359,8 @@ async function leave(): Promise<void> {
     <div class="heading">
       <PlayerNobori v-if="nobori" :banner="nobori.banner" :width="64" class="heading-nobori" />
       <div class="heading-text">
-        <div class="eyebrow">Your account</div>
         <h1>{{ session.name }}</h1>
+        <div class="eyebrow">Your account</div>
         <p v-if="created" class="welcome" role="status">Your account is created. Welcome to court.</p>
       </div>
     </div>
@@ -648,6 +648,8 @@ async function leave(): Promise<void> {
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+  /* the name level with the mon of the nobori: its middle at that of the disc (35px down, border included) */
+  padding-top: 3px;
 }
 
 /* the nobori takes the height of the heading, at least its mon and a length of its pattern */
