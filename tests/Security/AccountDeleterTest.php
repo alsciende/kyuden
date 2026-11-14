@@ -11,7 +11,11 @@ use App\Entity\Game;
 use App\Entity\LinkedAccount;
 use App\Entity\User;
 use App\Enum\OAuthProvider;
+use App\Enum\BannerPattern;
+use App\Enum\Mon;
+use App\Model\Banner;
 use App\Model\UserSettings;
+use App\Service\Nobori\NoboriCollection;
 use App\Repository\SpectatorRepository;
 use App\Security\AccountDeleter;
 use App\Tests\AbstractKernelTestCase;
@@ -48,6 +52,19 @@ class AccountDeleterTest extends AbstractKernelTestCase
         self::assertTrue($this->user('akodo-bot')->isDeleted());
         self::assertFalse($this->user('jane')->isDeleted());
         self::assertSame('Jane', $this->user('jane')->getName());
+    }
+
+    public function testTheNoboriIsForgottenWithWhatTheUserEarned(): void
+    {
+        $this->user('john')->changeBanner(new Banner(Mon::Crab, BannerPattern::Seigaiha));
+        self::service(EntityManagerInterface::class)->flush();
+
+        self::service(AccountDeleter::class)->delete($this->user('john'));
+
+        $john = $this->user('john');
+        self::assertEquals(new Banner(), $john->getBanner());
+        self::assertSame([Mon::Enso], self::service(NoboriCollection::class)->mons($john));
+        self::assertSame([BannerPattern::None], self::service(NoboriCollection::class)->patterns($john));
     }
 
     public function testTheTokensAndTheLinkedIdentitiesAreDeleted(): void

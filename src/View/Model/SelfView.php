@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View\Model;
 
 use App\Enum\Clan;
+use App\Model\Banner;
 use App\Model\UserSettings;
 
 /**
@@ -22,6 +23,10 @@ final readonly class SelfView
         public ?Clan $preferredClan,
         /** their preferences, e.g. how the web client draws the cards */
         public UserSettings $settings,
+        /** their nobori, seen by the other players: a mon on a pattern */
+        public Banner $banner,
+        /** what they may choose for their nobori */
+        public NoboriCollectionView $unlocked,
     ) {
     }
 }

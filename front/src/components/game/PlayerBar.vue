@@ -8,6 +8,7 @@ import type { CardView, Element, GameView, PayloadArgs, PlayerView, Send } from 
 import type { MessageType } from '@/api/messages'
 import RingPopover from '@/components/game/RingPopover.vue'
 import SpecialEffects from '@/components/game/SpecialEffects.vue'
+import PlayerNobori from '@/components/PlayerNobori.vue'
 import { nameOf as playerName, readOnly, setAsideNote, type Cards } from '@/lib/board'
 import { findClan } from '@/data/clans'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
@@ -416,75 +417,84 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         role="dialog"
         :aria-label="`${TITLES[open]} · ${playerName(game, player, false)}`"
       >
-        <div class="head">
-          <span class="caption">{{ TITLES[open] }} · {{ heading }}</span>
-          <button type="button" class="close" aria-label="Close" @click="close">
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" fill="none" />
-            </svg>
-          </button>
-        </div>
-
-        <template v-if="pile">
-          <template v-if="pile.length">
-            <span class="hint"
-              >{{ open === 'removed' ? 'Last removed first' : 'Top first' }} · click a card to open it</span
-            >
-            <div class="pile">
-              <button
-                v-for="card in pile"
-                :key="card.id"
-                type="button"
-                class="pile-card"
-                @click="openCard(card.id)"
-                @mouseenter="showPreview(card.code, $event.currentTarget as HTMLElement, position === 'bottom')"
-                @mouseleave="hidePreview"
-              >
-                <span class="pile-text"
-                  ><span class="pile-name">{{ nameOf(card) }}</span
-                  ><span v-if="noteOf(card)" class="pile-note">{{ noteOf(card) }}</span></span
-                ><span class="pile-type">{{ typeOf(card) }}</span>
-              </button>
-            </div>
-          </template>
-          <p v-else class="hint">The pile is empty.</p>
-        </template>
-
-        <p v-else-if="open === 'provinces'" class="tip-text">{{ bar.strongholdTip }}</p>
-
-        <template v-else>
-          <p v-if="open === 'player'" class="tip-text">{{ honorBidText(player) }}</p>
-          <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
-            <span>Amount</span>
-            <button type="button" class="step" aria-label="Less" :disabled="amount <= 0" @click="amount--">−</button>
-            <b aria-live="polite">{{ amount }}</b>
-            <button type="button" class="step" aria-label="More" @click="amount++">+</button>
-          </div>
-          <div v-if="basicEffects.length" class="effects">
-            <button
-              v-for="(effect, index) in basicEffects"
-              :key="effect.type"
-              type="button"
-              class="effect"
-              :class="{ primary: index === 0 && !effect.danger, danger: effect.danger }"
-              :disabled="sending"
-              @click="runEffect(effect)"
-            >
-              {{ effect.label }}
+        <!-- the popover of the player shows their nobori, along its whole height -->
+        <PlayerNobori
+          v-if="open === 'player' && player.banner"
+          :banner="player.banner"
+          :width="56"
+          class="popover-nobori"
+        />
+        <div class="popover-body">
+          <div class="head">
+            <span class="caption">{{ TITLES[open] }} · {{ heading }}</span>
+            <button type="button" class="close" aria-label="Close" @click="close">
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" fill="none" />
+              </svg>
             </button>
           </div>
-          <SpecialEffects
-            :effects="effects"
-            :game="game"
-            :cards="cards"
-            :sending="sending"
-            :open="!basicEffects.length"
-            @run="runEffect"
-          />
-          <p v-if="!effects.length && open !== 'player'" class="hint">Nothing to do now.</p>
-        </template>
 
-        <p v-if="error" class="error" role="alert">{{ error }}</p>
+          <template v-if="pile">
+            <template v-if="pile.length">
+              <span class="hint"
+                >{{ open === 'removed' ? 'Last removed first' : 'Top first' }} · click a card to open it</span
+              >
+              <div class="pile">
+                <button
+                  v-for="card in pile"
+                  :key="card.id"
+                  type="button"
+                  class="pile-card"
+                  @click="openCard(card.id)"
+                  @mouseenter="showPreview(card.code, $event.currentTarget as HTMLElement, position === 'bottom')"
+                  @mouseleave="hidePreview"
+                >
+                  <span class="pile-text"
+                    ><span class="pile-name">{{ nameOf(card) }}</span
+                    ><span v-if="noteOf(card)" class="pile-note">{{ noteOf(card) }}</span></span
+                  ><span class="pile-type">{{ typeOf(card) }}</span>
+                </button>
+              </div>
+            </template>
+            <p v-else class="hint">The pile is empty.</p>
+          </template>
+
+          <p v-else-if="open === 'provinces'" class="tip-text">{{ bar.strongholdTip }}</p>
+
+          <template v-else>
+            <p v-if="open === 'player'" class="tip-text">{{ honorBidText(player) }}</p>
+            <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
+              <span>Amount</span>
+              <button type="button" class="step" aria-label="Less" :disabled="amount <= 0" @click="amount--">−</button>
+              <b aria-live="polite">{{ amount }}</b>
+              <button type="button" class="step" aria-label="More" @click="amount++">+</button>
+            </div>
+            <div v-if="basicEffects.length" class="effects">
+              <button
+                v-for="(effect, index) in basicEffects"
+                :key="effect.type"
+                type="button"
+                class="effect"
+                :class="{ primary: index === 0 && !effect.danger, danger: effect.danger }"
+                :disabled="sending"
+                @click="runEffect(effect)"
+              >
+                {{ effect.label }}
+              </button>
+            </div>
+            <SpecialEffects
+              :effects="effects"
+              :game="game"
+              :cards="cards"
+              :sending="sending"
+              :open="!basicEffects.length"
+              @run="runEffect"
+            />
+            <p v-if="!effects.length && open !== 'player'" class="hint">Nothing to do now.</p>
+          </template>
+
+          <p v-if="error" class="error" role="alert">{{ error }}</p>
+        </div>
       </div>
     </template>
   </section>
@@ -762,10 +772,29 @@ button.badge.on {
   border: 1.5px solid var(--ink);
   border-radius: 4px;
   box-shadow: 0 14px 34px rgb(31 27 22 / 0.28);
+  display: flex;
+}
+
+.popover-body {
+  flex: 1;
+  min-width: 0;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* a margin of 2px between the nobori and the edge of the popover */
+.popover:has(.popover-nobori) {
+  padding: 2px;
+}
+
+.popover:has(.popover-nobori) .popover-body {
+  padding: 12px 12px 12px 14px;
+}
+
+.popover-nobori {
+  border-radius: 2px;
 }
 
 .popover.bottom {

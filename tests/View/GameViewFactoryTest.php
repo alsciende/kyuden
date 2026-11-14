@@ -6,11 +6,14 @@ namespace App\Tests\View;
 
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\BannerPattern;
 use App\Enum\Clan;
 use App\Enum\Element;
+use App\Enum\Mon;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Enum\Side;
+use App\Model\Banner;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
 use App\State\Model\PlayerState;
@@ -82,6 +85,21 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame('John', $this->playerView($view, $scenario, 'john')->name);
         self::assertSame(Clan::Crane, $this->playerView($view, $scenario, 'john')->clan);
         self::assertNull($this->playerView($view, $scenario, 'jane')->clan);
+    }
+
+    public function testThePlayersShowTheirNobori(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('draw_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('kyuden-bot', fn (PlayerBuilder $p): PlayerBuilder => $p->stronghold('01-shizuka-toshi'))
+            ->build();
+        $scenario->player('john')->getUser()->changeBanner(new Banner(Mon::Phoenix, BannerPattern::Asanoha));
+
+        $view = $this->view($scenario, 'john');
+
+        self::assertEquals(new Banner(Mon::Phoenix, BannerPattern::Asanoha), $this->playerView($view, $scenario, 'john')->banner);
+        self::assertEquals(new Banner(Mon::Crane, BannerPattern::Plain), $this->playerView($view, $scenario, 'kyuden-bot')->banner, 'the house bot: the mon of its clan');
     }
 
     public function testTheHandIsHiddenFromTheOpponents(): void

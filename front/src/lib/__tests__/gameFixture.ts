@@ -50,6 +50,7 @@ export function player(id: string, stacks: StackView[] = [], changes: Partial<Pl
     user_id: `user-${id}`,
     name: id,
     clan: 'crane',
+    banner: { mon: 'enso', pattern: 'none' },
     honor: 10,
     fate: 5,
     honor_bid: null,

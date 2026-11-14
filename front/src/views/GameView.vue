@@ -31,6 +31,7 @@ import { emptySelection, toggle } from '@/lib/selection'
 import { SPECTATING } from '@/lib/spectating'
 import { CARDS_UNDER } from '@/lib/underneath'
 import { hideTooltip } from '@/lib/tooltip'
+import { tableSet } from '@/lib/matchAnnouncement'
 import { useGame } from '@/lib/useGame'
 
 /**
@@ -59,6 +60,17 @@ const {
   waitForOpponent,
   endAbandonedGame,
 } = useGame(String(route.params.id))
+
+// the table is drawn: the match announced over it goes (QueueFollower)
+watch(
+  () => game.value !== null,
+  (drawn) => {
+    if (drawn) {
+      tableSet.value = String(route.params.id)
+    }
+  },
+  { immediate: true },
+)
 
 provide(
   SPECTATING,

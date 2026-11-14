@@ -60,12 +60,12 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
 
     public function testAUserReadsTheirIdentifierNameAndUsername(): void
     {
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($this->get('/api/self', 'jane')));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $this->decode($this->get('/api/self', 'jane')));
     }
 
     public function testAGuestHasNoUsername(): void
     {
-        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null, 'preferred_clan' => null, 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($this->get('/api/self', 'harry')));
+        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => null, 'preferred_clan' => null, 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $this->decode($this->get('/api/self', 'harry')));
     }
 
     public function testTheSelfRequiresAToken(): void
@@ -77,7 +77,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => '  Doji Hotaru ']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Doji Hotaru', 'username' => 'jane', 'preferred_clan' => 'crane', 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $this->decode($response));
         self::assertSame('Doji Hotaru', $this->decode($this->get('/api/self', 'jane'))['name']);
     }
 
@@ -85,7 +85,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['preferred_clan' => 'phoenix']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Jane', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $this->decode($response));
         self::assertSame('phoenix', $this->decode($this->get('/api/self', 'jane'))['preferred_clan']);
     }
 
@@ -93,7 +93,7 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         $response = $this->request('PATCH', '/api/self', 'jane', ['name' => 'Shiba Tsukune', 'preferred_clan' => 'phoenix']);
 
-        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $this->decode($response));
+        self::assertSame(['user_id' => 'jane', 'name' => 'Shiba Tsukune', 'username' => 'jane', 'preferred_clan' => 'phoenix', 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $this->decode($response));
     }
 
     public function testAUserChangesTheirCardDisplay(): void
@@ -164,6 +164,10 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
         yield 'settings a list' => [['settings' => ['images']]];
         yield 'setting not a string' => [['settings' => ['card_display' => true]]];
         yield 'unexpected setting' => [['settings' => ['sound' => 'off']]];
+        yield 'banner not an object' => [['banner' => 'crab']];
+        yield 'banner a list' => [['banner' => ['crab']]];
+        yield 'mon not a string' => [['banner' => ['mon' => 3]]];
+        yield 'unexpected part of the banner' => [['banner' => ['color' => 'red']]];
     }
 
     #[DataProvider('invalidNameBodies')]
@@ -318,5 +322,59 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     public function testOnlyAnAccountIsDeleted(string $user): void
     {
         self::assertSame('account_required', $this->decodeProblem($this->request('DELETE', '/api/self', $user), Response::HTTP_FORBIDDEN)['type']);
+    }
+
+    public function testAUserShowsAMonAndAPatternTheyHaveEarned(): void
+    {
+        $self = $this->decode($this->request('PATCH', '/api/self', 'john', ['banner' => ['mon' => 'crab', 'pattern' => 'seigaiha']]));
+
+        self::assertSame(['mon' => 'crab', 'pattern' => 'seigaiha'], $self['banner']);
+        self::assertSame(['mons' => ['enso', 'crab', 'phoenix'], 'patterns' => ['none', 'plain', 'asanoha', 'seigaiha']], $self['unlocked']);
+    }
+
+    public function testAUserChangesTheMonOfTheirNoboriAndKeepsItsPattern(): void
+    {
+        $this->request('PATCH', '/api/self', 'john', ['banner' => ['pattern' => 'asanoha']]);
+        $self = $this->decode($this->request('PATCH', '/api/self', 'john', ['banner' => ['mon' => 'phoenix']]));
+
+        self::assertSame(['mon' => 'phoenix', 'pattern' => 'asanoha'], $self['banner']);
+    }
+
+    public function testAUserGoesBackToTheEnsoWithoutPattern(): void
+    {
+        $this->request('PATCH', '/api/self', 'john', ['banner' => ['mon' => 'crab', 'pattern' => 'plain']]);
+        $self = $this->decode($this->request('PATCH', '/api/self', 'john', ['banner' => ['mon' => 'enso', 'pattern' => 'none']]));
+
+        self::assertSame(['mon' => 'enso', 'pattern' => 'none'], $self['banner']);
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, string, string}>
+     */
+    public static function provideBannersNotEarned(): iterable
+    {
+        yield 'a mon not earned' => [['mon' => 'crane'], 'banner.mon', 'You have not earned this mon yet.'];
+        yield 'a pattern not earned' => [['pattern' => 'yagasuri'], 'banner.pattern', 'You have not earned this pattern yet.'];
+        yield 'an unknown mon' => [['mon' => 'mantis'], 'banner.mon', 'Choose one of: "enso", "crab", "crane", "dragon", "lion", "phoenix", "scorpion", "unicorn".'];
+        yield 'an unknown pattern' => [['pattern' => 'paisley'], 'banner.pattern', 'Choose one of: "none", "plain", "tatejima", "dandara", "ichimatsu", "koshi", "samekomon", "uroko", "nami", "kikko", "asanoha", "seigaiha", "yagasuri".'];
+    }
+
+    /**
+     * @param array<string, string> $banner
+     */
+    #[DataProvider('provideBannersNotEarned')]
+    public function testRejectsWhatTheUserHasNotEarned(array $banner, string $path, string $message): void
+    {
+        $problem = $this->decodeProblem($this->request('PATCH', '/api/self', 'john', ['banner' => $banner]), Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        self::assertSame('validation_failed', $problem['type']);
+        self::assertSame([['property_path' => $path, 'message' => $message]], $problem['violations']);
+        self::assertSame(['mon' => 'enso', 'pattern' => 'none'], $this->decode($this->get('/api/self', 'john'))['banner']);
+    }
+
+    public function testAGuestHasOnlyTheEnsoWithoutPatternToChooseFrom(): void
+    {
+        self::assertSame(['mons' => ['enso'], 'patterns' => ['none']], $this->decode($this->get('/api/self', 'harry'))['unlocked']);
+        self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $this->request('PATCH', '/api/self', 'harry', ['banner' => ['mon' => 'crab']])->getStatusCode());
     }
 }

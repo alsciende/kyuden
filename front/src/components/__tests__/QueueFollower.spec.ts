@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import QueueFollower from '@/components/QueueFollower.vue'
+import { ANNOUNCEMENT_LEAVE, TABLE_WAIT_LIMIT, tableSet } from '@/lib/matchAnnouncement'
 import { FOUND_DELAY, found, waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
 
@@ -84,6 +85,7 @@ describe('QueueFollower', () => {
     vi.unstubAllGlobals()
     waiting.value = null
     found.value = null
+    tableSet.value = null
   })
 
   async function mountFollower() {
@@ -123,7 +125,31 @@ describe('QueueFollower', () => {
     await vi.advanceTimersByTimeAsync(FOUND_DELAY)
     await flushPromises()
 
+    // the game opens under it, which stays until the table is drawn: nothing shows between them
     expect(router.currentRoute.value.fullPath).toBe('/games/game-1')
+    expect(wrapper.find('.found').exists()).toBe(true)
+
+    tableSet.value = 'game-1'
+    await flushPromises()
+
+    expect(wrapper.find('.found').classes()).toContain('leaving')
+
+    await vi.advanceTimersByTimeAsync(ANNOUNCEMENT_LEAVE)
+
+    expect(wrapper.find('.found').exists()).toBe(false)
+  })
+
+  it('goes all the same once the table is not drawn in time', async () => {
+    const { wrapper, router } = await mountFollower()
+
+    FakeEventSource.opened[0]!.receive({ event: 'game_started', id: 'game-1', player_ids: { john: 'player-1' } })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(FOUND_DELAY)
+
+    expect(router.currentRoute.value.fullPath).toBe('/games/game-1')
+
+    await vi.advanceTimersByTimeAsync(TABLE_WAIT_LIMIT + ANNOUNCEMENT_LEAVE)
+
     expect(wrapper.find('.found').exists()).toBe(false)
   })
 

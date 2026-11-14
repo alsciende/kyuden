@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\BannerPattern;
 use App\Enum\Clan;
+use App\Enum\Mon;
 use App\Enum\UserType;
+use App\Model\Banner;
 use App\Model\UserSettings;
 use App\Repository\UserRepository;
 use Doctrine\DBAL\Types\Types;
@@ -22,7 +25,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * other players see, not unique. A human signs in with a username and a password once registered; before that, it is
  * a guest. The username is unique whatever its case (`usernameCanonical`). Their preferred clan, one of the Great Clans,
  * is chosen when they create their account and changed at any time. Their settings (UserSettings) are their preferences,
- * e.g. how the web client draws the cards. A deleted account stays, anonymized, with the date of its deletion.
+ * e.g. how the web client draws the cards. Their nobori (Banner) is the banner the other players see: a mon on a pattern,
+ * chosen among what they have earned (NoboriCollection). A deleted account stays, anonymized, with the date of its deletion.
  */
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table('users')]
@@ -73,6 +77,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column(type: Types::JSON)]
     private array $settings = [];
+
+    /** the mon at the top of their nobori */
+    #[ORM\Column(length: 16, enumType: Mon::class, options: ['default' => 'enso'])]
+    private Mon $bannerMon = Mon::Enso;
+
+    /** the pattern of their nobori */
+    #[ORM\Column(length: 16, enumType: BannerPattern::class, options: ['default' => 'none'])]
+    private BannerPattern $bannerPattern = BannerPattern::None;
 
     /** when the account was deleted (anonymized), null while it lives */
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
@@ -170,7 +182,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * Forgets everything about the user but their id, which their games and those of their opponents keep: their name at
-     * court, their username and password, their preferred clan and their settings. The date of the deletion is kept.
+     * court, their username and password, their preferred clan, their settings and their nobori. The date of the deletion
+     * is kept.
      */
     public function anonymize(\DateTimeImmutable $deletedAt): void
     {
@@ -181,6 +194,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->password = null;
         $this->preferredClan = null;
         $this->settings = [];
+        $this->bannerMon = Mon::Enso;
+        $this->bannerPattern = BannerPattern::None;
     }
 
     public function isDeleted(): bool
@@ -236,6 +251,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function changeSettings(UserSettings $settings): void
     {
         $this->settings = $settings->toArray();
+    }
+
+    public function getBanner(): Banner
+    {
+        return new Banner($this->bannerMon, $this->bannerPattern);
+    }
+
+    /**
+     * Whether they have earned it is checked by NoboriCollection.
+     */
+    public function changeBanner(Banner $banner): void
+    {
+        $this->bannerMon = $banner->mon;
+        $this->bannerPattern = $banner->pattern;
     }
 
     #[\Override]

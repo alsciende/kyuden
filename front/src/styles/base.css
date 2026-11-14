@@ -21,6 +21,10 @@
   /* the game board, lighter than the paper of the pages */
   --board: #faf7f1;
   --card: #fbf6ec;
+  /* the nobori of the players (components/PlayerNobori.vue): the same by day and by night, never light-dark() */
+  --nobori-paper: #f4eee2;
+  --nobori-ink: #a89878;
+  --nobori-line: #97876a;
 
   --font-display: 'EB Garamond', 'Shippori Mincho', serif;
   --font-ui: 'Barlow', system-ui, sans-serif;

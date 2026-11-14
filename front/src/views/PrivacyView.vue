@@ -20,7 +20,11 @@
         <li>
           Your <strong>name at court</strong>, the name the other players see, which you choose and change at any time.
         </li>
-        <li>Your <strong>preferred clan</strong> and your <strong>website settings</strong>.</li>
+        <li>
+          Your <strong>preferred clan</strong>, your <strong>website settings</strong>, your
+          <strong>nobori</strong> (the mon and the pattern the other players see) and the mons and patterns you have
+          earned, with when.
+        </li>
         <li>
           The <strong>decks</strong> you import, which only you see. A deck you delete is gone, unless you have played a
           game with it: it then stays with that game, hidden from your decks, and comes back if you import it again.

@@ -35,7 +35,7 @@ import {
   type DeckChoices,
   type ImportProblem,
 } from '@/lib/queue'
-import { checkQueue, startWaiting, waiting, type Friendly } from '@/lib/queueing'
+import { checkQueue, gameFound, startWaiting, waiting, type Friendly } from '@/lib/queueing'
 import { isGuest, session } from '@/lib/session'
 import { useQueueCount } from '@/lib/useQueueCount'
 
@@ -47,7 +47,8 @@ import { useQueueCount } from '@/lib/useQueueCount'
  * A deck of EmeraldDB is imported from the URL of its page, then chosen: the player still joins the queue themselves.
  * Their own decks are deleted from here, once confirmed in the tile of the deck.
  *
- * Instead of the queue, the user may face the house bot with the deck chosen: the game opens at once.
+ * Instead of the queue, the user may face the house bot with the deck chosen: the match is announced, then the game
+ * opens.
  *
  * A friendly game: the host of an invitation comes with its id (`?invitation=`), its guest with its code (`?code=`,
  * a guest account too); they are matched together only. The host leaving the queue cancels the invitation.
@@ -308,16 +309,13 @@ async function faceHouseBot(): Promise<void> {
   error.value = null
   try {
     const game = await createBotGame(token, chosen.value)
-    await open(game.game_id)
+    // the match is announced (QueueFollower), then the game opens
+    gameFound(game.game_id)
   } catch (problem) {
     error.value = problem instanceof ApiProblem ? problem.detail : `${HOUSE_BOT.name} cannot be faced.`
   } finally {
     sending.value = false
   }
-}
-
-async function open(gameId: string): Promise<void> {
-  await router.push({ name: 'game', params: { id: gameId } })
 }
 
 /** reads the strongholds of the decks not read yet */
