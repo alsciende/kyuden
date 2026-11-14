@@ -1,5 +1,6 @@
 import { request, toProblem, type AbilityTiming } from '@/api/client'
 import type { MessagePayloads, MessageType } from '@/api/messages'
+import type { Banner } from '@/data/nobori'
 
 /**
  * A game as its player sees it (`GET /api/games/{id}`), or a spectator, its log, its spectators, and the messages a
@@ -73,6 +74,8 @@ export interface PlayerView {
   user_id: string
   name: string
   clan: string | null
+  /** the nobori of the user playing (the house bot: the mon of its clan on a plain nobori) */
+  banner: Banner
   honor: number | null
   fate: number
   honor_bid: number | null

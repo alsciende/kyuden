@@ -92,7 +92,7 @@ class ApiAccountsControllerTest extends AbstractKernelTestCase
 
         // both tokens are the same user's
         $self = $this->decode($this->request('GET', '/api/self', token: $account['token']), Response::HTTP_OK);
-        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => 'harry_h', 'preferred_clan' => 'scorpion', 'settings' => ['card_display' => 'images', 'theme' => 'auto']], $self);
+        self::assertSame(['user_id' => 'harry', 'name' => 'Harry', 'username' => 'harry_h', 'preferred_clan' => 'scorpion', 'settings' => ['card_display' => 'images', 'theme' => 'auto'], 'banner' => ['mon' => 'enso', 'pattern' => 'none'], 'unlocked' => ['mons' => ['enso'], 'patterns' => ['none']]], $self);
         self::assertSame(Response::HTTP_OK, $this->request('GET', '/api/self', token: UserFixtures::TOKENS['harry'])->getStatusCode());
     }
 

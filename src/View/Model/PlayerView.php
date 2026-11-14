@@ -6,6 +6,7 @@ namespace App\View\Model;
 
 use App\Enum\Clan;
 use App\Enum\ConflictType;
+use App\Model\Banner;
 
 /**
  * A player as the viewing player sees them. Secret information (pending honor bid, chosen stronghold province) is
@@ -30,6 +31,10 @@ final readonly class PlayerView
          * The clan of the stronghold of the player (public, face up from the start), null before their cards exist.
          */
         public ?Clan $clan,
+        /**
+         * The nobori of the user playing: a mon on a pattern (the house bot: the mon of its clan on a plain nobori).
+         */
+        public Banner $banner,
         public ?int $honor,
         public int $fate,
         public ?int $honorBid,

@@ -1,4 +1,5 @@
 import type { ClanId } from '@/data/clans'
+import type { Banner, NoboriCollection } from '@/data/nobori'
 
 /**
  * The HTTP API of the engine, on the same origin (nginx sends /api to Symfony). Errors are problem details
@@ -90,6 +91,10 @@ export interface Self {
   username: string | null
   preferred_clan: ClanId | null
   settings: UserSettings
+  /** their nobori, seen by the other players */
+  banner: Banner
+  /** what they may choose for their nobori */
+  unlocked: NoboriCollection
 }
 
 /**
@@ -316,7 +321,7 @@ export function fetchSelf(token: string): Promise<Self> {
 
 export function updateSelf(
   token: string,
-  changes: { name?: string; preferred_clan?: ClanId; settings?: Partial<UserSettings> },
+  changes: { name?: string; preferred_clan?: ClanId; settings?: Partial<UserSettings>; banner?: Partial<Banner> },
 ): Promise<Self> {
   return request<Self>('/api/self', { method: 'PATCH', body: changes, token })
 }

@@ -15,6 +15,7 @@ use App\Repository\InvitationRepository;
 use App\Repository\LinkedAccountRepository;
 use App\Repository\SpectatorRepository;
 use App\Repository\UserRepository;
+use App\Service\Nobori\NoboriCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -23,7 +24,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
  * Deletes an account, and the bots it owns: the user stays, anonymized with the date of the deletion (User::anonymize()),
  * so that the games keep their players and their opponents their history. It leaves the queue, concedes the games it
  * plays (its opponents win), then its replays, its invitations, its tokens, its linked identities, the games it
- * watches and its decks are deleted (those played in a game only lose their name).
+ * watches, its decks (those played in a game only lose their name) and the mons and patterns it earned are deleted.
  */
 readonly class AccountDeleter
 {
@@ -38,6 +39,7 @@ readonly class AccountDeleter
         private InvitationRepository $invitationRepository,
         private DeckRepository $deckRepository,
         private SpectatorRepository $spectatorRepository,
+        private NoboriCollection $noboriCollection,
         private EntityManagerInterface $entityManager,
         private MessageBusInterface $bus,
         private ClockInterface $clock,
@@ -76,6 +78,7 @@ readonly class AccountDeleter
                 $this->linkedAccountRepository->deleteByUser($user);
                 $this->spectatorRepository->deleteByUser($user);
                 $this->deckRepository->deleteByOwner($user);
+                $this->noboriCollection->forget($user);
                 $user->anonymize($deletedAt);
             }
         });

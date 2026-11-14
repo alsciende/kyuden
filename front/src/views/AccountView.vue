@@ -10,10 +10,14 @@ import {
   type OAuthProvider,
   type Theme,
 } from '@/api/client'
+import ClanMon from '@/components/ClanMon.vue'
 import ClanPicker from '@/components/ClanPicker.vue'
+import PlayerNobori from '@/components/PlayerNobori.vue'
 import ProviderLogo from '@/components/ProviderLogo.vue'
 import type { ClanId } from '@/data/clans'
+import { MONS, PATTERNS, type Mon, type Pattern } from '@/data/nobori'
 import { MAX_NAME_LENGTH } from '@/lib/names'
+import { chooseNobori, earnedCount, isEarned, loadOwnNobori, type OwnNobori } from '@/lib/nobori'
 import { formErrors } from '@/lib/credentials'
 import { enabledProviders, isProvider, PROVIDERS, providerName, startOAuth } from '@/lib/oauth'
 import {
@@ -29,7 +33,8 @@ import {
 
 /**
  * The account of the player: their username (how they sign in), their preferred clan, their name at court (what the
- * other players see), how the board draws the cards and whether the site is light or dark, which they change here;
+ * other players see), their nobori (a mon on a pattern, among those they have earned: the others are shown locked), how
+ * the board draws the cards and whether the site is light or dark, which they change here;
  * and the providers (Google, Discord) they link it to, to sign in with them. A provider that sent the player back
  * after linking says how it went (`?oauth=`). Last, they can delete it, once confirmed.
  */
@@ -67,6 +72,65 @@ const theme = ref<Theme>(session.value?.theme ?? 'auto')
 const themeSaved = ref(false)
 const themeError = ref<string | null>(null)
 const themeSending = ref(false)
+
+const nobori = ref<OwnNobori | null>(null)
+const noboriSending = ref(false)
+const noboriSaved = ref(false)
+const noboriError = ref<string | null>(null)
+/** what a click on a mon or a pattern not earned yet tells, under its row */
+const monHint = ref<string | null>(null)
+const patternHint = ref<string | null>(null)
+
+const chosenMon = computed(() => MONS.find((mon) => mon.id === nobori.value?.banner.mon) ?? MONS[0]!)
+const chosenPattern = computed(
+  () => PATTERNS.find((pattern) => pattern.id === nobori.value?.banner.pattern) ?? PATTERNS[0]!,
+)
+
+function earned(id: Mon['id'] | Pattern['id']): boolean {
+  return nobori.value !== null && isEarned(nobori.value.unlocked, id)
+}
+
+async function changeNobori(changes: { mon?: Mon['id']; pattern?: Pattern['id'] }): Promise<void> {
+  const token = session.value?.token
+  if (token === undefined || noboriSending.value) {
+    return
+  }
+  noboriSending.value = true
+  noboriError.value = null
+  noboriSaved.value = false
+  try {
+    nobori.value = await chooseNobori(token, changes)
+    noboriSaved.value = true
+  } catch (problem) {
+    noboriError.value = formErrors(problem).form ?? 'Your nobori could not be saved.'
+  } finally {
+    noboriSending.value = false
+  }
+}
+
+function pickMon(mon: Mon): void {
+  if (!earned(mon.id)) {
+    monHint.value = `${mon.label} · Not earned yet`
+
+    return
+  }
+  monHint.value = null
+  if (mon.id !== nobori.value?.banner.mon) {
+    void changeNobori({ mon: mon.id })
+  }
+}
+
+function pickPattern(pattern: Pattern): void {
+  if (!earned(pattern.id)) {
+    patternHint.value = `${pattern.name} · Not earned yet`
+
+    return
+  }
+  patternHint.value = null
+  if (pattern.id !== nobori.value?.banner.pattern) {
+    void changeNobori({ pattern: pattern.id })
+  }
+}
 
 const changed = computed(() => name.value.trim() !== '' && name.value.trim() !== session.value?.name)
 
@@ -180,6 +244,11 @@ onMounted(async () => {
   }
   if (session.value !== null) {
     try {
+      nobori.value = await loadOwnNobori(session.value.token)
+    } catch {
+      // no nobori shown
+    }
+    try {
       await loadLinkedAccounts(session.value.token)
     } catch {
       // no linked accounts shown
@@ -288,9 +357,12 @@ async function leave(): Promise<void> {
 <template>
   <div v-if="session" class="account screen">
     <div class="heading">
-      <div class="eyebrow">Your account</div>
-      <h1>{{ session.name }}</h1>
-      <p v-if="created" class="welcome" role="status">Your account is created. Welcome to court.</p>
+      <PlayerNobori v-if="nobori" :banner="nobori.banner" :width="64" class="heading-nobori" />
+      <div class="heading-text">
+        <h1>{{ session.name }}</h1>
+        <div class="eyebrow">Your account</div>
+        <p v-if="created" class="welcome" role="status">Your account is created. Welcome to court.</p>
+      </div>
     </div>
 
     <section class="rows" aria-label="Identity">
@@ -332,6 +404,92 @@ async function leave(): Promise<void> {
         <p v-else-if="saved" class="form-hint" role="status">Saved.</p>
         <p v-else class="form-hint">What the other players see at the table.</p>
       </form>
+
+      <template v-if="nobori">
+        <div class="form-label row-label nobori-label">Nobori</div>
+        <div class="row nobori-row">
+          <div class="nobori-preview">
+            <PlayerNobori :banner="nobori.banner" :width="60" class="preview-nobori" />
+            <span class="preview-name">{{ session.name }}</span>
+          </div>
+          <p class="form-hint">What the other players see when they open your name at the table.</p>
+
+          <div class="nobori-group">
+            <div id="mon-label" class="nobori-title">
+              Mon <span class="nobori-count">· {{ earnedCount(nobori.unlocked.mons, MONS) }}</span>
+            </div>
+            <div class="tiles" role="radiogroup" aria-labelledby="mon-label">
+              <button
+                v-for="mon in MONS"
+                :key="mon.id"
+                type="button"
+                role="radio"
+                class="tile"
+                :class="{ locked: !earned(mon.id) }"
+                :aria-checked="mon.id === nobori.banner.mon"
+                :aria-disabled="!earned(mon.id) || undefined"
+                :aria-label="earned(mon.id) ? mon.label : `${mon.label}, not earned yet`"
+                :disabled="noboriSending"
+                @click="pickMon(mon)"
+              >
+                <span v-if="mon.ringed" class="tile-ring" :style="{ borderColor: mon.color }">
+                  <ClanMon :src="mon.src" :color="mon.color" :size="34" />
+                </span>
+                <ClanMon v-else :src="mon.src" :color="mon.color" :size="38" />
+                <svg v-if="!earned(mon.id)" class="lock" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect width="18" height="11" x="3" y="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </button>
+            </div>
+            <p class="form-hint" aria-live="polite">{{ monHint ?? chosenMon.label }}</p>
+          </div>
+
+          <div class="nobori-group">
+            <div id="pattern-label" class="nobori-title">
+              Pattern <span class="nobori-count">· {{ earnedCount(nobori.unlocked.patterns, PATTERNS) }}</span>
+            </div>
+            <div class="swatches" role="radiogroup" aria-labelledby="pattern-label">
+              <button
+                v-for="pattern in PATTERNS"
+                :key="pattern.id"
+                type="button"
+                role="radio"
+                class="swatch"
+                :class="{ locked: !earned(pattern.id) }"
+                :aria-checked="pattern.id === nobori.banner.pattern"
+                :aria-disabled="!earned(pattern.id) || undefined"
+                :aria-label="earned(pattern.id) ? pattern.name : `${pattern.name}, not earned yet`"
+                :disabled="noboriSending"
+                @click="pickPattern(pattern)"
+              >
+                <PlayerNobori
+                  :banner="{ mon: 'enso', pattern: pattern.id }"
+                  :width="28"
+                  bare
+                  decorative
+                  class="swatch-nobori"
+                />
+                <svg
+                  v-if="!earned(pattern.id)"
+                  class="lock"
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <rect width="18" height="11" x="3" y="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </button>
+            </div>
+            <p class="form-hint" aria-live="polite">{{ patternHint ?? chosenPattern.name }}</p>
+          </div>
+          <p v-if="noboriError" class="form-error" role="alert">{{ noboriError }}</p>
+          <p v-else-if="noboriSaved" class="form-hint" role="status">Saved.</p>
+          <p v-else class="form-hint">Saved as soon as you choose.</p>
+        </div>
+      </template>
 
       <div id="card-display-label" class="form-label row-label display-label">Cards on the board</div>
       <div class="row">
@@ -481,8 +639,168 @@ async function leave(): Promise<void> {
 
 .heading {
   display: flex;
+  align-items: stretch;
+  gap: 22px;
+}
+
+.heading-text {
+  display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
+  /* the name level with the mon of the nobori: its middle at that of the disc (35px down, border included) */
+  padding-top: 3px;
+}
+
+/* the nobori takes the height of the heading, at least its mon and a length of its pattern */
+.heading-nobori {
+  min-height: 132px;
+  border: 1px solid var(--line);
+}
+
+.nobori-label {
+  padding-top: 18px;
+}
+
+.nobori-row {
+  gap: 20px;
+}
+
+.nobori-preview {
+  width: 300px;
+  min-height: 92px;
+  display: flex;
+  padding: 2px;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgb(31 27 22 / 0.1);
+}
+
+.preview-nobori {
+  border-radius: 4px;
+}
+
+.preview-name {
+  padding: 14px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.nobori-row > .form-hint:nth-child(2) {
+  margin-top: -10px;
+}
+
+.nobori-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nobori-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.nobori-count {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.tiles,
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 4px 0 0 4px;
+}
+
+.swatches {
+  gap: 12px;
+}
+
+.tile,
+.swatch {
+  position: relative;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tile {
+  width: 56px;
+  height: 56px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--nobori-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swatch {
+  border: 0;
+  background: none;
+}
+
+.tile-ring {
+  width: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid transparent;
+  border-radius: 50%;
+}
+
+.swatch-nobori {
+  height: 72px;
+  border: 1px solid var(--line);
+}
+
+.tile[aria-checked='true'] {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+.swatch[aria-checked='true'] .swatch-nobori {
+  outline: 2px solid var(--seal);
+  outline-offset: 3px;
+}
+
+/* not earned yet: dimmed, a padlock at its corner; a click tells it under the row */
+.tile.locked > :not(.lock),
+.swatch.locked > :not(.lock) {
+  opacity: 0.32;
+}
+
+.tile.locked,
+.swatch.locked {
+  cursor: help;
+}
+
+.lock {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 h1 {

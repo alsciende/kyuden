@@ -7,9 +7,13 @@ namespace App\DataFixtures;
 use App\Command\HouseBotCreateCommand;
 use App\Entity\AccessToken;
 use App\Entity\Deck;
+use App\Entity\UnlockedMon;
+use App\Entity\UnlockedPattern;
 use App\Entity\User;
 use App\Enum\AccessTokenType;
+use App\Enum\BannerPattern;
 use App\Enum\Clan;
+use App\Enum\Mon;
 use App\Enum\UserType;
 use App\Service\Deck\StarterDeckCopier;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -138,6 +142,15 @@ class UserFixtures extends Fixture implements DependentFixtureInterface
             $this->addReference($user->getId(), $user);
             $type = $user->getType() === UserType::Bot ? AccessTokenType::ApiKey : AccessTokenType::Session;
             $manager->persist(new AccessToken($user, self::TOKENS[$user->getId()], $type, new \DateTimeImmutable(self::TOKENS_USED_AT)));
+        }
+
+        // john has earned a few mons and patterns, jane nothing yet: the choices of the nobori and what is locked
+        $earnedAt = new \DateTimeImmutable(self::TOKENS_USED_AT);
+        foreach ([Mon::Crab, Mon::Phoenix] as $mon) {
+            $manager->persist(new UnlockedMon($john, $mon, $earnedAt));
+        }
+        foreach ([BannerPattern::Plain, BannerPattern::Asanoha, BannerPattern::Seigaiha] as $pattern) {
+            $manager->persist(new UnlockedPattern($john, $pattern, $earnedAt));
         }
 
         $manager->flush();

@@ -11,6 +11,7 @@ use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\StackType;
 use App\Service\AvailableActionsResolver;
+use App\Service\Nobori\NoboriCollection;
 use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
@@ -44,6 +45,7 @@ final readonly class GameViewFactory
         private AvailableActionsResolver $availableActionsResolver,
         private SpecialActionsResolver $specialActionsResolver,
         private Visibility $visibility,
+        private NoboriCollection $noboriCollection,
     ) {
     }
 
@@ -94,7 +96,8 @@ final readonly class GameViewFactory
             id: $player->getId(),
             userId: $player->getUserId(),
             name: $player->getUser()->getName(),
-            clan: $this->findStronghold($player)?->getLogicalCard()->getClan(),
+            clan: $clan = $this->findStronghold($player)?->getLogicalCard()->getClan(),
+            banner: $this->noboriCollection->bannerInGame($player->getUser(), $clan),
             honor: $state->getHonor(),
             fate: $state->getFate(),
             honorBid: $state->getHonorBid(),
