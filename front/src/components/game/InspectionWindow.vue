@@ -9,9 +9,13 @@ import ModalDialog from '@/components/ModalDialog.vue'
 import { charactersInPlay, playerById, type Cards } from '@/lib/board'
 import { hostChoices, provinceChoices, type PlayAction } from '@/lib/cardActions'
 import {
+  filterInspected,
   inspectionActions,
   inspectionPlays,
+  isSearch,
   lostInTheShuffle,
+  shuffleAfterSearch,
+  typeFilters,
   type InspectedCard,
   type Inspection,
   type InspectionAction,
@@ -25,7 +29,8 @@ import { hidePreview } from '@/lib/preview'
  * says, then closes the window, which ends the look: the engine records nothing, the cards are out of sight again.
  * Each card shows what it has become; those left stay where they are. A card of a deck can be played from there
  * (Artisan Academy, Pillow Book, Infiltrator…), with the form of the card opened, or put into play by an effect
- * (Favorable Dealbroker, Illustrious Forge, Frontline Engineer).
+ * (Favorable Dealbroker, Illustrious Forge, Frontline Engineer). A whole deck searched (Agasha Shunsen, Daidoji Uji…)
+ * shows as a grid, filtered by name and by type, and closes by shuffling the deck, as the rules require.
  */
 const props = defineProps<{
   game: GameView
@@ -52,10 +57,16 @@ const STACK_NAMES: Record<string, string> = {
 }
 
 const yours = computed(() => props.inspection.ownerId === props.game.viewer_id)
+const searching = computed(() => isSearch(props.inspection))
 const title = computed(() => {
   const { cards, stackType } = props.inspection
   const owner = yours.value ? 'your' : "Opp.'s"
   const where = `${owner} ${STACK_NAMES[stackType] ?? stackType.replaceAll('_', ' ')}`
+  if (searching.value) {
+    const count = `${cards.length} card${cards.length === 1 ? '' : 's'}`
+
+    return `${where.charAt(0).toUpperCase()}${where.slice(1)} · ${count}`
+  }
   if (stackType === 'conflict_draw_deck' || stackType === 'dynasty_draw_deck') {
     return cards.length === 1 ? `The top card of ${where}` : `The top ${cards.length} cards of ${where}`
   }
@@ -65,8 +76,22 @@ const title = computed(() => {
 
   return cards.length === 1 ? `A card of ${where}` : `${cards.length} cards of ${where}`
 })
-const badge = computed(() =>
-  props.inspection.mode === 'look' ? 'Looked at · only you see them' : 'Revealed · both players see them',
+const badge = computed(() => {
+  if (searching.value) {
+    return 'Searched · only you see them'
+  }
+
+  return props.inspection.mode === 'look' ? 'Looked at · only you see them' : 'Revealed · both players see them'
+})
+
+/** the cards searched shown, by type and by name */
+const typeFilter = ref<string | null>(null)
+const nameFilter = ref('')
+const filters = computed(() => typeFilters(props.inspection, props.cards))
+const placed = computed(() =>
+  searching.value
+    ? filterInspected(props.inspection, props.cards, typeFilter.value, nameFilter.value)
+    : props.inspection.cards.map((card, index) => ({ card, position: index + 1 })),
 )
 
 /** a card of the window as the board draws it: face up */
@@ -159,11 +184,14 @@ function select(card: InspectedCard): void {
   }
 }
 
-/** the card has gone somewhere: the next one left is selected */
+/** the card has gone somewhere: the next one left is selected, among those shown first */
 function moved(card: InspectedCard, what: string): void {
   done[card.id] = what
   playing.value = null
-  selectedId.value = props.inspection.cards.find((other) => !(other.id in done))?.id ?? null
+  selectedId.value =
+    placed.value.find(({ card: other }) => !(other.id in done))?.card.id ??
+    props.inspection.cards.find((other) => !(other.id in done))?.id ??
+    null
 }
 
 async function play(message: Message): Promise<void> {
@@ -198,12 +226,20 @@ function close(): void {
   emit('close')
 }
 
+/** the deck searched is shuffled, which ends the search: its cards can no longer be told apart */
+async function shuffleAndClose(): Promise<void> {
+  const shuffle = shuffleAfterSearch(props.inspection)
+  if (shuffle !== null && (await props.send(shuffle.type, shuffle.payload as never))) {
+    close()
+  }
+}
+
 onBeforeUnmount(hidePreview)
 </script>
 
 <template>
   <ModalDialog class="veil" aria-labelledby="inspection-title">
-    <section class="window inverted">
+    <section class="window inverted" :class="{ searching }">
       <header class="head">
         <span class="badge">
           <svg
@@ -224,20 +260,54 @@ onBeforeUnmount(hidePreview)
       </header>
 
       <div class="body">
-        <div class="strip" role="group" :aria-label="title">
-          <p v-if="!inspection.cards.length" class="empty">There is no card to see.</p>
-          <div v-for="(card, index) in inspection.cards" :key="card.id" class="slot">
-            <span class="position">#{{ index + 1 }}</span>
-            <GameCard
-              :card="viewOf(card)"
-              :cards="cards"
-              :mine="true"
-              :selected="card.id === selectedId"
-              :muted="card.id in done"
-              @click="select(card)"
-            />
-            <span v-if="done[card.id]" class="moved">{{ done[card.id] }}</span>
-            <span v-else-if="revealed.has(card.id)" class="moved revealed">Revealed</span>
+        <div class="cards">
+          <div v-if="searching && inspection.cards.length" class="filters">
+            <label class="find">
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <span class="visually-hidden">Find a card</span>
+              <input v-model="nameFilter" type="search" placeholder="Find a card…" />
+            </label>
+            <div class="types" role="group" aria-label="Type">
+              <button
+                v-for="filter in filters"
+                :key="filter.label"
+                type="button"
+                class="type"
+                :aria-pressed="typeFilter === filter.type"
+                @click="typeFilter = filter.type"
+              >
+                {{ filter.label }} <span class="count">{{ filter.count }}</span>
+              </button>
+            </div>
+            <span class="order">Top of the deck first</span>
+          </div>
+          <div class="strip" :class="{ search: searching }" role="group" :aria-label="title">
+            <p v-if="!inspection.cards.length" class="empty">There is no card to see.</p>
+            <p v-else-if="!placed.length" class="empty">No card matches.</p>
+            <div v-for="{ card, position } in placed" :key="card.id" class="slot">
+              <span class="position">#{{ position }}</span>
+              <GameCard
+                :card="viewOf(card)"
+                :cards="cards"
+                :mine="true"
+                :selected="card.id === selectedId"
+                :muted="card.id in done"
+                @click="select(card)"
+              />
+              <span v-if="done[card.id]" class="moved">{{ done[card.id] }}</span>
+              <span v-else-if="revealed.has(card.id)" class="moved revealed">Revealed</span>
+            </div>
           </div>
         </div>
 
@@ -323,7 +393,16 @@ onBeforeUnmount(hidePreview)
         </aside>
       </div>
 
-      <footer class="foot">
+      <footer v-if="searching" class="foot">
+        <p>An entire deck searched is shuffled once the search is done.</p>
+        <div class="buttons">
+          <button type="button" class="done" @click="close">Close without shuffling</button>
+          <button type="button" class="done shuffle" :disabled="sending" @click="shuffleAndClose">
+            Shuffle the deck and close
+          </button>
+        </div>
+      </footer>
+      <footer v-else class="foot">
         <p>Click a card to choose what to do with it.<br />The cards left here stay where they are.</p>
         <button type="button" class="done" @click="close">
           {{ inspection.mode === 'look' ? 'Done looking' : 'Done' }} · Close
@@ -344,6 +423,7 @@ onBeforeUnmount(hidePreview)
 .window {
   width: 1040px;
   max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 48px);
   border-radius: 4px;
   border-top: 6px solid var(--seal);
   background: var(--paper-2);
@@ -351,6 +431,11 @@ onBeforeUnmount(hidePreview)
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.55);
   display: flex;
   flex-direction: column;
+}
+
+/* a deck searched keeps its height whatever the filter shows */
+.window.searching {
+  height: min(820px, calc(100dvh - 48px));
 }
 
 .head {
@@ -380,15 +465,106 @@ h2 {
 }
 
 .body {
+  flex: 1;
+  min-height: 0;
   padding: 20px 28px;
   display: flex;
   gap: 32px;
   align-items: stretch;
 }
 
+.cards {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 220px;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-3);
+}
+
+.find input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.find:focus-within {
+  border-color: var(--ink-2);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.types {
+  display: flex;
+  gap: 6px;
+}
+
+.type {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.type[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.count {
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.order {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
 .strip {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -397,6 +573,22 @@ h2 {
   border-radius: 4px;
   background: var(--paper);
   scrollbar-color: var(--ink-3) var(--paper-3);
+}
+
+/* a whole deck searched: a grid scrolling down, the top first */
+.strip.search {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 84px);
+  justify-content: space-between;
+  align-content: start;
+  gap: 16px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.strip.search .empty {
+  grid-column: 1 / -1;
 }
 
 .slot {
@@ -552,6 +744,29 @@ h2 {
   color: var(--ink-2);
 }
 
+.buttons {
+  flex: none;
+  width: 50%;
+  display: flex;
+  gap: 10px;
+}
+
+.buttons .done {
+  flex: 1;
+  width: auto;
+}
+
+.done.shuffle {
+  border-color: var(--seal);
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.done:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .done {
   font: inherit;
   font-weight: 700;
@@ -569,6 +784,11 @@ h2 {
 @media (hover: hover) {
   .done:hover {
     background: var(--paper-3);
+  }
+
+  .done.shuffle:hover {
+    background: var(--seal);
+    filter: brightness(1.1);
   }
 }
 </style>

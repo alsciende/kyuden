@@ -7,8 +7,8 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\LookAtCards;
 use App\Message\PutCharacterIntoPlay;
+use App\Message\SearchDynastyDeck;
 use App\Message\ShuffleDynastyDeck;
 
 /**
@@ -31,6 +31,6 @@ final readonly class FavorableDealbroker26 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, PutCharacterIntoPlay::class, ShuffleDynastyDeck::class];
+        return [PutCharacterIntoPlay::class, SearchDynastyDeck::class, ShuffleDynastyDeck::class];
     }
 }

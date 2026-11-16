@@ -29,13 +29,14 @@ final readonly class GameLogger
     }
 
     /**
-     * @param array<string, mixed> $params by placeholder name; the params missing from the template are not stored
+     * @param array<string, mixed> $params        by placeholder name; the params missing from the template are not stored
+     * @param list<string>         $untemplated   the params stored though the template does not show them (GameLog::$params)
      */
-    public function log(Game $game, string $template, array $params = []): void
+    public function log(Game $game, string $template, array $params = [], array $untemplated = []): void
     {
         preg_match_all('/\{(\w+)\}/', $template, $matches);
         $encoded = [];
-        foreach (array_unique($matches[1]) as $name) {
+        foreach (array_unique([...$matches[1], ...$untemplated]) as $name) {
             if (! array_key_exists($name, $params)) {
                 throw new \LogicException(sprintf('The log template "%s" has no param "%s".', $template, $name));
             }

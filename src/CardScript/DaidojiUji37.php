@@ -7,9 +7,9 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
-use App\Message\LookAtCards;
 use App\Message\PlaceCardUnder;
 use App\Message\RemoveFromGame;
+use App\Message\SearchConflictDeck;
 use App\Message\ShuffleConflictDeck;
 
 /**
@@ -32,6 +32,6 @@ final readonly class DaidojiUji37 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [LookAtCards::class, PlaceCardUnder::class, RemoveFromGame::class, ShuffleConflictDeck::class];
+        return [PlaceCardUnder::class, RemoveFromGame::class, SearchConflictDeck::class, ShuffleConflictDeck::class];
     }
 }

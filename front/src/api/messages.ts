@@ -1142,6 +1142,26 @@ export interface SacrificeCard {
 }
 
 /**
+ * The sender searches the whole conflict deck of a player (glossary, Search), e.g. to resolve an effect ("search your conflict deck for…": Agasha Shunsen, Shosuro Hametsu, Daidoji Uji): they look at every card of it, which the log gives to them only, the top card first (the others read how many cards), then resolve the effect with other actions on them (`add_card_to_hand`, `put_character_into_play`, `place_card_under`, `reveal_card`…), and shuffle the deck (`shuffle_conflict_deck`), as an entire deck searched must be. To search the top cards of a deck only, `look_at_cards` with a quantity. Nothing is recorded: the cards are out of sight again afterwards.
+ */
+export interface SearchConflictDeck {
+  /**
+   * Player whose conflict deck it is.
+   */
+  target_player_id: string
+}
+
+/**
+ * The sender searches the whole dynasty deck of a player (glossary, Search), e.g. to resolve an effect ("search your dynasty deck for…": Emperor's Summons, Favorable Dealbroker, Kaiu Shihobu, Daughter of War): they look at every card of it, which the log gives to them only, the top card first (the others read how many cards), then resolve the effect with other actions on them (`add_card_to_hand`, `put_character_into_play`, `place_card_under`, `reveal_card`…), and shuffle the deck (`shuffle_dynasty_deck`), as an entire deck searched must be. To search the top cards of a deck only, `look_at_cards` with a quantity. Nothing is recorded: the cards are out of sight again afterwards.
+ */
+export interface SearchDynastyDeck {
+  /**
+   * Player whose dynasty deck it is.
+   */
+  target_player_id: string
+}
+
+/**
  * Records the military or political skill of a character in play, every modifier applied (an event, an attachment, another effect), so that the players see its current skill: the engine does not apply card effects. It replaces the skill set before, until `reset_character_skill` or the character leaves play.
  *
  * The engine does not compute the totals of a conflict from it: they are declared by the players (`declare_conflict_skill`). The character can belong to any player.
@@ -1429,6 +1449,8 @@ export interface MessagePayloads {
   reveal_dynasty_card: RevealDynastyCard
   reveal_province: RevealProvince
   sacrifice_card: SacrificeCard
+  search_conflict_deck: SearchConflictDeck
+  search_dynasty_deck: SearchDynastyDeck
   set_character_skill: SetCharacterSkill
   set_honor_bid: SetHonorBid
   shuffle_conflict_deck: ShuffleConflictDeck

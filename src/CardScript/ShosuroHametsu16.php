@@ -8,8 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
-use App\Message\LookAtCards;
 use App\Message\RevealCard;
+use App\Message\SearchConflictDeck;
 use App\Message\ShuffleConflictDeck;
 
 /**
@@ -32,6 +32,6 @@ final readonly class ShosuroHametsu16 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [AddCardToHand::class, LookAtCards::class, RevealCard::class, ShuffleConflictDeck::class];
+        return [AddCardToHand::class, RevealCard::class, SearchConflictDeck::class, ShuffleConflictDeck::class];
     }
 }

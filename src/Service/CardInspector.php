@@ -12,13 +12,15 @@ use App\Enum\HiddenPile;
 use App\Enum\StackType;
 use App\Event\CardsLookedAtEvent;
 use App\Event\CardsRevealedEvent;
+use App\Event\DeckSearchedEvent;
 use App\GameLog\GameLogger;
 use App\GameLog\LogParam;
 use App\View\Visibility;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Looking at cards and revealing them (LookAtCards, LookAtCard, RevealCards, RevealCard): nothing changes in the state,
+ * Looking at cards, revealing them and searching a deck (LookAtCards, LookAtCard, RevealCards, RevealCard,
+ * SearchConflictDeck, SearchDynastyDeck): nothing changes in the state,
  * the log gives the cards to the players who learn them. The client of the sender keeps them in sight until the
  * effect is resolved.
  */
@@ -92,13 +94,36 @@ final readonly class CardInspector
      */
     public function lookAt(Player $player, Stack $stack, array $cards): void
     {
+        $this->eventDispatcher->dispatch(new CardsLookedAtEvent($player->getGame(), $player, $this->paramsLookedAt($player, $stack, $cards), $stack));
+    }
+
+    /**
+     * The player searches a deck of the owner (glossary, Search): they learn every card of it, the top card first, as
+     * when they look at it whole; the deck is then to be shuffled, by another action.
+     */
+    public function searchDeck(Player $player, Player $owner, StackType $deck): void
+    {
+        $stack = $owner->getUniqueStack($deck);
+        $cards = $stack->getTopCards($stack->getCards()->count());
+        $this->eventDispatcher->dispatch(new DeckSearchedEvent($player->getGame(), $player, $this->paramsLookedAt($player, $stack, $cards), $stack));
+    }
+
+    /**
+     * The cards looked at, known to the player and to those who already see them.
+     *
+     * @param list<PhysicalCard> $cards
+     *
+     * @return list<LogParam>
+     */
+    private function paramsLookedAt(Player $player, Stack $stack, array $cards): array
+    {
         $game = $player->getGame();
-        $params = array_map(fn (PhysicalCard $card): LogParam => LogParam::card(
+
+        return array_map(fn (PhysicalCard $card): LogParam => LogParam::card(
             $card,
             $this->gameLogger->playersWhere($game, fn (Player $viewer): bool => $viewer === $player || $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer)),
             $this->gameLogger->playersWhere($game, fn (Player $viewer): bool => $viewer === $player || $this->visibility->isCardInStackVisibleTo($card, $stack, $viewer)),
         ), $cards);
-        $this->eventDispatcher->dispatch(new CardsLookedAtEvent($game, $player, $params, $stack));
     }
 
     /**

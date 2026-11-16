@@ -173,6 +173,17 @@ describe('playerEffects', () => {
     })
   })
 
+  it('searches the whole decks of either player', () => {
+    const searching = game(me, opp, { available_actions: ['search_conflict_deck', 'search_dynasty_deck'] })
+
+    expect(playerEffects(searching, me, 'conflict_deck', 3)).toEqual([
+      { type: 'search_conflict_deck', label: 'Search the deck', payload: { target_player_id: 'me' } },
+    ])
+    expect(playerEffects(searching, opp, 'dynasty_deck', 3)).toEqual([
+      { type: 'search_dynasty_deck', label: 'Search the deck', payload: { target_player_id: 'opp' } },
+    ])
+  })
+
   it('gives honor to the other player', () => {
     expect(playerEffects(everything, me, 'honor', 1).map((effect) => effect.label)).toEqual([
       'Gain 1 honor',

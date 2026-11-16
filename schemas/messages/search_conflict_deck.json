@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "search_conflict_deck",
+    "description": "The sender searches the whole conflict deck of a player (glossary, Search), e.g. to resolve an effect (\"search your conflict deck for…\": Agasha Shunsen, Shosuro Hametsu, Daidoji Uji): they look at every card of it, which the log gives to them only, the top card first (the others read how many cards), then resolve the effect with other actions on them (`add_card_to_hand`, `put_character_into_play`, `place_card_under`, `reveal_card`…), and shuffle the deck (`shuffle_conflict_deck`), as an entire deck searched must be. To search the top cards of a deck only, `look_at_cards` with a quantity. Nothing is recorded: the cards are out of sight again afterwards.",
+    "type": "object",
+    "properties": {
+        "target_player_id": {
+            "description": "Player whose conflict deck it is.",
+            "type": "string"
+        }
+    },
+    "required": [
+        "target_player_id"
+    ],
+    "additionalProperties": false
+}
