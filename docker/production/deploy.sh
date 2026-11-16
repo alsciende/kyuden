@@ -3,7 +3,7 @@
 # (.github/workflows/release.yml), in ~deploy/.ssh/authorized_keys:
 #   command="/opt/kyuden/deploy.sh",restrict ssh-ed25519 AAAA… github-actions-deploy
 # the command sent by the client is the git tag to deploy (SSH_ORIGINAL_COMMAND): read as data, never run
-# installed in /opt/kyuden beside compose.yaml, .env and symfony.env (README, "Production"); owned by root, as its
+# installed in /opt/kyuden beside compose.yaml, .env and symfony.env (doc/production.md); owned by root, as its
 # directory, so that the key can do nothing else: only .env is writable by deploy
 set -euo pipefail
 

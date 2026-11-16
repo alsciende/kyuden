@@ -1,5 +1,5 @@
 #!/bin/sh
-# Installs compose.yaml and deploy.sh, uploaded to ~/kyuden-upload, into /opt/kyuden (README, "Production").
+# Installs compose.yaml and deploy.sh, uploaded to ~/kyuden-upload, into /opt/kyuden (doc/production.md).
 # Runs on the host, as an administrator (sudo), not as deploy.
 set -eu
 
