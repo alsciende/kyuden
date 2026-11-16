@@ -29,7 +29,7 @@ final readonly class CreateGameHandler
 
     public function __invoke(CreateGame $message): Game
     {
-        $game = new Game($message->getGameId(), hex2bin($message->getSeed()) ?: throw new \InvalidArgumentException('The seed must be hex encoded.'), $message->isFriendly());
+        $game = new Game($message->getGameId(), hex2bin($message->getSeed()) ?: throw new \InvalidArgumentException('The seed must be hex encoded.'), $message->isFriendly(), $message->isTraining());
         $this->gameStateMachine->getMarking($game);
         $this->stateManager->withState($game, function (GameState $state) use ($message): GameState {
             $state->mulligan = $message->hasMulligan();

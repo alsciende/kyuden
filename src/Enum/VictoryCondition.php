@@ -25,4 +25,16 @@ enum VictoryCondition: string
      * has, and the platform has ended the game without a winner (AbandonedGamesEnder).
      */
     case Abandonment = 'abandonment';
+
+    /**
+     * The game was played to its end, by honor or by breaking the stronghold province: not by a concession nor an
+     * abandonment.
+     */
+    public function isPlayedToTheEnd(): bool
+    {
+        return match ($this) {
+            self::HonorWin, self::HonorLoss, self::StrongholdProvinceBroken => true,
+            self::Concession, self::Abandonment => false,
+        };
+    }
 }

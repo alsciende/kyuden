@@ -70,6 +70,12 @@ class Game implements StatefulInterface
     private bool $friendly;
 
     /**
+     * A game against the house bot (POST /api/bot-games), outside of the queue: not ranked.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $training;
+
+    /**
      * The game this one replays (Service/Replay/GameReplayer): a copy rebuilt from the events of a game that has ended,
      * for one of its players only, read only and listed nowhere; null for a game played.
      */
@@ -102,10 +108,11 @@ class Game implements StatefulInterface
     /**
      * @param string $seed 32 random bytes
      */
-    public function __construct(string $id, string $seed, bool $friendly = false)
+    public function __construct(string $id, string $seed, bool $friendly = false, bool $training = false)
     {
         $this->id = $id;
         $this->friendly = $friendly;
+        $this->training = $training;
         $this->randomEngine = serialize(new Xoshiro256StarStar($seed));
         $this->players = new ArrayCollection();
         $this->physicalCards = new ArrayCollection();
@@ -119,6 +126,19 @@ class Game implements StatefulInterface
     public function isFriendly(): bool
     {
         return $this->friendly;
+    }
+
+    public function isTraining(): bool
+    {
+        return $this->training;
+    }
+
+    /**
+     * A game of the queue, neither friendly nor against the house bot.
+     */
+    public function isStandard(): bool
+    {
+        return ! $this->friendly && ! $this->training;
     }
 
     /**

@@ -139,6 +139,25 @@ class GameRepository extends ServiceEntityRepository
     }
 
     /**
+     * The ids of the games that have ended (not the replays), the first ended first.
+     *
+     * @return list<string>
+     */
+    public function findEndedIds(): array
+    {
+        /** @var list<string> */
+        return $this->createQueryBuilder('g')
+            ->select('g.id')
+            ->where('g.currentPlace = :ended')
+            ->andWhere('g.replayOf IS NULL')
+            ->setParameter('ended', Game::STATE_ENDED)
+            ->orderBy('g.updatedAt', \SortDirection::Ascending)
+            ->addOrderBy('g.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getSingleColumnResult();
+    }
+
+    /**
      * The games that have started and not ended, unchanged since the time given and read by none of their players since
      * (Player::lastSeenAt, never written for a player who never reads it: the house bot), as their id and version: no
      * game is loaded, so that a message can then be dispatched on it (GameLockMiddleware).

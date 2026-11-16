@@ -2,6 +2,8 @@
 
 Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to the README and the decisions to `HANDOFF.md`.
 
+Implemented: `house_bot_game` (reward: the plain pattern) and the seven `clan_<clan>` (reward: the mon of the clan), see the README ("Trophies").
+
 ## Purpose
 
 Trophies bring the players to the queue, so that the others find opponents there; along the way, they lead them to explore what the site offers (the house bot, friendly games, bots, watching, replays, decks of EmeraldDB, accounts), and reward playing well and playing every clan. They are a guide, not a proof of skill: nothing is ranked on them.
@@ -69,5 +71,4 @@ Trophies bring the players to the queue, so that the others find opponents there
 
 ## Open questions
 
-- **Where they show**: the account, the end of a game ("Trophy earned"), the history? (mockup first)
 - **Shown to the others**: the opponent and the spectators see the trophies of a player, in a way to define (mockup first).

@@ -66,6 +66,8 @@ class ApiBotGamesControllerTest extends AbstractKernelTestCase
         $game = $this->gameRepository->find($data['game_id']);
         self::assertInstanceOf(Game::class, $game);
         self::assertSame('choose_stronghold', $game->getCurrentPlace());
+        self::assertTrue($game->isTraining());
+        self::assertFalse($game->isFriendly());
         // no mulligan against the house bot
         self::assertFalse(self::service(GameStateManager::class)->getState($game)->mulligan);
         $players = $game->getPlayers()->getValues();
