@@ -1,10 +1,13 @@
 # CLAUDE.md
 
 @README.md
+@doc/architecture.md
+@doc/game-flow.md
 
 ## Documentation
 
-- `README.md` (imported above) is the single architecture reference: update it when the architecture changes, and only there.
+- The architecture is documented in `doc/` (imported above: `architecture.md`, `game-flow.md`; read the others before working on their part): `api.md` (HTTP API, MCP server), `web-client.md`, `card-scripts.md`, `services.md` (house bot, replay, trophies, worker, matchmaking, spectators, security, Mercure), `production.md`. Update the file of the part that changes, and only there.
+- `README.md` (imported above) is for someone discovering the project: what it is, installation, a map of the repository and of the documentation. Keep it short; nothing of the architecture goes there.
 - `HANDOFF.md` holds the current status, the decisions taken for each feature and the next steps: update it when a feature is done.
 
 ## Commands
@@ -23,7 +26,7 @@ Everything runs in Docker (service `symfony`: FrankenPHP on port 8080, which ser
 - `make front-install` / `make front-build`: npm dependencies and production build of the web client
 - `make front-messages`: types of the payloads of the messages for the web client (`front/src/api/messages.ts`), generated from `schemas/messages`
 - `make sql`: `psql` shell on the `database` service
-- `make prod-build` / `make prod-up` / `make prod-logs` / `make prod-down`: the production stack on the workstation, from the image built locally (README, "Production"); stop the development stack first
+- `make prod-build` / `make prod-up` / `make prod-logs` / `make prod-down`: the production stack on the workstation, from the image built locally (`doc/production.md`); stop the development stack first
 
 Console commands (`src/Command`): create candidates, import the card database (`app:cards:import`), create the house bot (`app:house-bot:create`), give a user mons or patterns for their nobori by hand (`app:nobori:unlock <user> <value>…`), award the trophies of the games that have ended (`app:trophies:award [--dry-run]`, after a new trophy), import a deck of EmeraldDB from its URL for a user (`app:deck:import`), matchmaking, create a game, list the games in progress (`app:game:list [--user=<id or username>] [--ended]`: those of a user, those that have ended too with their winner), list the last concessions with the reason their player gave (`app:game:concessions [--limit=20]`, the latest first, the replays left out), replay a game that has ended as one of its players follows it, stopping before each of their actions (`app:game:replay <game> --as=<user> [--step]`, in a transaction rolled back), list the cards of a game (`app:game:cards <game> [--place=…] [--player=…]`, by workflow place and owner), replace the logical card of a card for debugging (`app:card:swap <card> <code>`: direct write, outside the event log, not registered in `prod`), list/play events, apply a game transition, dump a game, make the house bot play (`app:bot:play`), dump the JSON schemas of the messages (`app:message-schemas:dump`, after changing a public message; then `make front-messages`, which generates the types of the web client from them).
 
@@ -33,7 +36,7 @@ After changing a workflow, compare `bin/console workflow:dump <name>` before and
 
 ## Game rules reference
 
-`doc/` contains the official rules, which are the source of truth when implementing phases. Only the Stronghold format is in scope: ignore the rules specific to other formats (skirmish, enlightenment, team conquest…).
+The official rules, in `doc/` beside the documentation of the project, are the source of truth when implementing phases. Only the Stronghold format is in scope: ignore the rules specific to other formats (skirmish, enlightenment, team conquest…).
 
 - `learn_to_play.md`: introductory rules
 - `timing-and-gameplay.md`: framework steps and action windows of a full round; follow it for the `game` workflow

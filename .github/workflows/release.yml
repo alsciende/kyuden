@@ -1,6 +1,6 @@
 # every tag, on any branch: the tests and the linters (test.yml), then the production image
 # (docker/production/Dockerfile) pushed to the GitHub Container Registry, tagged with the name of the git tag;
-# a tag vX.Y.Z of a commit of main is then deployed to the production host (environment production, README "Production")
+# a tag vX.Y.Z of a commit of main is then deployed to the production host (environment production, doc/production.md)
 name: Release
 
 on:

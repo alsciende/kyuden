@@ -1,8 +1,8 @@
 # Trophies
 
-Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to the README and the decisions to `HANDOFF.md`.
+Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to `doc/` and the decisions to `HANDOFF.md`.
 
-Implemented: `house_bot_game` (reward: the plain pattern) and the seven `clan_<clan>` (reward: the mon of the clan), see the README ("Trophies").
+Implemented: `house_bot_game` (reward: the plain pattern) and the seven `clan_<clan>` (reward: the mon of the clan), see `doc/services.md` ("Trophies").
 
 ## Purpose
 
