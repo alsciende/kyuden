@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LoggedMessage } from '@/api/game'
+import type { LoggedMessage, LogParam } from '@/api/game'
 import {
+  filterInspected,
   inspectionActions,
   inspectionPlays,
   inspectionsOf,
   isRedistribution,
+  isSearch,
   lostInTheShuffle,
+  shuffleAfterSearch,
+  typeFilters,
   type Inspection,
 } from '@/lib/inspection'
 
@@ -51,6 +55,26 @@ describe('inspectionsOf', () => {
     expect(inspectionsOf([looked], 'me')).toEqual([deck])
   })
 
+  it('reads the cards of a deck the viewer searched', () => {
+    const searched: LoggedMessage = {
+      ...looked,
+      type: 'search_dynasty_deck',
+      entries: [
+        {
+          template: '{player} searches {stack}',
+          params: {
+            ...(looked.entries[0]!.params as Record<string, LogParam>),
+            stack: { type: 'stack', stack_type: 'dynasty_draw_deck', player_id: 'me', id: 'deck' },
+          },
+        },
+      ],
+    }
+
+    expect(inspectionsOf([searched], 'me')).toEqual([
+      { ...deck, type: 'search_dynasty_deck', stackType: 'dynasty_draw_deck' },
+    ])
+  })
+
   it('ignores the cards the opponent looked at, and the other messages', () => {
     expect(inspectionsOf([{ ...looked, player_id: 'opp' }], 'me')).toEqual([])
     expect(inspectionsOf([{ ...looked, type: 'draw_conflict_cards' }], 'me')).toEqual([])
@@ -64,7 +88,7 @@ describe('inspectionsOf', () => {
         {
           ...looked.entries[0]!,
           params: {
-            ...(looked.entries[0]!.params as Record<string, never>),
+            ...(looked.entries[0]!.params as Record<string, LogParam>),
             cards: {
               type: 'list',
               items: [
@@ -284,5 +308,56 @@ describe('inspectionPlays', () => {
   it('plays nothing out of a deck, nor without the opportunity to act', () => {
     expect(inspectionPlays({ ...deck, stackType: 'hand' }, banzai, new Set(['play_action_event']))).toEqual([])
     expect(inspectionPlays(deck, banzai, new Set())).toEqual([])
+  })
+})
+
+describe('searching a deck', () => {
+  const searched: Inspection = {
+    ...deck,
+    type: 'search_conflict_deck',
+    cards: [
+      { id: 'c1', code: 'banzai' },
+      { id: 'c2', code: 'katana' },
+      { id: 'c3', code: 'fan' },
+      { id: 'c4', code: 'kazue' },
+    ],
+  }
+  const cards = {
+    banzai: printed('banzai', { name: 'Banzai!', type: 'event' }),
+    katana: printed('katana', { name: 'Fine Katana', type: 'attachment' }),
+    fan: printed('fan', { name: 'Ornate Fan', type: 'attachment' }),
+    kazue: printed('kazue', { name: 'Togashi Kazue', type: 'character' }),
+  }
+
+  it('tells a search from a look at the top cards', () => {
+    expect(isSearch(searched)).toBe(true)
+    expect(isSearch(deck)).toBe(false)
+  })
+
+  it('shuffles the deck searched once done', () => {
+    expect(shuffleAfterSearch(searched)).toEqual({ type: 'shuffle_conflict_deck', payload: { target_player_id: 'me' } })
+    expect(
+      shuffleAfterSearch({ ...searched, type: 'search_dynasty_deck', stackType: 'dynasty_draw_deck', ownerId: 'opp' }),
+    ).toEqual({ type: 'shuffle_dynasty_deck', payload: { target_player_id: 'opp' } })
+    expect(shuffleAfterSearch(deck)).toBeNull()
+  })
+
+  it('counts the types there are, after every card', () => {
+    expect(typeFilters(searched, cards)).toEqual([
+      { type: null, label: 'All', count: 4 },
+      { type: 'character', label: 'Characters', count: 1 },
+      { type: 'attachment', label: 'Attachments', count: 2 },
+      { type: 'event', label: 'Events', count: 1 },
+    ])
+  })
+
+  it('filters by type and by name, keeping the position in the deck', () => {
+    expect(filterInspected(searched, cards, 'attachment', '')).toEqual([
+      { card: { id: 'c2', code: 'katana' }, position: 2 },
+      { card: { id: 'c3', code: 'fan' }, position: 3 },
+    ])
+    expect(filterInspected(searched, cards, null, '  FAN ').map((placed) => placed.position)).toEqual([3])
+    expect(filterInspected(searched, cards, 'event', 'katana')).toEqual([])
+    expect(filterInspected(searched, cards, null, '')).toHaveLength(4)
   })
 })

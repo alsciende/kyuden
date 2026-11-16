@@ -4,7 +4,8 @@ import type { Card } from '@/api/client'
 import { playActions, type HostChoice, type PlayAction, type ProvinceChoice } from '@/lib/cardActions'
 
 /**
- * The cards a player looks at or reveals (`look_at_cards`, `look_at_card`, `reveal_cards`, `reveal_card`): the engine
+ * The cards a player looks at or reveals (`look_at_cards`, `look_at_card`, `reveal_cards`, `reveal_card`), or the deck
+ * they search (`search_conflict_deck`, `search_dynasty_deck`): the engine
  * records nothing, the log gives the cards to the player, whose client keeps them in a window of their own until the
  * player closes it, once they have resolved the effect with the actions on the cards.
  */
@@ -14,6 +15,8 @@ export type InspectionMode = 'look' | 'reveal'
 const MODES: Record<string, InspectionMode> = {
   look_at_cards: 'look',
   look_at_card: 'look',
+  search_conflict_deck: 'look',
+  search_dynasty_deck: 'look',
   reveal_cards: 'reveal',
   reveal_card: 'reveal',
 }
@@ -255,4 +258,83 @@ export function lostInTheShuffle(inspection: Inspection, action: InspectionActio
  */
 export function inspectionPlays(inspection: Inspection, card: Card | undefined, available: Set<string>): PlayAction[] {
   return DECKS.includes(inspection.stackType) ? playActions(card, available) : []
+}
+
+/** a whole deck searched (`search_conflict_deck`, `search_dynasty_deck`), shown as a grid to filter */
+export function isSearch(inspection: Inspection): boolean {
+  return inspection.type === 'search_conflict_deck' || inspection.type === 'search_dynasty_deck'
+}
+
+/**
+ * The message that shuffles the deck searched: an entire deck searched is shuffled once the search is done (glossary,
+ * Search); null for anything else.
+ */
+export function shuffleAfterSearch(inspection: Inspection): Message | null {
+  if (!isSearch(inspection)) {
+    return null
+  }
+  const payload = { target_player_id: inspection.ownerId }
+
+  return inspection.stackType === 'dynasty_draw_deck'
+    ? { type: 'shuffle_dynasty_deck', payload }
+    : { type: 'shuffle_conflict_deck', payload }
+}
+
+/** a filter of the cards searched by their printed type */
+export interface TypeFilter {
+  /** the printed type, null for every card */
+  type: string | null
+  label: string
+  count: number
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  character: 'Characters',
+  attachment: 'Attachments',
+  event: 'Events',
+  holding: 'Holdings',
+}
+
+/** the types of the cards searched, each with its number, after every card; only the types there are */
+export function typeFilters(inspection: Inspection, cards: Record<string, Card | undefined>): TypeFilter[] {
+  const counts = new Map<string, number>()
+  for (const card of inspection.cards) {
+    const type = cards[card.code]?.type
+    if (type !== undefined) {
+      counts.set(type, (counts.get(type) ?? 0) + 1)
+    }
+  }
+
+  return [
+    { type: null, label: 'All', count: inspection.cards.length },
+    ...Object.keys(TYPE_LABELS)
+      .filter((type) => counts.has(type))
+      .map((type) => ({ type, label: TYPE_LABELS[type]!, count: counts.get(type)! })),
+  ]
+}
+
+/** the position of each card in the deck (#1 the top), kept once filtered */
+export interface PlacedCard {
+  card: InspectedCard
+  position: number
+}
+
+/** the cards searched of a type (null: every type) whose name holds the text typed, whatever its case and accents */
+export function filterInspected(
+  inspection: Inspection,
+  cards: Record<string, Card | undefined>,
+  type: string | null,
+  text: string,
+): PlacedCard[] {
+  const fold = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+  const wanted = fold(text.trim())
+
+  return inspection.cards
+    .map((card, index) => ({ card, position: index + 1 }))
+    .filter(({ card }) => type === null || cards[card.code]?.type === type)
+    .filter(({ card }) => wanted === '' || fold(cards[card.code]?.name ?? '').includes(wanted))
 }

@@ -31,10 +31,11 @@ final readonly class GameLogEventListener
             throw new \LogicException(sprintf('The logged event %s must implement %s.', $event::class, GameEventInterface::class));
         }
 
-        $template = $attribute->newInstance()->template;
+        $gameLog = $attribute->newInstance();
+        $template = $gameLog->template;
         preg_match_all('/\{(\w+)\}/', $template, $matches);
         $params = [];
-        foreach (array_unique($matches[1]) as $name) {
+        foreach (array_unique([...$matches[1], ...$gameLog->params]) as $name) {
             if (! $reflection->hasProperty($name)) {
                 throw new \LogicException(sprintf('The logged event %s has no property "%s".', $event::class, $name));
             }
@@ -43,7 +44,7 @@ final readonly class GameLogEventListener
             $params[$name] = $this->revealed($event, $property) ?? $this->secret($event, $reflection, $property) ?? $property->getValue($event);
         }
 
-        $this->gameLogger->log($event->getGame(), $template, $params);
+        $this->gameLogger->log($event->getGame(), $template, $params, $gameLog->params);
     }
 
     /**

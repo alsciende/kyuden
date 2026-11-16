@@ -12,13 +12,20 @@ use App\Message\LookAtCard;
 use App\Message\LookAtCards;
 use App\Message\RevealCard;
 use App\Message\RevealCards;
+use App\Message\SearchConflictDeck;
+use App\Message\SearchDynastyDeck;
 use App\MessageHandler\LookAtCardHandler;
 use App\MessageHandler\LookAtCardsHandler;
 use App\MessageHandler\RevealCardHandler;
 use App\MessageHandler\RevealCardsHandler;
+use App\MessageHandler\SearchConflictDeckHandler;
+use App\MessageHandler\SearchDynastyDeckHandler;
+use App\Repository\GameLogEntryRepository;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use App\View\GameLogViewFactory;
+use Doctrine\ORM\EntityManagerInterface;
 use Random\Randomizer;
 
 /**
@@ -152,5 +159,57 @@ class CardInspectionHandlersTest extends AbstractKernelTestCase
 
         self::assertSame(["john reveals Outwit from john's hand"], $this->logLines($scenario->game(), $scenario->player('jane')));
         self::assertSame(Orientation::FaceUp, $card->getOrientation());
+    }
+
+    public function testThePlayerSearchesTheirWholeConflictDeckAlone(): void
+    {
+        $scenario = $this->scenarioWithDecks();
+
+        self::service(SearchConflictDeckHandler::class)(new SearchConflictDeck($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('john')->getId()));
+
+        self::assertSame(["john searches john's conflict deck"], $this->logLines($scenario->game(), $scenario->player('john')));
+        self::assertSame(["john searches john's conflict deck"], $this->logLines($scenario->game(), $scenario->player('jane')));
+        // the cards are in the params of the entry, for the window of the searcher only
+        self::assertSame(['01-ornate-fan', '01-fine-katana', '01-banzai'], $this->searchedCodes($scenario, 'john'));
+        self::assertSame([null, null, null], $this->searchedCodes($scenario, 'jane'));
+    }
+
+    /**
+     * The codes of the cards of the deck searched, in the entry of the log as the reader reads it.
+     *
+     * @return list<?string>
+     */
+    private function searchedCodes(Scenario $scenario, string $reader): array
+    {
+        self::service(EntityManagerInterface::class)->flush();
+        $entry = self::service(GameLogEntryRepository::class)->findOneBy(['game' => $scenario->game()], ['id' => 'DESC']) ?? throw new \LogicException('No entry.');
+        $view = self::service(GameLogViewFactory::class)->createEntryView($entry, $scenario->player($reader));
+        $cards = $view->params['cards'] ?? null;
+        self::assertIsArray($cards);
+        self::assertIsArray($cards['items']);
+
+        $codes = [];
+        foreach ($cards['items'] as $card) {
+            self::assertIsArray($card);
+            self::assertTrue($card['code'] === null || is_string($card['code']));
+            $codes[] = $card['code'];
+        }
+
+        return $codes;
+    }
+
+    public function testThePlayerSearchesTheDynastyDeckOfTheOpponent(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->dynastyDeck(['01-doji-whisperer', '01-brash-samurai']))
+            ->persist();
+
+        self::service(SearchDynastyDeckHandler::class)(new SearchDynastyDeck($scenario->game()->getId(), $scenario->player('john')->getId(), $scenario->player('jane')->getId()));
+
+        self::assertSame(["john searches jane's dynasty deck"], $this->logLines($scenario->game(), $scenario->player('john')));
+        self::assertSame(["john searches jane's dynasty deck"], $this->logLines($scenario->game(), $scenario->player('jane')));
     }
 }

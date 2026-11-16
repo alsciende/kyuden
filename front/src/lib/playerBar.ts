@@ -219,10 +219,17 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
         { type: 'draw_conflict_cards', label: `Draw ${cards}`, payload: { ...target, quantity: amount } },
         { type: 'shuffle_conflict_deck', label: 'Shuffle', payload: target },
         ...inspect('conflict_deck'),
+        // the whole deck (Agasha Shunsen, Daidoji Uji…), to be shuffled afterwards
+        { type: 'search_conflict_deck', label: 'Search the deck', payload: target },
       ]
       break
     case 'dynasty_deck':
-      effects = [{ type: 'shuffle_dynasty_deck', label: 'Shuffle', payload: target }, ...inspect('dynasty_deck')]
+      effects = [
+        { type: 'shuffle_dynasty_deck', label: 'Shuffle', payload: target },
+        ...inspect('dynasty_deck'),
+        // the whole deck (Favorable Dealbroker, Kaiu Shihobu…), to be shuffled afterwards
+        { type: 'search_dynasty_deck', label: 'Search the deck', payload: target },
+      ]
       break
     // the token of the first player goes to the other player, e.g. kept by an effect when it would be passed
     case 'first_player':
