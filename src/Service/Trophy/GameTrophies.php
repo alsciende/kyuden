@@ -34,7 +34,7 @@ readonly class GameTrophies
      * @return list<array{Player, Trophy}> the trophies each player earns in the game, earned before or not, player by
      *                                     player in the order of the catalogue
      */
-    public function of(Game $game): array
+    public function trophiesEarnedIn(Game $game): array
     {
         if ($game->isReplay()) {
             return [];
@@ -68,7 +68,7 @@ readonly class GameTrophies
     public function award(Game $game, \DateTimeImmutable $earnedAt): array
     {
         return array_values(array_filter(
-            $this->of($game),
+            $this->trophiesEarnedIn($game),
             fn (array $earned): bool => $this->trophyCase->award($earned[0]->getUser(), $earned[1], $earnedAt, $game),
         ));
     }

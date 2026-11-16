@@ -51,7 +51,7 @@ readonly class TrophiesAwardCommand
             }
             ++$games;
             $earned = $dryRun
-                ? $this->gameTrophies->of($game)
+                ? $this->gameTrophies->trophiesEarnedIn($game)
                 : $this->gameTrophies->award($game, $game->getUpdatedAt() ?? $this->clock->now());
             foreach ($earned as [$player, $trophy]) {
                 $io->writeln(sprintf('%s: %s earns %s', $gameId, $player->getUserId(), $trophy->value));

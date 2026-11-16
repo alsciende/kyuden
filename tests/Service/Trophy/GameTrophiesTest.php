@@ -54,7 +54,7 @@ class GameTrophiesTest extends AbstractKernelTestCase
     {
         return array_map(
             static fn (array $earned): array => [$earned[0]->getUserId(), $earned[1]],
-            self::service(GameTrophies::class)->of($scenario->game()),
+            self::service(GameTrophies::class)->trophiesEarnedIn($scenario->game()),
         );
     }
 
