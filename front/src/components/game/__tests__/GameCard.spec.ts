@@ -22,6 +22,8 @@ function show(view: CardView, cardDisplay: CardDisplay, attachments: CardView[] 
     preferredClan: 'lion',
     cardDisplay,
     theme: 'auto',
+    tutorial: true,
+    seenTips: [],
     token: 'l5r_a',
   }
 

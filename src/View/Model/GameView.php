@@ -32,6 +32,8 @@ final readonly class GameView
         public ?string $place,
         /** the player reading the view, null for a spectator */
         public ?string $viewerId,
+        /** a game against the house bot (`POST /api/bot-games`), where the web client shows the tips of its tutorial */
+        public bool $training,
         public array $playerIds,
         public ?string $firstPlayerId,
         public array $activePlayerIds,

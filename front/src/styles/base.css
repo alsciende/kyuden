@@ -33,6 +33,9 @@
   /* the primary button hovered, the deck chosen */
   --ink-hover: #000;
   --selected: #fbf3ea;
+  /* the voice of the tutorial (lib/tutorial): its border, its label, its button and the ring on what it explains */
+  --tutorial: #1a64f0;
+  --tutorial-ink: #fff;
 
   color-scheme: light;
 }
@@ -56,6 +59,8 @@
     --card: light-dark(#fbf6ec, #2f2922);
     --ink-hover: light-dark(#000, #fff);
     --selected: light-dark(#fbf3ea, #3a2a22);
+    --tutorial: light-dark(#1a64f0, #4c8dff);
+    --tutorial-ink: light-dark(#fff, #1f1b16);
 
     color-scheme: light dark;
   }
@@ -348,4 +353,11 @@ p {
     -webkit-user-select: none;
     user-select: none;
   }
+}
+
+/* what a tip of the tutorial explains (components/game/TutorialTip.vue) */
+[data-tip-active] {
+  outline: 2px solid var(--tutorial);
+  outline-offset: 3px;
+  border-radius: 6px;
 }

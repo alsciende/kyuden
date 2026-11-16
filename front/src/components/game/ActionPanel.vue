@@ -219,7 +219,7 @@ const nothing = computed(
 </script>
 
 <template>
-  <div class="actions">
+  <div class="actions" data-tip-anchor="action-panel">
     <div v-if="ended" class="result">
       <h2>{{ resultTitle(game) }}</h2>
       <p v-if="game.victory_condition">{{ victoryText(game) }}</p>
@@ -229,7 +229,7 @@ const nothing = computed(
 
     <AbandonmentPrompt v-if="!ended" :sending="sending" />
 
-    <section v-if="resolving" class="resolving" aria-label="What you are resolving">
+    <section v-if="resolving" class="resolving" aria-label="What you are resolving" data-tip-anchor="resolution">
       <div class="resolving-card">
         <div class="resolving-head">
           <GameCard
@@ -255,7 +255,12 @@ const nothing = computed(
       <p v-if="resolving.then.length > 0" class="hint">Then: {{ resolving.then.join(', ') }}</p>
     </section>
 
-    <section v-if="ringEffect" class="resolving" aria-label="The ring effect you are resolving">
+    <section
+      v-if="ringEffect"
+      class="resolving"
+      aria-label="The ring effect you are resolving"
+      data-tip-anchor="ring-effect"
+    >
       <div class="resolving-card">
         <div class="resolving-head">
           <span class="ring-seal" aria-hidden="true"

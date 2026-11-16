@@ -72,6 +72,10 @@ export type Theme = 'auto' | 'light' | 'dark'
 export interface UserSettings {
   card_display: CardDisplay
   theme: Theme
+  /** the tips of the tutorial shown in the games against the house bot */
+  tutorial: boolean
+  /** the ids of the tips of the tutorial already seen (`lib/tutorial.ts`) */
+  seen_tips: string[]
 }
 
 export interface Account {

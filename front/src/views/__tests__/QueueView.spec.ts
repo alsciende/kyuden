@@ -86,6 +86,8 @@ describe('QueueView', () => {
       preferredClan: 'crab',
       cardDisplay: 'drawn',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_a',
     }
     queue = []

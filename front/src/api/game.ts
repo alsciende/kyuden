@@ -143,6 +143,8 @@ export interface GameView {
   place: string | null
   /** the player at the bottom of the board: the viewer, or the player whose side a spectator watches from */
   viewer_id: string
+  /** a game against the house bot: the tips of the tutorial show */
+  training: boolean
   /** set by the client (seenFrom): the viewer watches the game without playing it, and can send nothing */
   spectating?: boolean
   /** set by the client: the viewer replays a game they played (a copy rebuilt from its events), and can send nothing */

@@ -84,6 +84,8 @@ describe('JoinView', () => {
       preferredClan: 'crane',
       cardDisplay: 'drawn',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_jane',
     }
 

@@ -11,6 +11,7 @@ use App\Enum\Clan;
 use App\Enum\Mon;
 use App\Enum\Theme;
 use App\Model\AccountRequest;
+use App\Model\UserSettings;
 use App\Notifier\SubscriptionFactory;
 use App\Repository\GameRepository;
 use App\Security\AccountDeleter;
@@ -34,7 +35,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * The authenticated user: their identifier, their name at court, their preferred clan, their settings and their nobori
- * (which they change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ..., "theme": ...},
+ * (which they change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ..., "theme": ..., "tutorial": ...,
+ * "seen_tips": [...]},
  * "banner": {"mon": ..., "pattern": ...}}`, any of them; a setting or a part of the nobori left out is kept; a mon or a
  * pattern they have not earned is refused), what they may choose for their nobori and their username, and their games (in progress or ended, the last joined first), so that a user matched by
  * the queue finds the id of their game; their trophies, earned or not; and their subscription to the Mercure hub. A human deletes their account
@@ -48,9 +50,10 @@ class ApiSelfController extends AbstractController
 
     private const array STRING_FIELDS = ['name', 'preferred_clan'];
 
-    private const array SETTINGS = ['card_display', 'theme'];
+    /** the settings and the type of each: a string, a boolean or a list of strings */
+    private const array SETTINGS = ['card_display' => 'string', 'theme' => 'string', 'tutorial' => 'bool', 'seen_tips' => 'list'];
 
-    private const array BANNER = ['mon', 'pattern'];
+    private const array BANNER = ['mon' => 'string', 'pattern' => 'string'];
 
     public function __construct(
         private readonly GameRepository $gameRepository,
@@ -96,7 +99,7 @@ class ApiSelfController extends AbstractController
                 $structureViolations[] = ['property_path' => $field, 'message' => 'This field must be a string.'];
             }
         }
-        // the objects of strings, of which any field may be left out
+        // the objects, of which any field may be left out
         foreach (['settings' => self::SETTINGS, 'banner' => self::BANNER] as $object => $fields) {
             if (! array_key_exists($object, $body)) {
                 continue;
@@ -106,12 +109,21 @@ class ApiSelfController extends AbstractController
 
                 continue;
             }
-            foreach (array_diff(array_map(strval(...), array_keys($body[$object])), $fields) as $field) {
+            foreach (array_diff(array_map(strval(...), array_keys($body[$object])), array_keys($fields)) as $field) {
                 $structureViolations[] = ['property_path' => "{$object}.{$field}", 'message' => 'This field is not expected.'];
             }
-            foreach ($fields as $field) {
-                if (array_key_exists($field, $body[$object]) && ! is_string($body[$object][$field])) {
-                    $structureViolations[] = ['property_path' => "{$object}.{$field}", 'message' => 'This field must be a string.'];
+            foreach ($fields as $field => $type) {
+                if (! array_key_exists($field, $body[$object])) {
+                    continue;
+                }
+                $value = $body[$object][$field];
+                $message = match ($type) {
+                    'string' => is_string($value) ? null : 'This field must be a string.',
+                    'bool' => is_bool($value) ? null : 'This field must be a boolean.',
+                    'list' => is_array($value) && array_is_list($value) && array_all($value, static fn (mixed $item): bool => is_string($item)) ? null : 'This field must be a list of strings.',
+                };
+                if ($message !== null) {
+                    $structureViolations[] = ['property_path' => "{$object}.{$field}", 'message' => $message];
                 }
             }
         }
@@ -121,11 +133,13 @@ class ApiSelfController extends AbstractController
         if ($structureViolations !== []) {
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Invalid changes of the user.', ['violations' => $structureViolations]);
         }
-        /** @var array{name?: string, preferred_clan?: string, settings?: array{card_display?: string, theme?: string}, banner?: array{mon?: string, pattern?: string}} $body */
+        /** @var array{name?: string, preferred_clan?: string, settings?: array{card_display?: string, theme?: string, tutorial?: bool, seen_tips?: list<string>}, banner?: array{mon?: string, pattern?: string}} $body */
         $name = isset($body['name']) ? trim($body['name']) : null;
         $clan = $body['preferred_clan'] ?? null;
         $cardDisplay = $body['settings']['card_display'] ?? null;
         $theme = $body['settings']['theme'] ?? null;
+        $tutorial = $body['settings']['tutorial'] ?? null;
+        $seenTips = $body['settings']['seen_tips'] ?? null;
         $mon = $body['banner']['mon'] ?? null;
         $pattern = $body['banner']['pattern'] ?? null;
 
@@ -150,6 +164,12 @@ class ApiSelfController extends AbstractController
                 choices: array_column(Theme::cases(), 'value'),
                 message: 'Choose one of: {{ choices }}.',
             ));
+        }
+        if ($seenTips !== null) {
+            $validator->atPath('settings.seen_tips')->validate($seenTips, [
+                new Assert\Count(max: UserSettings::MAX_SEEN_TIPS),
+                new Assert\All(new Assert\Regex(UserSettings::TIP_PATTERN, message: 'This is not the id of a tip.')),
+            ]);
         }
         if ($mon !== null) {
             $validator->atPath('banner.mon')->validate($mon, [
@@ -189,6 +209,12 @@ class ApiSelfController extends AbstractController
         }
         if ($theme !== null) {
             $user->changeSettings($user->getSettings()->withTheme(Theme::from($theme)));
+        }
+        if ($tutorial !== null) {
+            $user->changeSettings($user->getSettings()->withTutorial($tutorial));
+        }
+        if ($seenTips !== null) {
+            $user->changeSettings($user->getSettings()->withSeenTips($seenTips));
         }
         if ($mon !== null) {
             $user->changeBanner($user->getBanner()->withMon(Mon::from($mon)));

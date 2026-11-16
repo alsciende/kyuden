@@ -80,6 +80,7 @@ export function game(me: PlayerView, opp: PlayerView, changes: Partial<GameView>
     version: 1,
     place: 'conflict_phase_action_window',
     viewer_id: me.id,
+    training: false,
     player_ids: [me.id, opp.id],
     first_player_id: me.id,
     active_player_ids: [],
