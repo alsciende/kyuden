@@ -15,14 +15,18 @@ import ClanPicker from '@/components/ClanPicker.vue'
 import PlayerNobori from '@/components/PlayerNobori.vue'
 import ProviderLogo from '@/components/ProviderLogo.vue'
 import type { ClanId } from '@/data/clans'
+import { HOUSE_BOT } from '@/data/houseBot'
 import { MONS, PATTERNS, type Mon, type Pattern } from '@/data/nobori'
 import { MAX_NAME_LENGTH } from '@/lib/names'
+import { TIP_IDS } from '@/lib/tutorial'
 import { chooseNobori, earnedCount, isEarned, loadOwnNobori, type OwnNobori } from '@/lib/nobori'
 import { formErrors } from '@/lib/credentials'
 import { enabledProviders, isProvider, PROVIDERS, providerName, startOAuth } from '@/lib/oauth'
 import {
   chooseCardDisplay,
   chooseTheme,
+  chooseTutorial,
+  showTipsAgain,
   deleteAccount,
   preferClan,
   refreshSession,
@@ -67,6 +71,26 @@ const THEMES: { value: Theme; label: string; hint: string }[] = [
   { value: 'dark', label: 'Night', hint: 'Light ink on a dark ground.' },
   { value: 'auto', label: 'Auto', hint: 'As your system: day or night.' },
 ]
+
+const tipsSending = ref(false)
+const tipsError = ref<string | null>(null)
+const tipsSaved = ref(false)
+/** the tips of the catalogue the user has seen (an id no longer in it left out) */
+const tipsSeen = computed(() => TIP_IDS.filter((id) => session.value?.seenTips.includes(id)).length)
+
+async function changeTips(change: () => Promise<unknown>): Promise<void> {
+  tipsSending.value = true
+  tipsError.value = null
+  tipsSaved.value = false
+  try {
+    await change()
+    tipsSaved.value = true
+  } catch (problem) {
+    tipsError.value = formErrors(problem).form ?? 'The setting could not be saved.'
+  } finally {
+    tipsSending.value = false
+  }
+}
 
 const theme = ref<Theme>(session.value?.theme ?? 'auto')
 const themeSaved = ref(false)
@@ -535,6 +559,30 @@ async function leave(): Promise<void> {
         <p v-else-if="themeSaved" class="form-hint" role="status">Saved.</p>
       </div>
 
+      <div id="tips-label" class="form-label row-label display-label">Tips</div>
+      <div class="row">
+        <label class="choice">
+          <input
+            type="checkbox"
+            class="tips-check"
+            :checked="session?.tutorial ?? true"
+            :disabled="tipsSending"
+            @change="changeTips(() => chooseTutorial(($event.target as HTMLInputElement).checked))"
+          />
+          <span class="choice-text">
+            <span class="choice-label">In the games against {{ HOUSE_BOT.name }}</span>
+            <span class="form-hint"
+              >Tips explain the screen of the game, each once: {{ tipsSeen }} of {{ TIP_IDS.length }} seen.</span
+            >
+          </span>
+        </label>
+        <button type="button" class="btn tips-again" :disabled="tipsSending" @click="changeTips(showTipsAgain)">
+          Reset the tips
+        </button>
+        <p v-if="tipsError" class="form-error" role="alert">{{ tipsError }}</p>
+        <p v-else-if="tipsSaved" class="form-hint" role="status">Saved.</p>
+      </div>
+
       <template v-if="linkRows.length > 0">
         <div class="form-label row-label linked-label">Linked accounts</div>
         <div class="row">
@@ -866,6 +914,15 @@ h1 {
 
 .deletion .confirm-actions {
   padding-left: 0;
+}
+
+.tips-check {
+  accent-color: var(--tutorial);
+}
+
+.tips-again {
+  align-self: flex-start;
+  margin-top: 12px;
 }
 
 .choices {

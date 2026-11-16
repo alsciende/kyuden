@@ -126,7 +126,7 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       </div>
     </div>
 
-    <header class="step">
+    <header class="step" data-tip-anchor="step">
       <nav class="phases" aria-label="Phases">
         <span
           v-for="phase in PHASES"
@@ -203,7 +203,7 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       </p>
     </section>
 
-    <section class="rings" aria-label="Rings">
+    <section class="rings" aria-label="Rings" data-tip-anchor="rings">
       <div class="title">
         <span class="label">Rings</span>
         <span class="aside">{{ unclaimedFate }} fate on the unclaimed rings</span>
@@ -255,7 +255,7 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
     </section>
 
     <slot name="log">
-      <section class="log" aria-label="Last lines of the log">
+      <section class="log" aria-label="Last lines of the log" data-tip-anchor="log">
         <div class="title">
           <span class="label">Log</span>
           <button type="button" class="btn-link" @click="$emit('openLog')">Show all</button>

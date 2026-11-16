@@ -87,6 +87,15 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertNull($this->playerView($view, $scenario, 'jane')->clan);
     }
 
+    public function testTheViewTellsAGameAgainstTheHouseBot(): void
+    {
+        $training = $this->scenario()->training()->atPlace('draw_phase_action_window')->withPlayer('john')->withPlayer('kyuden-bot')->build();
+        $standard = $this->scenario()->atPlace('draw_phase_action_window')->withPlayer('john')->withPlayer('jane')->build();
+
+        self::assertTrue($this->view($training, 'john')->training);
+        self::assertFalse($this->view($standard, 'john')->training);
+    }
+
     public function testThePlayersShowTheirNobori(): void
     {
         $scenario = $this->scenario()

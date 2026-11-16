@@ -28,6 +28,8 @@ describe('QueueWaiting and QueueBanner', () => {
       preferredClan: 'crab',
       cardDisplay: 'drawn',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_a',
     }
     now.value = 102_000

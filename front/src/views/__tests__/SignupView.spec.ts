@@ -40,6 +40,8 @@ describe('SignupView', () => {
       preferredClan: null,
       cardDisplay: 'drawn' as const,
       theme: 'auto' as const,
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_a',
     }
     localStorage.setItem('kyuden.session', JSON.stringify(guest))

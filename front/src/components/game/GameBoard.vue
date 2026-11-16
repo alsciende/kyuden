@@ -210,7 +210,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
   <main class="board" :class="mode">
     <!-- setup: the province under the stronghold -->
     <template v-if="mode === 'stronghold'">
-      <section class="zone pick" aria-label="Your provinces">
+      <section class="zone pick" aria-label="Your provinces" data-tip-anchor="my-provinces">
         <span class="label"
           ><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · choose the province under your stronghold</span
         >
@@ -564,7 +564,7 @@ const stronghold = computed(() => cardsOf(stackOf(me.value, 'stronghold_province
         <CharacterRow :characters="myHome" :cards="cards" :mine="true" @open="emit('open', $event)" />
       </section>
 
-      <section class="zone" aria-label="Your provinces">
+      <section class="zone" aria-label="Your provinces" data-tip-anchor="my-provinces">
         <span class="label"><PlayerChip :player="me" :viewer-id="game.viewer_id" /> · provinces</span>
         <ProvinceRow :game="game" :player="me" :cards="cards" @open="openInMyProvinces" />
       </section>

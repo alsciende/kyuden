@@ -59,6 +59,7 @@ final readonly class GameViewFactory
             version: $game->getVersion(),
             place: $game->getCurrentPlace(),
             viewerId: $viewer?->getId(),
+            training: $game->isTraining(),
             playerIds: $state->playerIds,
             firstPlayerId: $state->firstPlayerId,
             activePlayerIds: $state->activePlayerIds,

@@ -17,6 +17,7 @@ import MulliganWindow from '@/components/game/MulliganWindow.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
 import TrophyAnnouncement from '@/components/game/TrophyAnnouncement.vue'
+import TutorialTip from '@/components/game/TutorialTip.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
@@ -34,6 +35,7 @@ import { CARDS_UNDER } from '@/lib/underneath'
 import { hideTooltip } from '@/lib/tooltip'
 import { tableSet } from '@/lib/matchAnnouncement'
 import { useGame } from '@/lib/useGame'
+import { useTutorial } from '@/lib/useTutorial'
 
 /**
  * A game, as its player plays it: the board on the left, the bar of the step and of the state of the game on the
@@ -111,6 +113,13 @@ watch(
 
 const menu = computed(() =>
   game.value === null || openCardId.value === null ? undefined : cardMenu(game.value, cards, openCardId.value),
+)
+
+/** the tips of the tutorial, in a game against the house bot */
+const tutorial = useTutorial(
+  game,
+  cards,
+  computed(() => menu.value !== undefined),
 )
 
 // a card that has left the view (shuffled, discarded from a hidden zone) closes its dialog
@@ -328,6 +337,7 @@ const problem = computed(() => {
       :error="error"
       :send="send"
       class="bottom-bar"
+      data-tip-anchor="my-bar"
       @open="open"
       @popover="onPopover"
     />
@@ -365,6 +375,15 @@ const problem = computed(() => {
       :error="error"
       :send="send"
       @close="openCardId = null"
+    />
+    <!-- not over the windows of cards looked at nor of the mulligan, whose screen it does not explain -->
+    <TutorialTip
+      v-if="tutorial.tip.value && !inspection && !mulligan"
+      :key="`${tutorial.tip.value.id}-${menu?.located.card.id ?? ''}`"
+      :tip="tutorial.tip.value"
+      :over-window="menu !== undefined"
+      @dismiss="tutorial.dismiss"
+      @hide="tutorial.hideTips"
     />
     <LogDrawer v-if="logOpen" :game="game" :cards="cards" :log="log" @close="logOpen = false" />
     <MulliganWindow

@@ -65,6 +65,8 @@ describe('startIntroductoryGame', () => {
       preferredClan: null,
       cardDisplay: 'images',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_token',
     })
   })
@@ -112,7 +114,7 @@ describe('accounts', () => {
     name: 'Hida Takeshi',
     username: 'takeshi',
     preferred_clan: 'crab',
-    settings: { card_display: 'images', theme: 'dark' },
+    settings: { card_display: 'images', theme: 'dark', tutorial: true, seen_tips: ['welcome'] },
     token: 'l5r_account',
   }
 
@@ -147,6 +149,8 @@ describe('accounts', () => {
       preferredClan: 'crab',
       cardDisplay: 'images',
       theme: 'dark',
+      tutorial: true,
+      seenTips: ['welcome'],
       token: 'l5r_account',
     })
     expect(session.value?.username).toBe('takeshi')

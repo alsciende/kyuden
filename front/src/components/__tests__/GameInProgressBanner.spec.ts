@@ -54,6 +54,8 @@ describe('GameInProgressBanner', () => {
       preferredClan: 'crab',
       cardDisplay: 'drawn',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_a',
     }
     games = []
@@ -122,6 +124,8 @@ describe('GameInProgressBanner', () => {
       preferredClan: 'crab',
       cardDisplay: 'drawn',
       theme: 'auto',
+      tutorial: true,
+      seenTips: [],
       token: 'l5r_b',
     }
     await flushPromises()

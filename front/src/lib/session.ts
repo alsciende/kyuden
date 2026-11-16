@@ -40,6 +40,10 @@ export interface Session {
   cardDisplay: CardDisplay
   /** light or dark: as the system says for a guest */
   theme: Theme
+  /** the tips of the tutorial shown in the games against the house bot */
+  tutorial: boolean
+  /** the ids of the tips of the tutorial already seen */
+  seenTips: string[]
   token: string
 }
 
@@ -51,21 +55,28 @@ export function loadSession(): Session | null {
     if (value === null) {
       return null
     }
-    const stored = JSON.parse(value) as Omit<Session, 'username' | 'preferredClan' | 'cardDisplay' | 'theme'> & {
+    const stored = JSON.parse(value) as Omit<
+      Session,
+      'username' | 'preferredClan' | 'cardDisplay' | 'theme' | 'tutorial' | 'seenTips'
+    > & {
       username?: string | null
       preferredClan?: ClanId | null
       cardDisplay?: CardDisplay
       theme?: Theme
+      tutorial?: boolean
+      seenTips?: string[]
     }
 
     // the guests kept before the accounts have no username, the sessions kept before the clans no preferred clan,
-    // those kept before the settings no card display nor theme
+    // those kept before the settings no card display nor theme, those kept before the tutorial no tips
     return {
       ...stored,
       username: stored.username ?? null,
       preferredClan: stored.preferredClan ?? null,
       cardDisplay: stored.cardDisplay ?? 'images',
       theme: stored.theme ?? 'auto',
+      tutorial: stored.tutorial ?? true,
+      seenTips: stored.seenTips ?? [],
     }
   } catch {
     return null
@@ -113,6 +124,8 @@ export async function guestSession(name: string): Promise<Session> {
     preferredClan: null,
     cardDisplay: 'images',
     theme: 'auto',
+    tutorial: true,
+    seenTips: [],
     token: guest.token,
   }
   saveSession(created)
@@ -147,6 +160,8 @@ function accountSession(account: Account): Session {
     preferredClan: account.preferred_clan,
     cardDisplay: account.settings.card_display,
     theme: account.settings.theme,
+    tutorial: account.settings.tutorial,
+    seenTips: account.settings.seen_tips,
     token: account.token,
   }
   saveSession(created)
@@ -302,6 +317,8 @@ function withSelf(current: Session, self: Self): Session {
     preferredClan: self.preferred_clan,
     cardDisplay: self.settings.card_display,
     theme: self.settings.theme,
+    tutorial: self.settings.tutorial,
+    seenTips: self.settings.seen_tips,
   }
 }
 
@@ -330,4 +347,49 @@ export function chooseCardDisplay(cardDisplay: CardDisplay): Promise<Session> {
 
 export function chooseTheme(theme: Theme): Promise<Session> {
   return updateAccount({ settings: { theme } })
+}
+
+/** shows the tips of the tutorial in the games against the house bot, or no longer */
+export function chooseTutorial(tutorial: boolean): Promise<Session> {
+  return updateAccount({ settings: { tutorial } })
+}
+
+/** shows every tip of the tutorial again, from the first */
+export function showTipsAgain(): Promise<Session> {
+  return updateAccount({ settings: { tutorial: true, seen_tips: [] } })
+}
+
+/**
+ * Remembers at once that the user has seen tips of the tutorial (kept by the browser), without telling the API:
+ * `sendSeenTips()` does, once for several tips.
+ */
+export function rememberTipsSeen(ids: string[]): void {
+  const current = loadSession()
+  if (current === null) {
+    return
+  }
+  const seenTips = [...new Set([...current.seenTips, ...ids])]
+  if (seenTips.length !== current.seenTips.length) {
+    saveSession({ ...current, seenTips })
+  }
+}
+
+/**
+ * Sends the tips the user has seen to the API, with whether the tips are shown: the tips seen meanwhile, on another
+ * request, are kept.
+ */
+export async function sendSeenTips(tutorial?: boolean): Promise<void> {
+  const current = loadSession()
+  if (current === null) {
+    return
+  }
+  const self = await updateSelf(current.token, {
+    settings: { seen_tips: current.seenTips, ...(tutorial === undefined ? {} : { tutorial }) },
+  })
+  const now = loadSession()
+  if (now === null || now.token !== current.token) {
+    return
+  }
+  const changed = withSelf(now, self)
+  saveSession({ ...changed, seenTips: [...new Set([...self.settings.seen_tips, ...now.seenTips])] })
 }

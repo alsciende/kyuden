@@ -397,7 +397,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <ModalDialog class="overlay" dismissable :aria-label="name" @close="emit('close')" @click.self="emit('close')">
+  <ModalDialog
+    class="overlay"
+    data-card-dialog
+    dismissable
+    :aria-label="name"
+    @close="emit('close')"
+    @click.self="emit('close')"
+  >
     <button ref="closeButton" type="button" class="close" @click="emit('close')">
       <svg
         aria-hidden="true"
@@ -424,7 +431,7 @@ onMounted(() => {
     </figure>
 
     <div class="panels">
-      <section class="panel" aria-label="Card actions">
+      <section class="panel" aria-label="Card actions" data-tip-anchor="card-actions">
         <header class="head">
           <div class="owner">
             <PlayerChip :player="owner" :viewer-id="game.viewer_id" />

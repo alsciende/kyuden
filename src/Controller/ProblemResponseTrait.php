@@ -39,7 +39,12 @@ trait ProblemResponseTrait
         foreach ($violations as $violation) {
             $list[] = [
                 'property_path' => implode('.', array_map(
-                    static fn (string $segment): string => u($segment)->snake()->toString(),
+                    // the name in snake case, its index kept (`seen_tips[0]`)
+                    static fn (string $segment): string => (string) preg_replace_callback(
+                        '/^[^\[]*/',
+                        static fn (array $name): string => u($name[0])->snake()->toString(),
+                        $segment,
+                    ),
                     explode('.', $violation->getPropertyPath()),
                 )),
                 'message' => (string) $violation->getMessage(),
