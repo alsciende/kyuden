@@ -7,6 +7,9 @@ namespace App\Tests\Controller;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Game;
 use App\Entity\User;
+use App\Enum\Trophy;
+use App\Service\Trophy\TrophyCase;
+use Doctrine\ORM\EntityManagerInterface;
 use App\Tests\AbstractKernelTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -376,5 +379,46 @@ class ApiSelfControllerTest extends AbstractKernelTestCase
     {
         self::assertSame(['mons' => ['enso'], 'patterns' => ['none']], $this->decode($this->get('/api/self', 'harry'))['unlocked']);
         self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $this->request('PATCH', '/api/self', 'harry', ['banner' => ['mon' => 'crab']])->getStatusCode());
+    }
+
+    public function testAUserReadsEveryTrophyWithWhatTheyHaveEarned(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace(Game::STATE_ENDED)
+            ->withPlayer('jane')
+            ->withPlayer('kyuden-bot')
+            ->persist();
+        $jane = self::service(EntityManagerInterface::class)->find(User::class, 'jane');
+        self::assertInstanceOf(User::class, $jane);
+        self::service(TrophyCase::class)->award($jane, Trophy::HouseBotGame, new \DateTimeImmutable('2026-11-14 12:00:00'), $scenario->game());
+        self::service(EntityManagerInterface::class)->flush();
+
+        $response = $this->get('/api/self/trophies', 'jane');
+        $trophies = $this->decode($response);
+
+        self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        self::assertSame(array_column(Trophy::cases(), 'value'), array_column($trophies, 'trophy'));
+        self::assertEquals([
+            'trophy' => 'house_bot_game',
+            'reward_mon' => null,
+            'reward_pattern' => 'plain',
+            'earned' => true,
+            'earned_at' => '2026-11-14T12:00:00+00:00',
+            'game_id' => $scenario->game()->getId(),
+        ], $trophies[0]);
+        self::assertEquals([
+            'trophy' => 'clan_crab',
+            'reward_mon' => 'crab',
+            'reward_pattern' => null,
+            'earned' => false,
+            'earned_at' => null,
+            'game_id' => null,
+        ], $trophies[1]);
+        self::assertEquals(['mons' => ['enso'], 'patterns' => ['none', 'plain']], $this->decode($this->get('/api/self', 'jane'))['unlocked'], 'its reward');
+    }
+
+    public function testTheTrophiesRequireAToken(): void
+    {
+        self::assertSame(Response::HTTP_UNAUTHORIZED, $this->get('/api/self/trophies', null)->getStatusCode());
     }
 }

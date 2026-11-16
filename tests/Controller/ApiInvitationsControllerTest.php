@@ -180,6 +180,7 @@ class ApiInvitationsControllerTest extends AbstractKernelTestCase
         self::assertInstanceOf(Game::class, $game);
         self::assertSame($game, $this->gameOf('harry'));
         self::assertTrue($game->isFriendly());
+        self::assertFalse($game->isTraining());
         self::assertNull($this->gameOf('hida-bot'));
         $status = $this->decode($this->request('GET', '/api/invitations/' . $this->string($invitation['code']), null), Response::HTTP_OK);
         self::assertSame('used', $status['state']);

@@ -18,6 +18,7 @@ import QueueView from '@/views/QueueView.vue'
 import SignupView from '@/views/SignupView.vue'
 import StartView from '@/views/StartView.vue'
 import TermsView from '@/views/TermsView.vue'
+import TrophiesView from '@/views/TrophiesView.vue'
 import WatchView from '@/views/WatchView.vue'
 
 const hasAccount = () => session.value !== null && session.value.username !== null
@@ -104,6 +105,14 @@ export const router = createRouter({
       name: 'history',
       component: HistoryView,
       meta: { title: 'Your games · Kyūden' },
+      beforeEnter: () => (session.value !== null ? true : { name: 'login' }),
+    },
+    // the trophies of the user, a guest's too
+    {
+      path: '/trophies',
+      name: 'trophies',
+      component: TrophiesView,
+      meta: { title: 'Your trophies · Kyūden' },
       beforeEnter: () => (session.value !== null ? true : { name: 'login' }),
     },
     {

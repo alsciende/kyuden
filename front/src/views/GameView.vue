@@ -16,6 +16,7 @@ import LogDrawer from '@/components/game/LogDrawer.vue'
 import MulliganWindow from '@/components/game/MulliganWindow.vue'
 import PlayerBar from '@/components/game/PlayerBar.vue'
 import TooltipLayer from '@/components/game/TooltipLayer.vue'
+import TrophyAnnouncement from '@/components/game/TrophyAnnouncement.vue'
 import { ABANDONMENT } from '@/lib/abandonment'
 import { cardsUnder, gameEnded, opponent, resultTitle, viewer, victoryText } from '@/lib/board'
 import { cardMenu } from '@/lib/cardActions'
@@ -227,6 +228,14 @@ const result = computed(() =>
 
 const guest = computed(() => (isGuest(session.value) ? session.value : null))
 
+/** the trophies the player earned in the game, announced on the screen of its result */
+const trophiesEarned = ref(0)
+const guestKeeps = computed(() =>
+  trophiesEarned.value === 0
+    ? 'your name and this game'
+    : `your name, this game and your ${trophiesEarned.value === 1 ? 'trophy' : 'trophies'}`,
+)
+
 function chooseRing(element: Element): void {
   selection.ring = selection.ring === element ? null : element
 }
@@ -324,23 +333,21 @@ const problem = computed(() => {
     />
 
     <div v-if="ended && result" class="ended" role="dialog" aria-labelledby="game-result">
-      <div class="ended-content">
-        <ClanMon :src="enso" :size="96" color="var(--on-veil)" />
+      <div class="ended-content" :class="{ compact: trophiesEarned > 0 }">
+        <ClanMon :src="enso" :size="trophiesEarned > 0 ? 56 : 96" color="var(--on-veil)" />
         <h1 id="game-result">{{ result.title }}</h1>
         <p v-if="result.text">{{ result.text }}</p>
+        <TrophyAnnouncement :game-id="game.id" @earned="trophiesEarned = $event" />
         <!-- a guest is invited to keep their name: the introductory game is over -->
         <div v-if="guest" class="invitation">
           <p class="invitation-title">Stay at court, {{ guest.name }}</p>
-          <p>Create an account to keep your name and this game, and to play again from any browser.</p>
+          <p>Create an account to keep {{ guestKeeps }}, and to play again from any browser.</p>
           <div class="invitation-actions">
             <RouterLink :to="{ name: 'signup' }" class="btn leave">Create an account</RouterLink>
             <RouterLink to="/" class="btn-link">Leave the game</RouterLink>
           </div>
         </div>
         <RouterLink v-else to="/" class="btn leave">Leave the game</RouterLink>
-        <RouterLink :to="{ name: 'replay', params: { id: game.id } }" class="btn-link replay"
-          >Replay this game</RouterLink
-        >
       </div>
     </div>
 
@@ -471,6 +478,23 @@ const problem = computed(() => {
   line-height: 1;
 }
 
+/* with the trophies earned, the result is smaller, so that it fits an iPad mini */
+.ended-content.compact {
+  padding: 28px 56px;
+  gap: 12px;
+  max-width: 600px;
+}
+
+.ended-content.compact h1 {
+  font-size: 60px;
+}
+
+.ended-content.compact .invitation {
+  margin-top: 6px;
+  padding-top: 16px;
+  gap: 8px;
+}
+
 .ended p {
   font-size: 17px;
   color: #d8cdb8;
@@ -512,10 +536,6 @@ const problem = computed(() => {
 }
 
 .invitation-actions .btn-link {
-  color: var(--on-veil);
-}
-
-.replay {
   color: var(--on-veil);
 }
 

@@ -67,6 +67,16 @@ final class GameBuilder
     private ?string $gameId = null;
 
     /**
+     * A game of an invitation, not ranked.
+     */
+    private bool $friendly = false;
+
+    /**
+     * A game against the house bot.
+     */
+    private bool $training = false;
+
+    /**
      * @var list<string>
      */
     private array $activePlayers = [];
@@ -141,6 +151,26 @@ final class GameBuilder
     public function gameId(string $gameId): self
     {
         $this->gameId = $gameId;
+
+        return $this;
+    }
+
+    /**
+     * A game of an invitation.
+     */
+    public function friendly(): self
+    {
+        $this->friendly = true;
+
+        return $this;
+    }
+
+    /**
+     * A game against the house bot.
+     */
+    public function training(): self
+    {
+        $this->training = true;
 
         return $this;
     }
@@ -255,7 +285,7 @@ final class GameBuilder
         $this->builtUsers = [];
         $this->builtCards = [];
 
-        $game = new Game($this->gameId ?? Uuid::v4()->toString(), $this->seed ?? random_bytes(32));
+        $game = new Game($this->gameId ?? Uuid::v4()->toString(), $this->seed ?? random_bytes(32), $this->friendly, $this->training);
         $game->setCurrentPlace($this->place);
 
         $players = [];

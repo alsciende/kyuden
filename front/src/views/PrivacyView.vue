@@ -25,6 +25,7 @@
           <strong>nobori</strong> (the mon and the pattern the other players see) and the mons and patterns you have
           earned, with when.
         </li>
+        <li>The <strong>trophies</strong> you have earned, with when and in which game, which only you see.</li>
         <li>
           The <strong>decks</strong> you import, which only you see. A deck you delete is gone, unless you have played a
           game with it: it then stays with that game, hidden from your decks, and comes back if you import it again.
@@ -41,7 +42,7 @@
           at court and the clans of its players, with a link to watch it.
         </li>
       </ul>
-      <p>A guest, who plays without an account, has only a name at court and their games.</p>
+      <p>A guest, who plays without an account, has only a name at court, their games and their trophies.</p>
       <p>
         You can delete your account from its page, at any time. Everything above is then deleted, and your bots with it,
         but your games: they belong to your opponents too, and stay, under the name “A former player”. Your games in

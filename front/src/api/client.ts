@@ -1,5 +1,5 @@
 import type { ClanId } from '@/data/clans'
-import type { Banner, NoboriCollection } from '@/data/nobori'
+import type { Banner, MonId, NoboriCollection, PatternId } from '@/data/nobori'
 
 /**
  * The HTTP API of the engine, on the same origin (nginx sends /api to Symfony). Errors are problem details
@@ -117,6 +117,31 @@ export interface UserGame {
   winner_id: string | null
   /** how the game ended, null while it goes on */
   victory_condition: string | null
+}
+
+/** the trophies of the catalogue, the values of the enum `Trophy` of the API */
+export type TrophyId =
+  | 'house_bot_game'
+  | 'clan_crab'
+  | 'clan_crane'
+  | 'clan_dragon'
+  | 'clan_lion'
+  | 'clan_phoenix'
+  | 'clan_scorpion'
+  | 'clan_unicorn'
+
+/**
+ * A trophy of the catalogue for the authenticated user, in its order: what it gives for the nobori, and once earned,
+ * when and in which game.
+ */
+export interface UserTrophy {
+  trophy: TrophyId
+  reward_mon: MonId | null
+  reward_pattern: PatternId | null
+  earned: boolean
+  earned_at: string | null
+  /** the game it was earned in, null for a trophy no game gives */
+  game_id: string | null
 }
 
 export interface UserGameSeat {
@@ -332,6 +357,10 @@ export function deleteSelf(token: string): Promise<void> {
 
 export function fetchSelfGames(token: string): Promise<UserGame[]> {
   return request<UserGame[]>('/api/self/games', { token })
+}
+
+export function fetchTrophies(token: string): Promise<UserTrophy[]> {
+  return request<UserTrophy[]>('/api/self/trophies', { token })
 }
 
 export function fetchSubscription(token: string): Promise<Subscription> {

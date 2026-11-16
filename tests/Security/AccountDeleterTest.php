@@ -16,6 +16,8 @@ use App\Enum\Mon;
 use App\Model\Banner;
 use App\Model\UserSettings;
 use App\Service\Nobori\NoboriCollection;
+use App\Service\Trophy\TrophyCase;
+use App\Enum\Trophy;
 use App\Repository\SpectatorRepository;
 use App\Security\AccountDeleter;
 use App\Tests\AbstractKernelTestCase;
@@ -54,9 +56,10 @@ class AccountDeleterTest extends AbstractKernelTestCase
         self::assertSame('Jane', $this->user('jane')->getName());
     }
 
-    public function testTheNoboriIsForgottenWithWhatTheUserEarned(): void
+    public function testTheNoboriIsForgottenWithTheTrophiesAndWhatTheUserEarned(): void
     {
         $this->user('john')->changeBanner(new Banner(Mon::Crab, BannerPattern::Seigaiha));
+        self::service(TrophyCase::class)->award($this->user('john'), Trophy::ClanLion, new \DateTimeImmutable());
         self::service(EntityManagerInterface::class)->flush();
 
         self::service(AccountDeleter::class)->delete($this->user('john'));
@@ -65,6 +68,7 @@ class AccountDeleterTest extends AbstractKernelTestCase
         self::assertEquals(new Banner(), $john->getBanner());
         self::assertSame([Mon::Enso], self::service(NoboriCollection::class)->mons($john));
         self::assertSame([BannerPattern::None], self::service(NoboriCollection::class)->patterns($john));
+        self::assertSame([], self::service(TrophyCase::class)->earned($john));
     }
 
     public function testTheTokensAndTheLinkedIdentitiesAreDeleted(): void

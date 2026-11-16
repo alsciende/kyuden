@@ -14,15 +14,16 @@ final readonly class CreateGame implements ActionInterface
         private string $seed,
         private bool $friendly = false,
         private bool $mulligan = false,
+        private bool $training = false,
     ) {
     }
 
     /**
      * Creates a game whose random generator is seeded with fresh random bytes.
      */
-    public static function withRandomSeed(string $gameId, bool $friendly = false, bool $mulligan = false): self
+    public static function withRandomSeed(string $gameId, bool $friendly = false, bool $mulligan = false, bool $training = false): self
     {
-        return new self($gameId, bin2hex(random_bytes(32)), $friendly, $mulligan);
+        return new self($gameId, bin2hex(random_bytes(32)), $friendly, $mulligan, $training);
     }
 
     #[\Override]
@@ -54,5 +55,13 @@ final readonly class CreateGame implements ActionInterface
     public function hasMulligan(): bool
     {
         return $this->mulligan;
+    }
+
+    /**
+     * A game against the house bot. False by default, so that the events of a game created before replay as they did.
+     */
+    public function isTraining(): bool
+    {
+        return $this->training;
     }
 }

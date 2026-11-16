@@ -17,6 +17,7 @@ use App\Security\AccountDeleter;
 use App\Service\Nobori\NoboriCollection;
 use App\View\Model\NoboriCollectionView;
 use App\View\Model\SelfView;
+use App\View\TrophyViewFactory;
 use App\View\UserGameViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,7 +37,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * (which they change, `PATCH {"name": ..., "preferred_clan": ..., "settings": {"card_display": ..., "theme": ...},
  * "banner": {"mon": ..., "pattern": ...}}`, any of them; a setting or a part of the nobori left out is kept; a mon or a
  * pattern they have not earned is refused), what they may choose for their nobori and their username, and their games (in progress or ended, the last joined first), so that a user matched by
- * the queue finds the id of their game; and their subscription to the Mercure hub. A human deletes their account
+ * the queue finds the id of their game; their trophies, earned or not; and their subscription to the Mercure hub. A human deletes their account
  * (`DELETE`). Errors are problem details (RFC 9457).
  */
 class ApiSelfController extends AbstractController
@@ -59,6 +60,7 @@ class ApiSelfController extends AbstractController
         private readonly UserGameViewFactory $userGameViewFactory,
         private readonly AccountDeleter $accountDeleter,
         private readonly NoboriCollection $noboriCollection,
+        private readonly TrophyViewFactory $trophyViewFactory,
     ) {
     }
 
@@ -223,6 +225,19 @@ class ApiSelfController extends AbstractController
             $this->gameRepository->findByUser($userId),
             $userId,
         ));
+    }
+
+    /**
+     * Every trophy of the catalogue, in its order: its reward for the nobori, whether the user has earned it, when and in
+     * which game.
+     */
+    #[Route('/api/self/trophies', name: 'app_api_self_trophies', methods: ['GET'])]
+    public function trophies(#[CurrentUser] User $user): JsonResponse
+    {
+        $response = $this->json($this->trophyViewFactory->createAll($user));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     /**
