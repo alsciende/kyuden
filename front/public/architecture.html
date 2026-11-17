@@ -57,10 +57,10 @@ section h2 .n { font-family: var(--ui); font-size: 13px; letter-spacing: .08em; 
 .diagram svg { display: block; margin: 0 auto; height: auto; }
 .diagram small { font-size: .8em; color: var(--ink-soft); }
 .diagram .error { color: var(--ink-soft); font-size: 13px; }
-.diagram.stepping g.node, .diagram.stepping .edgePaths path, .diagram.stepping g.edgeLabel { transition: opacity .25s; }
-.diagram.stepping g.node:not(.on), .diagram.stepping .edgePaths path:not(.on) { opacity: .16; }
+.diagram.stepping .nodes > g, .diagram.stepping .edgePaths path, .diagram.stepping g.edgeLabel { transition: opacity .25s; }
+.diagram.stepping .nodes > g:not(.on), .diagram.stepping .edgePaths path:not(.on) { opacity: .16; }
 .diagram.stepping g.edgeLabel { opacity: .3; }
-.diagram g.node.on path, .diagram g.node.on rect, .diagram g.node.on polygon, .diagram g.node.on circle { stroke: var(--accent) !important; }
+.diagram .nodes > g.on path, .diagram .nodes > g.on rect, .diagram .nodes > g.on polygon, .diagram .nodes > g.on circle { stroke: var(--accent) !important; }
 .diagram .edgePaths path.on { stroke: var(--accent) !important; stroke-width: 2.2px !important; }
 @media (prefers-reduced-motion: reduce) { .diagram * { transition: none !important; } }
 
@@ -159,14 +159,19 @@ const DIAGRAMS = [
     bus["Messenger bus<br/><small>lock, version, events, auto transitions</small>"]
     handlers["Action handlers<br/><small>assertAvailable, then transitions</small>"]
     wf["Workflows<br/><small>game + one per card type</small>"]
-    house["House bot<br/><small>plays on kernel.terminate</small>"]
     hub["Mercure hub<br/><small>private topics</small>"]
   end
-  db[("PostgreSQL<br/><small>state, events, log</small>")]
+  subgraph workerc [Worker container]
+    worker["Worker<br/><small>tasks of src/Task</small>"]
+    house["House bot<br/><small>PlayHouseBotTurn</small>"]
+  end
+  db[("PostgreSQL<br/><small>state, events, log, tasks</small>")]
   web -->|JSON + If-Match| api
   agent -->|tools| mcp
   mcp --> bus
   api -->|dispatch| bus
+  bus -.->|bot turn| worker
+  worker --> house
   house --> bus
   bus --> handlers
   handlers -->|transitions| wf
@@ -180,7 +185,7 @@ const DIAGRAMS = [
       ['Handlers drive workflows', 'A handler checks what the current step allows and applies transitions; listeners hold what depends on the step.', 'bus handlers wf bus>handlers handlers>wf'],
       ['Everything is recorded', 'The state is saved, the message becomes an Event, replayable with the seeded randomizer of the game, and every change writes a log entry.', 'wf db wf>db'],
       ['Clients are notified', 'After the commit, Mercure tells the players the version changed; they read their view and the log again, masked for them.', 'bus hub web api bus>hub hub>web web>api'],
-      ['The house bot plays', 'Once the response is sent, Kyūden no Karō reads the board and plays through the bus like any player.', 'house bus house>bus'],
+      ['The house bot plays', 'Once a message on its game is committed, HouseBotMiddleware sends the turn of the bot to the worker (PlayHouseBotTurn). There Kyūden no Karō reads the board and plays through the bus like any player.', 'house worker bus bus>worker worker>house house>bus'],
     ],
   },
   {
@@ -190,6 +195,7 @@ const DIAGRAMS = [
     lobby["Queue and invitations<br/><small>decks, EmeraldDB import</small>"]
     account["Account and sign-in<br/><small>login, signup, OAuth</small>"]
     watch["Watch games<br/><small>games in progress</small>"]
+    history["History and replays<br/><small>games ended, trophies</small>"]
     gamev["Game view<br/><small>board, bars, card dialog</small>"]
   end
   subgraph lib [lib/, pure logic]
@@ -207,6 +213,7 @@ const DIAGRAMS = [
   account --> session
   lobby --> client
   watch --> client
+  history --> client
   gamev --> usegame
   gamev -->|renders| board
   usegame -->|view data| board
@@ -217,7 +224,7 @@ const DIAGRAMS = [
   hub -.->|game_updated| usegame
   class gamev,usegame accent`,
     steps: [
-      ['Pages', 'Views handle the way of the newcomers, accounts, the queue, invitations, watching and the game itself.', 'home lobby account watch gamev'],
+      ['Pages', 'Views handle the way of the newcomers, accounts, the queue, invitations, watching, the history of the games with their replays and the trophies, and the game itself.', 'home lobby account watch history gamev'],
       ['Session', 'The browser keeps the token of a guest or an account; a token the API refuses is forgotten, and the user signs in again or starts over as a newcomer.', 'session client home>session account>session session>client'],
       ['The game page', 'useGame loads the view and the log, follows the topic of the game on Mercure and reads both again after each notification, or after 15 quiet seconds.', 'gamev usegame hub backend gamev>usegame hub>usegame'],
       ['Pure logic', 'The board, the actions of a card, the player bars, the text of the log and the rings are computed from the view in tested TypeScript.', 'board gamev usegame usegame>board gamev>board'],
@@ -229,8 +236,9 @@ const DIAGRAMS = [
   subgraph scripts [Card scripts]
     script["Card script<br/><small>one class per card code</small>"]
     registry["CardScriptRegistry<br/><small>by code, stateless</small>"]
-    active["ActiveCardsResolver<br/><small>cards the player controls or knows</small>"]
-    readers["Script readers<br/><small>PlayService, AbilityService, /api/cards, special actions</small>"]
+    active["ActiveCardsResolver<br/><small>in play controlled, out of play owned, face known</small>"]
+    readers["Script readers<br/><small>PlayService, AbilityService, /api/cards</small>"]
+    special["SpecialActionsResolver<br/><small>special actions of the active cards</small>"]
   end
   subgraph log [Game log]
     sources["Log sources<br/><small>card and game transitions, domain events</small>"]
@@ -241,17 +249,19 @@ const DIAGRAMS = [
   viewer(["Player or spectator"])
   script -->|tagged| registry
   registry -->|by code| readers
-  active -->|which cards| readers
+  registry -->|by code| special
+  active -->|which cards| special
   sources --> logger
   logger -->|at write time| params
   params --> logview
-  readers -.->|special actions, timings| viewer
+  readers -.->|timings, controller| viewer
+  special -.->|special actions| viewer
   logview -.->|masked log| viewer
   class readers,logger accent`,
     steps: [
       ['One script per card', 'A card whose text matters for the engine gets a script: its ability timings, the abilities it grants to the character it is attached to, its special actions.', 'script registry script>registry'],
-      ['Only known cards count', 'ActiveCardsResolver keeps the cards a player controls or whose face they already know, so a script reveals nothing secret.', 'active readers active>readers'],
-      ['Scripts inform, never decide', 'They feed the timings of events, the controller of an ability, the card catalogue and the special actions the client offers.', 'registry readers viewer registry>readers readers>viewer'],
+      ['Only known cards count', 'For the special actions, ActiveCardsResolver keeps the cards a player controls in play and those they own out of play, among the cards whose face they know (not their decks nor their facedown dynasty cards), so a script reveals nothing secret.', 'active special active>special'],
+      ['Scripts inform, never decide', 'They feed the timings of the events played, the controller of an ability, the card catalogue and the special actions the client offers.', 'registry readers special viewer registry>readers registry>special readers>viewer special>viewer'],
       ['Every change is logged', 'Card and game transitions write their log metadata; any other change of the state dispatches a domain event carrying #[GameLog].', 'sources logger sources>logger'],
       ['Masked per reader', 'Who knows each card or value is computed when the entry is written, then the factory masks the log for each reader; spectators see only what is public.', 'logger params logview viewer logger>params params>logview logview>viewer'],
     ],
@@ -259,25 +269,27 @@ const DIAGRAMS = [
   {
     src: `flowchart TD
   msg>"Action message<br/><small>HTTP API, MCP tool, house bot, EventPlayer</small>"]
-  housebot["HouseBotMiddleware<br/><small>schedules the game for the bot</small>"]
+  housebot["HouseBotMiddleware<br/><small>after the commit: the bot turn to the worker</small>"]
   validation["validation<br/><small>constraints of the message</small>"]
   notify["GameUpdatedNotificationMiddleware<br/><small>notifies after the commit</small>"]
   tx["doctrine_transaction<br/><small>commit or roll back</small>"]
   lock["GameLockMiddleware<br/><small>SELECT … FOR UPDATE</small>"]
   version["GameVersionMiddleware<br/><small>stale If-Match → 412</small>"]
   gameover["GameEndedMiddleware<br/><small>no action once the game is over</small>"]
+  replay["GameReplayMiddleware<br/><small>a replay only takes its events</small>"]
   record["EventRecordingMiddleware<br/><small>version++, save the Event</small>"]
   autotr["WorkflowTransitionMiddleware<br/><small>automatic transitions</small>"]
   refillmw["ProvinceRefillMiddleware<br/><small>scheduled province refills</small>"]
   handler(["Handler<br/><small>assertAvailable, then transitions</small>"])
-  msg --> housebot --> validation --> notify --> tx --> lock --> version --> gameover --> record --> autotr --> refillmw --> handler
+  msg --> housebot --> validation --> notify --> tx --> lock --> version --> gameover --> replay --> record --> autotr --> refillmw --> handler
   class tx,lock accent`,
     steps: [
-      ['Before anything is locked', 'The house bot notes the game and the Validator checks the payload, so an invalid message never touches the database.', 'msg housebot validation msg>housebot housebot>validation'],
+      ['Before anything is locked', 'The Validator checks the payload, so an invalid message never touches the database.', 'msg validation msg>housebot housebot>validation'],
       ['Notify only after the commit', 'The notification middleware wraps the transaction: players hear about a change only once it is committed, and about nothing when the handling fails.', 'notify tx validation>notify notify>tx'],
-      ['Lock, then check', 'Inside the transaction the game row is locked, then a stale version or an ended game is rejected before the handling.', 'tx lock version gameover tx>lock lock>version version>gameover'],
+      ['Lock, then check', 'Inside the transaction the game row is locked, then a stale version (unless the message is independent), an ended game or a message on a replay that is not one of its events is rejected before the handling.', 'tx lock version gameover replay tx>lock lock>version version>gameover gameover>replay'],
       ['Handle, refill, cascade', 'The handler runs, then the scheduled provinces are refilled if nothing is being resolved, then the enabled automatic transition of highest priority applies, again and again until none is enabled.', 'autotr refillmw handler record>autotr autotr>refillmw refillmw>handler'],
-      ['Record the event', 'Once the cascade is done, the version is incremented and the message saved as an Event, so the log entries of the automatic transitions share its version.', 'record gameover>record'],
+      ['Record the event', 'Once the cascade is done, the version is incremented and the message saved as an Event, so the log entries of the automatic transitions share its version.', 'record replay>record'],
+      ['The house bot comes last', 'HouseBotMiddleware wraps everything: once the message is handled and committed, it sends the turn of the house bot to the worker when the bot plays the game, unless the message is a replayed event.', 'housebot msg>housebot'],
     ],
   },
   {
@@ -290,12 +302,14 @@ const DIAGRAMS = [
   log["Game log<br/><small>what the players read</small>"]
   eventplayer["EventPlayer<br/><small>deserialize, dispatch</small>"]
   cli["app:event:play<br/><small>one message, typed by hand</small>"]
+  replayer["GameReplayer<br/><small>a copy under another id, ids translated</small>"]
   msg --> bus
   bus --> record
   record -->|version + 1| game
   record -->|class + payload| events
   bus -->|entries| log
-  events -->|read| eventplayer
+  events -->|read| replayer
+  replayer -->|ReplayStamp| eventplayer
   cli --> eventplayer
   eventplayer -->|dispatch again| bus
   class record,eventplayer accent`,
@@ -303,8 +317,9 @@ const DIAGRAMS = [
       ['Recording', 'Once the handler and the automatic transitions are done, the middleware increments the version of the game and stores the message: its class and its JSON payload. Events are numbered from 1, unique by game and version.', 'msg bus record game events msg>bus bus>record record>game record>events'],
       ['Secrets stay in the events', 'The payload holds everything, including the seed of CreateGame and the secret honor bids, so events are never shown to the players. They read the game log, masked for each of them.', 'events log bus>log'],
       ['Deterministic by construction', 'CreateGame carries a seed; the game owns its random generator and saves the engine state with itself. Shuffles, first player, random discards and the ids of new cards and stacks all draw from it.', 'game record>game'],
-      ['Replaying a message', 'EventPlayer deserializes a stored event and dispatches it through the same bus. The expected version is a stamp outside the payload, so a replay never fails on it. A test checks the round trip through the serializer on one message, DeclareConflict.', 'events eventplayer cli bus events>eventplayer cli>eventplayer eventplayer>bus'],
-      ['What breaks a replay', 'A deck or the engine code changed since the game was played. Renaming a message is such a change: old events are not migrated.', 'events eventplayer events>eventplayer'],
+      ['Replaying a message', 'EventPlayer deserializes a stored event and dispatches it through the same bus. The expected version is a stamp outside the payload, so a replay never fails on it. A test checks the round trip through the serializer on one message, DeclareConflict.', 'eventplayer cli bus cli>eventplayer eventplayer>bus'],
+      ['Replaying a game', 'GameReplayer rebuilds a game that has ended for one of its players, on a copy under another id: the ids of the payloads are translated, since the game salts the ids it draws. The events carry a ReplayStamp: nobody is notified, the house bot does not play, and GameReplayMiddleware refuses any other message on the copy.', 'events replayer eventplayer bus events>replayer replayer>eventplayer eventplayer>bus'],
+      ['What breaks a replay', 'A deck or the engine code changed since the game was played: the event the engine refuses stops the replay at its version, and the log of the copy is compared with that of the game. Renaming a message is such a change: old events are not migrated.', 'events replayer eventplayer events>replayer replayer>eventplayer'],
     ],
   },
   {
@@ -412,7 +427,7 @@ function highlight(d) {
 function index(box) {
   const parts = {};
   const add = (k, el) => (parts[k] ||= []).push(el);
-  box.querySelectorAll('g.node').forEach((g) => {
+  box.querySelectorAll('.nodes > g').forEach((g) => {
     const m = (g.id || '').match(/flowchart-([A-Za-z0-9]+)-\d+$/);
     if (m) add(m[1], g);
   });
