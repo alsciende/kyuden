@@ -8,6 +8,7 @@ import GameInProgressBanner from '@/components/GameInProgressBanner.vue'
 import PortraitNotice from '@/components/PortraitNotice.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import QueueFollower from '@/components/QueueFollower.vue'
+import CancelledTournamentAlert from '@/components/tournaments/CancelledTournamentAlert.vue'
 import { inverted } from '@/lib/page'
 import { waiting } from '@/lib/queueing'
 import { isGuest, session } from '@/lib/session'
@@ -29,6 +30,7 @@ const showsQueueBanner = computed(
   <div v-else class="page" :class="{ inverted }">
     <AppHeader />
     <GameInProgressBanner />
+    <CancelledTournamentAlert />
     <QueueBanner v-if="waiting !== null && showsQueueBanner" :waiting="waiting" />
     <main class="main">
       <RouterView />

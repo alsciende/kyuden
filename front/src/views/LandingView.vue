@@ -7,6 +7,7 @@ import enso from '@/assets/mons/neutral.svg'
 import ArrowIcon from '@/components/ArrowIcon.vue'
 import ClanMon from '@/components/ClanMon.vue'
 import StepTrail from '@/components/StepTrail.vue'
+import TournamentsBand from '@/components/tournaments/TournamentsBand.vue'
 import { CLANS, findClan, type ClanId } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 
@@ -167,6 +168,7 @@ function play(): void {
         </div>
       </template>
     </aside>
+    <TournamentsBand class="tournaments" />
   </div>
 </template>
 
@@ -180,6 +182,11 @@ function play(): void {
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
+}
+
+/* the tournaments are public: a newcomer sees them too, across the page */
+.tournaments {
+  grid-column: 1 / -1;
 }
 
 .intro {

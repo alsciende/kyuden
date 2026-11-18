@@ -6,6 +6,7 @@ import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
 import QueueCount from '@/components/queue/QueueCount.vue'
 import QueueWaiting from '@/components/queue/QueueWaiting.vue'
+import TournamentsBand from '@/components/tournaments/TournamentsBand.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
@@ -16,7 +17,8 @@ import { spectatorsLabel } from '@/lib/watch'
 /**
  * The start of an account: play a game (the queue, the house bot, a friendly game), or watch one of the games in
  * progress, the first ones shown, read again from time to time. While the user waits in the queue, the tile "Play"
- * tells the wait: they may watch a game meanwhile; otherwise it tells how many players wait in the queue.
+ * tells the wait: they may watch a game meanwhile; otherwise it tells how many players wait in the queue. Below, the
+ * tournaments at court, when one is in progress or upcoming.
  */
 const SHOWN = 2
 
@@ -73,6 +75,7 @@ const queueCount = useQueueCount()
         </div>
       </section>
     </div>
+    <TournamentsBand />
   </div>
 </template>
 
