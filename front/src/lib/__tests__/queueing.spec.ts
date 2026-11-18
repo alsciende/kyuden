@@ -18,6 +18,30 @@ const wait: Waiting = {
 }
 
 describe('waitingTexts', () => {
+  it('tells the wait for the opponent of a match of a tournament, and the time they have left', () => {
+    const texts = waitingTexts(
+      {
+        ...wait,
+        friendly: {
+          kind: 'match',
+          opponentName: 'Jane',
+          tournamentId: 't1',
+          deadline: new Date(600_000).toISOString(),
+        },
+      },
+      96_000,
+    )
+
+    expect(texts).toEqual({
+      eyebrow: 'A tournament · In the queue · 1:36',
+      title: 'Waiting for Jane',
+      deck: 'Lion starter deck',
+      opens: 'The game opens as soon as Jane joins the queue.',
+      expiry: 'Jane has 8:24 left to join, else you win by forfeit.',
+      leave: 'Leave the queue',
+    })
+  })
+
   it('tells the wait for an opponent of the queue', () => {
     expect(waitingTexts(wait, 102_000)).toEqual({
       eyebrow: 'In the queue · 1:42',

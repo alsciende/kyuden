@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { ApiProblem, fetchDecks, fetchQueue, fetchSelfGames, leaveQueue } from '@/api/client'
 import { timeLeft } from '@/lib/invitation'
 import { deckChoice, waitingTime } from '@/lib/queue'
+import { countdownLabel } from '@/lib/tournaments'
 
 /**
  * The wait of the user in the matchmaking queue, shared by every page: once they have joined it, they go where they
@@ -29,6 +30,8 @@ export type Friendly =
   | { kind: 'friend'; expiresAt: string }
   /** the friend of the host, invited with a code */
   | { kind: 'host'; hostName: string }
+  /** the opponent of a match of a tournament, with until when the players join it */
+  | { kind: 'match'; opponentName: string; tournamentId: string; deadline: string }
 
 /** how long "Opponent found" shows before the game opens */
 export const FOUND_DELAY = 1000
@@ -174,6 +177,19 @@ export interface WaitingTexts {
 
 export function waitingTexts(current: Waiting, now: number): WaitingTexts {
   const friendly = current.friendly
+  const deck = current.deckName === null ? null : `${current.deckName}${current.starter ? ' starter deck' : ''}`
+  const time = waitingTime((now - current.since) / 1000)
+  if (friendly?.kind === 'match') {
+    return {
+      eyebrow: `A tournament · In the queue · ${time}`,
+      title: `Waiting for ${friendly.opponentName}`,
+      deck,
+      opens: `The game opens as soon as ${friendly.opponentName} joins the queue.`,
+      expiry: `${friendly.opponentName} has ${countdownLabel(friendly.deadline, now)} left to join, else you win by forfeit.`,
+      leave: 'Leave the queue',
+    }
+  }
+
   const title =
     friendly === null
       ? 'Waiting for an opponent'
@@ -193,9 +209,9 @@ export function waitingTexts(current: Waiting, now: number): WaitingTexts {
   const hosting = friendly !== null && friendly.kind !== 'host'
 
   return {
-    eyebrow: `${friendly !== null ? 'A friendly game · ' : ''}In the queue · ${waitingTime((now - current.since) / 1000)}`,
+    eyebrow: `${friendly !== null ? 'A friendly game · ' : ''}In the queue · ${time}`,
     title,
-    deck: current.deckName === null ? null : `${current.deckName}${current.starter ? ' starter deck' : ''}`,
+    deck,
     opens,
     expiry: hosting ? `The invitation expires in ${timeLeft(friendly.expiresAt, now)} if nobody comes.` : null,
     leave: hosting ? 'Leave the queue and cancel the invitation' : 'Leave the queue',

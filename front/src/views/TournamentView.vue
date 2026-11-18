@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import {
@@ -14,6 +14,8 @@ import {
   type Tournament,
 } from '@/api/client'
 import PlayerNobori from '@/components/PlayerNobori.vue'
+import TournamentMatchPanel from '@/components/tournaments/TournamentMatchPanel.vue'
+import TournamentRounds from '@/components/tournaments/TournamentRounds.vue'
 import { deckChoices, type DeckChoice } from '@/lib/queue'
 import { isGuest, session } from '@/lib/session'
 import { entryIn, refreshTournamentEntries } from '@/lib/tournamentEntries'
@@ -24,6 +26,10 @@ import { bracketSize, isOpen, startLabel, viewerTimeZone, weekdayTimeLabel } fro
  * (their nobori, never their decks). An account registers with one of its decks, changes it or unregisters until the
  * tournament locks, one hour before it begins; its organizer cancels it until then. A visitor or a guest creates an
  * account or signs in to register, and comes back here.
+ *
+ * Once locked: the size of the bracket and its byes, the first round secret until it begins. Under way: the match of
+ * the player (`TournamentMatchPanel`: the queue joined from here), the rounds (`TournamentRounds`), the winner once it
+ * has ended. Read again every 15 seconds while it is locked or in progress, the time left told every second.
  */
 const route = useRoute()
 const id = computed(() => String(route.params.id))
@@ -33,6 +39,11 @@ const tournament = ref<Tournament | null>(null)
 const notFound = ref(false)
 const loadError = ref<string | null>(null)
 const now = ref(new Date())
+/** the time the countdown is told at, every second while a round is played */
+const clock = ref(Date.now())
+const REFRESH_DELAY = 15_000
+let refreshTimer: ReturnType<typeof setInterval> | undefined
+let clockTimer: ReturnType<typeof setInterval> | undefined
 
 async function load(): Promise<void> {
   try {
@@ -57,6 +68,10 @@ const full = computed(
   () => tournament.value !== null && tournament.value.players.length >= tournament.value.max_entrants,
 )
 const bracket = computed(() => bracketSize(tournament.value?.players.length ?? 0))
+const underWay = computed(() => tournament.value?.status === 'in_progress' || tournament.value?.status === 'ended')
+const locked = computed(() => tournament.value?.status === 'locked')
+const live = computed(() => locked.value || tournament.value?.status === 'in_progress')
+const byes = computed(() => (tournament.value?.size ?? 0) - (tournament.value?.players.length ?? 0))
 const back = computed(() => ({ next: `/tournaments/${id.value}` }))
 
 /** the steps of the schedule, the one the tournament stands at told "Now" */
@@ -70,7 +85,7 @@ const schedule = computed(() => {
   const started = time >= Date.parse(current.starts_at)
 
   return [
-    { key: 'open', when: 'Now', what: 'Registrations open', now: !locked },
+    { key: 'open', when: locked ? 'Done' : 'Now', what: locked ? 'Registrations' : 'Registrations open', now: !locked },
     {
       key: 'locked',
       when: locked && !started ? 'Now' : weekdayTimeLabel(current.locks_at, timeZone),
@@ -83,7 +98,7 @@ const schedule = computed(() => {
       what: 'Round 1: pairings revealed',
       now: started,
     },
-  ].filter((step) => step.key !== 'open' || step.now)
+  ].filter((step) => step.key !== 'open' || step.now || current.status === 'locked')
 })
 
 const decks = ref<Deck[]>([])
@@ -98,6 +113,35 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  live,
+  (current) => {
+    clearInterval(refreshTimer)
+    clearInterval(clockTimer)
+    if (current) {
+      refreshTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          void load()
+          if (token.value !== null) {
+            void refreshTournamentEntries(token.value)
+          }
+        }
+      }, REFRESH_DELAY)
+      clockTimer = setInterval(() => (clock.value = Date.now()), 1000)
+    }
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  clearInterval(refreshTimer)
+  clearInterval(clockTimer)
+})
+
+async function reload(): Promise<void> {
+  await Promise.all([load(), token.value === null ? undefined : refreshTournamentEntries(token.value)])
+}
 
 onMounted(async () => {
   await load()
@@ -150,13 +194,39 @@ const cancel = () => act((token) => cancelTournament(token, id.value))
       <div class="heading">
         <RouterLink :to="{ name: 'tournaments' }" class="back">Tournaments</RouterLink>
         <h1 :class="{ struck: cancelled }">{{ startLabel(tournament.starts_at, timeZone) }}</h1>
-        <p class="sub">Single elimination · organized by {{ tournament.organizer.name }} · {{ timeZone }} time</p>
+        <p class="sub">
+          Single elimination · organized by {{ tournament.organizer.name }} · {{ timeZone }} time
+          <template v-if="underWay && tournament.size">
+            · {{ tournament.players.length }} players, bracket of {{ tournament.size }}
+            <template v-if="tournament.status === 'in_progress'">
+              · <strong>{{ `round ${tournament.current_round} of ${tournament.round_count}` }}</strong>
+            </template>
+          </template>
+        </p>
       </div>
 
       <div v-if="cancelled" class="form-alert" role="status">
         <span class="form-alert-title">This tournament is cancelled</span>
         <span class="form-alert-text">Its organizer cancelled it: it will not be played.</span>
       </div>
+      <template v-else-if="underWay">
+        <div v-if="tournament.status === 'ended'" class="form-alert" role="status">
+          <span class="form-alert-title">{{
+            tournament.winner ? `${tournament.winner.name} has won the tournament` : 'The tournament has ended'
+          }}</span>
+          <span class="form-alert-text">{{
+            tournament.winner ? 'The last one standing of the bracket.' : 'No player was left to win it.'
+          }}</span>
+        </div>
+        <TournamentMatchPanel
+          v-else-if="entry"
+          :tournament="tournament"
+          :entry="entry"
+          :now="clock"
+          @changed="reload"
+        />
+        <TournamentRounds :tournament="tournament" :user-id="session?.userId ?? null" />
+      </template>
       <ol v-else aria-label="Schedule" class="schedule">
         <li v-for="step in schedule" :key="step.key" :class="{ now: step.now }">
           <span class="when">{{ step.when }}</span>
@@ -164,14 +234,20 @@ const cancel = () => act((token) => cancelTournament(token, id.value))
         </li>
       </ol>
 
-      <div class="columns">
+      <div v-if="!underWay" class="columns">
         <section class="players" aria-labelledby="players-title">
           <div class="players-heading">
-            <h2 id="players-title">
+            <h2 v-if="locked && tournament.size" id="players-title">
+              {{ tournament.players.length }} players, bracket of {{ tournament.size }}
+            </h2>
+            <h2 v-else id="players-title">
               {{ tournament.players.length }} player{{ tournament.players.length === 1 ? '' : 's' }}
               {{ cancelled ? 'still registered' : 'registered' }}
             </h2>
-            <span v-if="open && bracket !== null" class="hint">bracket of {{ bracket }} if it began now</span>
+            <span v-if="locked && tournament.size" class="hint">
+              {{ byes === 0 ? 'no bye' : `${byes} bye${byes === 1 ? '' : 's'}` }}, drawn with the pairings
+            </span>
+            <span v-else-if="open && bracket !== null" class="hint">bracket of {{ bracket }} if it began now</span>
           </div>
           <ul v-if="tournament.players.length > 0">
             <li v-for="player in tournament.players" :key="player.user_id">
@@ -226,9 +302,15 @@ const cancel = () => act((token) => cancelTournament(token, id.value))
               </div>
               <p class="hint">You may change it until {{ weekdayTimeLabel(tournament.locks_at, timeZone) }}.</p>
             </template>
-            <p v-else-if="!cancelled" class="lead">
-              With {{ entry.deck_name ?? 'your deck' }}. Everything is locked now: the bracket is drawn.
-            </p>
+            <template v-else-if="!cancelled">
+              <p class="lead">
+                With {{ entry.deck_name ?? 'your deck' }}. Everything is locked now: the bracket is drawn.
+              </p>
+              <p class="lead">
+                At {{ weekdayTimeLabel(tournament.starts_at, timeZone) }}, come back here: you will see your opponent
+                and join the queue to face them. You will have 10 minutes.
+              </p>
+            </template>
             <div class="panel-actions">
               <a v-if="!cancelled" :href="tournamentCalendarUrl(tournament.id)" download class="btn-link calendar"
                 >Add to your calendar</a

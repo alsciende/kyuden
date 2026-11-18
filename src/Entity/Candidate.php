@@ -9,7 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A user waiting to be matched in a game. A candidate with an invitation (the host of the invitation or its guest) is
- * only matched with the other candidate of the invitation.
+ * only matched with the other candidate of the invitation; a candidate with a match of a tournament, with the other
+ * player of the match.
  */
 #[ORM\Entity(repositoryClass: CandidateRepository::class)]
 #[ORM\Table('candidates')]
@@ -31,6 +32,10 @@ class Candidate
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(onDelete: 'CASCADE')]
     private ?Invitation $invitation = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'CASCADE')]
+    private ?TournamentMatch $match = null;
 
     public function getId(): ?int
     {
@@ -69,6 +74,18 @@ class Candidate
     public function setInvitation(?Invitation $invitation): static
     {
         $this->invitation = $invitation;
+
+        return $this;
+    }
+
+    public function getMatch(): ?TournamentMatch
+    {
+        return $this->match;
+    }
+
+    public function setMatch(?TournamentMatch $match): static
+    {
+        $this->match = $match;
 
         return $this;
     }

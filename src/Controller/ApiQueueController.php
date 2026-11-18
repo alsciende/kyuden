@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Exception\Api\AlreadyQueuedException;
 use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
+use App\Exception\Api\InvalidTournamentMatchException;
 use App\Exception\Api\NotQueuedException;
 use App\Exception\Data\DeckNotFoundException;
 use App\Repository\CandidateRepository;
@@ -25,9 +26,10 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 /**
  * The matchmaking queue (MatchMakingQueue): the authenticated user joins it with one of the decks they can use
  * (`{"deck_id": ...}`), and is matched with the next candidate at once. The host of an invitation joins it with its id
- * (`invitation_id`), a friend with its code (`invitation_code`): they are matched together only. `GET /api/queue/count`
- * tells how many players wait in the open queue. Errors are problem
- * details (RFC 9457).
+ * (`invitation_id`), a friend with its code (`invitation_code`): they are matched together only. A player of a match of
+ * a tournament joins it with the match only (`{"match_id": ...}`: the deck of their registration), to be matched with
+ * the other player of the match. `GET /api/queue/count` tells how many players wait in the open queue. Errors are
+ * problem details (RFC 9457).
  */
 class ApiQueueController extends AbstractController
 {
@@ -48,7 +50,7 @@ class ApiQueueController extends AbstractController
             return $this->problem(Response::HTTP_NOT_FOUND, 'not_queued', 'The user is not in the queue.');
         }
 
-        return $this->json(['deck_id' => $deckId]);
+        return $this->json(['deck_id' => $deckId, 'match_id' => $this->queue->findMatchId($user)]);
     }
 
     /**
@@ -71,6 +73,10 @@ class ApiQueueController extends AbstractController
             $body = $request->toArray();
         } catch (JsonException $exception) {
             return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_json', $exception->getMessage());
+        }
+
+        if (array_key_exists('match_id', $body)) {
+            return $this->joinMatch($body, $user);
         }
 
         $deckId = $body['deck_id'] ?? null;
@@ -102,6 +108,31 @@ class ApiQueueController extends AbstractController
             return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'deck_not_found', $exception->getMessage());
         } catch (InvalidInvitationException $exception) {
             return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_invitation', $exception->getMessage());
+        } catch (AlreadyQueuedException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'already_queued', $exception->getMessage());
+        } catch (GameInProgressException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'game_in_progress', $exception->getMessage());
+        }
+
+        return new Response(status: Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @param array<mixed> $body
+     */
+    private function joinMatch(array $body, User $user): Response
+    {
+        $matchId = $body['match_id'];
+        if (! is_int($matchId) || array_keys($body) !== ['match_id']) {
+            return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'The body of a match must only have an integer "match_id".', [
+                'violations' => [['property_path' => 'match_id', 'message' => 'The id of the match of the user in the current round of their tournament.']],
+            ]);
+        }
+
+        try {
+            $this->queue->joinMatch($user, $matchId);
+        } catch (InvalidTournamentMatchException $exception) {
+            return $this->problem(Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_match', $exception->getMessage());
         } catch (AlreadyQueuedException $exception) {
             return $this->problem(Response::HTTP_CONFLICT, 'already_queued', $exception->getMessage());
         } catch (GameInProgressException $exception) {

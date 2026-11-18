@@ -15,6 +15,8 @@ final readonly class TournamentEntryView
         /** the name of the deck, null for a deck without one */
         public ?string $deckName,
         public \DateTimeImmutable $registeredAt,
+        /** whether they have lost a match of the tournament */
+        public bool $eliminated,
     ) {
     }
 }

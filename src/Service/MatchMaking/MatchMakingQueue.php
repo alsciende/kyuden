@@ -7,15 +7,19 @@ namespace App\Service\MatchMaking;
 use App\Entity\Candidate;
 use App\Entity\Deck;
 use App\Entity\Invitation;
+use App\Entity\TournamentEntry;
+use App\Entity\TournamentMatch;
 use App\Entity\User;
 use App\Exception\Api\AlreadyQueuedException;
 use App\Exception\Api\GameInProgressException;
 use App\Exception\Api\InvalidInvitationException;
+use App\Exception\Api\InvalidTournamentMatchException;
 use App\Exception\Api\NotQueuedException;
 use App\Exception\Data\DeckNotFoundException;
 use App\Repository\CandidateRepository;
 use App\Repository\DeckRepository;
 use App\Repository\GameRepository;
+use App\Repository\TournamentMatchRepository;
 use App\Security\CurrentAccessToken;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,6 +33,10 @@ use Symfony\Component\Clock\ClockInterface;
  * The host of an invitation and its guest join it with the invitation, to be matched together only; the bot of an
  * invitation always joins with it (the invitation its key is limited to). The host leaving the queue cancels their
  * invitation. A user who plays a game that has not ended finishes it first.
+ *
+ * The players of a match of a tournament join it with their match (joinMatch()), with the deck of their registration,
+ * to be matched together only, until 10 minutes after their round has begun; joining with a match replaces any other
+ * wait in the queue.
  */
 final readonly class MatchMakingQueue
 {
@@ -36,6 +44,7 @@ final readonly class MatchMakingQueue
         private CandidateRepository $candidateRepository,
         private DeckRepository $deckRepository,
         private GameRepository $gameRepository,
+        private TournamentMatchRepository $tournamentMatchRepository,
         private MatchMakingInterface $matchMaking,
         private EntityManagerInterface $entityManager,
         private CurrentAccessToken $currentAccessToken,
@@ -96,6 +105,59 @@ final readonly class MatchMakingQueue
     }
 
     /**
+     * Joins the queue with a match of a tournament, the deck of the registration of the user, replacing any other wait
+     * in the queue.
+     *
+     * @throws InvalidTournamentMatchException
+     * @throws AlreadyQueuedException          waiting with this match already
+     * @throws GameInProgressException         the user plays a game that has not ended
+     */
+    public function joinMatch(User $user, int $matchId): void
+    {
+        $match = $this->tournamentMatchRepository->find($matchId);
+        $entry = $match?->findEntryOf($user);
+        if (! $match instanceof TournamentMatch || ! $entry instanceof TournamentEntry) {
+            throw new InvalidTournamentMatchException('No match of a tournament of this user has this id.');
+        }
+        $tournament = $match->getTournament();
+        if ($match->getRound() !== $tournament->getCurrentRound() || $match->hasResult() || $match->getGame() !== null || $match->isBye()) {
+            throw new InvalidTournamentMatchException('This match is not to be played now.');
+        }
+        $deadline = $tournament->getJoinDeadline();
+        if ($deadline === null || $this->clock->now() >= $deadline) {
+            throw new InvalidTournamentMatchException('The time to join this match is over.');
+        }
+        if ($this->gameRepository->hasInProgress($user->getId())) {
+            throw new GameInProgressException();
+        }
+
+        $this->candidateRepository->withQueueLock(function () use ($user, $match, $entry): void {
+            $previous = $this->candidateRepository->findOneBy(['user' => $user]);
+            if ($previous instanceof Candidate) {
+                if ($previous->getMatch() === $match) {
+                    throw new AlreadyQueuedException();
+                }
+                $this->removeCandidate($previous, $user);
+                // removed before the new one is inserted: a user waits once
+                $this->entityManager->flush();
+            }
+
+            $candidate = new Candidate();
+            $candidate->setUser($user);
+            $candidate->setDeck($entry->getDeck());
+            $candidate->setMatch($match);
+            $this->entityManager->persist($candidate);
+            try {
+                $this->entityManager->flush();
+            } catch (UniqueConstraintViolationException) {
+                throw new AlreadyQueuedException();
+            }
+        });
+
+        $this->matchMaking->findMatches();
+    }
+
+    /**
      * @throws NotQueuedException
      */
     public function leave(User $user): void
@@ -106,14 +168,27 @@ final readonly class MatchMakingQueue
         }
 
         $this->candidateRepository->withQueueLock(function () use ($candidate, $user): void {
-            $this->entityManager->remove($candidate);
-            // the host cancels their invitation
-            $invitation = $candidate->getInvitation();
-            if ($invitation instanceof Invitation && $invitation->getHost() === $user) {
-                $this->entityManager->remove($invitation);
-            }
+            $this->removeCandidate($candidate, $user);
             $this->entityManager->flush();
         });
+    }
+
+    /**
+     * The id of the match of a tournament the user waits with, null when they wait without one or are not in the queue.
+     */
+    public function findMatchId(User $user): ?int
+    {
+        return $this->candidateRepository->findOneBy(['user' => $user])?->getMatch()?->getId();
+    }
+
+    private function removeCandidate(Candidate $candidate, User $user): void
+    {
+        $this->entityManager->remove($candidate);
+        // the host cancels their invitation
+        $invitation = $candidate->getInvitation();
+        if ($invitation instanceof Invitation && $invitation->getHost() === $user) {
+            $this->entityManager->remove($invitation);
+        }
     }
 
     private function hasGuestWaiting(Invitation $invitation): bool

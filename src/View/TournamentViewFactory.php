@@ -7,20 +7,28 @@ namespace App\View;
 use App\Entity\Tournament;
 use App\Entity\TournamentEntry;
 use App\Entity\User;
+use App\Repository\CandidateRepository;
 use App\Repository\TournamentEntryRepository;
+use App\Repository\TournamentMatchRepository;
+use App\Service\Tournament\Format\TournamentFormats;
 use App\View\Model\TournamentEntryView;
+use App\View\Model\TournamentMatchView;
+use App\View\Model\TournamentRoundView;
 use App\View\Model\TournamentSummaryView;
 use App\View\Model\TournamentUserView;
 use App\View\Model\TournamentView;
 
 /**
  * Builds the views of the tournaments: the list (the number of the players of every tournament in one query), a
- * tournament with its players, the registrations of a user.
+ * tournament with its players and the rounds that have begun, the registrations of a user.
  */
 final readonly class TournamentViewFactory
 {
     public function __construct(
         private TournamentEntryRepository $tournamentEntryRepository,
+        private TournamentMatchRepository $tournamentMatchRepository,
+        private CandidateRepository $candidateRepository,
+        private TournamentFormats $formats,
     ) {
     }
 
@@ -50,7 +58,45 @@ final readonly class TournamentViewFactory
                 fn (TournamentEntry $entry): TournamentUserView => $this->user($entry->getUser()),
                 $this->tournamentEntryRepository->findByTournament($tournament),
             ),
+            size: $tournament->getSize(),
+            roundCount: $tournament->getSize() === null ? null : $this->formats->get($tournament->getFormat())->getRoundCount($tournament->getSize()),
+            currentRound: $tournament->getCurrentRound(),
+            joinDeadline: $tournament->getJoinDeadline(),
+            winner: $tournament->getWinner() === null ? null : $this->user($tournament->getWinner()->getUser()),
+            rounds: $this->rounds($tournament),
         );
+    }
+
+    /**
+     * @return list<TournamentRoundView>
+     */
+    private function rounds(Tournament $tournament): array
+    {
+        if ($tournament->getCurrentRound() === 0) {
+            return [];
+        }
+
+        $matches = $this->tournamentMatchRepository->findRevealed($tournament);
+        $waiting = [];
+        foreach ($this->candidateRepository->findWaitingWithMatches($matches) as $candidate) {
+            $waiting[(int) $candidate->getMatch()?->getId()][] = $candidate->getUser()->getId();
+        }
+
+        $rounds = [];
+        foreach ($matches as $match) {
+            $rounds[$match->getRound()][] = new TournamentMatchView(
+                id: (int) $match->getId(),
+                table: $match->getTable(),
+                players: array_map(fn (TournamentEntry $entry): TournamentUserView => $this->user($entry->getUser()), $match->getEntries()),
+                gameId: $match->getGame()?->getId(),
+                winnerUserId: $match->getWinner()?->getUser()->getId(),
+                outcome: $match->getOutcome(),
+                victoryCondition: $match->getVictoryCondition(),
+                waiting: $waiting[(int) $match->getId()] ?? [],
+            );
+        }
+
+        return array_map(static fn (int $number, array $matches): TournamentRoundView => new TournamentRoundView($number, $matches), array_keys($rounds), $rounds);
     }
 
     /**
@@ -68,6 +114,7 @@ final readonly class TournamentViewFactory
             deckId: $entry->getDeck()->getId(),
             deckName: $entry->getDeck()->getName(),
             registeredAt: $entry->getRegisteredAt(),
+            eliminated: $entry->isEliminated(),
         ), $entries);
     }
 

@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TournamentStatus, TournamentSummary } from '@/api/client'
+import type { Tournament, TournamentMatch, TournamentStatus, TournamentSummary } from '@/api/client'
 import {
   bracketSize,
   conflictOf,
+  countdownLabel,
+  currentMatchOf,
+  matchResultLabel,
+  roundTitle,
   dayLabel,
   earliestStart,
   groupTournaments,
@@ -115,5 +119,60 @@ describe('choosing the start', () => {
       laterLimit: '2026-11-22T05:00:00.000Z',
     })
     expect(conflictOf('2026-11-22T05:00:00Z', tournaments)).toBeNull()
+  })
+})
+
+describe('the rounds', () => {
+  const user = (id: string) => ({ user_id: id, name: id, banner: { mon: 'enso', pattern: 'none' } }) as const
+  const match = (overrides: Partial<TournamentMatch>): TournamentMatch => ({
+    id: 1,
+    table: 1,
+    players: [user('john'), user('jane')],
+    game_id: null,
+    winner_user_id: null,
+    outcome: null,
+    victory_condition: null,
+    waiting: [],
+    ...overrides,
+  })
+
+  it('names the last rounds', () => {
+    expect([1, 2, 3, 4].map((number) => roundTitle(number, 4))).toEqual([
+      'Round 1',
+      'Round 2 · quarterfinals',
+      'Round 3 · semifinals',
+      'Round 4 · final',
+    ])
+  })
+
+  it('tells how a match ended', () => {
+    expect(matchResultLabel(match({}))).toBeNull()
+    expect(matchResultLabel(match({ outcome: 'bye' }))).toBe('bye')
+    expect(matchResultLabel(match({ outcome: 'forfeit' }))).toBe('won, forfeit')
+    expect(matchResultLabel(match({ outcome: 'no_result' }))).toBe('both eliminated')
+    expect(matchResultLabel(match({ outcome: 'game', victory_condition: 'stronghold_province_broken' }))).toBe(
+      'won, stronghold broken',
+    )
+  })
+
+  it('finds the match of the user in the current round', () => {
+    const mine = match({ id: 2 })
+    const tournament = {
+      current_round: 2,
+      rounds: [
+        { number: 1, matches: [match({ id: 1, outcome: 'game' })] },
+        { number: 2, matches: [match({ id: 3, players: [user('kaede')] }), mine] },
+      ],
+    } as unknown as Tournament
+
+    expect(currentMatchOf(tournament, 'jane')).toBe(mine)
+    expect(currentMatchOf(tournament, 'hotaru')).toBeNull()
+    expect(currentMatchOf(tournament, null)).toBeNull()
+  })
+
+  it('counts down to a deadline', () => {
+    const deadline = '2026-11-20T20:10:00Z'
+    expect(countdownLabel(deadline, Date.parse('2026-11-20T20:01:36Z'))).toBe('8:24')
+    expect(countdownLabel(deadline, Date.parse('2026-11-20T20:11:00Z'))).toBe('0:00')
   })
 })

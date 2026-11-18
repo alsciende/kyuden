@@ -43,6 +43,7 @@ services:
             - '../src/Middleware/Stamp/'
             - '../src/Model/'
             - '../src/Notification/'
+            - '../src/Service/Tournament/Format/Pairing.php'
             - '../src/State/Model/'
             - '../src/View/Model/'
 
