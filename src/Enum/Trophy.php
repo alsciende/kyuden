@@ -27,13 +27,8 @@ enum Trophy: string
     /** Finish a game of a tournament, won or lost (a concession of either player included), not left without conceding. */
     case TournamentGame = 'tournament_game';
 
-    /** Win a tournament, by the size of its bracket (not the number of its players). */
-    case TournamentWin2 = 'tournament_win_2';
-    case TournamentWin4 = 'tournament_win_4';
-    case TournamentWin8 = 'tournament_win_8';
-    case TournamentWin16 = 'tournament_win_16';
-    case TournamentWin32 = 'tournament_win_32';
-    case TournamentWin64 = 'tournament_win_64';
+    /** Finish first in a tournament, whatever the size of its bracket. */
+    case TournamentWin = 'tournament_win';
 
     /**
      * The trophy of a Great Clan: null for the neutral cards.
@@ -44,17 +39,9 @@ enum Trophy: string
     }
 
     /**
-     * The trophy of winning a tournament whose bracket has that size (2, 4, 8, 16, 32 or 64).
+     * What it gives for the nobori (every trophy gives something for now: a trophy without a reward makes it nullable).
      */
-    public static function ofTournamentWin(int $size): self
-    {
-        return self::from('tournament_win_'.$size);
-    }
-
-    /**
-     * What it gives for the nobori: null for the trophies of the tournaments, which give nothing.
-     */
-    public function getReward(): Mon|BannerPattern|null
+    public function getReward(): Mon|BannerPattern
     {
         return match ($this) {
             self::HouseBotGame => BannerPattern::Plain,
@@ -65,8 +52,8 @@ enum Trophy: string
             self::ClanPhoenix => Mon::Phoenix,
             self::ClanScorpion => Mon::Scorpion,
             self::ClanUnicorn => Mon::Unicorn,
-            self::TournamentGame, self::TournamentWin2, self::TournamentWin4, self::TournamentWin8,
-            self::TournamentWin16, self::TournamentWin32, self::TournamentWin64 => null,
+            self::TournamentGame => BannerPattern::Tatejima,
+            self::TournamentWin => BannerPattern::Dandara,
         };
     }
 }

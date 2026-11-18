@@ -115,9 +115,9 @@ class TrophiesAwardCommandTest extends AbstractKernelTestCase
 
         $tester = $this->award();
 
-        self::assertStringContainsString('tournament tournament: jane earns tournament_win_2', $tester->getDisplay());
+        self::assertStringContainsString('tournament tournament: jane earns tournament_win', $tester->getDisplay());
         self::assertStringContainsString('1 trophies awarded in 0 games and 1 tournaments.', $tester->getDisplay());
-        $earned = self::service(TrophyCase::class)->earned($this->jane())[Trophy::TournamentWin2->value] ?? null;
+        $earned = self::service(TrophyCase::class)->earned($this->jane())[Trophy::TournamentWin->value] ?? null;
         self::assertNotNull($earned);
         self::assertEquals(new \DateTimeImmutable('2026-11-01 20:10:00'), $earned->getEarnedAt());
         self::assertNull($earned->getGame());

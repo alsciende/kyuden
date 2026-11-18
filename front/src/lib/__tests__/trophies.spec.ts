@@ -26,17 +26,12 @@ describe('the trophies', () => {
       'clan_scorpion',
       'clan_unicorn',
       'tournament_game',
-      'tournament_win_2',
-      'tournament_win_4',
-      'tournament_win_8',
-      'tournament_win_16',
-      'tournament_win_32',
-      'tournament_win_64',
+      'tournament_win',
     ])
-    expect(trophyText('tournament_win_8')).toEqual({
-      id: 'tournament_win_8',
-      name: 'Victor of the Province',
-      goal: 'Win a tournament with a bracket of 8.',
+    expect(trophyText('tournament_win')).toEqual({
+      id: 'tournament_win',
+      name: 'Emerald Champion',
+      goal: 'Finish first in a tournament.',
     })
     expect(trophyText('clan_lion')).toEqual({
       id: 'clan_lion',
@@ -65,12 +60,18 @@ describe('the trophies', () => {
     expect(plain).toMatchObject({ reward: 'the plain pattern', rewardChange: { pattern: 'plain' }, earnedOn: null })
   })
 
-  it('shows a trophy without a reward', () => {
-    const [win] = trophyCards([
-      trophy({ trophy: 'tournament_win_2', reward_mon: null, earned: true, earned_at: '2026-11-20T20:40:00+00:00' }),
+  it('tells the patterns of the trophies of the tournaments', () => {
+    const [game, win] = trophyCards([
+      trophy({ trophy: 'tournament_game', reward_mon: null, reward_pattern: 'tatejima' }),
+      trophy({ trophy: 'tournament_win', reward_mon: null, reward_pattern: 'dandara' }),
     ])
 
-    expect(win).toMatchObject({ name: 'Victor of the Duel Ground', reward: null, rewardChange: null, gameId: null })
+    expect(game).toMatchObject({ name: 'Into the Lists', reward: 'the tatejima pattern' })
+    expect(win).toMatchObject({
+      name: 'Emerald Champion',
+      reward: 'the dandara pattern',
+      rewardChange: { pattern: 'dandara' },
+    })
   })
 
   it('announces the trophies earned in the game only', () => {

@@ -2,7 +2,7 @@
 
 Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to `doc/` and the decisions to `HANDOFF.md`.
 
-Implemented: `house_bot_game` (reward: the plain pattern), the seven `clan_<clan>` (reward: the mon of the clan), `tournament_game` and the six `tournament_win_<size>` (no reward), see `doc/services.md` ("Trophies").
+Implemented: `house_bot_game` (reward: the plain pattern), the seven `clan_<clan>` (reward: the mon of the clan), `tournament_game` (reward: the tatejima pattern) and `tournament_win` (reward: the dandara pattern), see `doc/services.md` ("Trophies").
 
 ## Purpose
 
@@ -61,19 +61,10 @@ Trophies bring the players to the queue, so that the others find opponents there
 
 ### Tournaments
 
-No reward for the nobori.
-
-| Code | Name | Goal | Source |
-|---|---|---|---|
-| `tournament_game` | Into the Lists | Finish a game of a tournament, won or lost: by honor, breaking the stronghold province, a concession (of either player) or the abandonment of the opponent; not when the player left without conceding, not a game without a winner, not a forfeit (no game) | game of a match, `winnerId`, `PlayerState::abandoned` |
-| `tournament_win_2` | Victor of the Duel Ground | Win a tournament with a bracket of 2 | winner of the tournament, size of its bracket |
-| `tournament_win_4` | Victor of the Dojo | Win a tournament with a bracket of 4 | idem |
-| `tournament_win_8` | Victor of the Province | Win a tournament with a bracket of 8 | idem |
-| `tournament_win_16` | Champion of the Winter Court | Win a tournament with a bracket of 16 | idem |
-| `tournament_win_32` | Topaz Champion | Win a tournament with a bracket of 32 | idem |
-| `tournament_win_64` | Emerald Champion | Win a tournament with a bracket of 64 | idem |
-
-The size of the bracket, not the number of players (3 players play a bracket of 4); a final won by forfeit or by a bye counts, earned without a game.
+| Code | Name | Goal | Source | Reward |
+|---|---|---|---|---|
+| `tournament_game` | Into the Lists | Finish a game of a tournament, won or lost: by honor, breaking the stronghold province, a concession (of either player) or the abandonment of the opponent; not when the player left without conceding, not a game without a winner, not a forfeit (no game) | game of a match, `winnerId`, `PlayerState::abandoned` | the tatejima pattern |
+| `tournament_win` | Emerald Champion | Finish first in a tournament, whatever the size of its bracket; a final won by forfeit or by a bye counts, earned without a game | winner of the tournament | the dandara pattern |
 
 ### Moments of a game
 

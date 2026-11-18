@@ -13,6 +13,7 @@ use App\Entity\Tournament;
 use App\Entity\TournamentEntry;
 use App\Entity\TournamentMatch;
 use App\Entity\User;
+use App\Enum\BannerPattern;
 use App\Enum\MatchOutcome;
 use App\Enum\TournamentStatus;
 use App\Enum\Trophy;
@@ -23,6 +24,7 @@ use App\Message\ConcedeGame;
 use App\Repository\TournamentMatchRepository;
 use App\Security\AccountDeleter;
 use App\Service\MatchMaking\MatchMakingQueue;
+use App\Service\Nobori\NoboriCollection;
 use App\Service\Tournament\TournamentRunner;
 use App\Service\Trophy\TrophyCase;
 use App\Tests\AbstractKernelTestCase;
@@ -296,7 +298,7 @@ class TournamentRunnerTest extends AbstractKernelTestCase
         self::assertSame('john', $tournament->getWinner()?->getUser()->getId());
     }
 
-    public function testTheWinnerOfAFinalWonByForfeitEarnsTheWinOfTheSizeOfTheBracketWithoutAGame(): void
+    public function testTheWinnerOfAFinalWonByForfeitEarnsTheWinWithoutAGame(): void
     {
         $tournament = $this->tournament('john', 'jane', 'kaede');
         $this->runAt(self::LOCKS_AT);
@@ -313,9 +315,10 @@ class TournamentRunnerTest extends AbstractKernelTestCase
 
         self::assertSame($winner, $tournament->getWinner()?->getUser());
         $earned = self::service(TrophyCase::class)->earned($winner);
-        self::assertSame([Trophy::TournamentWin4->value], array_keys($earned), 'a bracket of 4 for 3 players');
-        self::assertEquals(new \DateTimeImmutable('2026-11-20 20:20:00'), $earned[Trophy::TournamentWin4->value]->getEarnedAt());
-        self::assertNull($earned[Trophy::TournamentWin4->value]->getGame());
+        self::assertSame([Trophy::TournamentWin->value], array_keys($earned));
+        self::assertEquals(new \DateTimeImmutable('2026-11-20 20:20:00'), $earned[Trophy::TournamentWin->value]->getEarnedAt());
+        self::assertNull($earned[Trophy::TournamentWin->value]->getGame());
+        self::assertContains(BannerPattern::Dandara, self::service(NoboriCollection::class)->patterns($winner));
         $loser = $final->getSecond()?->getUser();
         self::assertInstanceOf(User::class, $loser);
         self::assertSame([], self::service(TrophyCase::class)->earned($loser));
@@ -340,8 +343,8 @@ class TournamentRunnerTest extends AbstractKernelTestCase
 
         $trophies = self::service(TrophyCase::class);
         $earned = $trophies->earned($this->user('jane'));
-        self::assertSame([Trophy::TournamentGame->value, Trophy::TournamentWin2->value], array_keys($earned));
-        self::assertSame($game, $earned[Trophy::TournamentWin2->value]->getGame(), 'announced at the end of the final');
+        self::assertSame([Trophy::TournamentGame->value, Trophy::TournamentWin->value], array_keys($earned));
+        self::assertSame($game, $earned[Trophy::TournamentWin->value]->getGame(), 'announced at the end of the final');
         self::assertSame([Trophy::TournamentGame->value], array_keys($trophies->earned($this->user('john'))), 'conceded');
     }
 

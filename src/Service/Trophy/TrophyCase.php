@@ -43,7 +43,7 @@ readonly class TrophyCase
     }
 
     /**
-     * The user earns a trophy, in a game or not, and its reward if it has one (persisted, not flushed). False when they had it
+     * The user earns a trophy, in a game or not, and its reward (persisted, not flushed). False when they had it
      * already: a trophy earned stays earned, with the date and the game it was first earned in.
      */
     public function award(User $user, Trophy $trophy, \DateTimeImmutable $earnedAt, ?Game $game = null): bool
@@ -53,10 +53,7 @@ readonly class TrophyCase
         }
 
         $this->entityManager->persist(new EarnedTrophy($user, $trophy, $earnedAt, $game));
-        $reward = $trophy->getReward();
-        if ($reward !== null) {
-            $this->noboriCollection->unlock($user, $reward);
-        }
+        $this->noboriCollection->unlock($user, $trophy->getReward());
 
         return true;
     }
