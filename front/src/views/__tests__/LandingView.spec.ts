@@ -27,7 +27,12 @@ describe('LandingView', () => {
     newcomer.clanId = null
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ code: '', name: 'A card', image_url: null }), { status: 200 })),
+      vi.fn(async (path: string) =>
+        // no tournament: the band of the tournaments stays hidden
+        path === '/api/tournaments'
+          ? new Response('[]', { status: 200 })
+          : new Response(JSON.stringify({ code: '', name: 'A card', image_url: null }), { status: 200 }),
+      ),
     )
   })
 
