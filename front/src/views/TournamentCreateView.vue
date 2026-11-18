@@ -50,11 +50,13 @@ watch(
   { immediate: true },
 )
 
-/** "Your time zone, Europe/Paris: 19:00 UTC. Every half hour." */
+/** "Your time zone, Europe/Paris: 20:00" */
 const zoneHint = computed(
-  () =>
-    `Your time zone, ${timeZone}${startsAt.value === null ? '' : `: ${startsAt.value.slice(11, 16)} UTC`}. Every half hour.`,
+  () => `Your time zone, ${timeZone}${startsAt.value === null ? '' : `: ${timeLabel(startsAt.value, timeZone)}`}`,
 )
+
+/** "UTC: 19:00", the time the tournament is stored at */
+const utcHint = computed(() => (startsAt.value === null ? null : `UTC: ${startsAt.value.slice(11, 16)}`))
 
 const lockTime = computed(() =>
   startsAt.value === null
@@ -117,7 +119,7 @@ async function create(): Promise<void> {
           </div>
         </div>
         <p class="form-hint">
-          {{ zoneHint }}
+          {{ zoneHint }}<template v-if="utcHint"><br />{{ utcHint }}</template>
         </p>
         <div v-if="slots.length === 0" class="form-alert" role="alert">
           <span class="form-alert-title">No time left on this day</span>

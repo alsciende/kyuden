@@ -146,6 +146,19 @@ describe('TournamentView', () => {
     expect((await mountTournament(tournament('cancelled'), true)).wrapper.find('a.calendar').exists()).toBe(false)
   })
 
+  it('reads the tournament again once the player unregisters elsewhere (the alert of a cancelled tournament)', async () => {
+    const cancelled = tournament('cancelled')
+    const { wrapper } = await mountTournament(cancelled, true)
+    expect(wrapper.find('.players li').text()).toContain('(you)')
+
+    cancelled.players = []
+    tournamentEntries.value = []
+    await flushPromises()
+
+    expect(wrapper.find('.players li').exists()).toBe(false)
+    expect(wrapper.find('.players').text()).toContain('Nobody has registered yet.')
+  })
+
   it('tells the bracket and its byes once locked', async () => {
     const locked = {
       ...tournament('locked'),

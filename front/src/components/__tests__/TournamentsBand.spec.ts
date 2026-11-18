@@ -18,7 +18,7 @@ function tournament(id: string, status: TournamentStatus) {
   }
 }
 
-async function mountBand(tournaments: unknown[]) {
+async function mountBand(tournaments: unknown[], props: { always?: boolean } = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(JSON.stringify(tournaments), { status: 200 })),
@@ -27,7 +27,7 @@ async function mountBand(tournaments: unknown[]) {
     history: createMemoryHistory(),
     routes: [{ path: '/tournaments', name: 'tournaments', component: { template: '<div />' } }],
   })
-  const wrapper = mount(TournamentsBand, { global: { plugins: [router] } })
+  const wrapper = mount(TournamentsBand, { props, global: { plugins: [router] } })
   await flushPromises()
 
   return wrapper
@@ -51,5 +51,25 @@ describe('TournamentsBand', () => {
     const wrapper = await mountBand([tournament('called-off', 'cancelled')])
 
     expect(wrapper.find('.band').exists()).toBe(false)
+  })
+
+  it('tells when no tournament is planned, the cancelled ones counted', async () => {
+    const wrapper = await mountBand([tournament('called-off', 'cancelled')], { always: true })
+
+    expect(wrapper.find('.none').text()).toContain('No tournament planned')
+    expect(wrapper.findAll('.count').map((count) => count.text())).toEqual(['cancelled1'])
+  })
+
+  it('tells when no tournament is planned at all', async () => {
+    const wrapper = await mountBand([], { always: true })
+
+    expect(wrapper.find('.none').exists()).toBe(true)
+    expect(wrapper.find('.counts').exists()).toBe(false)
+  })
+
+  it('counts without telling that none is planned when one is', async () => {
+    const wrapper = await mountBand([tournament('open', 'open')], { always: true })
+
+    expect(wrapper.find('.none').exists()).toBe(false)
   })
 })

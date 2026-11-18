@@ -6,9 +6,12 @@ import { fetchTournaments, type TournamentSummary } from '@/api/client'
 import { groupTournaments } from '@/lib/tournaments'
 
 /**
- * On the home (and the way of the newcomers), the tournaments at court: how many are in progress and upcoming, and
- * cancelled, muted, when there is one; shown only when a tournament is in progress or upcoming.
+ * On the home (and the way of the newcomers), the tournaments in Rokugan: how many are in progress and upcoming, and
+ * cancelled, muted, when there is one. With `always`, it tells when none is planned; otherwise it is shown only when a
+ * tournament is in progress or upcoming.
  */
+const props = defineProps<{ always?: boolean }>()
+
 const tournaments = ref<TournamentSummary[] | null>(null)
 
 onMounted(async () => {
@@ -20,17 +23,24 @@ onMounted(async () => {
 })
 
 const groups = computed(() => (tournaments.value === null ? null : groupTournaments(tournaments.value)))
-const shown = computed(() => groups.value !== null && groups.value.inProgress.length + groups.value.upcoming.length > 0)
+const planned = computed(
+  () => groups.value !== null && groups.value.inProgress.length + groups.value.upcoming.length > 0,
+)
+const shown = computed(() => groups.value !== null && (planned.value || props.always))
 </script>
 
 <template>
   <section v-if="shown && groups" class="band" aria-labelledby="tournaments-title">
     <div class="text">
       <div class="form-label">Tournaments</div>
-      <h2 id="tournaments-title">Tournaments at court</h2>
+      <h2 id="tournaments-title">Tournaments in Rokugan</h2>
       <p class="lead">Single elimination, one deck for the whole tournament.</p>
     </div>
-    <dl class="counts">
+    <div v-if="!planned" class="none">
+      <span class="none-title">No tournament planned</span>
+      <span class="none-hint">Any account can organize one.</span>
+    </div>
+    <dl v-if="planned || groups.cancelled.length > 0" class="counts">
       <div v-if="groups.inProgress.length > 0" class="count in-progress">
         <dt>in progress</dt>
         <dd>{{ groups.inProgress.length }}</dd>
@@ -78,6 +88,27 @@ h2 {
 .lead {
   font-size: 16px;
   line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.none {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+
+.none-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--ink-3);
+}
+
+.none-hint {
+  font-size: 14px;
   color: var(--ink-2);
 }
 

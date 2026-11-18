@@ -139,6 +139,20 @@ onBeforeUnmount(() => {
   clearInterval(clockTimer)
 })
 
+/**
+ * The tournament read again once the registrations of the user no longer agree with its players: unregistered from
+ * the alert of a cancelled tournament, or from another tab.
+ */
+watch(
+  () => entry.value !== undefined,
+  (registered) => {
+    const listed = tournament.value?.players.some((player) => player.user_id === session.value?.userId)
+    if (listed !== undefined && listed !== registered) {
+      void load()
+    }
+  },
+)
+
 async function reload(): Promise<void> {
   await Promise.all([load(), token.value === null ? undefined : refreshTournamentEntries(token.value)])
 }
