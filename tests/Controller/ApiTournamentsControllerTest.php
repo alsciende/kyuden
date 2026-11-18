@@ -295,4 +295,41 @@ class ApiTournamentsControllerTest extends AbstractKernelTestCase
         self::assertSame([], $this->decode($this->request('GET', '/api/tournaments', null), Response::HTTP_OK));
         self::assertSame('cancelled', $this->show($id)['status']);
     }
+
+    public function testAnyoneAddsATournamentToTheirCalendar(): void
+    {
+        $id = $this->create('john', '2026-11-20T20:30:00+01:00');
+
+        $response = $this->request('GET', "/api/tournaments/{$id}/calendar.ics", null);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame('text/calendar; charset=utf-8', $response->headers->get('Content-Type'));
+        self::assertSame('attachment; filename="kyuden-tournament-2026-11-20.ics"', $response->headers->get('Content-Disposition'));
+        $ics = str_replace("\r\n ", '', (string) $response->getContent());
+        self::assertStringStartsWith("BEGIN:VCALENDAR\r\n", $ics);
+        self::assertStringContainsString("UID:{$id}@kyuden.app\r\n", $ics);
+        self::assertStringContainsString("SUMMARY:Kyūden tournament\r\n", $ics);
+        // in UTC, three hours long
+        self::assertStringContainsString("DTSTART:20261120T193000Z\r\n", $ics);
+        self::assertStringContainsString("DTEND:20261120T223000Z\r\n", $ics);
+        self::assertStringContainsString("URL:http://localhost/tournaments/{$id}\r\n", $ics);
+        self::assertStringContainsString('Organized by John.', $ics);
+        // the reminder when everything locks
+        self::assertStringContainsString("BEGIN:VALARM\r\n", $ics);
+        self::assertStringContainsString("TRIGGER:-PT1H\r\n", $ics);
+        self::assertStringNotContainsString('STATUS:CANCELLED', $ics);
+    }
+
+    public function testTheCalendarOfACancelledTournamentSaysSo(): void
+    {
+        $id = $this->create('john', '2026-11-20T20:00:00Z');
+        $this->request('POST', "/api/tournaments/{$id}/cancellation", 'john');
+
+        self::assertStringContainsString("STATUS:CANCELLED\r\n", (string) $this->request('GET', "/api/tournaments/{$id}/calendar.ics", null)->getContent());
+    }
+
+    public function testTheCalendarOfAnUnknownTournamentIsNotFound(): void
+    {
+        $this->assertProblem($this->request('GET', '/api/tournaments/unknown/calendar.ics', null), Response::HTTP_NOT_FOUND, 'tournament_not_found');
+    }
 }
