@@ -14,6 +14,7 @@ use App\Repository\GameRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\LinkedAccountRepository;
 use App\Repository\SpectatorRepository;
+use App\Repository\TournamentEntryRepository;
 use App\Repository\UserRepository;
 use App\Service\Nobori\NoboriCollection;
 use App\Service\Trophy\TrophyCase;
@@ -25,8 +26,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
  * Deletes an account, and the bots it owns: the user stays, anonymized with the date of the deletion (User::anonymize()),
  * so that the games keep their players and their opponents their history. It leaves the queue, concedes the games it
  * plays (its opponents win), then its replays, its invitations, its tokens, its linked identities, the games it
- * watches, its decks (those played in a game only lose their name), its trophies and the mons and patterns it earned are
- * deleted.
+ * watches, its registrations in the tournaments it can still leave (not locked, or cancelled), its decks (those played
+ * in a game or registered in a tournament only lose their name), its trophies and the mons and patterns it earned are
+ * deleted. The tournaments it organizes go on, their organizer anonymized.
  */
 readonly class AccountDeleter
 {
@@ -41,6 +43,7 @@ readonly class AccountDeleter
         private InvitationRepository $invitationRepository,
         private DeckRepository $deckRepository,
         private SpectatorRepository $spectatorRepository,
+        private TournamentEntryRepository $tournamentEntryRepository,
         private NoboriCollection $noboriCollection,
         private TrophyCase $trophyCase,
         private EntityManagerInterface $entityManager,
@@ -80,6 +83,7 @@ readonly class AccountDeleter
                 $this->accessTokenRepository->deleteByUser($user);
                 $this->linkedAccountRepository->deleteByUser($user);
                 $this->spectatorRepository->deleteByUser($user);
+                $this->tournamentEntryRepository->deleteLeavableOfUser($user, $deletedAt);
                 $this->deckRepository->deleteByOwner($user);
                 $this->noboriCollection->forget($user);
                 $this->trophyCase->forget($user);

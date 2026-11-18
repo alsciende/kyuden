@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\CardSource;
 use App\Enum\DeckImportOutcome;
 use App\Exception\Api\DeckInQueueException;
+use App\Exception\Api\DeckInTournamentException;
 use App\Exception\Api\DeckSourceUnavailableException;
 use App\Exception\Api\InvalidDeckException;
 use App\Exception\Api\InvalidDeckUrlException;
@@ -120,6 +121,8 @@ class ApiDecksController extends AbstractController
             $this->deckDeleter->delete($deck);
         } catch (DeckInQueueException $exception) {
             return $this->problem(Response::HTTP_CONFLICT, 'deck_in_queue', $exception->getMessage());
+        } catch (DeckInTournamentException $exception) {
+            return $this->problem(Response::HTTP_CONFLICT, 'deck_in_tournament', $exception->getMessage());
         }
         $this->entityManager->flush();
 

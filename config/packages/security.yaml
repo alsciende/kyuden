@@ -38,6 +38,8 @@ security:
         - { path: ^/api/oauth/, roles: PUBLIC_ACCESS }
         # anyone with the code of an invitation reads who invites and whether it can be used
         - { path: ^/api/invitations/, roles: PUBLIC_ACCESS, methods: [GET] }
+        # the tournaments are public, the way of the newcomers too
+        - { path: ^/api/tournaments(/|$), roles: PUBLIC_ACCESS, methods: [GET] }
         # the MCP server is for the programs playing as a bot
         - { path: ^/api/mcp$, roles: ROLE_BOT }
         - { path: ^/api, roles: ROLE_USER }

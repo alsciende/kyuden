@@ -18,6 +18,9 @@ import QueueView from '@/views/QueueView.vue'
 import SignupView from '@/views/SignupView.vue'
 import StartView from '@/views/StartView.vue'
 import TermsView from '@/views/TermsView.vue'
+import TournamentCreateView from '@/views/TournamentCreateView.vue'
+import TournamentsView from '@/views/TournamentsView.vue'
+import TournamentView from '@/views/TournamentView.vue'
 import TrophiesView from '@/views/TrophiesView.vue'
 import WatchView from '@/views/WatchView.vue'
 
@@ -80,6 +83,16 @@ export const router = createRouter({
       meta: { title: 'A friendly game · Kyūden' },
       beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
     },
+    // the tournaments are public, visitors included
+    { path: '/tournaments', name: 'tournaments', component: TournamentsView, meta: { title: 'Tournaments · Kyūden' } },
+    {
+      path: '/tournaments/new',
+      name: 'tournament-create',
+      component: TournamentCreateView,
+      meta: { title: 'Create a tournament · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login', query: { next: '/tournaments/new' } }),
+    },
+    { path: '/tournaments/:id', name: 'tournament', component: TournamentView, meta: { title: 'Tournament · Kyūden' } },
     // its URL is shared by the host of an invitation
     { path: '/join/:code', name: 'join', component: JoinView, meta: { title: 'An invitation · Kyūden' } },
     // its URL is given to Google and Discord, which publish it on their consent screens

@@ -9,6 +9,8 @@ use App\Entity\Candidate;
 use App\Entity\Deck;
 use App\Entity\Game;
 use App\Entity\LinkedAccount;
+use App\Entity\Tournament;
+use App\Entity\TournamentEntry;
 use App\Entity\User;
 use App\Enum\OAuthProvider;
 use App\Enum\BannerPattern;
@@ -23,9 +25,12 @@ use App\Security\AccountDeleter;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 
 class AccountDeleterTest extends AbstractKernelTestCase
 {
+    use ClockSensitiveTrait;
+
     private function user(string $id): User
     {
         $user = self::service(EntityManagerInterface::class)->find(User::class, $id);
@@ -140,5 +145,35 @@ class AccountDeleterTest extends AbstractKernelTestCase
 
         self::assertSame(Game::STATE_ENDED, $game->getCurrentPlace());
         self::assertSame(['akodo-bot concedes the game', 'The game ends', 'jane wins the game: concession'], $this->logLines($game));
+    }
+
+    public function testTheUserLeavesTheTournamentsTheyCanStillLeaveAndKeepsTheirDecks(): void
+    {
+        $now = new \DateTimeImmutable('2026-11-18 12:00:00');
+        self::mockTime($now);
+        $entityManager = self::service(EntityManagerInterface::class);
+        $john = $this->user('john');
+        $jane = $this->user('jane');
+        $open = new Tournament('open', $jane, $now->modify('+2 days'), random_bytes(32), $now);
+        // locked by the time: within the hour before its start
+        $locked = new Tournament('locked', $jane, $now->modify('+30 minutes'), random_bytes(32), $now);
+        $cancelled = new Tournament('cancelled', $jane, $now->modify('+3 days'), random_bytes(32), $now);
+        $cancelled->cancel();
+        // organized by the user: it goes on
+        $organized = new Tournament('organized', $john, $now->modify('+4 days'), random_bytes(32), $now);
+        foreach ([$open, $locked, $cancelled, $organized] as $tournament) {
+            $entityManager->persist($tournament);
+            $entityManager->persist(new TournamentEntry($tournament, $john, $this->deck("john-{$tournament->getId()}", $john), $now));
+        }
+        $entityManager->flush();
+
+        self::service(AccountDeleter::class)->delete($john);
+
+        $entityManager->clear();
+        $entries = $entityManager->getRepository(TournamentEntry::class)->findBy(['user' => 'john']);
+        self::assertSame(['locked'], array_map(fn (TournamentEntry $entry): string => $entry->getTournament()->getId(), $entries));
+        self::assertSame('open', $entityManager->find(Tournament::class, 'organized')?->getStatus()->value);
+        // the deck still registered stays, without its name
+        self::assertSame(['john-locked'], array_map(fn (Deck $deck): string => $deck->getId(), $this->deckRepository->findBy(['owner' => 'john'])));
     }
 }
