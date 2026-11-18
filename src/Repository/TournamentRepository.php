@@ -108,4 +108,32 @@ class TournamentRepository extends ServiceEntityRepository
 
         return $tournaments[0] ?? null;
     }
+
+    /**
+     * The ids of the tournaments the worker has to move on at that time (TournamentRunner): those open whose lock time
+     * has come, those locked whose start has come, and those in progress whose players had to join their current round
+     * by then.
+     *
+     * @return list<string>
+     */
+    public function findIdsToRun(\DateTimeImmutable $now): array
+    {
+        /** @var list<string> $ids */
+        $ids = $this->createQueryBuilder('t')
+            ->select('t.id')
+            ->where('t.status = :open AND t.startsAt <= :lockedFrom')
+            ->orWhere('t.status = :locked AND t.startsAt <= :now')
+            ->orWhere('t.status = :inProgress AND t.roundStartedAt <= :joinedBy')
+            ->setParameter('open', TournamentStatus::Open)
+            ->setParameter('locked', TournamentStatus::Locked)
+            ->setParameter('inProgress', TournamentStatus::InProgress)
+            ->setParameter('now', $now)
+            ->setParameter('lockedFrom', $now->modify('+' . Tournament::LOCK_LEAD))
+            ->setParameter('joinedBy', $now->modify('-' . Tournament::JOIN_DELAY))
+            ->orderBy('t.startsAt', \SortDirection::Ascending)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return $ids;
+    }
 }

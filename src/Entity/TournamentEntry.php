@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A player registered in a tournament, with the deck they play all of it with (changed until it locks). A user
- * registers once in a tournament.
+ * registers once in a tournament. Once the tournament is under way, a player is in play until they lose a match.
  */
 #[ORM\Entity(repositoryClass: TournamentEntryRepository::class)]
 #[ORM\Table('tournament_entries')]
@@ -36,6 +36,9 @@ class TournamentEntry
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $registeredAt;
+
+    #[ORM\Column]
+    private bool $eliminated = false;
 
     public function __construct(Tournament $tournament, User $user, Deck $deck, \DateTimeImmutable $now)
     {
@@ -77,5 +80,15 @@ class TournamentEntry
     public function getRegisteredAt(): \DateTimeImmutable
     {
         return $this->registeredAt;
+    }
+
+    public function isEliminated(): bool
+    {
+        return $this->eliminated;
+    }
+
+    public function eliminate(): void
+    {
+        $this->eliminated = true;
     }
 }

@@ -110,6 +110,15 @@ class ApiTournamentsControllerTest extends AbstractKernelTestCase
         self::assertSame([], $view['players']);
     }
 
+    public function testTheStartMayHaveAFractionOfASecondAsTheWebClientSendsIt(): void
+    {
+        $id = $this->create('john', '2026-11-19T02:30:00.000+01:00');
+        self::assertSame('2026-11-19T01:30:00+00:00', $this->show($id)['starts_at']);
+
+        $this->assertProblem($this->request('POST', '/api/tournaments', 'jane', ['starts_at' => '2026-11-25T20:00:00.500Z']), Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_start');
+        $this->assertProblem($this->request('POST', '/api/tournaments', 'jane', ['starts_at' => '2026-11-25T20:00:00.Z']), Response::HTTP_BAD_REQUEST, 'invalid_payload');
+    }
+
     public function testTheStartIsStoredInUtc(): void
     {
         $id = $this->create('john', '2026-11-19T02:30:00+01:00');

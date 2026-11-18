@@ -394,8 +394,8 @@ export function deleteDeck(token: string, deckId: string): Promise<void> {
 /**
  * The deck the user waits with in the queue; a 404 (`not_queued`) once matched or left.
  */
-export function fetchQueue(token: string): Promise<{ deck_id: string }> {
-  return request<{ deck_id: string }>('/api/queue', { token })
+export function fetchQueue(token: string): Promise<{ deck_id: string; match_id: number | null }> {
+  return request<{ deck_id: string; match_id: number | null }>('/api/queue', { token })
 }
 
 /**
@@ -410,6 +410,14 @@ export function fetchQueueCount(token: string): Promise<{ waiting: number }> {
  */
 export function joinQueue(token: string, deckId: string, invitation?: QueueInvitation): Promise<void> {
   return request<void>('/api/queue', { method: 'POST', body: { deck_id: deckId, ...invitation }, token })
+}
+
+/**
+ * Joins the queue with a match of a tournament, the deck of the registration: matched with the other player of the
+ * match only, until 10 minutes after the round has begun (`invalid_match` after that). Replaces any other wait.
+ */
+export function joinQueueWithMatch(token: string, matchId: number): Promise<void> {
+  return request<void>('/api/queue', { method: 'POST', body: { match_id: matchId }, token })
 }
 
 export function leaveQueue(token: string): Promise<void> {
@@ -523,11 +531,48 @@ export interface TournamentSummary {
   max_entrants: number
 }
 
+/** how a match of a tournament ended: won in a game, by a bye, by forfeit, or both players eliminated */
+export type MatchOutcome = 'game' | 'bye' | 'forfeit' | 'no_result'
+
+/** a match of a round that has begun */
+export interface TournamentMatch {
+  /** to join the queue with it */
+  id: number
+  table: number
+  /** two players, one for a bye */
+  players: TournamentUser[]
+  /** its game, to watch it, null before it begins */
+  game_id: string | null
+  winner_user_id: string | null
+  /** null while it is played */
+  outcome: MatchOutcome | null
+  /** how its game ended (outcome `game`) */
+  victory_condition: string | null
+  /** the user ids of its players waiting in the queue with it */
+  waiting: string[]
+}
+
+export interface TournamentRound {
+  number: number
+  matches: TournamentMatch[]
+}
+
 /**
- * A tournament, the same for every reader, with its players in their order of registration.
+ * A tournament, the same for every reader, with its players in their order of registration and, once locked, its
+ * bracket; the rounds that have begun (the pairings of a round are secret until then).
  */
 export interface Tournament extends Omit<TournamentSummary, 'entrants'> {
   players: TournamentUser[]
+  /** the places of the bracket, once locked */
+  size: number | null
+  round_count: number | null
+  /** from 1; 0 until it begins */
+  current_round: number
+  /** until when the players of the current round join the queue, else they forfeit */
+  join_deadline: string | null
+  /** once ended, null without one */
+  winner: TournamentUser | null
+  rounds: TournamentRound[]
 }
 
 /**
@@ -538,6 +583,8 @@ export interface TournamentEntry {
   deck_id: string
   deck_name: string | null
   registered_at: string
+  /** whether they have lost a match of the tournament */
+  eliminated: boolean
 }
 
 /**

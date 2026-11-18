@@ -214,12 +214,14 @@ class ApiTournamentsController extends AbstractController
     }
 
     /**
-     * A date and time with its offset (RFC 3339, `Z` or `+01:00`), null when it is not one or does not exist (the 31st
-     * of November).
+     * A date and time with its offset (RFC 3339, `Z` or `+01:00`), with or without a fraction of a second (what
+     * `Date.prototype.toISOString()` gives: `2026-11-21T19:00:00.000Z`), null when it is not one or does not exist (the
+     * 31st of November).
      */
     private function parseDate(string $value): ?\DateTimeImmutable
     {
-        $date = \DateTimeImmutable::createFromFormat('!' . \DateTimeInterface::RFC3339, $value);
+        $format = preg_match('/\.\d+(Z|[+-]\d{2}:\d{2})$/i', $value) === 1 ? 'Y-m-d\\TH:i:s.uP' : \DateTimeInterface::RFC3339;
+        $date = \DateTimeImmutable::createFromFormat('!' . $format, $value);
         $errors = \DateTimeImmutable::getLastErrors();
 
         return $date instanceof \DateTimeImmutable && ($errors === false || $errors['warning_count'] === 0) ? $date : null;

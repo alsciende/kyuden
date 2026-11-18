@@ -27,7 +27,8 @@ export function useLeaveQueue(): LeaveQueue {
       if (current === null || sending.value) {
         return
       }
-      const hosting = waiting.value?.friendly != null && waiting.value.friendly.kind !== 'host'
+      const friendly = waiting.value?.friendly ?? null
+      const hosting = friendly !== null && (friendly.kind === 'bot' || friendly.kind === 'friend')
       sending.value = true
       error.value = null
       try {

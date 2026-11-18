@@ -128,4 +128,26 @@ class TournamentEntryRepository extends ServiceEntityRepository
             ->setParameter('lockedFrom', $now->modify('+' . Tournament::LOCK_LEAD))
             ->execute();
     }
+
+    /**
+     * The registrations of the user in the tournaments under way (locked or in progress) where they are still in play.
+     *
+     * @return list<TournamentEntry>
+     */
+    public function findInPlayOfUser(User $user): array
+    {
+        /** @var list<TournamentEntry> $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->addSelect('t')
+            ->join('e.tournament', 't')
+            ->where('e.user = :user')
+            ->andWhere('e.eliminated = false')
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('statuses', [TournamentStatus::Locked, TournamentStatus::InProgress])
+            ->getQuery()
+            ->getResult();
+
+        return $entries;
+    }
 }

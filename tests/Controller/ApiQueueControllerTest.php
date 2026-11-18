@@ -81,7 +81,7 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
         self::assertSame(Response::HTTP_NO_CONTENT, $response->getStatusCode(), (string) $response->getContent());
         $response = $this->request('GET');
         self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
-        self::assertSame(['deck_id' => AppFixtures::LION_STARTER_DECK], json_decode((string) $response->getContent(), true));
+        self::assertSame(['deck_id' => AppFixtures::LION_STARTER_DECK, 'match_id' => null], json_decode((string) $response->getContent(), true));
     }
 
     public function testTwoCandidatesAreMatchedInAGameThatStarts(): void
@@ -174,6 +174,13 @@ class ApiQueueControllerTest extends AbstractKernelTestCase
     {
         $this->assertProblem($this->request('POST', ['deck' => AppFixtures::LION_STARTER_DECK]), Response::HTTP_BAD_REQUEST, 'invalid_payload');
         $this->assertProblem($this->request('POST', '{'), Response::HTTP_BAD_REQUEST, 'invalid_json');
+    }
+
+    public function testAMatchOfATournamentIsJoinedWithItsIdOnly(): void
+    {
+        $this->assertProblem($this->request('POST', ['match_id' => 1, 'deck_id' => AppFixtures::LION_STARTER_DECK], 'john'), Response::HTTP_BAD_REQUEST, 'invalid_payload');
+        $this->assertProblem($this->request('POST', ['match_id' => '1'], 'john'), Response::HTTP_BAD_REQUEST, 'invalid_payload');
+        $this->assertProblem($this->request('POST', ['match_id' => 999_999], 'john'), Response::HTTP_UNPROCESSABLE_ENTITY, 'invalid_match');
     }
 
     public function testAUserLeavesTheQueue(): void

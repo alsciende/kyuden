@@ -1,9 +1,10 @@
-import type { TournamentStatus, TournamentSummary } from '@/api/client'
+import type { Tournament, TournamentMatch, TournamentStatus, TournamentSummary } from '@/api/client'
 
 /**
  * The tournaments as the web client shows them: their dates in the time zone of the viewer (named on the pages, the
  * API giving them in UTC), the list split by where each stands, the size of the bracket, and the start chosen when
- * creating one (on the half hour in UTC, at least 12 hours ahead, 12 hours from any other tournament).
+ * creating one (on the half hour in UTC, at least 12 hours ahead, 12 hours from any other tournament); once under way,
+ * its rounds, the match of the viewer and how each match ended.
  */
 
 /** how long before its start a tournament locks */
@@ -154,4 +155,53 @@ export function conflictOf(startsAt: string, tournaments: TournamentSummary[]): 
     earlierLimit: new Date(otherStart - MINIMUM_NOTICE_MS).toISOString(),
     laterLimit: new Date(otherStart + MINIMUM_NOTICE_MS).toISOString(),
   }
+}
+
+/** "Round 4 · final", "Round 3 · semifinals", "Round 1" */
+export function roundTitle(number: number, roundCount: number | null): string {
+  const fromLast = roundCount === null ? null : roundCount - number
+  const name = fromLast === 0 ? 'final' : fromLast === 1 ? 'semifinals' : fromLast === 2 ? 'quarterfinals' : null
+
+  return name === null ? `Round ${number}` : `Round ${number} · ${name}`
+}
+
+const VICTORIES: Record<string, string> = {
+  honor_win: 'honor',
+  honor_loss: 'honor lost',
+  stronghold_province_broken: 'stronghold broken',
+  concession: 'concession',
+  abandonment: 'abandonment',
+}
+
+/** how a match ended, as told under its players: "won, concession", "bye", "both eliminated"; null while played */
+export function matchResultLabel(match: TournamentMatch): string | null {
+  switch (match.outcome) {
+    case null:
+      return null
+    case 'bye':
+      return 'bye'
+    case 'forfeit':
+      return 'won, forfeit'
+    case 'no_result':
+      return 'both eliminated'
+    case 'game':
+      return match.victory_condition === null ? 'won' : `won, ${VICTORIES[match.victory_condition] ?? 'game'}`
+  }
+}
+
+/** the match of the user in the current round, if they play one */
+export function currentMatchOf(tournament: Tournament, userId: string | null): TournamentMatch | null {
+  if (userId === null) {
+    return null
+  }
+  const round = tournament.rounds.find((candidate) => candidate.number === tournament.current_round)
+
+  return round?.matches.find((match) => match.players.some((player) => player.user_id === userId)) ?? null
+}
+
+/** "8:24": the time left until a deadline, 0:00 once over */
+export function countdownLabel(deadline: string, now: number): string {
+  const seconds = Math.max(0, Math.ceil((Date.parse(deadline) - now) / 1000))
+
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
