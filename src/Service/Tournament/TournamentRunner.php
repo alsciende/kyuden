@@ -13,6 +13,7 @@ use App\Entity\User;
 use App\Enum\MatchOutcome;
 use App\Enum\TournamentStatus;
 use App\Enum\VictoryCondition;
+use App\Event\TournamentEndedEvent;
 use App\Repository\CandidateRepository;
 use App\Repository\TournamentEntryRepository;
 use App\Repository\TournamentMatchRepository;
@@ -24,6 +25,7 @@ use App\State\Manager\GameStateManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Clock\ClockInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Runs the tournaments, through their format (TournamentFormatInterface):
@@ -37,7 +39,8 @@ use Symfony\Component\Clock\ClockInterface;
  *   eliminated);
  * - once a game of a match ends (TournamentGameEndedListener), records its result: its winner, or no result for a game
  *   without a winner;
- * - once every match of a round has a result, begins the next round or ends the tournament with its winner.
+ * - once every match of a round has a result, begins the next round or ends the tournament with its winner
+ *   (TournamentEndedEvent: its trophies).
  *
  * The row of the tournament is locked meanwhile, so that two matches ending at once do not both begin the next round;
  * the queue is locked by the worker and by a deleted account, so that a candidate is not matched in a game while their
@@ -55,6 +58,7 @@ final readonly class TournamentRunner
         private EntityManagerInterface $entityManager,
         private ClockInterface $clock,
         private LoggerInterface $logger,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -235,6 +239,8 @@ final readonly class TournamentRunner
         $pairings = $format->pairNextRound($tournament, $matches);
         if ($pairings === null) {
             $tournament->end($format->findWinner($tournament, $matches));
+            $this->entityManager->flush();
+            $this->eventDispatcher->dispatch(new TournamentEndedEvent($tournament));
             $this->entityManager->flush();
 
             return;

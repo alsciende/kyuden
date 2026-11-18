@@ -4,16 +4,25 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Trophy;
 
+use App\DataFixtures\AppFixtures;
+use App\Entity\Deck;
 use App\Entity\Game;
+use App\Entity\Tournament;
+use App\Entity\TournamentEntry;
+use App\Entity\TournamentMatch;
 use App\Entity\User;
 use App\Enum\Trophy;
 use App\Enum\VictoryCondition;
 use App\Service\Trophy\GameTrophies;
+use App\State\Manager\GameStateManager;
+use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
+use App\State\Model\PlayerState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\GameBuilder;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class GameTrophiesTest extends AbstractKernelTestCase
@@ -40,6 +49,49 @@ class GameTrophiesTest extends AbstractKernelTestCase
                 $state->victoryCondition = $condition;
             })
             ->build();
+    }
+
+    /**
+     * The game becomes that of a match of a tournament between its players (persisted).
+     */
+    private function ofATournament(Scenario $scenario): void
+    {
+        $entityManager = self::service(EntityManagerInterface::class);
+        $now = new \DateTimeImmutable('2026-11-20 20:00:00');
+        $organizer = $entityManager->find(User::class, 'john') ?? throw new \LogicException();
+        $tournament = new Tournament('tournament', $organizer, $now, str_repeat('k', 32), $now);
+        $deck = $entityManager->find(Deck::class, AppFixtures::LION_STARTER_DECK) ?? throw new \LogicException();
+        $entries = [];
+        foreach ($scenario->game()->getPlayers() as $player) {
+            $user = $player->getUser();
+            self::assertInstanceOf(User::class, $user);
+            $entries[] = new TournamentEntry($tournament, $user, $deck, $now);
+        }
+        $match = new TournamentMatch($tournament, 1, 1, $entries[0], $entries[1]);
+        $match->setGame($scenario->game());
+        $entityManager->persist($tournament);
+        array_walk($entries, $entityManager->persist(...));
+        $entityManager->persist($match);
+        $entityManager->flush();
+    }
+
+    /**
+     * A game of a tournament that has ended, won by jane against john.
+     */
+    private function endedInATournament(VictoryCondition $condition): Scenario
+    {
+        $scenario = $this->scenario()
+            ->atPlace(Game::STATE_ENDED)
+            ->withPlayer('jane', static fn (PlayerBuilder $player): PlayerBuilder => $player->stronghold('01-shiro-nishiyama'))
+            ->withPlayer('john', static fn (PlayerBuilder $player): PlayerBuilder => $player->stronghold('01-city-of-the-open-hand'))
+            ->withGameState(static function (GameState $state, Scenario $scenario) use ($condition): void {
+                $state->winnerId = $scenario->player('jane')->getId();
+                $state->victoryCondition = $condition;
+            })
+            ->persist();
+        $this->ofATournament($scenario);
+
+        return $scenario;
     }
 
     private static function training(GameBuilder $builder): GameBuilder
@@ -150,5 +202,49 @@ class GameTrophiesTest extends AbstractKernelTestCase
 
         self::assertCount(1, $trophies->award($first->game(), $at));
         self::assertSame([], $trophies->award($second->game(), $at->modify('+1 day')), 'earned already');
+    }
+
+    /**
+     * @return iterable<string, array{VictoryCondition}>
+     */
+    public static function provideEveryVictory(): iterable
+    {
+        yield from self::provideWonByPlaying();
+        yield from self::provideNotPlayedToTheEnd();
+    }
+
+    #[DataProvider('provideEveryVictory')]
+    public function testBothPlayersOfAGameOfATournamentEarnItsTrophyWonOrLost(VictoryCondition $condition): void
+    {
+        $trophies = $this->trophiesOf($this->endedInATournament($condition));
+
+        self::assertContains(['jane', Trophy::TournamentGame], $trophies);
+        self::assertContains(['john', Trophy::TournamentGame], $trophies, 'lost, conceded or not');
+    }
+
+    public function testAPlayerWhoLeftAGameOfATournamentWithoutConcedingEarnsNothingOfIt(): void
+    {
+        $scenario = $this->endedInATournament(VictoryCondition::Abandonment);
+        self::service(PlayerStateManager::class)->withState($scenario->player('john'), static fn (PlayerState $state): PlayerState => $state->setAbandoned(true));
+
+        self::assertSame([['jane', Trophy::TournamentGame]], $this->trophiesOf($scenario));
+    }
+
+    public function testAGameOfATournamentEndedWithoutAWinnerEarnsNothing(): void
+    {
+        // the platform has ended it, every player gone (EndAbandonedGame)
+        $scenario = $this->endedInATournament(VictoryCondition::Abandonment);
+        self::service(GameStateManager::class)->withState($scenario->game(), static function (GameState $state): void {
+            $state->winnerId = null;
+        });
+
+        self::assertSame([], $this->trophiesOf($scenario));
+    }
+
+    public function testAGameOfNoTournamentEarnsNoTrophyOfTheTournaments(): void
+    {
+        $scenario = $this->ended(['jane' => '01-shiro-nishiyama', 'harry' => '01-city-of-the-open-hand'], VictoryCondition::Concession);
+
+        self::assertSame([], $this->trophiesOf($scenario));
     }
 }

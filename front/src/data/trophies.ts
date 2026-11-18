@@ -18,6 +18,8 @@ export const TROPHIES: TrophyText[] = [
     name: `Champion of the ${clan.name}`,
     goal: `Win a standard game with a ${clan.name} stronghold.`,
   })),
+  { id: 'tournament_game', name: 'Into the Lists', goal: 'Finish a game of a tournament.' },
+  { id: 'tournament_win', name: 'Emerald Champion', goal: 'Finish first in a tournament.' },
 ]
 
 /** a trophy the client does not know (a newer API) is named by its value */

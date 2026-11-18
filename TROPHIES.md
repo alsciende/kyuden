@@ -2,7 +2,7 @@
 
 Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to `doc/` and the decisions to `HANDOFF.md`.
 
-Implemented: `house_bot_game` (reward: the plain pattern) and the seven `clan_<clan>` (reward: the mon of the clan), see `doc/services.md` ("Trophies").
+Implemented: `house_bot_game` (reward: the plain pattern), the seven `clan_<clan>` (reward: the mon of the clan), `tournament_game` (reward: the tatejima pattern) and `tournament_win` (reward: the dandara pattern), see `doc/services.md` ("Trophies").
 
 ## Purpose
 
@@ -58,6 +58,13 @@ Trophies bring the players to the queue, so that the others find opponents there
 | `strongholds_<clan>` | Lord of the <Clan> Castles | Win with each stronghold of the clan (one per Great Clan: 7 trophies) | `winnerId`, stronghold of the winner |
 | `all_strongholds` | Every Castle of Rokugan | Win with each stronghold | the seven `strongholds_<clan>` |
 | `all_elements` | Harmony of the Elements | Win with a role of each element: air, earth, fire, void, water (a Keeper or a Seeker) | `winnerId`, role of the winner (its element trait) |
+
+### Tournaments
+
+| Code | Name | Goal | Source | Reward |
+|---|---|---|---|---|
+| `tournament_game` | Into the Lists | Finish a game of a tournament, won or lost: by honor, breaking the stronghold province, a concession (of either player) or the abandonment of the opponent; not when the player left without conceding, not a game without a winner, not a forfeit (no game) | game of a match, `winnerId`, `PlayerState::abandoned` | the tatejima pattern |
+| `tournament_win` | Emerald Champion | Finish first in a tournament, whatever the size of its bracket; a final won by forfeit or by a bye counts, earned without a game | winner of the tournament | the dandara pattern |
 
 ### Moments of a game
 

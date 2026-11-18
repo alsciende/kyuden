@@ -13,8 +13,10 @@ use App\Entity\Tournament;
 use App\Entity\TournamentEntry;
 use App\Entity\TournamentMatch;
 use App\Entity\User;
+use App\Enum\BannerPattern;
 use App\Enum\MatchOutcome;
 use App\Enum\TournamentStatus;
+use App\Enum\Trophy;
 use App\Enum\UserType;
 use App\Enum\VictoryCondition;
 use App\Exception\Api\InvalidTournamentMatchException;
@@ -22,7 +24,9 @@ use App\Message\ConcedeGame;
 use App\Repository\TournamentMatchRepository;
 use App\Security\AccountDeleter;
 use App\Service\MatchMaking\MatchMakingQueue;
+use App\Service\Nobori\NoboriCollection;
 use App\Service\Tournament\TournamentRunner;
+use App\Service\Trophy\TrophyCase;
 use App\Tests\AbstractKernelTestCase;
 use App\View\TournamentViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
@@ -292,5 +296,68 @@ class TournamentRunnerTest extends AbstractKernelTestCase
         $match = $this->roundMatches($tournament, 1)[0];
         self::assertSame([MatchOutcome::Forfeit, 'john'], [$match->getOutcome(), $match->getWinner()?->getUser()->getId()]);
         self::assertSame('john', $tournament->getWinner()?->getUser()->getId());
+    }
+
+    public function testTheWinnerOfAFinalWonByForfeitEarnsTheWinWithoutAGame(): void
+    {
+        $tournament = $this->tournament('john', 'jane', 'kaede');
+        $this->runAt(self::LOCKS_AT);
+        $this->runAt(self::STARTS_AT);
+        $match = $this->playedMatch($tournament, 1);
+        $queue = self::service(MatchMakingQueue::class);
+        $queue->joinMatch($match->getFirst()->getUser(), (int) $match->getId());
+        $this->runAt('2026-11-20 20:10:00');
+        $final = $this->roundMatches($tournament, 2)[0];
+        $winner = $final->getFirst()->getUser();
+        $queue->joinMatch($winner, (int) $final->getId());
+
+        $this->runAt('2026-11-20 20:20:00');
+
+        self::assertSame($winner, $tournament->getWinner()?->getUser());
+        $earned = self::service(TrophyCase::class)->earned($winner);
+        self::assertSame([Trophy::TournamentWin->value], array_keys($earned));
+        self::assertEquals(new \DateTimeImmutable('2026-11-20 20:20:00'), $earned[Trophy::TournamentWin->value]->getEarnedAt());
+        self::assertNull($earned[Trophy::TournamentWin->value]->getGame());
+        self::assertContains(BannerPattern::Dandara, self::service(NoboriCollection::class)->patterns($winner));
+        $loser = $final->getSecond()?->getUser();
+        self::assertInstanceOf(User::class, $loser);
+        self::assertSame([], self::service(TrophyCase::class)->earned($loser));
+    }
+
+    public function testTheWinnerOfAFinalPlayedEarnsTheWinInItsGameBesideTheTrophyOfTheGame(): void
+    {
+        $tournament = $this->tournament('john', 'jane');
+        $this->runAt(self::LOCKS_AT);
+        $this->runAt(self::STARTS_AT);
+        $match = $this->roundMatches($tournament, 1)[0];
+        $queue = self::service(MatchMakingQueue::class);
+        $queue->joinMatch($this->user('john'), (int) $match->getId());
+        $queue->joinMatch($this->user('jane'), (int) $match->getId());
+        $game = self::service(TournamentMatchRepository::class)->find($match->getId())?->getGame();
+        self::assertInstanceOf(Game::class, $game);
+
+        $this->clock->modify('2026-11-20 20:40:00');
+        $john = $game->getPlayers()->findFirst(static fn (int $key, Player $player): bool => $player->getUserId() === 'john');
+        self::assertInstanceOf(Player::class, $john);
+        self::service(MessageBusInterface::class)->dispatch(new ConcedeGame($game->getId(), $john->getId()));
+
+        $trophies = self::service(TrophyCase::class);
+        $earned = $trophies->earned($this->user('jane'));
+        self::assertSame([Trophy::TournamentGame->value, Trophy::TournamentWin->value], array_keys($earned));
+        self::assertSame($game, $earned[Trophy::TournamentWin->value]->getGame(), 'announced at the end of the final');
+        self::assertSame([Trophy::TournamentGame->value], array_keys($trophies->earned($this->user('john'))), 'conceded');
+    }
+
+    public function testATournamentWithoutAWinnerEarnsNothing(): void
+    {
+        $tournament = $this->tournament('john', 'jane');
+        $this->runAt(self::LOCKS_AT);
+        $this->runAt(self::STARTS_AT);
+
+        $this->runAt('2026-11-20 20:10:00');
+
+        self::assertNull($tournament->getWinner());
+        self::assertSame([], self::service(TrophyCase::class)->earned($this->user('jane')));
+        self::assertSame([], self::service(TrophyCase::class)->earned($this->user('john')));
     }
 }
