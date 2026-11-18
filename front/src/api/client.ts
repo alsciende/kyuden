@@ -553,6 +553,13 @@ export function fetchTournament(id: string): Promise<Tournament> {
 }
 
 /**
+ * The tournament as an iCalendar file (`.ics`), to add it to a calendar: public, a link rather than a request.
+ */
+export function tournamentCalendarUrl(id: string): string {
+  return `/api/tournaments/${encodeURIComponent(id)}/calendar.ics`
+}
+
+/**
  * Creates a tournament beginning at a time (ISO 8601, UTC): a 422 (`invalid_start`) off the half hour or less than 12
  * hours ahead, a 409 when the user organizes one already (`tournament_already_organized`) or when another begins
  * within 12 hours (`tournament_too_close`).

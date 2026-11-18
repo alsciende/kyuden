@@ -17,6 +17,7 @@ use App\Exception\Data\DeckNotFoundException;
 use App\Exception\Data\TournamentNotFoundException;
 use App\Repository\TournamentEntryRepository;
 use App\Repository\TournamentRepository;
+use App\Service\Tournament\TournamentCalendar;
 use App\Service\Tournament\TournamentOrganizer;
 use App\Service\Tournament\TournamentRegistrar;
 use App\View\TournamentViewFactory;
@@ -46,6 +47,7 @@ class ApiTournamentsController extends AbstractController
         private readonly TournamentOrganizer $tournamentOrganizer,
         private readonly TournamentRegistrar $tournamentRegistrar,
         private readonly TournamentViewFactory $tournamentViewFactory,
+        private readonly TournamentCalendar $tournamentCalendar,
         private readonly ClockInterface $clock,
     ) {
     }
@@ -71,6 +73,27 @@ class ApiTournamentsController extends AbstractController
         }
 
         return $this->json($this->tournamentViewFactory->create($tournament), headers: ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * The tournament as an iCalendar file, to add it to a calendar: public, since calendars send no token.
+     */
+    #[Route('/api/tournaments/{id}/calendar.ics', name: 'app_api_tournament_calendar', methods: ['GET'])]
+    public function calendar(string $id, Request $request): Response
+    {
+        $tournament = $this->tournamentRepository->find($id);
+        if (! $tournament instanceof Tournament) {
+            return $this->problem(Response::HTTP_NOT_FOUND, 'tournament_not_found', "Tournament not found: [{$id}]");
+        }
+
+        $pageUrl = $request->getSchemeAndHttpHost() . '/tournaments/' . rawurlencode($tournament->getId());
+        $date = $tournament->getStartsAt()->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d');
+
+        return new Response($this->tournamentCalendar->createIcs($tournament, $pageUrl), headers: [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"kyuden-tournament-{$date}.ics\"",
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     #[Route('/api/tournaments', name: 'app_api_tournaments_create', methods: ['POST'])]

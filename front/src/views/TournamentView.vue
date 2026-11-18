@@ -8,6 +8,7 @@ import {
   fetchDecks,
   fetchTournament,
   registerInTournament,
+  tournamentCalendarUrl,
   unregisterFromTournament,
   type Deck,
   type Tournament,
@@ -228,9 +229,14 @@ const cancel = () => act((token) => cancelTournament(token, id.value))
             <p v-else-if="!cancelled" class="lead">
               With {{ entry.deck_name ?? 'your deck' }}. Everything is locked now: the bracket is drawn.
             </p>
-            <button v-if="open || cancelled" type="button" class="btn-link" :disabled="busy" @click="unregister">
-              Unregister
-            </button>
+            <div class="panel-actions">
+              <a v-if="!cancelled" :href="tournamentCalendarUrl(tournament.id)" download class="btn-link calendar"
+                >Add to your calendar</a
+              >
+              <button v-if="open || cancelled" type="button" class="btn-link" :disabled="busy" @click="unregister">
+                Unregister
+              </button>
+            </div>
           </template>
 
           <template v-else-if="open">
