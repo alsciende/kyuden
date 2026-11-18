@@ -9,23 +9,23 @@ use App\Entity\Player;
 use App\Enum\Trophy;
 use App\Enum\UserType;
 use App\State\Manager\GameStateManager;
-use App\Trophy\TrophyInterface;
+use App\Trophy\GameTrophyInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 /**
  * The trophies the players of a game that has ended earn in it: each trophy has its rule (`src/Trophy`, a
- * TrophyInterface), read from what is stored, so that the games played before earn them too. Only humans (guests
+ * GameTrophyInterface), read from what is stored, so that the games played before earn them too. Only humans (guests
  * included) earn trophies; a replay earns nothing.
  */
 readonly class GameTrophies
 {
     /**
-     * @param iterable<TrophyInterface> $rules
+     * @param iterable<GameTrophyInterface> $rules
      */
     public function __construct(
         private GameStateManager $gameStateManager,
         private TrophyCase $trophyCase,
-        #[AutowireIterator(TrophyInterface::class)]
+        #[AutowireIterator(GameTrophyInterface::class)]
         private iterable $rules,
     ) {
     }
@@ -43,7 +43,7 @@ readonly class GameTrophies
         $state = $this->gameStateManager->getState($game);
         $rules = [...$this->rules];
         $order = array_flip(array_map(static fn (Trophy $trophy): string => $trophy->value, Trophy::cases()));
-        usort($rules, static fn (TrophyInterface $a, TrophyInterface $b): int => $order[$a::getTrophy()->value] <=> $order[$b::getTrophy()->value]);
+        usort($rules, static fn (GameTrophyInterface $a, GameTrophyInterface $b): int => $order[$a::getTrophy()->value] <=> $order[$b::getTrophy()->value]);
 
         $trophies = [];
         foreach ($game->getPlayers() as $player) {

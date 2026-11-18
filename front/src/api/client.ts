@@ -133,6 +133,13 @@ export type TrophyId =
   | 'clan_phoenix'
   | 'clan_scorpion'
   | 'clan_unicorn'
+  | 'tournament_game'
+  | 'tournament_win_2'
+  | 'tournament_win_4'
+  | 'tournament_win_8'
+  | 'tournament_win_16'
+  | 'tournament_win_32'
+  | 'tournament_win_64'
 
 /**
  * A trophy of the catalogue for the authenticated user, in its order: what it gives for the nobori, and once earned,

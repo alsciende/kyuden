@@ -136,4 +136,24 @@ class TournamentRepository extends ServiceEntityRepository
 
         return $ids;
     }
+
+    /**
+     * The ids of the tournaments that have ended, the first to begin first.
+     *
+     * @return list<string>
+     */
+    public function findEndedIds(): array
+    {
+        /** @var list<string> $ids */
+        $ids = $this->createQueryBuilder('t')
+            ->select('t.id')
+            ->where('t.status = :ended')
+            ->setParameter('ended', TournamentStatus::Ended)
+            ->orderBy('t.startsAt', \SortDirection::Ascending)
+            ->addOrderBy('t.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return $ids;
+    }
 }

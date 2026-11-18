@@ -31,7 +31,11 @@ class TrophyCaseTest extends AbstractKernelTestCase
         }
         self::assertNull(Trophy::ofClan(Clan::Neutral));
         self::assertSame(BannerPattern::Plain, Trophy::HouseBotGame->getReward());
-        self::assertCount(8, Trophy::cases());
+        self::assertNull(Trophy::TournamentGame->getReward());
+        foreach ([2, 4, 8, 16, 32, 64] as $size) {
+            self::assertNull(Trophy::ofTournamentWin($size)->getReward());
+        }
+        self::assertCount(15, Trophy::cases());
     }
 
     public function testAUserEarnsATrophyOnceWithItsReward(): void
@@ -62,6 +66,18 @@ class TrophyCaseTest extends AbstractKernelTestCase
         // john has the plain pattern from the fixtures
         self::assertTrue($case->award($john, Trophy::HouseBotGame, new \DateTimeImmutable()));
         self::assertTrue($case->has($john, Trophy::HouseBotGame));
+    }
+
+    public function testATrophyWithoutARewardUnlocksNothing(): void
+    {
+        $case = self::service(TrophyCase::class);
+        $jane = $this->user('jane');
+
+        self::assertTrue($case->award($jane, Trophy::TournamentWin8, new \DateTimeImmutable()));
+        self::service(EntityManagerInterface::class)->flush();
+
+        self::assertSame([Mon::Enso], self::service(NoboriCollection::class)->mons($jane));
+        self::assertTrue($case->has($jane, Trophy::TournamentWin8));
     }
 
     public function testTheTrophiesOfAUserAreForgotten(): void

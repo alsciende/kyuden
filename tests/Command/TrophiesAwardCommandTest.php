@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Command;
 
+use App\DataFixtures\AppFixtures;
+use App\Entity\Deck;
 use App\Entity\Game;
+use App\Entity\Tournament;
+use App\Entity\TournamentEntry;
+use App\Entity\TournamentMatch;
 use App\Entity\User;
+use App\Enum\MatchOutcome;
 use App\Enum\Trophy;
 use App\Enum\VictoryCondition;
 use App\Service\Trophy\TrophyCase;
@@ -67,13 +73,13 @@ class TrophiesAwardCommandTest extends AbstractKernelTestCase
         $tester = $this->award();
 
         $tester->assertCommandIsSuccessful();
-        self::assertStringContainsString('1 trophies awarded in 2 games.', $tester->getDisplay());
+        self::assertStringContainsString('1 trophies awarded in 2 games and 0 tournaments.', $tester->getDisplay());
         $earned = self::service(TrophyCase::class)->earned($this->jane())[Trophy::ClanCrab->value] ?? null;
         self::assertNotNull($earned);
         self::assertSame($first->game()->getId(), $earned->getGame()?->getId());
         self::assertEquals(new \DateTimeImmutable('2026-11-01 12:00:00'), $earned->getEarnedAt());
 
-        self::assertStringContainsString('0 trophies awarded in 2 games.', $this->award()->getDisplay(), 'it runs again');
+        self::assertStringContainsString('0 trophies awarded in 2 games and 0 tournaments.', $this->award()->getDisplay(), 'it runs again');
     }
 
     public function testADryRunAwardsNothing(): void
@@ -84,5 +90,36 @@ class TrophiesAwardCommandTest extends AbstractKernelTestCase
 
         self::assertStringContainsString('earns clan_crab', $tester->getDisplay());
         self::assertSame([], self::service(TrophyCase::class)->earned($this->jane()));
+    }
+
+    public function testTheTournamentsEndedEarnTheirTrophiesWhenTheirLastMatchEnded(): void
+    {
+        // a final won by forfeit, before the trophies of the tournaments existed
+        $entityManager = self::service(EntityManagerInterface::class);
+        $startsAt = new \DateTimeImmutable('2026-11-01 20:00:00');
+        $tournament = new Tournament('tournament', $this->jane(), $startsAt, str_repeat('k', 32), $startsAt->modify('-1 day'));
+        $deck = $entityManager->find(Deck::class, AppFixtures::LION_STARTER_DECK) ?? throw new \LogicException();
+        $john = $entityManager->find(User::class, 'john') ?? throw new \LogicException();
+        $jane = new TournamentEntry($tournament, $this->jane(), $deck, $startsAt->modify('-1 day'));
+        $johnEntry = new TournamentEntry($tournament, $john, $deck, $startsAt->modify('-1 day'));
+        $final = new TournamentMatch($tournament, 1, 1, $jane, $johnEntry);
+        $tournament->lock(2);
+        $tournament->beginRound(1, $startsAt);
+        $final->end($jane, MatchOutcome::Forfeit, $startsAt->modify('+10 minutes'));
+        $tournament->end($jane);
+        $entityManager->persist($tournament);
+        $entityManager->persist($jane);
+        $entityManager->persist($johnEntry);
+        $entityManager->persist($final);
+        $entityManager->flush();
+
+        $tester = $this->award();
+
+        self::assertStringContainsString('tournament tournament: jane earns tournament_win_2', $tester->getDisplay());
+        self::assertStringContainsString('1 trophies awarded in 0 games and 1 tournaments.', $tester->getDisplay());
+        $earned = self::service(TrophyCase::class)->earned($this->jane())[Trophy::TournamentWin2->value] ?? null;
+        self::assertNotNull($earned);
+        self::assertEquals(new \DateTimeImmutable('2026-11-01 20:10:00'), $earned->getEarnedAt());
+        self::assertNull($earned->getGame());
     }
 }

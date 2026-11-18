@@ -2,7 +2,7 @@
 
 Working document: the list of the trophies and the rules for awarding them. Once implemented, the architecture goes to `doc/` and the decisions to `HANDOFF.md`.
 
-Implemented: `house_bot_game` (reward: the plain pattern) and the seven `clan_<clan>` (reward: the mon of the clan), see `doc/services.md` ("Trophies").
+Implemented: `house_bot_game` (reward: the plain pattern), the seven `clan_<clan>` (reward: the mon of the clan), `tournament_game` and the six `tournament_win_<size>` (no reward), see `doc/services.md` ("Trophies").
 
 ## Purpose
 
@@ -58,6 +58,22 @@ Trophies bring the players to the queue, so that the others find opponents there
 | `strongholds_<clan>` | Lord of the <Clan> Castles | Win with each stronghold of the clan (one per Great Clan: 7 trophies) | `winnerId`, stronghold of the winner |
 | `all_strongholds` | Every Castle of Rokugan | Win with each stronghold | the seven `strongholds_<clan>` |
 | `all_elements` | Harmony of the Elements | Win with a role of each element: air, earth, fire, void, water (a Keeper or a Seeker) | `winnerId`, role of the winner (its element trait) |
+
+### Tournaments
+
+No reward for the nobori.
+
+| Code | Name | Goal | Source |
+|---|---|---|---|
+| `tournament_game` | Into the Lists | Finish a game of a tournament, won or lost: by honor, breaking the stronghold province, a concession (of either player) or the abandonment of the opponent; not when the player left without conceding, not a game without a winner, not a forfeit (no game) | game of a match, `winnerId`, `PlayerState::abandoned` |
+| `tournament_win_2` | Victor of the Duel Ground | Win a tournament with a bracket of 2 | winner of the tournament, size of its bracket |
+| `tournament_win_4` | Victor of the Dojo | Win a tournament with a bracket of 4 | idem |
+| `tournament_win_8` | Victor of the Province | Win a tournament with a bracket of 8 | idem |
+| `tournament_win_16` | Champion of the Winter Court | Win a tournament with a bracket of 16 | idem |
+| `tournament_win_32` | Topaz Champion | Win a tournament with a bracket of 32 | idem |
+| `tournament_win_64` | Emerald Champion | Win a tournament with a bracket of 64 | idem |
+
+The size of the bracket, not the number of players (3 players play a bracket of 4); a final won by forfeit or by a bye counts, earned without a game.
 
 ### Moments of a game
 

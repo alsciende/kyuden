@@ -15,7 +15,7 @@ const trophy = (overrides: Partial<UserTrophy>): UserTrophy => ({
 })
 
 describe('the trophies', () => {
-  it('names the trophy of the house bot and one of each Great Clan, in the order of the catalogue', () => {
+  it('names the trophy of the house bot, one of each Great Clan and those of the tournaments, in the order of the catalogue', () => {
     expect(TROPHIES.map((text) => text.id)).toEqual([
       'house_bot_game',
       'clan_crab',
@@ -25,7 +25,19 @@ describe('the trophies', () => {
       'clan_phoenix',
       'clan_scorpion',
       'clan_unicorn',
+      'tournament_game',
+      'tournament_win_2',
+      'tournament_win_4',
+      'tournament_win_8',
+      'tournament_win_16',
+      'tournament_win_32',
+      'tournament_win_64',
     ])
+    expect(trophyText('tournament_win_8')).toEqual({
+      id: 'tournament_win_8',
+      name: 'Victor of the Province',
+      goal: 'Win a tournament with a bracket of 8.',
+    })
     expect(trophyText('clan_lion')).toEqual({
       id: 'clan_lion',
       name: 'Champion of the Lion',
@@ -51,6 +63,14 @@ describe('the trophies', () => {
       gameId: 'g1',
     })
     expect(plain).toMatchObject({ reward: 'the plain pattern', rewardChange: { pattern: 'plain' }, earnedOn: null })
+  })
+
+  it('shows a trophy without a reward', () => {
+    const [win] = trophyCards([
+      trophy({ trophy: 'tournament_win_2', reward_mon: null, earned: true, earned_at: '2026-11-20T20:40:00+00:00' }),
+    ])
+
+    expect(win).toMatchObject({ name: 'Victor of the Duel Ground', reward: null, rewardChange: null, gameId: null })
   })
 
   it('announces the trophies earned in the game only', () => {
