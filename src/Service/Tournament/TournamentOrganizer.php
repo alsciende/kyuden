@@ -41,7 +41,7 @@ final readonly class TournamentOrganizer
     {
         $startsAt = $startsAt->setTimezone(new \DateTimeZone('UTC'));
         $now = $this->clock->now();
-        if ((int) $startsAt->format('s') !== 0 || (int) $startsAt->format('i') % Tournament::START_STEP_MINUTES !== 0) {
+        if ((int) $startsAt->format('s') !== 0 || (int) $startsAt->format('u') !== 0 || (int) $startsAt->format('i') % Tournament::START_STEP_MINUTES !== 0) {
             throw new InvalidTournamentStartException('A tournament begins on the hour or the half hour.');
         }
         if ($startsAt < $now->modify('+' . Tournament::MINIMUM_NOTICE)) {
