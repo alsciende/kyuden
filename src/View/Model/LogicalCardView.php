@@ -13,7 +13,7 @@ use App\Enum\Type;
 
 /**
  * A card as printed (LogicalCardViewFactory), known by its code: the views of the games and their logs send codes.
- * The packs it is printed in are not part of it, only its image.
+ * The packs it is printed in are not part of it, only the name of the first one (to export a deck) and its image.
  */
 final readonly class LogicalCardView
 {
@@ -24,6 +24,7 @@ final readonly class LogicalCardView
      * @param list<AbilityTiming>  $abilityTimings  timings of its triggered abilities, including those it grants
      * @param bool                 $abilityGrantedToAttached its abilities belong to the card it is attached to
      * @param string               $imageUrl        its image on the CDN of the cards, for the clients
+     * @param string|null          $pack            the name of the first pack it was printed in (the earliest released), null without a printing
      */
     public function __construct(
         public string $code,
@@ -53,6 +54,7 @@ final readonly class LogicalCardView
         public array $abilityTimings,
         public bool $abilityGrantedToAttached,
         public string $imageUrl,
+        public ?string $pack,
     ) {
     }
 }

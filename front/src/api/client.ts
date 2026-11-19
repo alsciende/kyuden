@@ -51,6 +51,8 @@ export interface Card {
   ability_timings?: AbilityTiming[]
   ability_granted_to_attached?: boolean
   image_url: string | null
+  /** the name of the first pack it was printed in */
+  pack?: string | null
 }
 
 export interface Guest {

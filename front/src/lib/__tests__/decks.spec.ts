@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Card, DeckRecord, OwnedDeck } from '@/api/client'
-import { dayLabel, deckContents, deckRows, endingRows, opponentRows, recordTiles, winRate } from '@/lib/decks'
+import {
+  clanCounts,
+  dayLabel,
+  deckContents,
+  deckRows,
+  endingRows,
+  jigokuExport,
+  opponentRows,
+  recordTiles,
+  winRate,
+} from '@/lib/decks'
 
 const now = new Date(2026, 10, 19, 18, 0)
 
@@ -182,6 +192,54 @@ describe('deckContents', () => {
           ['Events', 3, ['3 Banzai!']],
         ],
       ],
+    ])
+  })
+})
+
+describe('jigokuExport', () => {
+  it('writes a line per card, count, title and pack, in the order of the page, nothing else', () => {
+    const packed = Object.fromEntries(
+      Object.entries(cards).map(([code, entry]) => [
+        code,
+        { ...entry, pack: code === 'banzai' ? 'Core Set' : 'Clan War' },
+      ]),
+    )
+
+    expect(jigokuExport({ banzai: 3, whisperer: 2, shizuka: 1, 'night-raid': 1, keeper: 1 }, packed)).toBe(
+      [
+        '1 Shizuka Toshi (Clan War)',
+        '1 Keeper of Water (Clan War)',
+        '1 Night Raid (Clan War)',
+        '2 Doji Whisperer (Clan War)',
+        '3 Banzai! (Core Set)',
+      ].join('\n'),
+    )
+  })
+
+  it('leaves out the pack of a card it does not know', () => {
+    expect(jigokuExport({ banzai: 3 }, cards)).toBe('3 Banzai!')
+  })
+})
+
+describe('clanCounts', () => {
+  it('counts the cards of each clan, the most first, the neutral cards last', () => {
+    const clans = Object.fromEntries(
+      Object.entries({
+        shizuka: 'crane',
+        whisperer: 'crane',
+        banzai: 'neutral',
+        rival: 'neutral',
+        fury: 'lion',
+        keeper: 'neutral',
+      }).map(([code, clan]) => [code, { ...cards[code]!, clan }]),
+    )
+
+    expect(
+      clanCounts({ shizuka: 1, whisperer: 3, banzai: 3, rival: 2, fury: 1, keeper: 1, unknown: 3 }, clans),
+    ).toEqual([
+      { clan: 'crane', name: 'Crane', count: 4 },
+      { clan: 'lion', name: 'Lion', count: 1 },
+      { clan: 'neutral', name: 'Neutral', count: 6 },
     ])
   })
 })

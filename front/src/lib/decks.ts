@@ -203,3 +203,45 @@ export function deckContents(quantities: Record<string, number>, cards: Record<s
     sides: [side('Dynasty deck', 'dynasty', DYNASTY_TYPES), side('Conflict deck', 'conflict', CONFLICT_TYPES)],
   }
 }
+
+/**
+ * A deck in the format of Jigoku, which EmeraldDB imports among others: a line `<count> <title> (<pack>)` per card,
+ * nothing else (no name, no heading), in the order of the page of the deck.
+ */
+export function jigokuExport(quantities: Record<string, number>, cards: Record<string, Card>): string {
+  const contents = deckContents(quantities, cards)
+  const ordered = [
+    contents.stronghold,
+    contents.role,
+    ...contents.provinces,
+    ...contents.sides.flatMap((side) => side.groups.flatMap((group) => group.cards)),
+  ].filter((card) => card !== null)
+
+  return ordered
+    .map((card) => {
+      const pack = cards[card.code]?.pack
+
+      return pack ? `${card.quantity} ${card.name} (${pack})` : `${card.quantity} ${card.name}`
+    })
+    .join('\n')
+}
+
+/**
+ * How many cards of a deck each clan has, the most first (then by name), the neutral cards last.
+ */
+export function clanCounts(
+  quantities: Record<string, number>,
+  cards: Record<string, Card>,
+): { clan: string; name: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const [code, quantity] of Object.entries(quantities)) {
+    const clan = cards[code]?.clan
+    if (clan) {
+      counts.set(clan, (counts.get(clan) ?? 0) + quantity)
+    }
+  }
+  const rows = [...counts].map(([clan, count]) => ({ clan, name: findClan(clan)?.name ?? 'Neutral', count }))
+  const neutral = (row: { clan: string }) => Number(row.clan === 'neutral')
+
+  return rows.sort((a, b) => neutral(a) - neutral(b) || b.count - a.count || a.name.localeCompare(b.name))
+}

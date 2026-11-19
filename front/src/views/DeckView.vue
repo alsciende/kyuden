@@ -6,7 +6,7 @@ import { ApiProblem, deleteDeck, fetchCards, fetchOwnedDeck, renameDeck, type Ca
 import ClanMon from '@/components/ClanMon.vue'
 import CardPreview from '@/components/game/CardPreview.vue'
 import { findClan } from '@/data/clans'
-import { deckContents, deckName, endingRows, opponentRows, recordTiles } from '@/lib/decks'
+import { clanCounts, deckContents, deckName, endingRows, jigokuExport, opponentRows, recordTiles } from '@/lib/decks'
 import { ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
 import { hidePreview, showPreview } from '@/lib/preview'
 import { session } from '@/lib/session'
@@ -37,6 +37,12 @@ const confirmingDeletion = ref(false)
 const deleting = ref(false)
 const deleteError = ref<string | null>(null)
 
+/** the deck copied in the format of Jigoku: told for a while */
+const copied = ref(false)
+/** the export shown to be selected, when the browser refuses to copy it */
+const exported = ref<string | null>(null)
+let copiedTimer: ReturnType<typeof setTimeout> | null = null
+
 const name = computed(() => deckName(owned.value?.deck.name ?? null))
 const clan = computed(() => findClan(owned.value?.deck.clan))
 const contents = computed(() => (owned.value === null ? null : deckContents(owned.value.deck.cards, cards.value)))
@@ -51,14 +57,14 @@ const subtitle = computed(() =>
     .filter((part) => part)
     .join(' · '),
 )
-const counts = computed(() => {
-  if (contents.value === null) {
-    return ''
-  }
-  const [dynasty, conflict] = contents.value.sides
-
-  return `${dynasty?.count ?? 0} dynasty · ${conflict?.count ?? 0} conflict · ${contents.value.provinces.length} provinces`
-})
+/** how many cards of each clan, the most first, the neutral cards last */
+const counts = computed(() =>
+  owned.value === null
+    ? ''
+    : clanCounts(owned.value.deck.cards, cards.value)
+        .map((count) => `${count.count} ${count.name}`)
+        .join(' · '),
+)
 /** the right edge of the room of the image of a card */
 const windowWidth = ref(window.innerWidth)
 const onResize = () => (windowWidth.value = window.innerWidth)
@@ -85,6 +91,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   hidePreview()
+  if (copiedTimer !== null) {
+    clearTimeout(copiedTimer)
+  }
 })
 
 function elementIcon(element: string): string {
@@ -97,6 +106,29 @@ function elementName(element: string): string {
 
 function preview(code: string, event: Event): void {
   showPreview(code, event.currentTarget as HTMLElement, false)
+}
+
+/**
+ * Copies the deck in the format of Jigoku (a line per card), to paste into EmeraldDB; shown in a field when the
+ * browser refuses to copy it.
+ */
+async function exportDeck(): Promise<void> {
+  if (owned.value === null) {
+    return
+  }
+  const text = jigokuExport(owned.value.deck.cards, cards.value)
+  try {
+    await navigator.clipboard.writeText(text)
+    exported.value = null
+    copied.value = true
+    if (copiedTimer !== null) {
+      clearTimeout(copiedTimer)
+    }
+    copiedTimer = setTimeout(() => (copied.value = false), 4000)
+  } catch {
+    copied.value = false
+    exported.value = text
+  }
 }
 
 async function startRenaming(): Promise<void> {
@@ -199,8 +231,22 @@ async function removeDeck(): Promise<void> {
               <button type="button" class="btn-link" @click="confirmingDeletion = false">Keep it</button>
             </div>
             <div v-else-if="!renaming" class="manage">
+              <button type="button" class="btn-link" @click="exportDeck">Export</button>
               <button type="button" class="btn-link" @click="startRenaming">Rename</button>
               <button type="button" class="btn-link delete" @click="confirmingDeletion = true">Delete</button>
+              <span v-if="copied" class="copied" role="status">Copied, ready to paste</span>
+            </div>
+            <div v-if="exported !== null" class="export">
+              <label for="deck-export" class="form-label">The deck, to paste into EmeraldDB</label>
+              <textarea
+                id="deck-export"
+                class="field field-ui"
+                readonly
+                rows="8"
+                :value="exported"
+                @focus="($event.target as HTMLTextAreaElement).select()"
+              />
+              <button type="button" class="btn-link" @click="exported = null">Close</button>
             </div>
             <p v-if="deleteError" class="form-error" role="alert">{{ deleteError }}</p>
           </div>
@@ -403,6 +449,31 @@ h1 {
 .manage {
   display: flex;
   gap: 20px;
+}
+
+.copied {
+  align-self: center;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.export {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.export .form-label {
+  color: var(--ink-3);
+}
+
+.export textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 14px;
+  resize: vertical;
 }
 
 .manage .btn-link {
