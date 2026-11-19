@@ -67,7 +67,8 @@ final readonly class PassOpportunityHandler implements PlayerActionHandlerInterf
         $firstToPass = ! $this->hasAnyPlayerPassed($game);
         $this->stateManager->withState(
             $player,
-            fn (PlayerState $state): PlayerState => $state->setPassed(true),
+            // the reaction windows of the player close: they did not react
+            fn (PlayerState $state): PlayerState => $state->setPassed(true)->setReactionWindows([]),
         );
         $this->eventDispatcher->dispatch(new OpportunityPassedEvent($game, $player, $firstToPass));
 

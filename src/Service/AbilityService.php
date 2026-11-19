@@ -30,12 +30,24 @@ readonly class AbilityService
      */
     public function trigger(PhysicalCard $card, Player $player): void
     {
-        $abilityController = $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getLogicalCard()->getId()) ? $card->getStack()->getPlayer() : $this->controlService->getController($card);
-        if ($abilityController !== $player) {
+        if ($this->getAbilityController($card) !== $player) {
             throw new NotControlledCardException($card, $player);
         }
 
         // fails unless the card is where its abilities can be used
         $this->workflowRegistry->get($card)->apply($card, 'trigger_ability');
+    }
+
+    /**
+     * The player could trigger the abilities of the card now (what trigger() accepts), without triggering them.
+     */
+    public function canTrigger(PhysicalCard $card, Player $player): bool
+    {
+        return $this->getAbilityController($card) === $player && $this->workflowRegistry->get($card)->can($card, 'trigger_ability');
+    }
+
+    private function getAbilityController(PhysicalCard $card): Player
+    {
+        return $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getLogicalCard()->getId()) ? $card->getStack()->getPlayer() : $this->controlService->getController($card);
     }
 }

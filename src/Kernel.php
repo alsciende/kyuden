@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App;
 
 use App\Attribute\AppAction;
+use App\CardScript\AbstractCardScript;
+use App\Event\TriggeringEventInterface;
 use App\GameLog\GameLog;
 use App\GameLog\GameLogEventListener;
 use App\Message\PlayerActionInterface;
 use App\MessageHandler\PlayerActionHandlerInterface;
+use App\Service\CardScript\ReactionOfferer;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\Config\Resource\DirectoryResource;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -50,6 +53,50 @@ class Kernel extends BaseKernel implements CompilerPassInterface
                 'priority' => 100,
             ]);
         }
+
+        $subscriptions = $this->findCardScriptSubscriptions($container);
+        $container->setParameter('.app.card_script_subscriptions', $subscriptions);
+        $reactionOfferer = $container->getDefinition(ReactionOfferer::class);
+        foreach (array_keys($subscriptions) as $eventClass) {
+            // after the listeners applying its consequences: the cards read the state once it has resolved
+            $reactionOfferer->addTag('kernel.event_listener', [
+                'event' => $eventClass,
+                'priority' => -100,
+            ]);
+        }
+    }
+
+    /**
+     * What the scripts of the cards subscribe to (AbstractCardScript::getSubscribedEvents()): the method of the script,
+     * by code of card, by class of event.
+     *
+     * @return array<class-string<TriggeringEventInterface>, array<string, string>>
+     */
+    private function findCardScriptSubscriptions(ContainerBuilder $container): array
+    {
+        $subscriptions = [];
+        foreach (array_keys($container->findTaggedServiceIds(AbstractCardScript::class)) as $id) {
+            $class = $container->getDefinition($id)->getClass();
+            if ($class === null || ! is_subclass_of($class, AbstractCardScript::class)) {
+                continue;
+            }
+
+            foreach ($class::getSubscribedEvents() as $eventClass => $method) {
+                if (! is_subclass_of($eventClass, TriggeringEventInterface::class)) {
+                    throw new \LogicException(sprintf('The script %s subscribes to %s, which does not implement %s.', $class, $eventClass, TriggeringEventInterface::class));
+                }
+
+                if (! method_exists($class, $method) || ! new \ReflectionMethod($class, $method)->isPublic()) {
+                    throw new \LogicException(sprintf('The script %s subscribes to %s with %s(), which is not a public method of it.', $class, $eventClass, $method));
+                }
+
+                $subscriptions[$eventClass][$class::getCode()] = $method;
+            }
+        }
+
+        ksort($subscriptions);
+
+        return $subscriptions;
     }
 
     /**
