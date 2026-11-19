@@ -83,10 +83,7 @@ async function importFromUrl(): Promise<void> {
     <div class="heading">
       <div class="eyebrow">Your decks</div>
       <h1>Decks</h1>
-      <p class="lead">
-        The decks you have imported, the copy of your starter deck among them. Open one to read its cards and how it has
-        fared.
-      </p>
+      <p class="lead">The decks you have imported. Open one to read its cards and how it has fared.</p>
     </div>
 
     <section class="list" aria-label="Your decks">
