@@ -45,10 +45,14 @@ export interface Card {
   political_bonus?: string | null
   strength?: number | null
   strength_bonus?: string | null
+  /** the elements of a province */
+  elements?: string[] | null
   text?: string | null
   ability_timings?: AbilityTiming[]
   ability_granted_to_attached?: boolean
   image_url: string | null
+  /** the name of the first pack it was printed in */
+  pack?: string | null
 }
 
 export interface Guest {
@@ -304,6 +308,19 @@ export async function toProblem(response: Response): Promise<ApiProblem> {
 }
 
 const cards = new Map<string, Promise<Card>>()
+let allCards: Promise<Record<string, Card>> | null = null
+
+/**
+ * Every card as printed, by code, read once per page in a single request (the API is cacheable: the browser keeps it).
+ */
+export function fetchCards(): Promise<Record<string, Card>> {
+  if (allCards === null) {
+    allCards = request<Card[]>('/api/cards').then((list) => Object.fromEntries(list.map((card) => [card.code, card])))
+    allCards.catch(() => (allCards = null))
+  }
+
+  return allCards
+}
 
 /**
  * A card as printed, read once per page (the API is cacheable).
@@ -384,6 +401,49 @@ export function fetchDecks(token: string): Promise<Deck[]> {
  */
 export function importDeck(token: string, url: string): Promise<Deck> {
   return request<Deck>('/api/decks', { method: 'POST', body: { url }, token })
+}
+
+/**
+ * The record of a deck of the user, from the games played with it (every game but the replays): won and lost, the
+ * standard ones apart (`ranked_*`), how they ended and against which clans.
+ */
+export interface DeckRecord {
+  /** the games ended */
+  played: number
+  won: number
+  lost: number
+  in_progress: number
+  ranked_won: number
+  ranked_lost: number
+  last_game: { game_id: string; ended_at: string | null; won: boolean | null; opponent_clan: string | null } | null
+  endings: { victory_condition: string; won: number; lost: number }[]
+  opponents: { clan: string; won: number; lost: number }[]
+}
+
+export interface OwnedDeck {
+  deck: Deck
+  record: DeckRecord
+}
+
+/**
+ * The decks of the user (not the starter decks) with their record, the last played first.
+ */
+export function fetchOwnedDecks(token: string): Promise<OwnedDeck[]> {
+  return request<OwnedDeck[]>('/api/self/decks', { token })
+}
+
+/**
+ * A deck of the user with its record: 404 `deck_not_found` for a starter deck or a deck of another user.
+ */
+export function fetchOwnedDeck(token: string, deckId: string): Promise<OwnedDeck> {
+  return request<OwnedDeck>(`/api/self/decks/${encodeURIComponent(deckId)}`, { token })
+}
+
+/**
+ * Renames a deck of the user (1 to 255 characters): 400 `invalid_payload` otherwise.
+ */
+export function renameDeck(token: string, deckId: string, name: string): Promise<Deck> {
+  return request<Deck>(`/api/decks/${encodeURIComponent(deckId)}`, { method: 'PATCH', body: { name }, token })
 }
 
 /**

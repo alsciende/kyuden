@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\View;
 
 use App\Entity\LogicalCard;
+use App\Entity\Pack;
 use App\Service\CardScript\CardScriptRegistry;
 use App\View\Model\LogicalCardView;
 
@@ -49,7 +50,20 @@ final readonly class LogicalCardViewFactory
             abilityTimings: $this->cardScriptRegistry->getAbilityTimings($card->getId()),
             abilityGrantedToAttached: $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getId()),
             imageUrl: $this->getImageUrl($card),
+            pack: $this->getFirstPack($card)?->getName(),
         );
+    }
+
+    /**
+     * The first pack the card was printed in: the earliest released, then in the order of the cycles and of their packs.
+     */
+    private function getFirstPack(LogicalCard $card): ?Pack
+    {
+        $packs = $card->getPacks();
+        usort($packs, static fn (Pack $a, Pack $b): int => [$a->getReleaseDate()?->format('Y-m-d') ?? '9999', $a->getCycle()->getPosition(), $a->getPosition()]
+            <=> [$b->getReleaseDate()?->format('Y-m-d') ?? '9999', $b->getCycle()->getPosition(), $b->getPosition()]);
+
+        return $packs[0] ?? null;
     }
 
     /**

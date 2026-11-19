@@ -65,6 +65,7 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
             'ability_timings' => ['action'],
             'ability_granted_to_attached' => false,
             'image_url' => 'https://images.kyuden.app/v1/cards/01-adept-of-the-waves.webp',
+            'pack' => 'Core Set',
         ], $this->decode($response));
     }
 
@@ -94,6 +95,8 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
         $cards = $this->decode($response);
         $codes = array_column($cards, 'code');
         self::assertNotContains(null, array_column($cards, 'image_url'));
+        // every card of the fixtures is printed: a deck is exported with the packs of its cards
+        self::assertNotContains(null, array_column($cards, 'pack'));
         self::assertContains('01-fine-katana', $codes);
         $sorted = $codes;
         sort($sorted);

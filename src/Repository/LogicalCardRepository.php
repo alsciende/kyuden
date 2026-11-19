@@ -21,7 +21,7 @@ class LogicalCardRepository extends ServiceEntityRepository
     }
 
     /**
-     * Every card sorted by code, with its printings (their images), in a single query.
+     * Every card sorted by code, with its printings and their packs, in a single query.
      *
      * @return list<LogicalCard>
      */
@@ -30,7 +30,8 @@ class LogicalCardRepository extends ServiceEntityRepository
         /** @var list<LogicalCard> */
         return $this->createQueryBuilder('card')
             ->leftJoin('card.printings', 'printing')
-            ->addSelect('printing')
+            ->leftJoin('printing.pack', 'pack')
+            ->addSelect('printing', 'pack')
             ->orderBy('card.id', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();

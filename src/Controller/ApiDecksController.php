@@ -18,6 +18,7 @@ use App\Service\Deck\DeckDeleter;
 use App\Service\Deck\DeckImporter;
 use App\Service\Deck\EmeraldDbDeckFetcher;
 use App\View\DeckViewFactory;
+use App\View\OwnedDeckViewFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
@@ -31,8 +32,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * imported from its cards in one of the formats of DeckImporter (`{"name": ..., "format": "emeralddb", "cards":
  * {"card id": quantity}}`), or downloaded from the URL of its page on EmeraldDB (`{"name": ..., "url": ...}`, the name
  * of EmeraldDB unless given), and checked against the deckbuilding rules: a deck the user already has is answered
- * instead (200), restored when they had deleted it. A user deletes their own decks (DeckDeleter). Errors are problem
- * details (RFC 9457).
+ * instead (200), restored when they had deleted it. A user renames and deletes their own decks (DeckDeleter), and reads
+ * them with their record (`/api/self/decks`). Errors are problem details (RFC 9457).
  */
 class ApiDecksController extends AbstractController
 {
@@ -49,6 +50,7 @@ class ApiDecksController extends AbstractController
         private readonly DeckViewFactory $deckViewFactory,
         private readonly EmeraldDbDeckFetcher $emeraldDbDeckFetcher,
         private readonly DeckDeleter $deckDeleter,
+        private readonly OwnedDeckViewFactory $ownedDeckViewFactory,
     ) {
     }
 
@@ -106,6 +108,56 @@ class ApiDecksController extends AbstractController
         $response->headers->set('Location', $this->generateUrl('app_api_deck', ['id' => $deck->getId()]));
 
         return $response;
+    }
+
+    #[Route('/api/self/decks', name: 'app_api_self_decks', methods: ['GET'])]
+    public function listOwned(#[CurrentUser] User $user): Response
+    {
+        return $this->json($this->ownedDeckViewFactory->createAll($user, $this->deckRepository->findOwnedBy($user)));
+    }
+
+    #[Route('/api/self/decks/{id}', name: 'app_api_self_deck', methods: ['GET'])]
+    public function showOwned(string $id, #[CurrentUser] User $user): Response
+    {
+        $deck = $this->deckRepository->findOwned($id, $user);
+        if (! $deck instanceof Deck) {
+            return $this->problem(Response::HTTP_NOT_FOUND, 'deck_not_found', "Deck not found: [{$id}]");
+        }
+
+        return $this->json($this->ownedDeckViewFactory->create($user, $deck));
+    }
+
+    #[Route('/api/decks/{id}', name: 'app_api_deck_rename', methods: ['PATCH'])]
+    public function rename(string $id, Request $request, #[CurrentUser] User $user): Response
+    {
+        // the starter decks are every user's
+        $deck = $this->deckRepository->findOwned($id, $user);
+        if (! $deck instanceof Deck) {
+            return $this->problem(Response::HTTP_NOT_FOUND, 'deck_not_found', "Deck not found: [{$id}]");
+        }
+
+        try {
+            $body = $request->toArray();
+        } catch (JsonException $exception) {
+            return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_json', $exception->getMessage());
+        }
+
+        $violations = [];
+        foreach (array_diff(array_map(strval(...), array_keys($body)), ['name']) as $field) {
+            $violations[] = ['property_path' => $field, 'message' => 'This field is not expected.'];
+        }
+        $name = is_string($body['name'] ?? null) ? trim($body['name']) : null;
+        if ($name === null || $name === '' || mb_strlen($name) > self::MAX_NAME_LENGTH) {
+            $violations[] = ['property_path' => 'name', 'message' => sprintf('The name must be a string of 1 to %d characters.', self::MAX_NAME_LENGTH)];
+        }
+        if ($violations !== [] || $name === null) {
+            return $this->problem(Response::HTTP_BAD_REQUEST, 'invalid_payload', 'Invalid deck.', ['violations' => $violations]);
+        }
+
+        $deck->setName($name);
+        $this->entityManager->flush();
+
+        return $this->json($this->deckViewFactory->create($deck));
     }
 
     #[Route('/api/decks/{id}', name: 'app_api_deck_delete', methods: ['DELETE'])]
