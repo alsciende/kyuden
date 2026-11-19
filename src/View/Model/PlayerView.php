@@ -19,6 +19,7 @@ final readonly class PlayerView
      * @param list<ConflictType> $declarableConflictTypes
      * @param list<StackView>    $stacks
      * @param list<ResolutionView> $resolutions
+     * @param list<ReactionWindowView> $reactionWindows
      */
     public function __construct(
         public string $id,
@@ -62,6 +63,11 @@ final readonly class PlayerView
          * last one is the one they end first.
          */
         public array $resolutions,
+        /**
+         * The reaction windows in which the player has cards that can react, the oldest first: for the viewer only
+         * (none for the other players).
+         */
+        public array $reactionWindows,
         public bool $fateCollected,
         public int $conflictOpportunities,
         public array $declaredConflictTypes,

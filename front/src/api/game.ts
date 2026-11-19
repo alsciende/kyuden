@@ -69,6 +69,17 @@ export interface ResolutionView {
   timing: AbilityTiming
 }
 
+/**
+ * A reaction window open for the viewer: the triggering condition that opened it (`province_revealed`, with the ids of
+ * what it names) and the cards of the viewer that can react to it, until they trigger them, decline them or pass.
+ */
+export interface ReactionWindowView {
+  id: string
+  trigger: string
+  params: Record<string, string>
+  card_ids: string[]
+}
+
 export interface PlayerView {
   id: string
   user_id: string
@@ -89,6 +100,8 @@ export interface PlayerView {
   resolving_interrupts_and_reactions: number
   /** in the order they were initiated */
   resolutions: ResolutionView[]
+  /** the oldest first; for the viewer only (none for the other players) */
+  reaction_windows: ReactionWindowView[]
   fate_collected: boolean
   conflict_opportunities: number
   declared_conflict_types: ConflictType[]

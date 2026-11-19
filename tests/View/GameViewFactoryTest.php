@@ -15,8 +15,10 @@ use App\Enum\PersonalHonor;
 use App\Enum\Side;
 use App\Model\Banner;
 use App\State\Manager\CardStateManager;
+use App\State\Manager\PlayerStateManager;
 use App\State\Model\CardState;
 use App\State\Model\PlayerState;
+use App\State\Model\ReactionWindow;
 use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
@@ -25,6 +27,7 @@ use App\View\GameViewFactory;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ReactionWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\StackView;
 
@@ -231,6 +234,25 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertSame([3, true], [$johnsView->pendingHonorBid, $johnsView->honorBidSelected]);
         self::assertSame([null, true], [$janesViewOfJohn->pendingHonorBid, $janesViewOfJohn->honorBidSelected]);
         self::assertSame([null, false], [$janesViewOfJane->pendingHonorBid, $janesViewOfJane->honorBidSelected]);
+    }
+
+    public function testTheReactionWindowsAreVisibleToTheirPlayerOnly(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->hand(['outflank' => '23-outflank']))
+            ->withPlayer('jane')
+            ->build();
+        self::service(PlayerStateManager::class)->withState(
+            $scenario->player('john'),
+            fn (PlayerState $state): PlayerState => $state->openReactionWindow(new ReactionWindow('1', 'province_revealed', ['province' => 'p'], [$scenario->card('outflank')->getId()])),
+        );
+
+        $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
+        $janesViewOfJohn = $this->playerView($this->view($scenario, 'jane'), $scenario, 'john');
+
+        self::assertEquals([new ReactionWindowView('1', 'province_revealed', ['province' => 'p'], [$scenario->card('outflank')->getId()])], $johnsView->reactionWindows);
+        self::assertSame([], $janesViewOfJohn->reactionWindows);
     }
 
     public function testTheChosenStrongholdProvinceIsVisibleToItsOwnerOnly(): void

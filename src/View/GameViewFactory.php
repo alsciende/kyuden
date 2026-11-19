@@ -16,10 +16,12 @@ use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\ReactionWindow;
 use App\State\Model\Resolution;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ReactionWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\SpecialActionView;
 use App\View\Model\StackView;
@@ -110,6 +112,10 @@ final readonly class GameViewFactory
             givenActions: $state->getGivenActions(),
             resolvingInterruptsAndReactions: $state->countInterruptsAndReactions(),
             resolutions: array_map(fn (Resolution $resolution): ResolutionView => $this->createResolutionView($resolution, $cards[$resolution->cardId] ?? null, $viewer), $state->getResolutions()),
+            reactionWindows: $isViewer ? array_map(
+                fn (ReactionWindow $window): ReactionWindowView => new ReactionWindowView($window->id, $window->trigger, $window->params, $window->cardIds),
+                $state->getReactionWindows(),
+            ) : [],
             fateCollected: $state->isFateCollected(),
             conflictOpportunities: $state->getConflictOpportunities(),
             declaredConflictTypes: $state->getDeclaredConflictTypes(),
