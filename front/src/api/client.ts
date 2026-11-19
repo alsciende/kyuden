@@ -133,6 +133,8 @@ export type TrophyId =
   | 'clan_phoenix'
   | 'clan_scorpion'
   | 'clan_unicorn'
+  | 'tournament_game'
+  | 'tournament_win'
 
 /**
  * A trophy of the catalogue for the authenticated user, in its order: what it gives for the nobori, and once earned,
@@ -394,8 +396,8 @@ export function deleteDeck(token: string, deckId: string): Promise<void> {
 /**
  * The deck the user waits with in the queue; a 404 (`not_queued`) once matched or left.
  */
-export function fetchQueue(token: string): Promise<{ deck_id: string }> {
-  return request<{ deck_id: string }>('/api/queue', { token })
+export function fetchQueue(token: string): Promise<{ deck_id: string; match_id: number | null }> {
+  return request<{ deck_id: string; match_id: number | null }>('/api/queue', { token })
 }
 
 /**
@@ -410,6 +412,14 @@ export function fetchQueueCount(token: string): Promise<{ waiting: number }> {
  */
 export function joinQueue(token: string, deckId: string, invitation?: QueueInvitation): Promise<void> {
   return request<void>('/api/queue', { method: 'POST', body: { deck_id: deckId, ...invitation }, token })
+}
+
+/**
+ * Joins the queue with a match of a tournament, the deck of the registration: matched with the other player of the
+ * match only, until 10 minutes after the round has begun (`invalid_match` after that). Replaces any other wait.
+ */
+export function joinQueueWithMatch(token: string, matchId: number): Promise<void> {
+  return request<void>('/api/queue', { method: 'POST', body: { match_id: matchId }, token })
 }
 
 export function leaveQueue(token: string): Promise<void> {
@@ -494,4 +504,142 @@ export function linkAccount(
 
 export function unlinkAccount(token: string, provider: OAuthProvider): Promise<void> {
   return request<void>(`/api/self/linked-accounts/${provider}`, { method: 'DELETE', token })
+}
+
+/** where a tournament stands: open until it locks, one hour before it begins */
+export type TournamentStatus = 'open' | 'locked' | 'in_progress' | 'ended' | 'cancelled'
+
+export type TournamentFormat = 'single_elimination'
+
+/** a user in a tournament: its organizer, a player registered (never their deck nor their clan) */
+export interface TournamentUser {
+  user_id: string
+  name: string
+  banner: Banner
+}
+
+/**
+ * A tournament in the list of the tournaments and in the registrations of the user. The dates are in UTC.
+ */
+export interface TournamentSummary {
+  id: string
+  starts_at: string
+  /** one hour before it begins: no registration, change of deck or cancellation after that */
+  locks_at: string
+  status: TournamentStatus
+  format: TournamentFormat
+  organizer: TournamentUser
+  entrants: number
+  max_entrants: number
+}
+
+/** how a match of a tournament ended: won in a game, by a bye, by forfeit, or both players eliminated */
+export type MatchOutcome = 'game' | 'bye' | 'forfeit' | 'no_result'
+
+/** a match of a round that has begun */
+export interface TournamentMatch {
+  /** to join the queue with it */
+  id: number
+  table: number
+  /** two players, one for a bye */
+  players: TournamentUser[]
+  /** its game, to watch it, null before it begins */
+  game_id: string | null
+  winner_user_id: string | null
+  /** null while it is played */
+  outcome: MatchOutcome | null
+  /** how its game ended (outcome `game`) */
+  victory_condition: string | null
+  /** the user ids of its players waiting in the queue with it */
+  waiting: string[]
+}
+
+export interface TournamentRound {
+  number: number
+  matches: TournamentMatch[]
+}
+
+/**
+ * A tournament, the same for every reader, with its players in their order of registration and, once locked, its
+ * bracket; the rounds that have begun (the pairings of a round are secret until then).
+ */
+export interface Tournament extends Omit<TournamentSummary, 'entrants'> {
+  players: TournamentUser[]
+  /** the places of the bracket, once locked */
+  size: number | null
+  round_count: number | null
+  /** from 1; 0 until it begins */
+  current_round: number
+  /** until when the players of the current round join the queue, else they forfeit */
+  join_deadline: string | null
+  /** once ended, null without one */
+  winner: TournamentUser | null
+  rounds: TournamentRound[]
+}
+
+/**
+ * A registration of the user in a tournament that has not ended, with its deck.
+ */
+export interface TournamentEntry {
+  tournament: TournamentSummary
+  deck_id: string
+  deck_name: string | null
+  registered_at: string
+  /** whether they have lost a match of the tournament */
+  eliminated: boolean
+}
+
+/**
+ * The tournaments to be played and the cancelled ones that would not have begun yet, the first to begin first:
+ * public.
+ */
+export function fetchTournaments(): Promise<TournamentSummary[]> {
+  return request<TournamentSummary[]>('/api/tournaments')
+}
+
+export function fetchTournament(id: string): Promise<Tournament> {
+  return request<Tournament>(`/api/tournaments/${encodeURIComponent(id)}`)
+}
+
+/**
+ * The tournament as an iCalendar file (`.ics`), to add it to a calendar: public, a link rather than a request.
+ */
+export function tournamentCalendarUrl(id: string): string {
+  return `/api/tournaments/${encodeURIComponent(id)}/calendar.ics`
+}
+
+/**
+ * Creates a tournament beginning at a time (ISO 8601, UTC): a 422 (`invalid_start`) off the half hour or less than 12
+ * hours ahead, a 409 when the user organizes one already (`tournament_already_organized`) or when another begins
+ * within 12 hours (`tournament_too_close`).
+ */
+export function createTournament(token: string, startsAt: string): Promise<Tournament> {
+  return request<Tournament>('/api/tournaments', { method: 'POST', body: { starts_at: startsAt }, token })
+}
+
+/** its organizer cancels it, until it locks */
+export function cancelTournament(token: string, id: string): Promise<Tournament> {
+  return request<Tournament>(`/api/tournaments/${encodeURIComponent(id)}/cancellation`, { method: 'POST', token })
+}
+
+/** the registrations of the user in the tournaments that have not ended, cancelled ones included */
+export function fetchTournamentEntries(token: string): Promise<TournamentEntry[]> {
+  return request<TournamentEntry[]>('/api/self/tournaments', { token })
+}
+
+/**
+ * Registers the user with a deck, or changes the deck of their registration: a 409 once it is locked or cancelled
+ * (`tournament_closed`) or full (`tournament_full`).
+ */
+export function registerInTournament(token: string, id: string, deckId: string): Promise<TournamentEntry> {
+  return request<TournamentEntry>(`/api/self/tournaments/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: { deck_id: deckId },
+    token,
+  })
+}
+
+/** until it locks, or at any time once it is cancelled */
+export function unregisterFromTournament(token: string, id: string): Promise<void> {
+  return request<void>(`/api/self/tournaments/${encodeURIComponent(id)}`, { method: 'DELETE', token })
 }

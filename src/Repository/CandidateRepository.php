@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Candidate;
+use App\Entity\TournamentMatch;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -25,18 +26,44 @@ class CandidateRepository extends ServiceEntityRepository
     }
 
     /**
-     * The number of the candidates waiting in the open queue (not those of an invitation, who wait for each other
-     * only), the user given left out.
+     * The number of the candidates waiting in the open queue (not those of an invitation or a match of a tournament,
+     * who wait for each other only), the user given left out.
      */
     public function countOpenQueueExcept(User $user): int
     {
         return (int) $this->createQueryBuilder('candidate')
             ->select('COUNT(candidate.id)')
             ->where('candidate.invitation IS NULL')
+            ->andWhere('candidate.match IS NULL')
             ->andWhere('candidate.user != :user')
             ->setParameter('user', $user)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * The candidates waiting with these matches of a tournament, with their users.
+     *
+     * @param list<TournamentMatch> $matches
+     *
+     * @return list<Candidate>
+     */
+    public function findWaitingWithMatches(array $matches): array
+    {
+        if ($matches === []) {
+            return [];
+        }
+
+        /** @var list<Candidate> $candidates */
+        $candidates = $this->createQueryBuilder('candidate')
+            ->addSelect('user')
+            ->join('candidate.user', 'user')
+            ->where('candidate.match IN (:matches)')
+            ->setParameter('matches', $matches)
+            ->getQuery()
+            ->getResult();
+
+        return $candidates;
     }
 
     /**

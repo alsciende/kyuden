@@ -6,6 +6,7 @@ import EyeIcon from '@/components/EyeIcon.vue'
 import MatchUp from '@/components/MatchUp.vue'
 import QueueCount from '@/components/queue/QueueCount.vue'
 import QueueWaiting from '@/components/queue/QueueWaiting.vue'
+import TournamentsBand from '@/components/tournaments/TournamentsBand.vue'
 import { HOUSE_BOT } from '@/data/houseBot'
 import { waiting } from '@/lib/queueing'
 import { session } from '@/lib/session'
@@ -16,7 +17,8 @@ import { spectatorsLabel } from '@/lib/watch'
 /**
  * The start of an account: play a game (the queue, the house bot, a friendly game), or watch one of the games in
  * progress, the first ones shown, read again from time to time. While the user waits in the queue, the tile "Play"
- * tells the wait: they may watch a game meanwhile; otherwise it tells how many players wait in the queue.
+ * tells the wait: they may watch a game meanwhile; otherwise it tells how many players wait in the queue. Below, the
+ * tournaments at court, when one is in progress or upcoming.
  */
 const SHOWN = 2
 
@@ -47,7 +49,6 @@ const queueCount = useQueueCount()
         <div class="tile-actions">
           <RouterLink :to="{ name: 'queue' }" class="btn btn-primary btn-large">Choose a deck</RouterLink>
           <RouterLink :to="{ name: 'invite' }" class="btn-link">Play a friendly game</RouterLink>
-          <RouterLink :to="{ name: 'history' }" class="btn-link">Your games</RouterLink>
         </div>
       </section>
       <section class="tile" aria-labelledby="watch">
@@ -57,7 +58,6 @@ const queueCount = useQueueCount()
           <template v-if="games === null">The games in progress at court.</template>
           <template v-else-if="games.length === 0">No game in progress right now.</template>
           <template v-else> {{ games.length }} game{{ games.length === 1 ? '' : 's' }} in progress at court. </template>
-          You see what both players see on the table, never their hands.
         </p>
         <ul v-if="shown.length > 0" class="games">
           <li v-for="game in shown" :key="game.id" class="game">
@@ -73,6 +73,7 @@ const queueCount = useQueueCount()
         </div>
       </section>
     </div>
+    <TournamentsBand always />
   </div>
 </template>
 

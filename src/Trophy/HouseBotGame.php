@@ -12,7 +12,7 @@ use App\State\Model\GameState;
 /**
  * Finish a game against the house bot, won or lost, played to its end.
  */
-readonly class HouseBotGame implements TrophyInterface
+readonly class HouseBotGame implements GameTrophyInterface
 {
     #[\Override]
     public static function getTrophy(): Trophy

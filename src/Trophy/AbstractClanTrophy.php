@@ -14,7 +14,7 @@ use App\State\Model\GameState;
 /**
  * Win a standard game (neither friendly nor against the house bot), played to its end, with a stronghold of the clan.
  */
-abstract readonly class AbstractClanTrophy implements TrophyInterface
+abstract readonly class AbstractClanTrophy implements GameTrophyInterface
 {
     /**
      * The Great Clan of the stronghold.

@@ -15,7 +15,7 @@ const trophy = (overrides: Partial<UserTrophy>): UserTrophy => ({
 })
 
 describe('the trophies', () => {
-  it('names the trophy of the house bot and one of each Great Clan, in the order of the catalogue', () => {
+  it('names the trophy of the house bot, one of each Great Clan and those of the tournaments, in the order of the catalogue', () => {
     expect(TROPHIES.map((text) => text.id)).toEqual([
       'house_bot_game',
       'clan_crab',
@@ -25,7 +25,14 @@ describe('the trophies', () => {
       'clan_phoenix',
       'clan_scorpion',
       'clan_unicorn',
+      'tournament_game',
+      'tournament_win',
     ])
+    expect(trophyText('tournament_win')).toEqual({
+      id: 'tournament_win',
+      name: 'Emerald Champion',
+      goal: 'Finish first in a tournament.',
+    })
     expect(trophyText('clan_lion')).toEqual({
       id: 'clan_lion',
       name: 'Champion of the Lion',
@@ -51,6 +58,20 @@ describe('the trophies', () => {
       gameId: 'g1',
     })
     expect(plain).toMatchObject({ reward: 'the plain pattern', rewardChange: { pattern: 'plain' }, earnedOn: null })
+  })
+
+  it('tells the patterns of the trophies of the tournaments', () => {
+    const [game, win] = trophyCards([
+      trophy({ trophy: 'tournament_game', reward_mon: null, reward_pattern: 'tatejima' }),
+      trophy({ trophy: 'tournament_win', reward_mon: null, reward_pattern: 'dandara' }),
+    ])
+
+    expect(game).toMatchObject({ name: 'Into the Lists', reward: 'the tatejima pattern' })
+    expect(win).toMatchObject({
+      name: 'Emerald Champion',
+      reward: 'the dandara pattern',
+      rewardChange: { pattern: 'dandara' },
+    })
   })
 
   it('announces the trophies earned in the game only', () => {

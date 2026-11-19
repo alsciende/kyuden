@@ -167,6 +167,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
+     * An account a human signs in to (not a guest nor a bot) organizes a tournament and registers in one.
+     */
+    public function canTakePartInTournaments(): bool
+    {
+        return $this->type === UserType::Human && $this->username !== null;
+    }
+
+    /**
      * Turns a guest into an account a human signs in to.
      */
     public function register(string $username, string $hashedPassword): void
