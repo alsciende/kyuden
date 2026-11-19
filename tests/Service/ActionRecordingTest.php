@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Message\CreateGame;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,7 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
-class EventRecordingTest extends KernelTestCase
+class ActionRecordingTest extends KernelTestCase
 {
     public function testListener(): void
     {
@@ -34,14 +34,14 @@ class EventRecordingTest extends KernelTestCase
         $game = $manager->getRepository(Game::class)->find($gameId);
         $this->assertSame($gameId, $game->getId());
 
-        $event = $manager->getRepository(Event::class)->findOneBy([], [
+        $record = $manager->getRepository(ActionRecord::class)->findOneBy([], [
             'id' => 'desc',
         ]);
-        $this->assertInstanceOf(Event::class, $event);
-        $this->assertSame(CreateGame::class, $event->getName());
+        $this->assertInstanceOf(ActionRecord::class, $record);
+        $this->assertSame(CreateGame::class, $record->getName());
         $this->assertSame(
             sprintf('{"game_id":"%s","seed":"%s","friendly":false,"mulligan":false,"training":false}', $gameId, $seed),
-            $event->getPayload()
+            $record->getPayload()
         );
     }
 }

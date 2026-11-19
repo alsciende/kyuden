@@ -13,7 +13,7 @@ use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
 
 /**
- * Rejects every action on a replay (Service/Replay/GameReplayer) but the events it replays (ReplayStamp), before its
+ * Rejects every action on a replay (Service/Replay/GameReplayer) but the records it replays (ReplayStamp), before its
  * handling: whatever sends it (a player, a bot, the platform), a replay is read only.
  */
 readonly class GameReplayMiddleware implements MiddlewareInterface

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\View;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Entity\GameLogEntry;
 use App\Entity\Player;
 use App\Message\PlayerActionInterface;
-use App\Repository\EventRepository;
+use App\Repository\ActionRecordRepository;
 use App\Repository\GameLogEntryRepository;
 use App\View\Model\GameLogView;
 use App\View\Model\LogEntryView;
@@ -26,7 +26,7 @@ use function Symfony\Component\String\u;
 final readonly class GameLogViewFactory
 {
     public function __construct(
-        private EventRepository $eventRepository,
+        private ActionRecordRepository $recordRepository,
         private GameLogEntryRepository $gameLogEntryRepository,
         private SerializerInterface $serializer,
     ) {
@@ -43,13 +43,13 @@ final readonly class GameLogViewFactory
             gameId: $game->getId(),
             version: $game->getVersion(),
             messages: array_map(
-                fn (Event $event): LoggedMessageView => new LoggedMessageView(
-                    version: $event->getVersion(),
-                    type: u($event->getName())->afterLast('\\')->snake()->toString(),
-                    playerId: $this->getSenderId($event),
-                    entries: $entriesByVersion[$event->getVersion()] ?? [],
+                fn (ActionRecord $record): LoggedMessageView => new LoggedMessageView(
+                    version: $record->getVersion(),
+                    type: u($record->getName())->afterLast('\\')->snake()->toString(),
+                    playerId: $this->getSenderId($record),
+                    entries: $entriesByVersion[$record->getVersion()] ?? [],
                 ),
-                $this->eventRepository->findSince($game, $since),
+                $this->recordRepository->findSince($game, $since),
             ),
         );
     }
@@ -57,9 +57,9 @@ final readonly class GameLogViewFactory
     /**
      * The sender of the message: the only field of its payload shown, the payload may hold secret information.
      */
-    private function getSenderId(Event $event): ?string
+    private function getSenderId(ActionRecord $record): ?string
     {
-        $message = $this->serializer->deserialize($event->getPayload(), $event->getName(), 'json');
+        $message = $this->serializer->deserialize($record->getPayload(), $record->getName(), 'json');
 
         return $message instanceof PlayerActionInterface ? $message->getPlayerId() : null;
     }

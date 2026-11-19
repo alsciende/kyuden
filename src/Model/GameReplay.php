@@ -9,7 +9,7 @@ use App\Entity\Player;
 
 /**
  * The replay of a game that has ended, followed by one of its players: a copy of the game under another id, rebuilt
- * from the events of the original (Service/Replay/GameReplayer). Its version is the number of events replayed.
+ * from the action records of the original (Service/Replay/GameReplayer). Its version is the number of records replayed.
  */
 final readonly class GameReplay
 {

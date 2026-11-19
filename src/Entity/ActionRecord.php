@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Repository\EventRepository;
+use App\Repository\ActionRecordRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * An event changed the state of the game
+ * A record changed the state of the game
  * Its name is the class of the message that triggered this change
  * Its payload is the content of the message.
- * Its version is the version of the game after this change: the events of a game are numbered from 1.
+ * Its version is the version of the game after this change: the records of a game are numbered from 1.
  */
-#[ORM\Entity(repositoryClass: EventRepository::class)]
-#[ORM\Table('events')]
+#[ORM\Entity(repositoryClass: ActionRecordRepository::class)]
+#[ORM\Table('action_records')]
 #[ORM\UniqueConstraint(columns: ['game_id', 'version'])]
-class Event
+class ActionRecord
 {
     #[ORM\Id]
     #[ORM\GeneratedValue('SEQUENCE')]

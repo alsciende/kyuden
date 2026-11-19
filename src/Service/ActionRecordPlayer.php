@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Message\ActionInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\StampInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
-readonly class EventPlayer
+readonly class ActionRecordPlayer
 {
     public function __construct(
         private SerializerInterface $serializer,
@@ -18,9 +18,9 @@ readonly class EventPlayer
     ) {
     }
 
-    public function playEvent(Event $event): void
+    public function playRecord(ActionRecord $record): void
     {
-        $this->play($event->getName(), $event->getPayload());
+        $this->play($record->getName(), $record->getPayload());
     }
 
     /**
@@ -36,7 +36,7 @@ readonly class EventPlayer
         );
 
         if (! $message instanceof ActionInterface) {
-            throw new \LogicException("Event payload class {$name} does not implement " . ActionInterface::class);
+            throw new \LogicException("Recorded message class {$name} does not implement " . ActionInterface::class);
         }
 
         $this->bus->dispatch($message, $stamps);

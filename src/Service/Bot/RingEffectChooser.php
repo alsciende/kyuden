@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Bot;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
@@ -23,7 +23,7 @@ use App\Message\PassOpportunity;
 use App\Message\PlayerActionInterface;
 use App\Message\ReadyCard;
 use App\Message\RemoveFate;
-use App\Repository\EventRepository;
+use App\Repository\ActionRecordRepository;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 
@@ -32,7 +32,7 @@ use App\State\Manager\GameStateManager;
  * messages of the effect, one at a time, then nothing once it is resolved.
  *
  * The engine does not record that the effect is resolved: the bot reads its own messages since the step began, in
- * the events of the game. Only the attacking player is active in this step, so the step began with the last
+ * the records of the game. Only the attacking player is active in this step, so the step began with the last
  * PassOpportunity (that of the reaction window before it).
  */
 final readonly class RingEffectChooser
@@ -40,14 +40,14 @@ final readonly class RingEffectChooser
     public const int AIR_HONOR_GAIN = 2;
 
     /**
-     * At most this many events are read back to the beginning of the step.
+     * At most this many records are read back to the beginning of the step.
      */
-    private const int MAX_EVENTS = 50;
+    private const int MAX_RECORDS = 50;
 
     public function __construct(
         private GameStateManager $gameStateManager,
         private CardStateManager $cardStateManager,
-        private EventRepository $eventRepository,
+        private ActionRecordRepository $recordRepository,
         private BoardReader $boardReader,
     ) {
     }
@@ -168,14 +168,14 @@ final readonly class RingEffectChooser
     private function sentSinceTheStepBegan(Game $game, Player $player): array
     {
         $sent = [];
-        foreach ($this->eventRepository->findLatest($game, self::MAX_EVENTS) as $event) {
-            if ($event->getName() === PassOpportunity::class) {
+        foreach ($this->recordRepository->findLatest($game, self::MAX_RECORDS) as $record) {
+            if ($record->getName() === PassOpportunity::class) {
                 break;
             }
 
-            if ($this->senderOf($event) === $player->getId()) {
+            if ($this->senderOf($record) === $player->getId()) {
                 /** @var class-string $name */
-                $name = $event->getName();
+                $name = $record->getName();
                 $sent[] = $name;
             }
         }
@@ -183,9 +183,9 @@ final readonly class RingEffectChooser
         return $sent;
     }
 
-    private function senderOf(Event $event): ?string
+    private function senderOf(ActionRecord $record): ?string
     {
-        $payload = json_decode($event->getPayload(), true);
+        $payload = json_decode($record->getPayload(), true);
 
         return is_array($payload) && is_string($payload['player_id'] ?? null) ? $payload['player_id'] : null;
     }

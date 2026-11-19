@@ -15,7 +15,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Launches Games and automatically adds Players to it, through the bus: the messages are recorded as the events of the
+ * Launches Games and automatically adds Players to it, through the bus: the messages are recorded as the action records of the
  * game, and the game starts once every player has joined (automatic transition `start_game`). The candidates leave the
  * queue once the game is created. A game the candidates are matched in by an invitation is friendly, and uses it; a game
  * of a match of a tournament is standard, the game of the match.

@@ -20,7 +20,7 @@ use Symfony\Component\Uid\Uuid;
  * An ongoing game with players.
  *
  * Every random draw of the game (shuffles, first player, random discards, ids of new cards and stacks) goes through
- * its own random generator, seeded when the game is created: replaying the event log gives the same draws.
+ * its own random generator, seeded when the game is created: replaying its action records gives the same draws.
  */
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table('games')]
@@ -44,7 +44,7 @@ class Game implements StatefulInterface
     private string $state = '{}';
 
     /**
-     * Number of messages handled on the game: the version of its state, and the sequence number of its events.
+     * Number of messages handled on the game: the version of its state, and the sequence number of its action records.
      */
     #[ORM\Column]
     private int $version = 0;
@@ -76,7 +76,7 @@ class Game implements StatefulInterface
     private bool $training;
 
     /**
-     * The game this one replays (Service/Replay/GameReplayer): a copy rebuilt from the events of a game that has ended,
+     * The game this one replays (Service/Replay/GameReplayer): a copy rebuilt from the action records of a game that has ended,
      * for one of its players only, read only and listed nowhere; null for a game played.
      */
     #[ORM\ManyToOne(targetEntity: self::class)]

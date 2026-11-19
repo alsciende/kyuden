@@ -11,7 +11,7 @@ use App\Tests\AbstractKernelTestCase;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
- * Messages are stored as events and replayed (EventPlayer): they must survive a round trip through the serializer.
+ * Messages are stored as records and replayed (ActionRecordPlayer): they must survive a round trip through the serializer.
  */
 class MessageSerializationTest extends AbstractKernelTestCase
 {

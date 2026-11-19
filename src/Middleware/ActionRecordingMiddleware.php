@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Message\ActionInterface;
 use App\Repository\GameRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,9 +15,9 @@ use Symfony\Component\Messenger\Middleware\StackInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
- * Record the message as an Event after its handling, increment the version of the game and note when it changed.
+ * Record the message as an ActionRecord after its handling, increment the version of the game and note when it changed.
  */
-readonly class EventRecordingMiddleware implements MiddlewareInterface
+readonly class ActionRecordingMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -49,7 +49,7 @@ readonly class EventRecordingMiddleware implements MiddlewareInterface
         $name = $action::class;
         $payload = $this->serializer->serialize($action, 'json');
 
-        $this->entityManager->persist(new Event($game, $game->incrementVersion(), $name, $payload));
+        $this->entityManager->persist(new ActionRecord($game, $game->incrementVersion(), $name, $payload));
         $game->setUpdatedAt($this->clock->now());
     }
 }

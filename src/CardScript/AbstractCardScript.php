@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
  *
  * A script informs the players (the actions offered, …), it never decides: the engine does not enforce the card rules.
  * It is a stateless service, shared by every game: what it needs comes from the arguments, the state of the game stays
- * in the game, so that replaying the events of a game gives the same game.
+ * in the game, so that replaying the records of a game gives the same game.
  */
 #[AutoconfigureTag]
 abstract readonly class AbstractCardScript

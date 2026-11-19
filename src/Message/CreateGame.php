@@ -49,7 +49,7 @@ final readonly class CreateGame implements ActionInterface
     }
 
     /**
-     * The players mulligan during setup (not in the games of the house bot). False by default, so that the events of a
+     * The players mulligan during setup (not in the games of the house bot). False by default, so that the records of a
      * game created before the mulligan replay without it.
      */
     public function hasMulligan(): bool
@@ -58,7 +58,7 @@ final readonly class CreateGame implements ActionInterface
     }
 
     /**
-     * A game against the house bot. False by default, so that the events of a game created before replay as they did.
+     * A game against the house bot. False by default, so that the records of a game created before replay as they did.
      */
     public function isTraining(): bool
     {

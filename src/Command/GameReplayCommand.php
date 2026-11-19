@@ -31,7 +31,7 @@ use function Symfony\Component\String\u;
  */
 #[AsCommand(
     name: 'app:game:replay',
-    description: 'Replay a game that has ended from its events, showing its log as one of its players reads it',
+    description: 'Replay a game that has ended from its action records, showing its log as one of its players reads it',
 )]
 readonly class GameReplayCommand
 {

@@ -19,7 +19,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 /**
  * The players the game waits for have abandoned it: they are eliminated (VictoryService), and the automatic transition
  * `end_game` ends the game. Only what the state tells is checked here (the game waits for the opponents of the player,
- * not for the player), so that the events replay: how long it has waited is checked before the message is sent
+ * not for the player), so that the records replay: how long it has waited is checked before the message is sent
  * (AbandonmentClaimer).
  */
 #[AsMessageHandler]

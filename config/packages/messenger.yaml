@@ -47,7 +47,7 @@ framework:
                     - 'App\Middleware\GameReplayMiddleware'
                     # increments the version once the automatic transitions are applied: the log entries they write
                     # belong to the version of the message that led to them
-                    - 'App\Middleware\EventRecordingMiddleware'
+                    - 'App\Middleware\ActionRecordingMiddleware'
                     - 'App\Middleware\WorkflowTransitionMiddleware'
                     # right after the handling, before the automatic transitions: the provinces dynasty cards have left,
                     # once nothing is being resolved

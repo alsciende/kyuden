@@ -9,7 +9,7 @@ use App\Attribute\AppAction;
 /**
  * The platform ends a game every player has left: none of them has read it for long, and it has not changed since. Every
  * player is eliminated, nobody wins. Sent by the platform (AbandonedGamesEnder, a task of the worker): how long the game
- * has been left depends on the time, not a fact the replay of the events could check again.
+ * has been left depends on the time, not a fact the replay of the records could check again.
  */
 #[AppAction(public: false)]
 final readonly class EndAbandonedGame implements ActionInterface
