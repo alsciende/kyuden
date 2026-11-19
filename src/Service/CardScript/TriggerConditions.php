@@ -58,4 +58,24 @@ final readonly class TriggerConditions
         return $conflict instanceof ConflictState
             && in_array($character->getId(), [...$conflict->attackerIds, ...$conflict->defenderIds], true);
     }
+
+    /**
+     * The character attacks in the conflict being resolved.
+     */
+    public function isAttacking(PhysicalCard $character): bool
+    {
+        $conflict = $this->gameStateManager->getState($character->getGame())->conflict;
+
+        return $conflict instanceof ConflictState && in_array($character->getId(), $conflict->attackerIds, true);
+    }
+
+    /**
+     * The province is attacked in the conflict being resolved (one of the provinces it is at).
+     */
+    public function isAttacked(PhysicalCard $province): bool
+    {
+        $conflict = $this->gameStateManager->getState($province->getGame())->conflict;
+
+        return $conflict instanceof ConflictState && in_array($province->getId(), $conflict->attackedProvinceIds, true);
+    }
 }
