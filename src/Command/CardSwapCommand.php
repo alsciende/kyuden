@@ -17,14 +17,14 @@ use Symfony\Component\DependencyInjection\Attribute\WhenNot;
 
 /**
  * Debugging only: writes the database directly, outside the bus, so that nothing is recorded (no event, no log, no
- * notification) and replaying the events of the game does not reproduce the swap. The card keeps its id, stack,
+ * notification) and replaying the records of the game does not reproduce the swap. The card keeps its id, stack,
  * position, orientation and state. Its side may change (a conflict card becoming a dynasty card…), as long as the card
  * of the new side can be where the card is. Not registered in production.
  */
 #[WhenNot('prod')]
 #[AsCommand(
     name: 'app:card:swap',
-    description: 'Debugging: replace the printed card (logical card) of a card of a game, outside the event log',
+    description: 'Debugging: replace the printed card (logical card) of a card of a game, outside the action records',
 )]
 readonly class CardSwapCommand
 {

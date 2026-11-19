@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Writes the log of a game: one entry per change of its state, with a template and its params. The entry belongs to
- * the version of the game the message being handled leads to (EventRecordingMiddleware increments it afterwards).
+ * the version of the game the message being handled leads to (ActionRecordingMiddleware increments it afterwards).
  *
  * Params are given as LogParam, or as values converted here: Player, PhysicalCard (known to the players who see it
  * where it is now), Stack, Element (a ring), backed enums and scalars (public values), lists of those.

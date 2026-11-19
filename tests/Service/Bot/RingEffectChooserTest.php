@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Bot;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Enum\Element;
 use App\Enum\PersonalHonor;
 use App\Message\BowCard;
@@ -50,7 +50,7 @@ class RingEffectChooserTest extends AbstractKernelTestCase
     }
 
     /**
-     * Records the messages as events of the game, in order.
+     * Records the messages as records of the game, in order.
      *
      * @param list<array{class-string, string}> $messages type and sender alias
      */
@@ -59,7 +59,7 @@ class RingEffectChooserTest extends AbstractKernelTestCase
         $entityManager = self::service(EntityManagerInterface::class);
         foreach ($messages as [$type, $sender]) {
             $game = $scenario->game();
-            $entityManager->persist(new Event($game, $game->incrementVersion(), $type, (string) json_encode([
+            $entityManager->persist(new ActionRecord($game, $game->incrementVersion(), $type, (string) json_encode([
                 'game_id' => $game->getId(),
                 'player_id' => $scenario->player($sender)->getId(),
             ])));

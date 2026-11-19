@@ -4,29 +4,29 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Event>
+ * @extends ServiceEntityRepository<ActionRecord>
  */
-class EventRepository extends ServiceEntityRepository
+class ActionRecordRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Event::class);
+        parent::__construct($registry, ActionRecord::class);
     }
 
     /**
-     * The events of the versions of the game after the given one, in order.
+     * The records of the versions of the game after the given one, in order.
      *
-     * @return list<Event>
+     * @return list<ActionRecord>
      */
     public function findSince(Game $game, int $version = 0): array
     {
-        /** @var list<Event> */
+        /** @var list<ActionRecord> */
         return $this->createQueryBuilder('e')
             ->andWhere('e.game = :game')
             ->andWhere('e.version > :version')
@@ -38,15 +38,15 @@ class EventRepository extends ServiceEntityRepository
     }
 
     /**
-     * The last events of a message across the games (not the replays), the latest first, with their game.
+     * The last records of a message across the games (not the replays), the latest first, with their game.
      *
      * @param class-string $name
      *
-     * @return list<Event>
+     * @return list<ActionRecord>
      */
     public function findLatestOf(string $name, int $limit): array
     {
-        /** @var list<Event> */
+        /** @var list<ActionRecord> */
         return $this->createQueryBuilder('e')
             ->addSelect('g')
             ->join('e.game', 'g')
@@ -60,13 +60,13 @@ class EventRepository extends ServiceEntityRepository
     }
 
     /**
-     * The last events of the game, the latest first.
+     * The last records of the game, the latest first.
      *
-     * @return list<Event>
+     * @return list<ActionRecord>
      */
     public function findLatest(Game $game, int $limit): array
     {
-        /** @var list<Event> */
+        /** @var list<ActionRecord> */
         return $this->createQueryBuilder('e')
             ->andWhere('e.game = :game')
             ->setParameter('game', $game)

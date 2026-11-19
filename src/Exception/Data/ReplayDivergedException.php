@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Exception\Data;
 
 /**
- * An event of a game could not be replayed: the engine or the data it reads (a deck…) has changed since, or the game
+ * A record of a game could not be replayed: the engine or the data it reads (a deck…) has changed since, or the game
  * was created before its ids were salted.
  */
 class ReplayDivergedException extends DataException

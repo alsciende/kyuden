@@ -18,7 +18,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Accepted in any place once the game has started, during a duel too: the player is eliminated (VictoryService), and
- * the automatic transition `end_game` ends the game. The reason stays in the payload of the recorded event.
+ * the automatic transition `end_game` ends the game. The reason stays in the payload of its action record.
  */
 #[AsMessageHandler]
 final readonly class ConcedeGameHandler implements PlayerActionHandlerInterface

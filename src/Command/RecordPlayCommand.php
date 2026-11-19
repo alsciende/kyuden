@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Service\EventPlayer;
+use App\Service\ActionRecordPlayer;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,13 +13,13 @@ use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'app:event:play',
+    name: 'app:record:play',
     description: 'Add a short description for your command',
 )]
-readonly class EventPlayCommand
+readonly class RecordPlayCommand
 {
     public function __construct(
-        private EventPlayer $player,
+        private ActionRecordPlayer $player,
     ) {
     }
 
@@ -68,9 +68,9 @@ readonly class EventPlayCommand
         $payloadQuestion->setValidator($this->isValidJson(...));
         /** @var string $payload */
         $payload = $io->askQuestion($payloadQuestion);
-        $io->title("Playing event {$name} with payload {$payload}");
+        $io->title("Playing message {$name} with payload {$payload}");
         $this->player->play($name, $payload);
-        $io->success('Event played successfully.');
+        $io->success('Message played successfully.');
 
         return Command::SUCCESS;
     }

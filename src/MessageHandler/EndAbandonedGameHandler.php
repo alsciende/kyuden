@@ -16,7 +16,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 /**
  * Every player has abandoned the game: they are all eliminated, and the automatic transition `end_game` ends it without
  * a winner (VictoryService). Nothing is checked here but that the game has started (an ended game is rejected by
- * GameEndedMiddleware), so that the events replay: how long the players have been gone is checked before the message is
+ * GameEndedMiddleware), so that the records replay: how long the players have been gone is checked before the message is
  * sent (AbandonedGamesEnder).
  */
 #[AsMessageHandler]

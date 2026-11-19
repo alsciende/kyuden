@@ -329,7 +329,7 @@ class GameRepository extends ServiceEntityRepository
 
     /**
      * Deletes a game and everything in it, in SQL (the cards and the stacks refer to each other): its cards (and the
-     * stacks of the cards under them), its stacks, its players, then the game with its events, its log and its
+     * stacks of the cards under them), its stacks, its players, then the game with its records, its log and its
      * spectators. The entities of the game already loaded are not detached.
      */
     public function delete(string $gameId): void

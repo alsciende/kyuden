@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Entity\CardTypes\ConflictCard;
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\VictoryCondition;
@@ -147,13 +147,13 @@ class GameCommandsTest extends AbstractKernelTestCase
     {
         $scenario = $this->scenario()->atPlace(Game::STATE_ENDED)->withPlayer('john')->withPlayer('jane')->persist();
         $game = $scenario->game();
-        $concede = fn (int $version, string $player, ?string $reason): Event => new Event($game, $version, ConcedeGame::class, (string) json_encode([
+        $concede = fn (int $version, string $player, ?string $reason): ActionRecord => new ActionRecord($game, $version, ConcedeGame::class, (string) json_encode([
             'game_id' => $game->getId(),
             'player_id' => $scenario->player($player)->getId(),
             'reason' => $reason,
         ]));
         $entityManager = self::service(EntityManagerInterface::class);
-        $entityManager->persist(new Event($game, 1, PassOpportunity::class, '{}'));
+        $entityManager->persist(new ActionRecord($game, 1, PassOpportunity::class, '{}'));
         $entityManager->persist($concede(2, 'jane', 'The engine refused my action'));
         $entityManager->persist($concede(3, 'john', null));
         $entityManager->flush();

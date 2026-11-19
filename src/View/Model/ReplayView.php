@@ -19,11 +19,11 @@ final readonly class ReplayView
         public string $playerId,
         /** the number of events replayed: the version of the copy */
         public int $version,
-        /** the number of events of the original game */
+        /** the number of action records of the original game */
         public int $total,
         /** the next action of the player, not replayed yet: the replay stopped before it when it is the next event */
         public ?ReplayActionView $next,
-        /** every event of the original game has been replayed */
+        /** every record of the original game has been replayed */
         public bool $ended,
     ) {
     }

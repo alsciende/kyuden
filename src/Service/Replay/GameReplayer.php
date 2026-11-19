@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Replay;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Exception\Data\ReplayDivergedException;
@@ -14,27 +14,27 @@ use App\Middleware\Stamp\ReplayStamp;
 use App\Model\GameReplay;
 use App\Model\ReplayIdTranslator;
 use App\Model\ReplayStep;
-use App\Repository\EventRepository;
+use App\Repository\ActionRecordRepository;
 use App\Repository\GameLogEntryRepository;
 use App\Repository\GameRepository;
 use App\Service\ActionMessageRegistry;
-use App\Service\EventPlayer;
+use App\Service\ActionRecordPlayer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Replays a game that has ended for one of its players: its events are dispatched again, their ids translated, on a
+ * Replays a game that has ended for one of its players: its records are dispatched again, their ids translated, on a
  * copy of the game under another id (ReplayIdTranslator), which the seed of the original makes draw the same values.
  * The copy is marked as the replay of the original for the player's user (Game::markAsReplay()) once it is created,
- * and kept between two steps. The replay stops before each event of the player, so that they see the board as they
+ * and kept between two steps. The replay stops before each record of the player, so that they see the board as they
  * had to decide. The messages replayed carry a ReplayStamp: nobody is notified, the house bot does not play, and no
  * other message is accepted on the copy (GameReplayMiddleware).
  */
 readonly class GameReplayer
 {
     public function __construct(
-        private EventPlayer $eventPlayer,
-        private EventRepository $eventRepository,
+        private ActionRecordPlayer $recordPlayer,
+        private ActionRecordRepository $recordRepository,
         private GameRepository $gameRepository,
         private GameLogEntryRepository $gameLogEntryRepository,
         private ActionMessageRegistry $actionMessageRegistry,
@@ -72,11 +72,11 @@ readonly class GameReplayer
     }
 
     /**
-     * Replays the events after the version of the replay: the next one whatever its sender (the action of the player
-     * the replay stopped before), then those up to the next event of the player, excluded, or to the end; up to the
-     * version given instead, whoever sends the events.
+     * Replays the records after the version of the replay: the next one whatever its sender (the action of the player
+     * the replay stopped before), then those up to the next record of the player, excluded, or to the end; up to the
+     * version given instead, whoever sends the records.
      *
-     * @throws ReplayDivergedException when an event cannot be replayed
+     * @throws ReplayDivergedException when a record cannot be replayed
      */
     public function proceed(GameReplay $replay, ?int $untilVersion = null): ReplayStep
     {
@@ -85,19 +85,19 @@ readonly class GameReplayer
             throw new \InvalidArgumentException("The replay is at version {$from}, after version {$untilVersion}: start it again.");
         }
 
-        $events = $this->eventRepository->findSince($replay->original, $from);
+        $records = $this->recordRepository->findSince($replay->original, $from);
         $first = true;
-        while (($event = array_shift($events)) instanceof Event) {
-            $stops = $untilVersion === null ? ! $first && $this->isSentBy($event, $replay->viewer) : $event->getVersion() > $untilVersion;
+        while (($record = array_shift($records)) instanceof ActionRecord) {
+            $stops = $untilVersion === null ? ! $first && $this->isSentBy($record, $replay->viewer) : $record->getVersion() > $untilVersion;
             if ($stops) {
-                array_unshift($events, $event);
+                array_unshift($records, $record);
                 break;
             }
-            $this->play($replay, $event);
+            $this->play($replay, $record);
             $first = false;
         }
 
-        return $this->describe($replay, $from, $events);
+        return $this->describe($replay, $from, $records);
     }
 
     /**
@@ -107,21 +107,21 @@ readonly class GameReplayer
     {
         $version = $this->getVersion($replay);
 
-        return $this->describe($replay, $version, $this->eventRepository->findSince($replay->original, $version));
+        return $this->describe($replay, $version, $this->recordRepository->findSince($replay->original, $version));
     }
 
     /**
-     * @param list<Event> $events the events left to replay
+     * @param list<ActionRecord> $records the records left to replay
      */
-    private function describe(GameReplay $replay, int $from, array $events): ReplayStep
+    private function describe(GameReplay $replay, int $from, array $records): ReplayStep
     {
-        $next = array_find($events, fn (Event $event): bool => $this->isSentBy($event, $replay->viewer));
+        $next = array_find($records, fn (ActionRecord $record): bool => $this->isSentBy($record, $replay->viewer));
 
-        return new ReplayStep($from, $this->getVersion($replay), $next, $events === []);
+        return new ReplayStep($from, $this->getVersion($replay), $next, $records === []);
     }
 
     /**
-     * The game of the replay, once its first event is replayed.
+     * The game of the replay, once its first record is replayed.
      */
     public function getReplayGame(GameReplay $replay): ?Game
     {
@@ -157,12 +157,12 @@ readonly class GameReplayer
     /**
      * @throws ReplayDivergedException
      */
-    private function play(GameReplay $replay, Event $event): void
+    private function play(GameReplay $replay, ActionRecord $record): void
     {
         try {
-            $this->eventPlayer->play($event->getName(), $replay->translator->translatePayload($event->getPayload()), new ReplayStamp());
+            $this->recordPlayer->play($record->getName(), $replay->translator->translatePayload($record->getPayload()), new ReplayStamp());
         } catch (\Throwable $exception) {
-            throw new ReplayDivergedException($event->getVersion(), $exception);
+            throw new ReplayDivergedException($record->getVersion(), $exception);
         }
 
         // the copy has just been created (CreateGame)
@@ -181,14 +181,14 @@ readonly class GameReplayer
     /**
      * An action the viewer sent themselves: a public message (not the platform's) whose sender is the viewer.
      */
-    private function isSentBy(Event $event, Player $viewer): bool
+    private function isSentBy(ActionRecord $record, Player $viewer): bool
     {
-        // the name of an event is the class of its message
-        $class = $event->getName();
+        // the name of a record is the class of its message
+        $class = $record->getName();
         if (! is_a($class, PlayerActionInterface::class, true) || ! $this->actionMessageRegistry->getAttribute($class)->public) {
             return false;
         }
-        $payload = json_decode($event->getPayload(), true, flags: JSON_THROW_ON_ERROR);
+        $payload = json_decode($record->getPayload(), true, flags: JSON_THROW_ON_ERROR);
 
         return is_array($payload) && ($payload['player_id'] ?? null) === $viewer->getId();
     }

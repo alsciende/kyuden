@@ -13,14 +13,14 @@ use App\Exception\Rules\ReplayReadOnlyException;
 use App\Message\ConcedeGame;
 use App\Message\RevealDynastyCard;
 use App\Model\GameReplay;
-use App\Repository\EventRepository;
+use App\Repository\ActionRecordRepository;
 use App\Service\AvailableActionsResolver;
 use App\Service\Replay\GameReplayer;
 use App\Tests\AbstractKernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * The game of PlaysEndedGame has 14 events: 1 CreateGame, 2 and 3 john and jane join, 4 and 5 they choose their
+ * The game of PlaysEndedGame has 14 records: 1 CreateGame, 2 and 3 john and jane join, 4 and 5 they choose their
  * stronghold provinces, 6 to 9 john reveals his dynasty cards, 10 to 13 jane hers, 14 jane concedes.
  */
 class GameReplayerTest extends AbstractKernelTestCase
@@ -134,7 +134,7 @@ class GameReplayerTest extends AbstractKernelTestCase
         self::assertSame(6, $second->next?->getVersion());
     }
 
-    public function testTheReplayGoesUpToAVersionWhoeverSendsTheEvents(): void
+    public function testTheReplayGoesUpToAVersionWhoeverSendsTheMessages(): void
     {
         $game = $this->playEndedGame();
         $replay = $this->replayer()->start($game, $this->player($game, 'john'));
@@ -219,15 +219,15 @@ class GameReplayerTest extends AbstractKernelTestCase
         $this->replayer()->start($game, $this->player($game, 'john'));
     }
 
-    public function testAnEventThatCannotBeReplayedStopsTheReplayAtItsVersion(): void
+    public function testARecordThatCannotBeReplayedStopsTheReplayAtItsVersion(): void
     {
         $game = $this->playEndedGame();
-        // the card the event names no longer exists in the replay
-        $event = self::service(EventRepository::class)->findOneBy(['game' => $game, 'name' => RevealDynastyCard::class])
+        // the card the record names no longer exists in the replay
+        $record = self::service(ActionRecordRepository::class)->findOneBy(['game' => $game, 'name' => RevealDynastyCard::class])
             ?? self::fail('No dynasty card was revealed.');
-        $payload = json_decode($event->getPayload(), true, flags: JSON_THROW_ON_ERROR);
+        $payload = json_decode($record->getPayload(), true, flags: JSON_THROW_ON_ERROR);
         \assert(\is_array($payload));
-        $event->setPayload(json_encode(['card_id' => '00000000-0000-4000-8000-000000000000'] + $payload, JSON_THROW_ON_ERROR));
+        $record->setPayload(json_encode(['card_id' => '00000000-0000-4000-8000-000000000000'] + $payload, JSON_THROW_ON_ERROR));
         self::service(EntityManagerInterface::class)->flush();
         $replay = $this->replayer()->start($game, $this->player($game, 'john'));
 
@@ -235,7 +235,7 @@ class GameReplayerTest extends AbstractKernelTestCase
             $this->replayToTheEnd($replay);
             self::fail('The replay did not diverge.');
         } catch (ReplayDivergedException $exception) {
-            self::assertSame($event->getVersion(), $exception->getVersion());
+            self::assertSame($record->getVersion(), $exception->getVersion());
         }
     }
 }

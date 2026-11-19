@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Entity\Event;
-use App\Repository\EventRepository;
+use App\Entity\ActionRecord;
+use App\Repository\ActionRecordRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -14,13 +14,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'app:event:list',
-    description: 'List the last N events',
+    name: 'app:record:list',
+    description: 'List the last N records',
 )]
-readonly class EventListCommand
+readonly class RecordListCommand
 {
     public function __construct(
-        private EventRepository $repository,
+        private ActionRecordRepository $repository,
     ) {
     }
 
@@ -35,14 +35,14 @@ readonly class EventListCommand
             throw new \RuntimeException('Option --lines must be numeric.');
         }
         $limit = intval($lines);
-        $events = $this->repository->findBy([], [
+        $records = $this->repository->findBy([], [
             'id' => 'DESC',
         ], $limit);
         $io->table(
             ['Id', 'Name', 'Payload'],
             array_map(
-                fn (Event $event): array => [$event->getId(), $event->getName(), $event->getPayload()],
-                $events
+                fn (ActionRecord $record): array => [$record->getId(), $record->getName(), $record->getPayload()],
+                $records
             )
         );
 

@@ -6,7 +6,7 @@ namespace App\View\Model;
 
 /**
  * A message handled on a game, as its log shows it: its type and its sender, not its payload, which may hold secret
- * information (the payload of an event of the game is never shown).
+ * information (the payload of an action record is never shown).
  */
 final readonly class LoggedMessageView
 {

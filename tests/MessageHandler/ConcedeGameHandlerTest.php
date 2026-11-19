@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\MessageHandler;
 
-use App\Entity\Event;
+use App\Entity\ActionRecord;
 use App\Entity\Game;
 use App\Enum\VictoryCondition;
 use App\Exception\Rules\GameNotStartedException;
@@ -52,15 +52,15 @@ class ConcedeGameHandlerTest extends AbstractKernelTestCase
         self::assertSame(['john concedes the game', 'The game ends', 'jane wins the game: concession'], $this->logLines($game));
     }
 
-    public function testTheReasonIsKeptInTheRecordedEventOnly(): void
+    public function testTheReasonIsKeptInTheActionRecordOnly(): void
     {
         $scenario = $this->scenarioInProgress();
 
         $this->messageBus->dispatch(new ConcedeGame($scenario->game()->getId(), $scenario->player('john')->getId(), 'The engine refuses my attack.'));
 
-        $events = self::service(EntityManagerInterface::class)->getRepository(Event::class)->findBy(['game' => $scenario->game()]);
-        self::assertCount(1, $events);
-        self::assertStringContainsString('The engine refuses my attack.', $events[0]->getPayload());
+        $records = self::service(EntityManagerInterface::class)->getRepository(ActionRecord::class)->findBy(['game' => $scenario->game()]);
+        self::assertCount(1, $records);
+        self::assertStringContainsString('The engine refuses my attack.', $records[0]->getPayload());
         foreach ($this->logLines($scenario->game(), $scenario->player('jane')) as $line) {
             self::assertStringNotContainsString('attack', $line);
         }
