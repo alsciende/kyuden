@@ -103,6 +103,7 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 - **Tournaments**: planned below ("Tournaments"), mockups validated; steps 1 to 4 done: to merge into `main`.
 - **Rewinding a game** (`app:game:rewind <game> <version>`): replay with `GameReplayer` up to the version, then swap the copy for the game (deleting events changes nothing: the state lives in the entities); it diverges if a deck or the engine changed since.
 - **Replay**: lock the copy (two steps at once are not serialized); replaying as a spectator (the public view of the copy).
+- **Renaming `Entity/Event`** (decided with the author, 2026-11-18): the domain events of `src/Event` (EventDispatcher) are to be used much more, and the persisted record of a handled message shares their name, though it records an action, not an event. Rename it `ActionRecord` (`GameRecord` and `Record` considered: one per game, too vague), with what bears its name: `EventRepository`, `EventRecordingMiddleware`, `EventPlayer`, `app:event:list` / `app:event:play`, their tests and `doc/`. The table `events` and its sequence `events_id_seq` are renamed by a migration written by hand (`ALTER TABLE … RENAME`), never dropped and created again: the event logs of production are the replays.
 
 ### Tournaments
 
