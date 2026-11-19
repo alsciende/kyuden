@@ -10,6 +10,7 @@ const route = useRoute()
 
 // a guest signs in like anyone without an account
 const account = computed(() => (session.value?.username ? session.value : null))
+const inDecks = computed(() => route.name === 'decks' || route.name === 'deck')
 </script>
 
 <template>
@@ -18,10 +19,13 @@ const account = computed(() => (session.value?.username ? session.value : null))
       <ClanMon :src="enso" :size="40" />
       <span class="wordmark">Kyūden</span>
     </RouterLink>
-    <RouterLink v-if="account" :to="{ name: 'account' }" class="account">
-      <span class="name">{{ account.name }}</span>
-      <span class="label">· Account</span>
-    </RouterLink>
+    <nav v-if="account" class="nav" aria-label="Your account">
+      <RouterLink :to="{ name: 'decks' }" class="section" :class="{ current: inDecks }">Decks</RouterLink>
+      <RouterLink :to="{ name: 'account' }" class="account">
+        <span class="name">{{ account.name }}</span>
+        <span class="label">· Account</span>
+      </RouterLink>
+    </nav>
     <div v-else-if="route.name === 'login'" class="returning">
       <span>New to Kyūden?</span>
       <RouterLink to="/" class="btn-link">Play a first game</RouterLink>
@@ -70,6 +74,27 @@ const account = computed(() => (session.value?.username ? session.value : null))
   min-height: 44px;
   padding: 0 18px;
   font-size: 15px;
+}
+
+.nav {
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  min-width: 0;
+}
+
+.section {
+  padding: 10px 4px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--ink);
+  border-bottom: 2px solid transparent;
+}
+
+.section.current {
+  color: var(--seal);
+  border-bottom-color: var(--seal);
 }
 
 .account {

@@ -41,6 +41,35 @@ class DeckRepository extends ServiceEntityRepository
     }
 
     /**
+     * The decks of a user not deleted, by id (not the decks without owner).
+     *
+     * @return list<Deck>
+     */
+    public function findOwnedBy(User $owner): array
+    {
+        /** @var list<Deck> $decks */
+        $decks = $this->createQueryBuilder('d')
+            ->where('d.owner = :owner')
+            ->andWhere('d.deletedAt IS NULL')
+            ->setParameter('owner', $owner)
+            ->orderBy('d.id', \SortDirection::Ascending)
+            ->getQuery()
+            ->getResult();
+
+        return $decks;
+    }
+
+    /**
+     * A deck of the user, or null when it does not exist, belongs to another user, has no owner or was deleted.
+     */
+    public function findOwned(string $id, User $owner): ?Deck
+    {
+        $deck = $this->findUsable($id, $owner);
+
+        return $deck instanceof Deck && $deck->getOwner()?->getId() === $owner->getId() ? $deck : null;
+    }
+
+    /**
      * A deck the user can use, or null when it does not exist, belongs to another user or was deleted.
      */
     public function findUsable(string $id, User $user): ?Deck

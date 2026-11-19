@@ -24,14 +24,28 @@ const style = computed(() => {
 </script>
 
 <template>
-  <img v-if="image && preview.rect" v-top-layer class="preview" :src="image" alt="" :style="style" />
+  <!-- the image is twice the size it is drawn at: at @2x, sharp on a Retina screen -->
+  <img
+    v-if="image && preview.rect"
+    v-top-layer
+    class="preview"
+    :src="image"
+    :srcset="`${image} 2x`"
+    :width="PREVIEW_WIDTH"
+    :height="PREVIEW_HEIGHT"
+    alt=""
+    :style="style"
+  />
 </template>
 
 <style scoped>
 .preview {
   position: fixed;
   z-index: 50;
-  border-radius: 10px;
+  /* the corners of a card (63 × 88 mm, rounded by 3 mm), so that the white corners of the image do not show */
+  border-radius: 4.76% / 3.41%;
+  /* clipped to its corners: the reset of the popovers (base.css) makes it overflow, which an image does past its corners */
+  overflow: clip;
   box-shadow: 0 18px 40px rgba(31, 27, 22, 0.35);
   pointer-events: none;
   background: var(--paper-2);

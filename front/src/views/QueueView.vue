@@ -60,6 +60,8 @@ const route = useRoute()
 const friendly = ref<{ host: Invitation } | { code: string; hostName: string } | null>(null)
 const invitationQuery = typeof route.query.invitation === 'string' ? route.query.invitation : null
 const codeQuery = typeof route.query.code === 'string' ? route.query.code : null
+/** the deck the user comes to play with, from its page */
+const deckQuery = typeof route.query.deck === 'string' ? route.query.deck : null
 
 /** null while the queue is read */
 const state = ref<'choosing' | null>(null)
@@ -136,7 +138,8 @@ onMounted(async () => {
     // a guest invited plays their clan of the way, if any
     choices.value = deckChoices(decks, session.value?.preferredClan ?? newcomer.clanId)
     loadStrongholds(decks)
-    chosen.value = choices.value.preselected
+    chosen.value =
+      deckQuery !== null && decks.some((deck) => deck.id === deckQuery) ? deckQuery : choices.value.preselected
     gameInProgress.value = (await fetchSelfGames(token)).some((game) => !game.ended)
     await checkQueue(token, session.value!.userId)
   } catch (problem) {

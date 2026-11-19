@@ -4,6 +4,8 @@ import { findClan } from '@/data/clans'
 import { newcomer } from '@/lib/newcomer'
 import { session } from '@/lib/session'
 import AccountView from '@/views/AccountView.vue'
+import DecksView from '@/views/DecksView.vue'
+import DeckView from '@/views/DeckView.vue'
 import GameReplayView from '@/views/GameReplayView.vue'
 import GameView from '@/views/GameView.vue'
 import HistoryView from '@/views/HistoryView.vue'
@@ -58,6 +60,20 @@ export const router = createRouter({
       name: 'account',
       component: AccountView,
       meta: { title: 'Your account · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
+    },
+    {
+      path: '/decks',
+      name: 'decks',
+      component: DecksView,
+      meta: { title: 'Your decks · Kyūden' },
+      beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
+    },
+    {
+      path: '/decks/:id',
+      name: 'deck',
+      component: DeckView,
+      meta: { title: 'Your deck · Kyūden' },
       beforeEnter: () => (hasAccount() ? true : { name: 'login' }),
     },
     {

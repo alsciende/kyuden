@@ -7,9 +7,13 @@ namespace App\Tests\Controller;
 use App\DataFixtures\AppFixtures;
 use App\DataFixtures\UserFixtures;
 use App\Entity\Deck;
+use App\Entity\Game;
 use App\Entity\User;
+use App\Enum\VictoryCondition;
 use App\Service\MatchMaking\MatchMakingQueue;
+use App\State\Model\GameState;
 use App\Tests\AbstractKernelTestCase;
+use App\Tests\Builder\Scenario;
 use App\Tests\Service\Deck\DeckConstructionValidatorTest;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -411,6 +415,122 @@ class ApiDecksControllerTest extends AbstractKernelTestCase
         }
         self::assertInstanceOf(Deck::class, $this->deckRepository->find(AppFixtures::LION_STARTER_DECK));
         self::assertInstanceOf(Deck::class, $this->deckRepository->find('deck-of-hida-bot'));
+    }
+
+    /**
+     * A game of akodo-bot with their deck against hida-bot playing the stronghold given, ended with the winner given
+     * (an alias, null for nobody) or in progress.
+     */
+    private function playDeckOfAkodoBot(?string $winner, ?VictoryCondition $condition, bool $friendly = false, string $opponentStronghold = '01-yojin-no-shiro', bool $ended = true): void
+    {
+        $builder = $this->scenario()
+            ->atPlace($ended ? Game::STATE_ENDED : 'play_cards_from_provinces')
+            ->withPlayer('akodo-bot', fn ($player) => $player->deck('deck-of-akodo-bot'))
+            ->withPlayer('hida-bot', fn ($player) => $player->stronghold($opponentStronghold));
+        if ($friendly) {
+            $builder->friendly();
+        }
+        if ($ended) {
+            $builder->withGameState(function (GameState $state, Scenario $scenario) use ($winner, $condition): void {
+                $state->winnerId = $winner === null ? null : $scenario->player($winner)->getId();
+                $state->victoryCondition = $condition;
+            });
+        }
+        $builder->persist();
+    }
+
+    public function testAUserListsTheirOwnDecksWithTheirRecord(): void
+    {
+        $this->createDeckOf('akodo-bot');
+        $this->createDeckOf('hida-bot');
+        $this->playDeckOfAkodoBot('akodo-bot', VictoryCondition::HonorWin);
+        $this->playDeckOfAkodoBot('akodo-bot', VictoryCondition::Concession, opponentStronghold: '01-shizuka-toshi');
+        $this->playDeckOfAkodoBot('hida-bot', VictoryCondition::StrongholdProvinceBroken, friendly: true);
+        $this->playDeckOfAkodoBot(null, VictoryCondition::Abandonment);
+        $this->playDeckOfAkodoBot(null, null, ended: false);
+        // a game of akodo-bot with another deck
+        $this->scenario()->atPlace(Game::STATE_ENDED)->withPlayer('akodo-bot')->withPlayer('hida-bot')->persist();
+
+        $response = $this->request('GET', '/api/self/decks');
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        $decks = $this->decode($response);
+        self::assertSame(['deck-of-akodo-bot'], array_map(fn (mixed $view): mixed => is_array($view) && is_array($view['deck']) ? $view['deck']['id'] : null, $decks));
+        self::assertIsArray($decks[0]);
+        $record = $decks[0]['record'];
+        self::assertIsArray($record);
+        self::assertSame(4, $record['played']);
+        self::assertSame(2, $record['won']);
+        self::assertSame(1, $record['lost']);
+        self::assertSame(1, $record['in_progress']);
+        self::assertSame(2, $record['ranked_won']);
+        self::assertSame(0, $record['ranked_lost']);
+        self::assertSame([
+            ['victory_condition' => 'honor_win', 'won' => 1, 'lost' => 0],
+            ['victory_condition' => 'stronghold_province_broken', 'won' => 0, 'lost' => 1],
+            ['victory_condition' => 'concession', 'won' => 1, 'lost' => 0],
+        ], $record['endings']);
+        self::assertSame([
+            ['clan' => 'crane', 'won' => 1, 'lost' => 0],
+            ['clan' => 'lion', 'won' => 1, 'lost' => 1],
+        ], $record['opponents']);
+        self::assertIsArray($record['last_game']);
+    }
+
+    public function testADeckNeverPlayedHasAnEmptyRecord(): void
+    {
+        $this->createDeckOf('akodo-bot');
+
+        $view = $this->decode($this->request('GET', '/api/self/decks/deck-of-akodo-bot'));
+
+        self::assertIsArray($view['deck']);
+        self::assertSame('deck-of-akodo-bot', $view['deck']['id']);
+        self::assertSame(['played' => 0, 'won' => 0, 'lost' => 0, 'in_progress' => 0, 'ranked_won' => 0, 'ranked_lost' => 0, 'last_game' => null, 'endings' => [], 'opponents' => []], $view['record']);
+    }
+
+    public function testTheRecordOfTheStarterDecksAndOfTheDecksOfOtherUsersIsNotFound(): void
+    {
+        $this->createDeckOf('hida-bot');
+
+        foreach (['deck-of-hida-bot', AppFixtures::LION_STARTER_DECK, 'unknown'] as $id) {
+            $response = $this->request('GET', "/api/self/decks/{$id}");
+
+            self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode(), $id);
+            self::assertSame('deck_not_found', $this->decode($response)['type']);
+        }
+    }
+
+    public function testAUserRenamesTheirDeck(): void
+    {
+        $this->createDeckOf('akodo-bot');
+
+        $response = $this->request('PATCH', '/api/decks/deck-of-akodo-bot', ['name' => '  Lion honor rush ']);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode(), (string) $response->getContent());
+        self::assertSame('Lion honor rush', $this->decode($response)['name']);
+        self::service(EntityManagerInterface::class)->clear();
+        self::assertSame('Lion honor rush', $this->deckRepository->find('deck-of-akodo-bot')?->getName());
+    }
+
+    public function testTheNameOfADeckIsChecked(): void
+    {
+        $this->createDeckOf('akodo-bot');
+
+        self::assertSame(['name'], $this->violations($this->request('PATCH', '/api/decks/deck-of-akodo-bot', ['name' => ' ']), Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['name'], $this->violations($this->request('PATCH', '/api/decks/deck-of-akodo-bot', ['name' => str_repeat('a', 256)]), Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+        self::assertSame(['cards', 'name'], $this->violations($this->request('PATCH', '/api/decks/deck-of-akodo-bot', ['cards' => []]), Response::HTTP_BAD_REQUEST, 'invalid_payload'));
+    }
+
+    public function testTheStarterDecksAndTheDecksOfOtherUsersCannotBeRenamed(): void
+    {
+        $this->createDeckOf('hida-bot');
+
+        foreach (['deck-of-hida-bot', AppFixtures::LION_STARTER_DECK, 'unknown'] as $id) {
+            $response = $this->request('PATCH', "/api/decks/{$id}", ['name' => 'Mine']);
+
+            self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode(), $id);
+        }
+        self::assertNotSame('Mine', $this->deckRepository->find(AppFixtures::LION_STARTER_DECK)?->getName());
     }
 
     public function testTheDecksRequireAToken(): void

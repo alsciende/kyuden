@@ -37,8 +37,9 @@ export function hidePreview(): void {
   preview.rect = null
 }
 
-export const PREVIEW_WIDTH = 250
-export const PREVIEW_HEIGHT = 349
+/** half the size of the images of the cards (730 × 1040): drawn at @2x on a Retina screen */
+export const PREVIEW_WIDTH = 365
+export const PREVIEW_HEIGHT = 520
 const GAP = 6
 const MARGIN = 8
 
