@@ -28,6 +28,7 @@ use App\Message\MulliganDynastyCards;
 use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Service\AvailableActionsResolver;
+use App\Service\CardScript\ForcedReactionsResolver;
 use App\State\Manager\GameStateManager;
 
 /**
@@ -38,7 +39,8 @@ use App\State\Manager\GameStateManager;
  * the defending player while the attacked province is face down, the players with a face-down dynasty card in a
  * province while they are revealed; a player who would pass or end what they resolve but for a facedown province the
  * conflict has moved to, which they reveal. The effects on the board, available to every player in every step, move
- * nothing on.
+ * nothing on. While players have forced reactions to trigger (ForcedReactionsResolver), the game waits for them only:
+ * the web client moves the game on for nobody meanwhile.
  */
 final readonly class AwaitedPlayersResolver
 {
@@ -67,6 +69,7 @@ final readonly class AwaitedPlayersResolver
     public function __construct(
         private AvailableActionsResolver $availableActionsResolver,
         private GameStateManager $gameStateManager,
+        private ForcedReactionsResolver $forcedReactionsResolver,
     ) {
     }
 
@@ -79,12 +82,16 @@ final readonly class AwaitedPlayersResolver
             return [];
         }
 
-        $state = $this->gameStateManager->getState($game);
-
-        return array_values(array_filter(
-            array_map($game->getPlayer(...), $state->playerIds),
-            fn (Player $player): bool => $this->isAwaited($game, $player),
+        $players = array_map($game->getPlayer(...), $this->gameStateManager->getState($game)->playerIds);
+        $forced = array_values(array_filter(
+            $players,
+            fn (Player $player): bool => $this->forcedReactionsResolver->pending($player) !== [],
         ));
+        if ($forced !== []) {
+            return $forced;
+        }
+
+        return array_values(array_filter($players, fn (Player $player): bool => $this->isAwaited($game, $player)));
     }
 
     private function isAwaited(Game $game, Player $player): bool
