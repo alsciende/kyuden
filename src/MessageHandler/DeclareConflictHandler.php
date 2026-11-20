@@ -98,6 +98,7 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
             $message->getType(),
             $province,
             array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $attackerIds),
+            $ringFate,
         ));
         if ($evadedIds !== []) {
             $this->eventDispatcher->dispatch(new CharactersEvadedEvent($game, array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $evadedIds)));

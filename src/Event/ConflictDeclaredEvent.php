@@ -12,10 +12,13 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * A player has declared a conflict (DeclareConflict).
+ * A player has declared a conflict (DeclareConflict), before the attacked province is revealed: the triggering condition
+ * of the cards reacting to the declaration itself (The Crashing Wave, before the province is revealed; Enlightened
+ * Warrior, to the ring chosen). The other reactions to the declaration wait for the province revealed
+ * (ConflictDeclarationCompletedEvent).
  */
 #[GameLog('{player} declares a {type} conflict against {defender} for {ring}, attacking {province} with {attackers}')]
-final readonly class ConflictDeclaredEvent implements GameEventInterface
+final readonly class ConflictDeclaredEvent implements TriggeringEventInterface
 {
     /**
      * @param list<PhysicalCard> $attackers
@@ -28,6 +31,10 @@ final readonly class ConflictDeclaredEvent implements GameEventInterface
         public ConflictType $type,
         public PhysicalCard $province,
         public array $attackers,
+        /**
+         * The fate the contested ring had, which the attacking player takes (Enlightened Warrior).
+         */
+        public int $ringFate,
     ) {
     }
 
@@ -35,5 +42,21 @@ final readonly class ConflictDeclaredEvent implements GameEventInterface
     public function getGame(): Game
     {
         return $this->game;
+    }
+
+    #[\Override]
+    public static function getTriggerName(): string
+    {
+        return 'conflict_declared';
+    }
+
+    #[\Override]
+    public function getTriggerParams(): array
+    {
+        return [
+            'attacker' => $this->player->getId(),
+            'defender' => $this->defender->getId(),
+            'province' => $this->province->getId(),
+        ];
     }
 }

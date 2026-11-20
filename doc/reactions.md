@@ -2,7 +2,7 @@
 
 The reactions of the cards of the fixtures, grouped by triggering condition, to decide in which order the engine offers them (`card-scripts.md`, "Reaction offers") and what each group needs. Only the triggering condition counts here: what the reaction does is applied by the players with the effect messages, as for every card.
 
-334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 16 are forced reactions, not offered (see "Forced reactions"), 3 are out of scope (see the end). The groups count every card; what is done says how many cards subscribe.
+334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 16 are forced reactions, not offered (see "Forced reactions"), 4 are out of scope (see the end). The groups count every card; what is done says how many cards subscribe.
 
 Conventions of the lists: a card is listed under the event that triggers it, with its triggering condition as printed (the elements, types and clans in plain words), not its effect. The limits ("Max 1 per round") are not checked, as for the province revealed.
 
@@ -14,7 +14,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | --- | --- | ---: | --- | --- |
 | – | A province revealed | 34 | done (34) | – |
 | 1 | A conflict won or lost | 93 | done (88) | – |
-| 2 | A conflict declared (attackers, covert) | 33 | `ConflictDeclaredEvent`, `CharactersEvadedEvent`, place `react_to_conflict_declaration` | the events triggering; the fate on the ring before it is taken |
+| 2 | A conflict declared (attackers, covert) | 33 | done (27) | – |
 | 3 | A ring claimed | 8 | `RingClaimedEvent`, place `react_to_ring_claim` | the event triggering, with the conflict |
 | 4 | A pass on declaring a conflict | 10 | `ConflictPassedEvent` | the event triggering |
 | 5 | A province broken | 9 | transition `break`, place `react_to_broken_province` | an event after the transition |
@@ -37,7 +37,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 22 | A character leaves play | 2 | `LeavePlayListener` | an event once the card has left play |
 | 23 | An ability triggered | 2 | the handlers `Trigger*Ability` | an event |
 | 24 | The end of the resolution of a conflict | 2 | place `return_home` | the provinces broken during the conflict |
-| – | Out of scope | 2 | – | Mindful Warrior too, listed under 1 |
+| – | Out of scope | 2 | – | Mindful Warrior and Shadowed Alleyway too, listed under 1 and 2 |
 
 Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one triggering event dispatched after the transitions (entering play and playing a card share it), 12 to 24 53 cards.
 
@@ -46,8 +46,7 @@ Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one trigger
 - **The cause of an effect** (Ready for Battle, Ardent Omoidasu, Righteous Samurai, Shiotome Heroine, Akodo Motivator, Shosuro Hyobu, Adorned Temple, Isawa Tsuke, Curry Favor): "an opponent's card effect", "a ring effect", "by a card effect", "as a result of conflict resolution". The engine does not know which ability a message applies. It knows the sender, what they resolve (`PlayerState::resolutions`) and the step (`resolve_ring_effects`, the bows of the end of a conflict): enough to approximate, or the card is offered on every change and its player judges.
 - **The targets of an event** (Withstand the Darkness, Dragon Tattoo): the engine does not know what an event chooses; offered for every event played (by the opponent, by the player), the player judges.
 - **The effects of an event resolved** (The Mirror's Gaze): once the opponent ends the resolution of an event (`EndResolution`), not once they play it.
-- **The fate on the contested ring** (Enlightened Warrior): the attacker takes it when declaring; the event must carry the fate the ring had.
-- **Before the attacked province is revealed** (The Crashing Wave): `ConflictDeclaredEvent` is dispatched before `reveal_attacked_province`, so that the offer comes in time; the other reactions to the declaration come before the reveal too, which the rules put after (the window blocks nothing).
+- **The declaration and the reveal** (decided): the reactions to the declaration come once the attacked province is revealed (`ConflictDeclarationCompletedEvent`), as the rules say and so that a province reacting to its attack can trigger, face up; The Crashing Wave (before the province is revealed) and Enlightened Warrior (the fate on the contested ring, which the attacker takes at once) react to the declaration itself (`ConflictDeclaredEvent`, which carries the fate of the ring).
 - **"Commits to a conflict"** (Spyglass, Daikyū): declared as attacker or defender; with the moves to the conflict (13), it needs the events of 2 and 7.
 
 ## 1. A conflict won or lost (93)
@@ -479,10 +478,11 @@ Their effect is not the choice of their player ("Forced Reaction:"): the engine 
 - A pass on declaring a conflict: Hida Amoro (`08-hida-amoro`).
 - Declared as attacker or defender, defenders declared: Marauding Oni (`10-marauding-oni`), Arrogant Kakita (`39-arrogant-kakita`).
 
-## Out of scope (3)
+## Out of scope (4)
 
 - Strategizing (`28-strategizing`, province): the rings on the provinces belong to the Enlightenment format.
 - Mindful Warrior (`28-mindful-warrior`, character): it switches a ring with a ring claimed on a province, of the Enlightenment format too (listed under 1).
+- Shadowed Alleyway (`28-shadowed-alleyway`, province): it moves a ring claimed on a province (listed under 2).
 - Greater Understanding (`19-greater-understanding`, attachment): an attachment on a ring, not playable (`HANDOFF.md`, "Cards not playable yet").
 
 ## Done: a province revealed (34)

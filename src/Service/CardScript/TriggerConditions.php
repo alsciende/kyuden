@@ -14,6 +14,7 @@ use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Enum\StackType;
+use App\Enum\Type;
 use App\Service\ControlService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
@@ -253,6 +254,24 @@ final readonly class TriggerConditions
     }
 
     /**
+     * A holding (with the trait, when given) is face up in the province ("a province that does not have a holding in
+     * it", "a Kaiu Wall holding").
+     */
+    public function hasHolding(PhysicalCard $province, ?string $trait = null): bool
+    {
+        foreach ($province->getStack()->getCards() as $card) {
+            if ($card instanceof DynastyCard
+                && $card->getOrientation() === Orientation::FaceUp
+                && $card->getLogicalCard()->getType() === Type::Holding
+                && ($trait === null || $this->hasTrait($card, $trait))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * A holding with the trait is face up in one of the attacked provinces ("if the attacked province has a Kaiu Wall
      * holding").
      */
@@ -263,20 +282,29 @@ final readonly class TriggerConditions
             return false;
         }
 
-        foreach ($game->getPlayer($conflict->defendingPlayerId)->getStacks() as $stack) {
-            $cards = $stack->getCards()->toArray();
-            $attacked = array_filter($cards, fn (PhysicalCard $card): bool => $card instanceof ProvinceCard && in_array($card->getId(), $conflict->attackedProvinceIds, true));
-            if ($attacked === []) {
-                continue;
-            }
-            foreach ($cards as $card) {
-                if ($card instanceof DynastyCard && $card->getOrientation() === Orientation::FaceUp && $this->hasTrait($card, $trait)) {
-                    return true;
-                }
+        foreach ($game->getPlayer($conflict->defendingPlayerId)->getCardsByClass(ProvinceCard::class) as $province) {
+            if (in_array($province->getId(), $conflict->attackedProvinceIds, true) && $this->hasHolding($province, $trait)) {
+                return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Characters have been evaded by covert in the conflict being resolved.
+     */
+    public function hasEvadedCharacters(Game $game): bool
+    {
+        return ($this->getConflict($game)->evadedIds ?? []) !== [];
+    }
+
+    /**
+     * The number of conflicts the player has declared this round, the one being declared included.
+     */
+    public function countDeclaredConflicts(Player $player): int
+    {
+        return count($this->playerStateManager->getState($player)->getDeclaredConflictTypes());
     }
 
     /**

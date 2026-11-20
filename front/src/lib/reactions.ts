@@ -53,6 +53,9 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
 
       return name === null ? 'After a province is revealed' : `After ${name} is revealed`
     }
+    case 'conflict_declared':
+    case 'conflict_declaration_completed':
+      return `After ${subject(game, window.params.attacker, 'declare', 'declares')} a conflict`
     case 'conflict_won':
       return `After ${subject(game, window.params.winner, 'win', 'wins')} the conflict`
     default:

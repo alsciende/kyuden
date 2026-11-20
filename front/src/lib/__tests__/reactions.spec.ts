@@ -52,6 +52,15 @@ describe('triggerText of the other triggering conditions', () => {
     card_ids: [],
   })
 
+  it('names the attacking player', () => {
+    expect(triggerText(other('conflict_declared', { attacker: 'me' }), view([]), cards)).toBe(
+      'After you declare a conflict',
+    )
+    expect(triggerText(other('conflict_declaration_completed', { attacker: 'opp' }), view([]), cards)).toBe(
+      'After your opponent declares a conflict',
+    )
+  })
+
   it('names the winner of the conflict', () => {
     expect(triggerText(other('conflict_won', { winner: 'me' }), view([]), cards)).toBe('After you win the conflict')
     expect(triggerText(other('conflict_won', { winner: 'opp' }), view([]), cards)).toBe(
