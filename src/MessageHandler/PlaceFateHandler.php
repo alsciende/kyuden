@@ -52,6 +52,6 @@ final readonly class PlaceFateHandler implements PlayerActionHandlerInterface
             $card,
             fn (CardState $state): CardState => $state->incrementFate($message->getAmount()),
         );
-        $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $card, $message->getAmount()));
+        $this->eventDispatcher->dispatch(new FatePlacedOnCardEvent($game, $card, $message->getAmount(), byCardEffect: true));
     }
 }

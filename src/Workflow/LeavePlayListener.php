@@ -83,7 +83,7 @@ readonly class LeavePlayListener
 
         $this->cardStateManager->setState($card, new CardState());
         if ($cardState->getFate() > 0) {
-            $this->eventDispatcher->dispatch(new FateRemovedFromCardEvent($card->getGame(), $card, $cardState->getFate()));
+            $this->eventDispatcher->dispatch(new FateRemovedFromCardEvent($card->getGame(), $card, $cardState->getFate(), leavingPlay: true));
         }
 
         if ($cardState->getPersonalHonor() !== PersonalHonor::Ordinary) {

@@ -67,6 +67,15 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the character fate is placed on or removed from', () => {
+    expect(triggerText(other('fate_placed_on_card', { card: 'raid' }), view([]), cards)).toBe(
+      'After fate is placed on Night Raid',
+    )
+    expect(triggerText(other('fate_removed_from_card', { card: 'raid' }), view([]), cards)).toBe(
+      'After fate is removed from Night Raid',
+    )
+  })
+
   it('names the winner of a duel', () => {
     expect(triggerText(other('duel_won', { player: 'me' }), view([]), cards)).toBe('After you win the duel')
     expect(triggerText(other('duel_ended', {}), view([]), cards)).toBe('After the duel resolves')

@@ -77,6 +77,14 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'fate_placed_on_card':
+      return `After fate is placed on ${cardName(game, cards, window.params.card) ?? 'a character'}`
+    case 'fate_removed_from_card':
+      return `After fate is removed from ${cardName(game, cards, window.params.card) ?? 'a character'}`
+    case 'fate_moved':
+      return 'After fate moves'
+    case 'fate_phase_fate_removed':
+      return 'After fate is removed from the characters'
     case 'duel_won':
       return `After ${subject(game, window.params.player, 'win', 'wins')} the duel`
     case 'duel_ended':

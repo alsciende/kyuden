@@ -11,10 +11,11 @@ use App\Enum\Element;
 use App\GameLog\GameLog;
 
 /**
- * Fate has moved from a holder to another (MoveFate): the fate pool of a player, a card or a ring.
+ * Fate has moved from a holder to another (MoveFate): the fate pool of a player, a card or a ring. The triggering
+ * condition of the cards reacting to fate placed on or removed from a character, by a card effect.
  */
 #[GameLog('{amount} fate moves from {source} to {target}')]
-final readonly class FateMovedEvent implements GameEventInterface
+final readonly class FateMovedEvent implements TriggeringEventInterface
 {
     public function __construct(
         public Game $game,
@@ -28,5 +29,17 @@ final readonly class FateMovedEvent implements GameEventInterface
     public function getGame(): Game
     {
         return $this->game;
+    }
+
+    #[\Override]
+    public static function getTriggerName(): string
+    {
+        return 'fate_moved';
+    }
+
+    #[\Override]
+    public function getTriggerParams(): array
+    {
+        return [];
     }
 }
