@@ -6,6 +6,7 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Event\HonorBidRevealedEvent;
+use App\Event\HonorDialsRevealedEvent;
 use App\Exception\Rules\NoHonorBidException;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
@@ -39,5 +40,6 @@ readonly class HonorBidsConfirmedTransitionListener
             );
             $this->eventDispatcher->dispatch(new HonorBidRevealedEvent($game, $player, $this->stateManager->getState($player)->getHonorBid() ?? throw new NoHonorBidException()));
         }
+        $this->eventDispatcher->dispatch(new HonorDialsRevealedEvent($game, array_values($game->getPlayers()->toArray()), duel: false));
     }
 }

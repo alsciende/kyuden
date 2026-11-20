@@ -62,6 +62,10 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
 
       return `After ${subject(game, window.params.breaker, 'break', 'breaks')} ${name ?? 'a province'}`
     }
+    case 'honor_dials_revealed':
+      return window.params.bid === 'duel'
+        ? 'After the honor dials of the duel are revealed'
+        : 'After the honor dials are revealed'
     case 'conflict_passed':
       return `After ${subject(game, window.params.player, 'pass', 'passes')} on declaring a conflict`
     case 'ring_claimed': {

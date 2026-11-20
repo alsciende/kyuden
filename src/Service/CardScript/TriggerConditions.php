@@ -114,6 +114,24 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The bid on the honor dial of the player, once revealed (0 before).
+     */
+    public function getHonorBid(Player $player): int
+    {
+        return $this->playerStateManager->getState($player)->getHonorBid() ?? 0;
+    }
+
+    /**
+     * The character is involved in the duel being resolved.
+     */
+    public function isInvolvedInDuel(PhysicalCard $character): bool
+    {
+        $duel = $this->gameStateManager->getState($character->getGame())->duel;
+
+        return $duel !== null && in_array($character->getId(), [...$duel->challengerCardIds, ...$duel->challengedCardIds], true);
+    }
+
+    /**
      * The number of cards in the hand of the player.
      */
     public function countCardsInHand(Player $player): int

@@ -18,3 +18,4 @@ To add the script of a card:
 - a ring claimed (`RingClaimedEvent`: by the winner of a conflict, in `react_to_ring_claim`, or by an effect, `ClaimRing`): 7 cards.
 - a pass on declaring a conflict (`ConflictPassedEvent`): 9 cards.
 - a province broken (`ProvinceBrokenEvent`: by the attacking player at the resolution of a conflict, before `react_to_broken_province`, or by the sender of `BreakProvince`): 9 cards.
+- the honor dials revealed (`HonorDialsRevealedEvent`, once every dial of the bid is revealed: the draw phase, or a duel, its players only): 9 cards, those of a duel included.

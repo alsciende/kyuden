@@ -67,6 +67,15 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('tells the honor dials of a duel', () => {
+    expect(triggerText(other('honor_dials_revealed', { bid: 'draw' }), view([]), cards)).toBe(
+      'After the honor dials are revealed',
+    )
+    expect(triggerText(other('honor_dials_revealed', { bid: 'duel' }), view([]), cards)).toBe(
+      'After the honor dials of the duel are revealed',
+    )
+  })
+
   it('names the player passing on declaring a conflict', () => {
     expect(triggerText(other('conflict_passed', { player: 'me' }), view([]), cards)).toBe(
       'After you pass on declaring a conflict',
