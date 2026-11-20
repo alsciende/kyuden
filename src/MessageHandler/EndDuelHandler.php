@@ -51,11 +51,13 @@ final readonly class EndDuelHandler implements PlayerActionHandlerInterface
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->assertAvailable($game, $player);
 
+        $duel = $this->gameStateManager->getState($game)->currentDuel();
+        $characterIds = [...$duel->challengerCardIds, ...$duel->challengedCardIds];
         $this->gameStateManager->withState($game, function (GameState $state): GameState {
             $state->duel = null;
 
             return $state;
         });
-        $this->eventDispatcher->dispatch(new DuelEndedEvent($game));
+        $this->eventDispatcher->dispatch(new DuelEndedEvent($game, $characterIds));
     }
 }

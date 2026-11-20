@@ -10,16 +10,21 @@ use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
 use App\Enum\StackType;
+use App\Model\PendingForcedReaction;
 use App\Service\AvailableActionsResolver;
+use App\Service\CardScript\ForcedReactionsResolver;
 use App\Service\Nobori\NoboriCollection;
 use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
+use App\State\Model\ReactionWindow;
 use App\State\Model\Resolution;
 use App\View\Model\CardView;
+use App\View\Model\ForcedReactionView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ReactionWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\SpecialActionView;
 use App\View\Model\StackView;
@@ -46,6 +51,7 @@ final readonly class GameViewFactory
         private SpecialActionsResolver $specialActionsResolver,
         private Visibility $visibility,
         private NoboriCollection $noboriCollection,
+        private ForcedReactionsResolver $forcedReactionsResolver,
     ) {
     }
 
@@ -110,6 +116,14 @@ final readonly class GameViewFactory
             givenActions: $state->getGivenActions(),
             resolvingInterruptsAndReactions: $state->countInterruptsAndReactions(),
             resolutions: array_map(fn (Resolution $resolution): ResolutionView => $this->createResolutionView($resolution, $cards[$resolution->cardId] ?? null, $viewer), $state->getResolutions()),
+            reactionWindows: $isViewer ? array_map(
+                fn (ReactionWindow $window): ReactionWindowView => new ReactionWindowView($window->id, $window->trigger, $window->params, $window->cardIds, $window->forcedCardIds),
+                $state->getReactionWindows(),
+            ) : [],
+            forcedReactions: array_map(
+                fn (PendingForcedReaction $pending): ForcedReactionView => new ForcedReactionView($pending->card->getId(), $pending->window->id, $pending->window->trigger, $pending->window->params),
+                $this->forcedReactionsResolver->pending($player),
+            ),
             fateCollected: $state->isFateCollected(),
             conflictOpportunities: $state->getConflictOpportunities(),
             declaredConflictTypes: $state->getDeclaredConflictTypes(),

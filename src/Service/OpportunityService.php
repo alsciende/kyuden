@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\AbilityTiming;
 use App\Enum\PassingRule;
 use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\DuelInProgressException;
@@ -162,13 +163,19 @@ readonly class OpportunityService
 
     /**
      * The player has initiated an interrupt or a reaction, whether or not they have the opportunity to act: they
-     * resolve it, then end it (EndResolution).
+     * resolve it, then end it (EndResolution). A reaction answers the oldest reaction window offering its card.
      */
     public function startInterruptOrReaction(Player $player, Resolution $resolution): void
     {
         $this->playerStateManager->withState(
             $player,
-            fn (PlayerState $state): PlayerState => $state->startResolution($resolution),
+            function (PlayerState $state) use ($resolution): PlayerState {
+                if ($resolution->timing === AbilityTiming::Reaction) {
+                    $state->withdrawReactionOffer($resolution->cardId);
+                }
+
+                return $state->startResolution($resolution);
+            },
         );
     }
 

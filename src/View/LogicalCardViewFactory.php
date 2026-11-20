@@ -6,8 +6,11 @@ namespace App\View;
 
 use App\Entity\LogicalCard;
 use App\Entity\Pack;
+use App\Enum\StackType;
 use App\Service\CardScript\CardScriptRegistry;
 use App\View\Model\LogicalCardView;
+
+use function Symfony\Component\String\u;
 
 /**
  * Builds the view of a card as printed: it is the same for everyone.
@@ -49,6 +52,10 @@ final readonly class LogicalCardViewFactory
             strengthBonus: $card->getStrengthBonus(),
             abilityTimings: $this->cardScriptRegistry->getAbilityTimings($card->getId()),
             abilityGrantedToAttached: $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getId()),
+            abilityStacksOutOfPlay: array_map(
+                static fn (StackType $type): string => u($type->name)->snake()->toString(),
+                $this->cardScriptRegistry->getAbilityStacksOutOfPlay($card->getId()),
+            ),
             imageUrl: $this->getImageUrl($card),
             pack: $this->getFirstPack($card)?->getName(),
         );

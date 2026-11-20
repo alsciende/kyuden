@@ -96,6 +96,14 @@ class PlayerState
     private array $resolutions = [];
 
     /**
+     * The reaction windows in which the player has cards that can react (ReactionOfferer), the oldest first. Secret:
+     * the cards may be in their hand.
+     *
+     * @var list<ReactionWindow>
+     */
+    private array $reactionWindows = [];
+
+    /**
      * The player has conceded the game: they are eliminated.
      */
     private bool $conceded = false;
@@ -417,6 +425,53 @@ class PlayerState
         return $this;
     }
 
+    /**
+     * @return list<ReactionWindow>
+     */
+    public function getReactionWindows(): array
+    {
+        return $this->reactionWindows;
+    }
+
+    /**
+     * @param list<ReactionWindow> $reactionWindows
+     */
+    public function setReactionWindows(array $reactionWindows): self
+    {
+        $this->reactionWindows = $reactionWindows;
+
+        return $this;
+    }
+
+    public function openReactionWindow(ReactionWindow $reactionWindow): self
+    {
+        $this->reactionWindows[] = $reactionWindow;
+
+        return $this;
+    }
+
+    /**
+     * The player has triggered a card offered: it leaves the oldest window offering it, and a window left without card
+     * closes.
+     */
+    public function withdrawReactionOffer(string $cardId): self
+    {
+        foreach ($this->reactionWindows as $reactionWindow) {
+            if (in_array($cardId, $reactionWindow->cardIds, true)) {
+                $reactionWindow->cardIds = array_values(array_diff($reactionWindow->cardIds, [$cardId]));
+                $reactionWindow->forcedCardIds = array_values(array_diff($reactionWindow->forcedCardIds, [$cardId]));
+                break;
+            }
+        }
+
+        $this->reactionWindows = array_values(array_filter(
+            $this->reactionWindows,
+            fn (ReactionWindow $reactionWindow): bool => $reactionWindow->cardIds !== [],
+        ));
+
+        return $this;
+    }
+
     public function startResolution(Resolution $resolution): self
     {
         $this->resolutions[] = $resolution;
@@ -497,6 +552,7 @@ class PlayerState
             ->setConflictOpportunities(self::CONFLICT_OPPORTUNITIES)
             ->setDeclaredConflictTypes([])
             ->setAdditionalConflictTypes([])
-            ->setGloryCount(null);
+            ->setGloryCount(null)
+            ->setReactionWindows([]);
     }
 }

@@ -10,6 +10,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import { PHASES, playerById, rings, type Cards } from '@/lib/board'
+import { forcedBlock, type ShownWindow } from '@/lib/reactions'
 import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { waiting } from '@/lib/queueing'
@@ -22,6 +23,11 @@ import { spectatorsLabel } from '@/lib/watch'
  * The bar on the right of the board: the spectators of the game (a click lists them), the step of the round, what the
  * player does in it, then the rings (a click on one opens its window) and the last lines of the log (the players are
  * in their bars, above and below the board).
+ *
+ * Above what the player does, the reactions the engine offers them (`lib/reactions.ts`): a click on "Open" opens the
+ * card, which offers to activate it or decline it; a forced reaction is marked, and resolved at once ("Resolve": its
+ * ability triggered). The forced reactions the opponent has to trigger are told under them: nobody moves the game on
+ * meanwhile.
  *
  * A spectator does nothing in the step: they read who acts, from whose side they watch (they switch sides), and leave.
  * A replay puts its own panel in place of what the player does (slot `panel`), and its log in place of the last lines
@@ -38,9 +44,11 @@ const props = defineProps<{
   sending: boolean
   error: string | null
   send: Send
+  /** the reactions offered to the viewer (none for a spectator, in a replay) */
+  reactionWindows?: ShownWindow[]
 }>()
 
-defineEmits<{ openLog: []; switchSides: []; leave: [] }>()
+defineEmits<{ open: [cardId: string]; openLog: []; switchSides: []; leave: [] }>()
 
 const step = computed(() => stepWithDuel(props.game))
 
@@ -84,6 +92,18 @@ const RING_STATUS = { unclaimed: '', contested: 'Contested', yours: 'You', their
 
 /** the ring whose window is open */
 const openRing = ref<Element | null>(null)
+
+/** the forced reactions the opponent (any player, for a spectator) has to trigger, which the viewer waits for */
+const othersForced = computed(() => {
+  const block = forcedBlock(props.game, props.cards)
+
+  return block === null || block.mine ? null : block
+})
+
+/** the forced reaction resolved at once: its ability triggered */
+function resolveForced(cardId: string): void {
+  void props.send('trigger_reaction_ability', { card_id: cardId })
+}
 
 /** the last lines of the log */
 const tail = computed(() => props.log.flatMap((message) => message.entries).slice(-3))
@@ -141,6 +161,44 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <h1>{{ step.title }}</h1>
       <p v-if="step.help" class="help">{{ step.help }}</p>
     </header>
+
+    <section v-if="reactionWindows?.length" class="reactions" aria-label="Reactions offered">
+      <span class="label">Reactions</span>
+      <div v-for="window in reactionWindows" :key="window.id" class="reaction-window">
+        <p class="trigger">{{ window.trigger }}</p>
+        <ul class="offers">
+          <li v-for="offer in window.offers" :key="offer.cardId" class="offer" :class="{ forced: offer.forced }">
+            <span v-if="offer.forced" class="forced-tag">Forced</span>
+            <span class="offer-name">{{ offer.name }}</span>
+            <span class="offer-kind">{{ offer.kind }}</span>
+            <button
+              v-if="offer.forced"
+              type="button"
+              class="open resolve"
+              :disabled="sending"
+              @click="resolveForced(offer.cardId)"
+            >
+              Resolve
+            </button>
+            <button v-else type="button" class="open" @click="$emit('open', offer.cardId)">Open</button>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section v-if="othersForced" class="others-forced" :aria-label="`Forced reactions of ${othersForced.player}`">
+      <span class="label">{{ othersForced.player }} must resolve</span>
+      <div v-for="reaction in othersForced.reactions" :key="reaction.cardId" class="others-forced-reaction">
+        <p class="others-forced-card">
+          <span class="forced-tag">Forced</span>
+          <button type="button" class="others-forced-name" @click="$emit('open', reaction.cardId)">
+            {{ reaction.name }}
+          </button>
+          <span v-if="reaction.on" class="offer-kind">on {{ reaction.on }}</span>
+        </p>
+        <p class="others-forced-trigger">{{ reaction.trigger }}</p>
+      </div>
+    </section>
 
     <slot name="panel">
       <section v-if="game.spectating" class="spectator" aria-label="Spectating">
@@ -391,6 +449,155 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.reactions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reaction-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trigger {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1.5px solid var(--seal);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.offer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+}
+
+.offer + .offer {
+  border-top: 1px solid var(--line);
+}
+
+.offer-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offers:has(.forced) {
+  border-width: 2px;
+}
+
+.forced-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.open.resolve {
+  border-color: var(--seal);
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.others-forced {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--seal);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.others-forced .label {
+  color: var(--seal);
+}
+
+.others-forced-reaction {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.others-forced-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.others-forced-name {
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.others-forced-trigger {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.offer-kind {
+  flex: none;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.open {
+  font: inherit;
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .open:hover {
+    background: var(--paper-3);
+  }
+
+  .open.resolve:hover {
+    background: var(--seal);
+  }
 }
 
 .others-resolving {

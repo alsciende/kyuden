@@ -7,7 +7,9 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Event\ConflictDeclarationCompletedEvent;
 use App\Message\PlaceCardUnder;
+use App\Model\ReactionOffer;
 
 /**
  * Under Siege.
@@ -30,5 +32,21 @@ final readonly class UnderSiege32 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [PlaceCardUnder::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [ConflictDeclarationCompletedEvent::class => 'onConflictDeclarationCompleted'];
+    }
+
+    /**
+     * After a conflict is declared.
+     *
+     * @return list<ReactionOffer>
+     */
+    public function onConflictDeclarationCompleted(ConflictDeclarationCompletedEvent $event, PhysicalCard $card, Game $game): array
+    {
+        return [new ReactionOffer($card)];
     }
 }

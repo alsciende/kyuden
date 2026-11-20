@@ -1,7 +1,7 @@
 import type { AbilityTiming, Card } from '@/api/client'
 import type { GameView, PlayerView } from '@/api/game'
 import type { Message, MessagePayloads, MessageType } from '@/api/messages'
-import { charactersInPlay, locate, provinces, stacksOf, type Cards, type Located } from '@/lib/board'
+import { charactersInPlay, locate, provinces, stacksOf, stepOf, type Cards, type Located } from '@/lib/board'
 
 /**
  * What a player can do with a card, from where it is and from the actions the engine makes available now. Board
@@ -527,9 +527,17 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     const timings = abilityTimings(located, cards)
     timings.forEach((timing) => add(menu.abilities, ABILITY_TYPES[timing], abilityLabel(timing, timings.length)))
   }
+  // out of play, where its text says (Vengeful Oathkeeper in the hand, Champions of Yomi in the discard pile, Sneaky
+  // Shinjo in its province)
+  const abilitiesOutOfPlay = () => {
+    if (card?.ability_stacks_out_of_play?.includes(stack.type)) {
+      abilities()
+    }
+  }
 
   switch (stack.type) {
     case 'hand':
+      abilitiesOutOfPlay()
       menu.plays = playActions(card, available)
       playAsAttachment()
       if (menu.mine) {
@@ -572,9 +580,16 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           // during a conflict too (Prepared Ambush, Wind's Path)
           menu.plays = playActions(card, available, true)
           playAsAttachment()
+        } else if (card?.type === 'event') {
+          // a dynasty event, played from its province during the dynasty phase only
+          if (stepOf(game.place).phase === 'dynasty') {
+            menu.plays = playActions(card, available)
+          }
         }
-        // a character has abilities once in play; a holding has them in its province
-        if (card?.type !== 'character') {
+        // a character has abilities once in play, unless its text says otherwise; a holding has them in its province
+        if (card?.type === 'character') {
+          abilitiesOutOfPlay()
+        } else if (card?.type !== 'event') {
           abilities()
         }
         putIntoPlay()
@@ -681,6 +696,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
 
     case 'conflict_discard_pile':
       // Kunshu, Guidance of the Ancestors, Exposed Courtyard
+      abilitiesOutOfPlay()
       menu.plays = playActions(card, available)
       playAsAttachment()
       putIntoPlay()
@@ -692,6 +708,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
 
     case 'dynasty_discard_pile':
       // Gateway to Meido
+      abilitiesOutOfPlay()
       if (card?.type === 'character') {
         menu.plays = playActions(card, available)
         playAsAttachment()

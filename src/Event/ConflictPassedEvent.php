@@ -9,10 +9,11 @@ use App\Entity\Player;
 use App\GameLog\GameLog;
 
 /**
- * A player has passed their conflict opportunity (PassConflict).
+ * A player has passed their conflict opportunity (PassConflict): the triggering condition of the cards reacting to a
+ * pass on declaring a conflict.
  */
 #[GameLog('{player} passes their conflict opportunity')]
-final readonly class ConflictPassedEvent implements GameEventInterface
+final readonly class ConflictPassedEvent implements TriggeringEventInterface
 {
     public function __construct(
         public Game $game,
@@ -24,5 +25,17 @@ final readonly class ConflictPassedEvent implements GameEventInterface
     public function getGame(): Game
     {
         return $this->game;
+    }
+
+    #[\Override]
+    public static function getTriggerName(): string
+    {
+        return 'conflict_passed';
+    }
+
+    #[\Override]
+    public function getTriggerParams(): array
+    {
+        return ['player' => $this->player->getId()];
     }
 }

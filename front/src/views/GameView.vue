@@ -27,6 +27,7 @@ import { mulliganWindow } from '@/lib/mulligan'
 import type { Effect } from '@/lib/playerBar'
 import { closeCardImage, viewedCode } from '@/lib/cardImage'
 import { hidePreview } from '@/lib/preview'
+import { offerOf, shownWindows, useDeclinedReactions, type ShownOffer } from '@/lib/reactions'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
 import { emptySelection, toggle } from '@/lib/selection'
@@ -114,6 +115,16 @@ watch(
 const menu = computed(() =>
   game.value === null || openCardId.value === null ? undefined : cardMenu(game.value, cards, openCardId.value),
 )
+
+/** the reactions offered to the viewer, but those they have declined (kept by the tab) */
+const { declined, decline } = useDeclinedReactions(game)
+const reactionWindows = computed(() => (game.value === null ? [] : shownWindows(game.value, cards, declined.value)))
+const openOffer = computed(() => (openCardId.value === null ? null : offerOf(reactionWindows.value, openCardId.value)))
+
+function declineReaction(offer: ShownOffer): void {
+  decline(offer)
+  openCardId.value = null
+}
 
 /** the tips of the tutorial, in a game against the house bot */
 const tutorial = useTutorial(
@@ -323,6 +334,8 @@ const problem = computed(() => {
       :sending="sending"
       :error="openCardId || barOpen || inspection || mulligan ? null : error"
       :send="send"
+      :reaction-windows="reactionWindows"
+      @open="open"
       @open-log="logOpen = true"
       @switch-sides="switchSides"
       @leave="router.push('/')"
@@ -369,12 +382,14 @@ const problem = computed(() => {
       v-if="menu"
       :key="menu.located.card.id"
       :menu="menu"
+      :offer="openOffer"
       :game="game"
       :cards="cards"
       :sending="sending"
       :error="error"
       :send="send"
       @close="openCardId = null"
+      @decline="declineReaction"
     />
     <!-- not over the windows of cards looked at nor of the mulligan, whose screen it does not explain -->
     <TutorialTip

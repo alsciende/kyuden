@@ -27,8 +27,12 @@ use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
 use App\Message\RevealProvince;
+use App\Message\TriggerReactionAbility;
 use App\Service\Bot\BotStrategy;
+use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
+use App\State\Model\PlayerState;
+use App\State\Model\ReactionWindow;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -103,6 +107,28 @@ class BotStrategyTest extends AbstractKernelTestCase
         self::assertInstanceOf(BidHonor::class, $action);
         self::assertSame(BotStrategy::HONOR_BID, $action->getBid());
         self::assertNull($this->nextAction($hasBid));
+    }
+
+    public function testTriggersItsForcedReactionsFirst(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', dynasty: '13-kuni-laboratory', dynastyAs: 'laboratory', dynastyFaceup: true))
+            ->activePlayer(self::BOT)
+            ->build();
+        $laboratory = $scenario->card('laboratory')->getId();
+        self::service(PlayerStateManager::class)->withState(
+            $scenario->player(self::BOT),
+            fn (PlayerState $state): PlayerState => $state->openReactionWindow(new ReactionWindow('1', 'phase_began', ['phase' => 'conflict'], [$laboratory], [$laboratory])),
+        );
+
+        $action = $this->nextAction($scenario);
+
+        // before passing its opportunity
+        self::assertInstanceOf(TriggerReactionAbility::class, $action);
+        self::assertSame($laboratory, $action->getCardId());
     }
 
     public function testPassesItsOpportunities(): void

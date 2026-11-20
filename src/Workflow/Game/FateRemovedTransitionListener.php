@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Workflow\Game;
 
 use App\Entity\Game;
+use App\Event\FatePhaseFateRemovedEvent;
 use App\Event\FateRemovedFromCardEvent;
 use App\State\Manager\CardStateManager;
 use App\State\Model\CardState;
@@ -33,6 +34,7 @@ readonly class FateRemovedTransitionListener
     {
         $game = $event->getSubject();
 
+        $total = 0;
         foreach ($game->getPlayers() as $player) {
             foreach ($player->getCharactersInPlay() as $character) {
                 $removed = min(self::FATE_REMOVED, $this->cardStateManager->getState($character)->getFate());
@@ -45,7 +47,12 @@ readonly class FateRemovedTransitionListener
                     fn (CardState $state): CardState => $state->removeFate($removed),
                 );
                 $this->eventDispatcher->dispatch(new FateRemovedFromCardEvent($game, $character, $removed));
+                $total += $removed;
             }
+        }
+
+        if ($total > 0) {
+            $this->eventDispatcher->dispatch(new FatePhaseFateRemovedEvent($game, $total));
         }
     }
 }

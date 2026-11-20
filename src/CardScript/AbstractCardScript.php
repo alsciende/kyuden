@@ -7,6 +7,8 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\StackType;
+use App\Event\TriggeringEventInterface;
 use App\Message\ActionInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
@@ -45,6 +47,35 @@ abstract readonly class AbstractCardScript
     public function isAbilityGrantedToAttached(): bool
     {
         return false;
+    }
+
+    /**
+     * The stacks out of play where the triggered abilities of the card are used, as its text says (Vengeful Oathkeeper:
+     * "put this character into play from your hand"; a character face up in a province: Sneaky Shinjo). Elsewhere out
+     * of play, its abilities cannot be triggered (App\Workflow\TriggerAbilityGuardListener); in play, they always can.
+     *
+     * @return list<StackType>
+     */
+    public function getAbilityStacksOutOfPlay(): array
+    {
+        return [];
+    }
+
+    /**
+     * The triggering conditions the card reacts to: the method of the script called, when such an event is dispatched,
+     * for each copy of the card that its controller can use where it is (ReactionOfferer). The method reads the event,
+     * the copy and the game, and returns the reactions its controller may trigger now (list<ReactionOffer>, none when
+     * the condition is not met); it changes nothing:
+     *
+     *     public function onProvinceRevealed(ProvinceRevealedEvent $event, PhysicalCard $card, Game $game): array
+     *
+     * Read when the container is compiled (App\Kernel).
+     *
+     * @return array<class-string<TriggeringEventInterface>, string> the name of the method, by class of event
+     */
+    public static function getSubscribedEvents(): array
+    {
+        return [];
     }
 
     /**

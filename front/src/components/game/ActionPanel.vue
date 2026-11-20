@@ -24,12 +24,15 @@ import {
 } from '@/lib/board'
 import { duelCharacters, duelStatistic, statisticName } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES } from '@/lib/icons'
+import { forcedBlock } from '@/lib/reactions'
 import { resolvingOf, ringResolving } from '@/lib/resolutions'
 import type { Selection } from '@/lib/selection'
 
 /**
  * What the player does in the current step, besides playing cards: passing, ending what they play, and the framework
  * actions (fate, bids, conflicts, totals). The totals are prefilled from the cards; the player confirms or corrects.
+ * While a player has a forced reaction to trigger (`forcedBlock()`), the actions moving the game on are disabled, for
+ * both players, with the reason.
  */
 const props = defineProps<{
   game: GameView
@@ -45,6 +48,10 @@ const me = computed(() => viewer(props.game))
 const opp = computed(() => opponent(props.game))
 
 const ended = computed(() => gameEnded(props.game))
+
+/** a forced reaction to trigger first, by the viewer or the opponent */
+const forced = computed(() => (ended.value ? null : forcedBlock(props.game, props.cards)))
+const blocked = computed(() => forced.value !== null)
 
 /** the event or the ability the viewer resolves: its text reminds them of the effect they apply */
 const resolving = computed(() => (ended.value ? null : resolvingOf(props.game, me.value, props.cards)))
@@ -276,11 +283,29 @@ const nothing = computed(
       </div>
     </section>
 
+    <p v-if="forced" class="forced-reason" :class="{ mine: forced.mine }">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="5" y="11" width="14" height="10" rx="1" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+      <span>{{ forced.reason }}</span>
+    </p>
+
     <button
       v-if="available.has('end_resolution')"
       type="button"
       class="btn btn-primary"
-      :disabled="sending"
+      :disabled="sending || blocked"
       @click="send('end_resolution')"
     >
       {{ resolving ? `Done with ${resolving.current.card.name}` : 'End resolution' }}
@@ -295,7 +320,7 @@ const nothing = computed(
       v-if="available.has('pass_opportunity')"
       type="button"
       class="btn btn-primary"
-      :disabled="sending"
+      :disabled="sending || blocked"
       @click="send('pass_opportunity')"
     >
       <!-- 3.2.6: the attacker may resolve the ring effect, then ends it; the engine waits for them as for a pass -->
@@ -314,7 +339,9 @@ const nothing = computed(
         <span>Fate from your stronghold</span>
         <input v-model.number="values.fate" class="number" type="number" min="0" />
       </label>
-      <button type="submit" class="btn btn-primary" :disabled="sending">Collect {{ values.fate }} fate</button>
+      <button type="submit" class="btn btn-primary" :disabled="sending || blocked">
+        Collect {{ values.fate }} fate
+      </button>
     </form>
 
     <form v-if="available.has('bid_honor')" class="form" @submit.prevent="send('bid_honor', { bid: values.bid })">
@@ -334,7 +361,7 @@ const nothing = computed(
         Kept secret until both players have bid.
         <template v-if="opp?.honor_bid_selected">The opponent has bid.</template>
       </span>
-      <button type="submit" class="btn btn-primary" :disabled="sending">Bid {{ values.bid }}</button>
+      <button type="submit" class="btn btn-primary" :disabled="sending || blocked">Bid {{ values.bid }}</button>
     </form>
 
     <div v-if="available.has('declare_conflict')" class="form">
@@ -383,7 +410,7 @@ const nothing = computed(
       <button
         type="button"
         class="btn btn-primary"
-        :disabled="sending || !declaration.complete"
+        :disabled="sending || blocked || !declaration.complete"
         @click="declareConflict"
       >
         Declare the conflict
@@ -393,7 +420,7 @@ const nothing = computed(
       v-if="available.has('pass_conflict')"
       type="button"
       class="btn btn-ghost"
-      :disabled="sending"
+      :disabled="sending || blocked"
       @click="send('pass_conflict')"
     >
       Pass this conflict
@@ -419,7 +446,7 @@ const nothing = computed(
       <button
         type="button"
         class="btn btn-primary"
-        :disabled="sending || selection.defenderIds.length === 0"
+        :disabled="sending || blocked || selection.defenderIds.length === 0"
         @click="send('declare_defenders', { defender_ids: selection.defenderIds })"
       >
         Declare {{ selection.defenderIds.length || '' }} defender{{ selection.defenderIds.length === 1 ? '' : 's' }}
@@ -429,7 +456,7 @@ const nothing = computed(
       v-if="available.has('declare_no_defenders')"
       type="button"
       class="btn btn-ghost"
-      :disabled="sending"
+      :disabled="sending || blocked"
       @click="send('declare_no_defenders')"
     >
       No defenders
@@ -444,7 +471,7 @@ const nothing = computed(
         <span>Strength of {{ cardName(id) }}</span>
         <input v-model.number="values.strengths[id]" class="number" type="number" />
       </label>
-      <button type="submit" class="btn btn-ghost" :disabled="sending">Declare the strength</button>
+      <button type="submit" class="btn btn-ghost" :disabled="sending || blocked">Declare the strength</button>
     </form>
 
     <form
@@ -456,7 +483,7 @@ const nothing = computed(
         <span>Your {{ conflict?.type }} skill</span>
         <input v-model.number="values.skill" class="number" type="number" min="0" />
       </label>
-      <button type="submit" class="btn btn-primary" :disabled="sending">Declare {{ values.skill }}</button>
+      <button type="submit" class="btn btn-primary" :disabled="sending || blocked">Declare {{ values.skill }}</button>
     </form>
 
     <form
@@ -468,7 +495,7 @@ const nothing = computed(
         <span>Your glory</span>
         <input v-model.number="values.glory" class="number" type="number" min="0" />
       </label>
-      <button type="submit" class="btn btn-primary" :disabled="sending">Declare {{ values.glory }}</button>
+      <button type="submit" class="btn btn-primary" :disabled="sending || blocked">Declare {{ values.glory }}</button>
     </form>
 
     <div v-if="available.has('claim_imperial_favor')" class="row two">
@@ -477,7 +504,7 @@ const nothing = computed(
         :key="side"
         type="button"
         class="btn btn-primary"
-        :disabled="sending"
+        :disabled="sending || blocked"
         @click="send('claim_imperial_favor', { side })"
       >
         <span class="icon" aria-hidden="true">{{ CONFLICT_ICONS[side] }}</span>
@@ -494,7 +521,9 @@ const nothing = computed(
         <span>Your {{ duelDeclaration?.statistic }} of {{ duelDeclaration?.names }}</span>
         <input v-model.number="values.statistic" class="number" type="number" min="0" />
       </label>
-      <button type="submit" class="btn btn-primary" :disabled="sending">Declare {{ values.statistic }}</button>
+      <button type="submit" class="btn btn-primary" :disabled="sending || blocked">
+        Declare {{ values.statistic }}
+      </button>
       <span class="hint">Prefilled from the cards, without your honor bid: the engine adds it.</span>
     </form>
 
@@ -502,7 +531,7 @@ const nothing = computed(
       v-if="available.has('end_duel')"
       type="button"
       class="btn btn-ghost"
-      :disabled="sending"
+      :disabled="sending || blocked"
       @click="send('end_duel')"
     >
       End the duel
@@ -534,6 +563,21 @@ const nothing = computed(
 
 .row .btn {
   text-transform: capitalize;
+}
+
+.forced-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.forced-reason svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--seal);
 }
 
 .status {

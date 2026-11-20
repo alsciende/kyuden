@@ -98,12 +98,10 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
             $message->getType(),
             $province,
             array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $attackerIds),
+            $ringFate,
         ));
         if ($evadedIds !== []) {
             $this->eventDispatcher->dispatch(new CharactersEvadedEvent($game, array_map(fn (string $id): PhysicalCard => $this->cardRepository->get($id, $game), $evadedIds)));
-        }
-        if ($ringFate > 0) {
-            $this->eventDispatcher->dispatch(new RingFateTakenEvent($game, $player, $message->getRing(), $ringFate));
         }
         $this->gameStateManager->withState($game, function (GameState $state) use ($message, $player, $defender, $attackerIds, $evadedIds): GameState {
             $state->getRing($message->getRing())->fate = 0;
@@ -114,6 +112,10 @@ final readonly class DeclareConflictHandler implements PlayerActionHandlerInterf
 
             return $state;
         });
+        // once the conflict is in the state, for the cards reacting to fate gained from a ring during a conflict
+        if ($ringFate > 0) {
+            $this->eventDispatcher->dispatch(new RingFateTakenEvent($game, $player, $message->getRing(), $ringFate));
+        }
 
         $this->gameStateMachine->apply($game, 'conflict_declared');
     }

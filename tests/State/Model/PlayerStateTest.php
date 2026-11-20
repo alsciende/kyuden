@@ -9,6 +9,7 @@ use App\Exception\Rules\HonorNotSetException;
 use App\Exception\Rules\NoConflictOpportunityException;
 use App\Exception\Rules\NotEnoughFateException;
 use App\State\Model\PlayerState;
+use App\State\Model\ReactionWindow;
 use PHPUnit\Framework\TestCase;
 
 class PlayerStateTest extends TestCase
@@ -104,5 +105,28 @@ class PlayerStateTest extends TestCase
 
         self::assertSame(PlayerState::CONFLICT_OPPORTUNITIES, $state->getConflictOpportunities());
         self::assertSame([], $state->getAdditionalConflictTypes());
+    }
+
+    public function testTheOldestWindowOfferingACardTriggeredLosesIt(): void
+    {
+        $state = new PlayerState()
+            ->openReactionWindow(new ReactionWindow('1', 'province_revealed', [], ['a', 'b']))
+            ->openReactionWindow(new ReactionWindow('2', 'province_revealed', [], ['a']))
+            ->withdrawReactionOffer('a');
+
+        self::assertSame([['b'], ['a']], array_map(fn (ReactionWindow $window): array => $window->cardIds, $state->getReactionWindows()));
+
+        // a window left without card closes
+        $state->withdrawReactionOffer('b');
+        self::assertSame(['2'], array_map(fn (ReactionWindow $window): string => $window->id, $state->getReactionWindows()));
+    }
+
+    public function testTheReactionWindowsCloseWithTheRound(): void
+    {
+        $state = new PlayerState()
+            ->openReactionWindow(new ReactionWindow('1', 'province_revealed', [], ['a']))
+            ->resetTurnRecords();
+
+        self::assertSame([], $state->getReactionWindows());
     }
 }

@@ -90,6 +90,12 @@ class GameState
      */
     public array $provincesToRefill = [];
 
+    /**
+     * The number of reaction windows opened (ReactionOfferer), from which their ids are numbered: never drawn from the
+     * generator of the game, whose draws would change.
+     */
+    public int $reactionWindowCount = 0;
+
     public function setPlayerOrder(Player ...$players): self
     {
         $this->playerIds = array_values(array_map(fn (Player $player): string => $player->getId(), $players));

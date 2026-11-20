@@ -7,9 +7,11 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\StackType;
+use App\Event\CardsDiscardedFromHandEvent;
 use App\Message\DiscardRandomCardFromHand;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
@@ -26,6 +28,7 @@ final readonly class DiscardRandomCardFromHandHandler implements PlayerActionHan
         private PlayerRepository $playerRepository,
         #[Target('conflict_card')]
         private WorkflowInterface $conflictCardStateMachine,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -43,14 +46,20 @@ final readonly class DiscardRandomCardFromHandHandler implements PlayerActionHan
         $target = $this->playerRepository->get($message->getTargetPlayerId(), $game);
 
         $stack = $target->getUniqueStack(StackType::Hand);
+        $discarded = [];
         for ($i = 0; $i < $message->getQuantity(); ++$i) {
             $hand = $stack->getOrderedCards();
             if ($hand === []) {
-                return;
+                break;
             }
 
             $card = $hand[$game->getRandomizer()->getInt(0, count($hand) - 1)];
             $this->conflictCardStateMachine->apply($card, 'discard_card');
+            $discarded[] = $card;
+        }
+
+        if ($discarded !== []) {
+            $this->eventDispatcher->dispatch(new CardsDiscardedFromHandEvent($game, $target, $discarded));
         }
     }
 }

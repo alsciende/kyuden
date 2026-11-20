@@ -33,7 +33,10 @@ use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
 use App\Message\RevealProvince;
+use App\Message\TriggerReactionAbility;
+use App\Model\PendingForcedReaction;
 use App\Service\AvailableActionsResolver;
+use App\Service\CardScript\ForcedReactionsResolver;
 use App\Service\ConflictService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -76,6 +79,7 @@ final readonly class BotStrategy
         private ConflictService $conflictService,
         private BoardReader $boardReader,
         private RingEffectChooser $ringEffectChooser,
+        private ForcedReactionsResolver $forcedReactionsResolver,
     ) {
     }
 
@@ -89,6 +93,13 @@ final readonly class BotStrategy
         $playerId = $player->getId();
         $playerState = $this->playerStateManager->getState($player);
         $duel = $this->gameStateManager->getState($game)->duel;
+
+        // its forced reactions first, which its opponent waits for: triggered, then ended below without their effect
+        // applied (the bot applies no card effect)
+        $forced = $this->forcedReactionsResolver->pending($player)[0] ?? null;
+        if ($forced instanceof PendingForcedReaction) {
+            return new TriggerReactionAbility($gameId, $playerId, $forced->card->getId());
+        }
 
         if (in_array('choose_stronghold_province', $available, true) && $playerState->getStrongholdProvinceId() === null) {
             return new ChooseStrongholdProvince($gameId, $playerId, $this->chooseStrongholdProvince($player)->getId());
@@ -120,7 +131,8 @@ final readonly class BotStrategy
             }
         }
 
-        // the bot plays no interrupt nor reaction: what it resolves is the character it has played
+        // the bot plays no interrupt nor reaction but its forced reactions: what it resolves is one of them or the
+        // character it has played
         if (in_array('end_resolution', $available, true)) {
             return new EndResolution($gameId, $playerId);
         }

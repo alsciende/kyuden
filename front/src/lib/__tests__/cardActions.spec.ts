@@ -113,6 +113,55 @@ describe('cardMenu', () => {
     expect(cardMenu(view, cards, home.id)!.state.map((action) => action.type)).toContain('move_to_conflict')
   })
 
+  it('offers the abilities of a card out of play only where its text says', () => {
+    // Vengeful Oathkeeper in the hand, Champions of Yomi in the dynasty discard pile, Sneaky Shinjo in its province
+    const outOfPlay = {
+      oathkeeper: printed('oathkeeper', { ability_timings: ['reaction'], ability_stacks_out_of_play: ['hand'] }),
+      yomi: printed('yomi', { ability_timings: ['reaction'], ability_stacks_out_of_play: ['dynasty_discard_pile'] }),
+      sneaky: printed('sneaky', { ability_timings: ['reaction'], ability_stacks_out_of_play: ['regular_province'] }),
+    }
+    const oathkeeper = card('oathkeeper')
+    const yomi = card('yomi', { side: 'dynasty' })
+    const sneaky = card('sneaky', { side: 'dynasty' })
+    const kaezin = card('kaezin')
+    const toturi = card('toturi', { side: 'dynasty' })
+    const view = game(
+      player('me', [
+        stack('hand', [oathkeeper, kaezin]),
+        stack('dynasty_discard_pile', [yomi]),
+        stack('regular_province', [card('raid'), sneaky]),
+        stack('regular_province', [card('raid'), toturi]),
+      ]),
+      player('opp'),
+      { available_actions: [...EFFECTS, 'trigger_reaction_ability', 'trigger_action_ability'] },
+    )
+    const abilities = (id: string) =>
+      cardMenu(view, { ...cards, ...outOfPlay }, id)!.abilities.map((action) => action.type)
+
+    expect(abilities(oathkeeper.id)).toEqual(['trigger_reaction_ability'])
+    expect(abilities(yomi.id)).toEqual(['trigger_reaction_ability'])
+    expect(abilities(sneaky.id)).toEqual(['trigger_reaction_ability'])
+    expect(abilities(kaezin.id)).toEqual([])
+    expect(abilities(toturi.id)).toEqual([])
+  })
+
+  it('plays a dynasty event from its province during the dynasty phase only', () => {
+    const dynastyEvents = {
+      loyalty: printed('loyalty', { type: 'event', side: 'dynasty', cost: 0, ability_timings: ['action'] }),
+    }
+    const loyalty = card('loyalty', { side: 'dynasty' })
+    const board = (place: string) =>
+      game(player('me', [stack('regular_province', [card('raid'), loyalty])]), player('opp'), {
+        place,
+        available_actions: [...EFFECTS, 'play_action_event', 'trigger_action_ability'],
+      })
+
+    const menu = cardMenu(board('play_cards_from_provinces'), { ...cards, ...dynastyEvents }, loyalty.id)!
+    expect(menu.plays).toEqual([{ type: 'play_action_event', kind: 'event', label: 'Play this event', cost: 0 }])
+    expect(menu.abilities).toEqual([])
+    expect(cardMenu(board('conflict_action_window'), { ...cards, ...dynastyEvents }, loyalty.id)!.plays).toEqual([])
+  })
+
   it('plays an event from hand with the message of its timing', () => {
     const banzai = card('banzai')
     const view = game(player('me', [stack('hand', [banzai])]), player('opp'), {

@@ -53,6 +53,6 @@ readonly class HonorBidService
             $lowest[0],
             fn (PlayerState $state): PlayerState => $state->incrementHonor($amount),
         );
-        $this->eventDispatcher->dispatch(new HonorTransferredEvent($highest[0]->getGame(), $highest[0], $lowest[0], $amount));
+        $this->eventDispatcher->dispatch(new HonorTransferredEvent($highest[0]->getGame(), $highest[0], $lowest[0], $amount, fromHonorBid: true));
     }
 }

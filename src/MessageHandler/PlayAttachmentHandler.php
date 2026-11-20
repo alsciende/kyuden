@@ -8,6 +8,8 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\CardEnteredPlayEvent;
+use App\Event\CardPlayedEvent;
 use App\Message\PlayAttachment;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -15,6 +17,7 @@ use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
 use App\Service\OpportunityService;
 use App\Service\PlayService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -34,6 +37,7 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
         private OpportunityService $opportunityService,
         private PlayService $playService,
         private ConflictService $conflictService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -56,10 +60,13 @@ final readonly class PlayAttachmentHandler implements PlayerActionHandlerInterfa
             $this->conflictService->assertCharacterInPlay($target);
         }
 
+        $from = $card->getStack()->getType();
         $this->playService->payCost($player, $message->getCardCost());
         $this->playService->enterPlay($card, $player, [
             'stack' => $target->getStack(),
         ]);
+        $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $player, true, $from));
+        $this->eventDispatcher->dispatch(new CardPlayedEvent($game, $card, $player, $from, $message->getCardCost()));
 
         $this->opportunityService->takeAction($player);
     }

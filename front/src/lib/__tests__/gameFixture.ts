@@ -62,6 +62,8 @@ export function player(id: string, stacks: StackView[] = [], changes: Partial<Pl
     given_actions: 0,
     resolving_interrupts_and_reactions: 0,
     resolutions: [],
+    reaction_windows: [],
+    forced_reactions: [],
     fate_collected: false,
     conflict_opportunities: 2,
     declared_conflict_types: [],

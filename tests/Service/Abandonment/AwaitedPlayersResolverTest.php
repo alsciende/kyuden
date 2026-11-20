@@ -8,6 +8,9 @@ use App\Enum\Orientation;
 use App\Entity\Player;
 use App\Enum\AbilityTiming;
 use App\Service\Abandonment\AwaitedPlayersResolver;
+use App\State\Manager\PlayerStateManager;
+use App\State\Model\PlayerState;
+use App\State\Model\ReactionWindow;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
@@ -47,6 +50,25 @@ class AwaitedPlayersResolverTest extends AbstractKernelTestCase
             ->build();
 
         self::assertSame(['john', 'jane'], $this->awaited($scenario));
+    }
+
+    public function testTheGameWaitsForThePlayerWhoHasAForcedReactionToTrigger(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', dynasty: '13-kuni-laboratory', dynastyAs: 'laboratory', dynastyFaceup: true))
+            ->activePlayer('john')
+            ->build();
+        $laboratory = $scenario->card('laboratory')->getId();
+        self::service(PlayerStateManager::class)->withState(
+            $scenario->player('jane'),
+            fn (PlayerState $state): PlayerState => $state->openReactionWindow(new ReactionWindow('1', 'phase_began', ['phase' => 'conflict'], [$laboratory], [$laboratory])),
+        );
+
+        // not john, who would pass: nobody moves the game on meanwhile
+        self::assertSame(['jane'], $this->awaited($scenario));
     }
 
     public function testTheGameWaitsForThePlayersWhoHaveNotBid(): void

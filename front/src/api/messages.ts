@@ -700,7 +700,7 @@ export interface PlaceStatusToken {
 }
 
 /**
- * The active player plays an action event during an action window and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it (Kyuden Isawa, Kunshu, Artisan Academy…): an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends their action (`end_resolution`), which ends their opportunity to act. Interrupt and reaction events are played with `play_interrupt_event` and `play_reaction_event`.
+ * The active player plays an action event during an action window and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it (Kyuden Isawa, Kunshu, Artisan Academy…): an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. A dynasty event is played from its province, face up, during the dynasty phase only. The player resolves its effects with other actions, then ends their action (`end_resolution`), which ends their opportunity to act. Interrupt and reaction events are played with `play_interrupt_event` and `play_reaction_event`.
  */
 export interface PlayActionEvent {
   /**
@@ -802,7 +802,7 @@ export interface PlayCharacterFromProvince {
 }
 
 /**
- * A player plays an interrupt event before its triggering condition resolves, whether or not they have the opportunity to act (e.g. Stay Your Hand during a duel initiated by an opponent), and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and reaction events are played with `play_action_event` and `play_reaction_event`.
+ * A player plays an interrupt event before its triggering condition resolves, whether or not they have the opportunity to act (e.g. Stay Your Hand during a duel initiated by an opponent), and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. A dynasty event is played from its province, face up, during the dynasty phase only. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and reaction events are played with `play_action_event` and `play_reaction_event`.
  */
 export interface PlayInterruptEvent {
   /**
@@ -816,7 +816,7 @@ export interface PlayInterruptEvent {
 }
 
 /**
- * A player plays a reaction event after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.
+ * A player plays a reaction event after its triggering condition has resolved, whether or not they have the opportunity to act, and pays its cost (`card_cost`); the event goes to the discard pile of its owner. From their hand, or from elsewhere when a card allows it: an event of a hand, a conflict deck (a card looked at) or a conflict discard pile, of any player. A dynasty event is played from its province, face up, during the dynasty phase only (Ride at Dawn, Lost Papers). The player resolves its effects with other actions, then ends it (`end_resolution`): the opportunities to act do not change. Action and interrupt events are played with `play_action_event` and `play_interrupt_event`.
  */
 export interface PlayReactionEvent {
   /**

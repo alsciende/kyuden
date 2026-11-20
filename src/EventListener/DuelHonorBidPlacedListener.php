@@ -7,6 +7,7 @@ namespace App\EventListener;
 use App\Entity\Player;
 use App\Event\HonorBidPlacedEvent;
 use App\Event\HonorBidRevealedEvent;
+use App\Event\HonorDialsRevealedEvent;
 use App\Exception\Rules\NoHonorBidException;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
@@ -56,5 +57,6 @@ readonly class DuelHonorBidPlacedListener
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new HonorDialsRevealedEvent($game, $duelists, duel: true));
     }
 }

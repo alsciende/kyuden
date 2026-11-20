@@ -7,9 +7,11 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Event\CardEnteredPlayEvent;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\SearchDynastyDeck;
 use App\Message\ShuffleDynastyDeck;
+use App\Model\ReactionOffer;
 
 /**
  * Favorable Dealbroker.
@@ -32,5 +34,23 @@ final readonly class FavorableDealbroker26 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [PutCharacterIntoPlay::class, SearchDynastyDeck::class, ShuffleDynastyDeck::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardEnteredPlayEvent::class => 'onCardEnteredPlay'];
+    }
+
+    /**
+     * After this character enters play.
+     *
+     * @return list<ReactionOffer>
+     */
+    public function onCardEnteredPlay(CardEnteredPlayEvent $event, PhysicalCard $card, Game $game): array
+    {
+        return $event->card === $card
+            ? [new ReactionOffer($card)]
+            : [];
     }
 }

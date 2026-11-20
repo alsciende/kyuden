@@ -12,6 +12,7 @@ use App\Enum\StackType;
 use App\Exception\Rules\CannotPlayFromHandException;
 use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
+use App\Exception\Rules\NotInDynastyPhaseException;
 use App\Exception\Rules\NotPlayableException;
 use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
@@ -44,8 +45,9 @@ class PlayHandlersTest extends AbstractKernelTestCase
                 ->conflictDiscardPile(['discarded-ambusher' => '01-hiruma-ambusher'])
                 ->conflictDeck(['deck-banzai' => '01-banzai', 'top-katana' => '01-fine-katana'])
                 ->dynastyDeck(['deck-gunso' => '01-akodo-gunso'])
-                ->dynastyDiscardPile(['discarded-whisperer' => '01-doji-whisperer'])
+                ->dynastyDiscardPile(['discarded-whisperer' => '01-doji-whisperer', 'discarded-loyalty' => '40-display-of-loyalty'])
                 ->province('01-the-art-of-peace', as: 'own-province', dynasty: '01-matsu-berserker', dynastyAs: 'berserker', dynastyFaceup: true)
+                ->province('01-the-art-of-peace', as: 'loyalty-province', dynasty: '40-display-of-loyalty', dynastyAs: 'loyalty', dynastyFaceup: true)
                 ->inPlay(['toturi' => '01-akodo-toturi']))
             ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->conflictDiscardPile(['jane-katana' => '01-fine-katana', 'jane-banzai' => '01-banzai'])
@@ -307,5 +309,37 @@ class PlayHandlersTest extends AbstractKernelTestCase
         $this->expectException(WrongAbilityTimingException::class);
 
         $this->playEvent($scenario, card: 'stay-your-hand');
+    }
+
+    public function testADynastyEventIsPlayedFromItsProvinceDuringTheDynastyPhase(): void
+    {
+        $scenario = $this->scenarioAt('play_cards_from_provinces');
+        $province = $scenario->card('loyalty-province')->getStack();
+
+        $this->playEvent($scenario, card: 'loyalty');
+
+        self::assertSame(DynastyCard::STATE_DISCARD_PILE, $scenario->card('loyalty')->getCurrentPlace());
+        self::assertSame($scenario->player('john')->getUniqueStack(StackType::DynastyDiscardPile), $scenario->card('loyalty')->getStack());
+        self::assertSame(4, $this->playerStateManager->getState($scenario->player('john'))->getFate());
+        // refilled once the action is ended
+        self::assertSame([$province->getId()], self::service(GameStateManager::class)->getState($scenario->game())->provincesToRefill);
+    }
+
+    public function testADynastyEventIsPlayedDuringTheDynastyPhaseOnly(): void
+    {
+        $scenario = $this->scenarioAt('conflict_action_window', conflict: true);
+
+        $this->expectException(NotInDynastyPhaseException::class);
+
+        $this->playEvent($scenario, card: 'loyalty');
+    }
+
+    public function testADynastyEventIsPlayedFromAProvinceOnly(): void
+    {
+        $scenario = $this->scenarioAt('play_cards_from_provinces');
+
+        $this->expectException(NotPlayableException::class);
+
+        $this->playEvent($scenario, card: 'discarded-loyalty');
     }
 }
