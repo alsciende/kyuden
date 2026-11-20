@@ -10,10 +10,11 @@ use App\Entity\Player;
 use App\GameLog\GameLog;
 
 /**
- * The defending player has declared their defenders (DeclareDefenders).
+ * The defending player has declared their defenders (DeclareDefenders), once they are in the state: the triggering
+ * condition of the cards reacting to a character declared as a defender.
  */
 #[GameLog('{player} declares {defenders} as defenders')]
-final readonly class DefendersDeclaredEvent implements GameEventInterface
+final readonly class DefendersDeclaredEvent implements TriggeringEventInterface
 {
     /**
      * @param list<PhysicalCard> $defenders
@@ -29,5 +30,17 @@ final readonly class DefendersDeclaredEvent implements GameEventInterface
     public function getGame(): Game
     {
         return $this->game;
+    }
+
+    #[\Override]
+    public static function getTriggerName(): string
+    {
+        return 'defenders_declared';
+    }
+
+    #[\Override]
+    public function getTriggerParams(): array
+    {
+        return ['player' => $this->player->getId()];
     }
 }

@@ -19,3 +19,4 @@ To add the script of a card:
 - a pass on declaring a conflict (`ConflictPassedEvent`): 9 cards.
 - a province broken (`ProvinceBrokenEvent`: by the attacking player at the resolution of a conflict, before `react_to_broken_province`, or by the sender of `BreakProvince`): 9 cards.
 - the honor dials revealed (`HonorDialsRevealedEvent`, once every dial of the bid is revealed: the draw phase, or a duel, its players only): 9 cards, those of a duel included.
+- a character declared as an attacker (the declaration complete, above) or as a defender (`DefendersDeclaredEvent`): 2 cards.

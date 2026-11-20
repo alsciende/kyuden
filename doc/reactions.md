@@ -19,7 +19,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 4 | A pass on declaring a conflict | 10 | done (9) | – |
 | 5 | A province broken | 9 | done (9) | – |
 | 6 | The honor dials of a bid revealed | 7 | done (9: the 2 of a duel of 12 too) | – |
-| 7 | Defenders declared, a character declared as attacker or defender | 4 | `DefendersDeclaredEvent`, `ConflictDeclaredEvent` | the events triggering |
+| 7 | Defenders declared, a character declared as attacker or defender | 4 | done (2) | – |
 | 8 | A phase begins | 24 | places `*_phase_begins` | an event when the phase begins |
 | 9 | A character or an attachment enters play | 22 | transitions into `in_play` and `attached` | an event after the transition, telling how (played, put into play), from where, into the conflict |
 | 10 | A player plays this card, or a character | 14 | the play transitions | the same event as 9 |

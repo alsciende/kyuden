@@ -73,6 +73,8 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
 
       return `After ${subject(game, window.params.player, 'claim', 'claims')} the ${ring} ring`
     }
+    case 'defenders_declared':
+      return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'conflict_won':
       return `After ${subject(game, window.params.winner, 'win', 'wins')} the conflict`
     default:
