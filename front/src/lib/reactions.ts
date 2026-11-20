@@ -75,6 +75,10 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
     }
     case 'defenders_declared':
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
+    case 'duel_won':
+      return `After ${subject(game, window.params.player, 'win', 'wins')} the duel`
+    case 'duel_ended':
+      return 'After the duel resolves'
     case 'card_played':
       return `After ${subject(game, window.params.player, 'play', 'plays')} ${cardName(game, cards, window.params.card) ?? 'a card'}`
     case 'card_entered_play':

@@ -132,6 +132,17 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The characters the player controls involved in the duel being resolved ("a character you control wins a duel":
+     * those of the winner).
+     *
+     * @return list<PhysicalCard>
+     */
+    public function getDuelCharacters(Player $player): array
+    {
+        return array_values(array_filter($player->getCharactersInPlay(), $this->isInvolvedInDuel(...)));
+    }
+
+    /**
      * The number of cards in the hand of the player.
      */
     public function countCardsInHand(Player $player): int

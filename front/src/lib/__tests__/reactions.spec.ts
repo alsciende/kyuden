@@ -61,6 +61,11 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the winner of a duel', () => {
+    expect(triggerText(other('duel_won', { player: 'me' }), view([]), cards)).toBe('After you win the duel')
+    expect(triggerText(other('duel_ended', {}), view([]), cards)).toBe('After the duel resolves')
+  })
+
   it('names the card played and its player', () => {
     expect(triggerText(other('card_played', { card: 'outflank', player: 'opp' }), view([]), cards)).toBe(
       'After your opponent plays Outflank',

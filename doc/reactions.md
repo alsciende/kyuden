@@ -24,7 +24,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 9 | A character or an attachment enters play | 22 | done (22) | – |
 | 10 | A player plays this card, or a character | 14 | done (14) | – |
 | 11 | A card played (an event, a trait, during a conflict) | 21 | done (21) | – |
-| 12 | Duels | 7 | `DuelWonEvent`, `DuelEndedEvent`; the dials of a duel done with 6 (Iaijutsu Master, Niten Pupil) | the events triggering |
+| 12 | Duels | 7 | done (5, and 2 with 6: Iaijutsu Master, Niten Pupil) | – |
 | 13 | A character moves to the conflict | 7 | `CharacterMovedToConflictEvent`, `CharacterPlayedIntoConflictEvent`, `CharacterPutIntoConflictEvent` | the events triggering ("commits": 2 and 7) |
 | 14 | Fate placed on or removed from a character | 6 | `FatePlacedOnCardEvent`, `FateRemovedFromCardEvent` | the events triggering; the total removed in the fate phase |
 | 15 | The honor of a player | 5 | `HonorGainedEvent`, `HonorLostEvent`, `HonorTransferredEvent` | the events triggering; the cause (see below) |
