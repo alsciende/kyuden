@@ -6,6 +6,7 @@ namespace App\Service\CardScript;
 
 use App\CardScript\AbstractCardScript;
 use App\Enum\AbilityTiming;
+use App\Enum\StackType;
 use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 
@@ -52,6 +53,16 @@ final readonly class CardScriptRegistry
     public function isAbilityGrantedToAttached(string $code): bool
     {
         return $this->find($code)?->isAbilityGrantedToAttached() ?? false;
+    }
+
+    /**
+     * The stacks out of play where the triggered abilities of a card are used, by its code (none without a script).
+     *
+     * @return list<StackType>
+     */
+    public function getAbilityStacksOutOfPlay(string $code): array
+    {
+        return $this->find($code)?->getAbilityStacksOutOfPlay() ?? [];
     }
 
     /**

@@ -142,6 +142,26 @@ class ConflictWonReactionsTest extends AbstractKernelTestCase
         self::assertSame(['tomonatsu'], $this->offered($scenario, 'jane', $aliases));
     }
 
+    public function testTheCardsReactingFromOutOfPlay(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('react_to_conflict_result')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['attacker' => '01-togashi-yokuni'])
+                ->hand(['oathkeeper' => '01-vengeful-oathkeeper'])
+                ->dynastyDiscardPile(['yomi' => '27-champions-of-yomi']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['defender' => '01-hida-tomonatsu'])
+                ->province('01-entrenched-position', as: 'province'))
+            ->conflict('john', 'province', attackers: ['attacker'], defenders: ['defender'])
+            ->persist();
+
+        $this->determineResult($scenario, 1, 3);
+
+        // Vengeful Oathkeeper from the hand, Champions of Yomi from the dynasty discard pile
+        self::assertSame(['oathkeeper', 'yomi'], $this->offered($scenario, 'john', ['oathkeeper', 'yomi']));
+    }
+
     public function testTheConditionsOnTheResult(): void
     {
         $scenario = $this->scenario()

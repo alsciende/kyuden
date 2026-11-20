@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\StackType;
 use App\Event\RingClaimedEvent;
 use App\Message\PutCharacterIntoPlay;
 use App\Model\ReactionOffer;
@@ -38,6 +39,12 @@ final readonly class KeeperInitiate01 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [PutCharacterIntoPlay::class];
+    }
+
+    #[\Override]
+    public function getAbilityStacksOutOfPlay(): array
+    {
+        return [StackType::DynastyDiscardPile, StackType::RegularProvince, StackType::StrongholdProvince];
     }
 
     #[\Override]

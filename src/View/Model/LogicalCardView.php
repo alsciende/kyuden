@@ -23,6 +23,7 @@ final readonly class LogicalCardView
      * @param list<Element>|null   $elements
      * @param list<AbilityTiming>  $abilityTimings  timings of its triggered abilities, including those it grants
      * @param bool                 $abilityGrantedToAttached its abilities belong to the card it is attached to
+     * @param list<string>         $abilityStacksOutOfPlay   the stacks out of play where its abilities are used (snake case names of the StackType: `hand`, `dynasty_discard_pile`, `regular_province`…), none for most cards
      * @param string               $imageUrl        its image on the CDN of the cards, for the clients
      * @param string|null          $pack            the name of the first pack it was printed in (the earliest released), null without a printing
      */
@@ -53,6 +54,7 @@ final readonly class LogicalCardView
         public ?string $strengthBonus,
         public array $abilityTimings,
         public bool $abilityGrantedToAttached,
+        public array $abilityStacksOutOfPlay,
         public string $imageUrl,
         public ?string $pack,
     ) {

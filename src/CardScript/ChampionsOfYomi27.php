@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\StackType;
 use App\Event\ConflictWonEvent;
 use App\Message\PutCharacterIntoPlay;
 use App\Message\RemoveFromGame;
@@ -39,6 +40,12 @@ final readonly class ChampionsOfYomi27 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [PutCharacterIntoPlay::class, RemoveFromGame::class];
+    }
+
+    #[\Override]
+    public function getAbilityStacksOutOfPlay(): array
+    {
+        return [StackType::DynastyDiscardPile];
     }
 
     #[\Override]

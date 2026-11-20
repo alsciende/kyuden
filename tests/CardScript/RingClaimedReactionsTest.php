@@ -108,4 +108,23 @@ class RingClaimedReactionsTest extends AbstractKernelTestCase
         // both initiates match the element of the role (their role restriction is the deck's business)
         self::assertSame(['initiate', 'keeper_initiate', 'haunt'], $this->offered($scenario, 'jane', $aliases));
     }
+
+    public function testKeeperInitiateReactsFromItsDiscardPileAndItsProvinces(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('react_to_ring_claim')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->inPlay(['attacker' => '01-togashi-yokuni'])
+                ->role('01-keeper-of-fire')
+                ->dynastyDiscardPile(['discarded' => '01-keeper-initiate'])
+                ->province('01-entrenched-position', dynasty: '01-keeper-initiate', dynastyAs: 'in_province', dynastyFaceup: true))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', as: 'province'))
+            ->conflict('john', 'province', attackers: ['attacker'], ring: Element::Fire)
+            ->persist();
+
+        $this->claim($scenario, 'john', Element::Fire);
+
+        self::assertSame(['discarded', 'in_province'], $this->offered($scenario, 'john', ['discarded', 'in_province']));
+    }
 }

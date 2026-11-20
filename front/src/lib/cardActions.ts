@@ -527,9 +527,17 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
     const timings = abilityTimings(located, cards)
     timings.forEach((timing) => add(menu.abilities, ABILITY_TYPES[timing], abilityLabel(timing, timings.length)))
   }
+  // out of play, where its text says (Vengeful Oathkeeper in the hand, Champions of Yomi in the discard pile, Sneaky
+  // Shinjo in its province)
+  const abilitiesOutOfPlay = () => {
+    if (card?.ability_stacks_out_of_play?.includes(stack.type)) {
+      abilities()
+    }
+  }
 
   switch (stack.type) {
     case 'hand':
+      abilitiesOutOfPlay()
       menu.plays = playActions(card, available)
       playAsAttachment()
       if (menu.mine) {
@@ -573,8 +581,10 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           menu.plays = playActions(card, available, true)
           playAsAttachment()
         }
-        // a character has abilities once in play; a holding has them in its province
-        if (card?.type !== 'character') {
+        // a character has abilities once in play, unless its text says otherwise; a holding has them in its province
+        if (card?.type === 'character') {
+          abilitiesOutOfPlay()
+        } else {
           abilities()
         }
         putIntoPlay()
@@ -681,6 +691,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
 
     case 'conflict_discard_pile':
       // Kunshu, Guidance of the Ancestors, Exposed Courtyard
+      abilitiesOutOfPlay()
       menu.plays = playActions(card, available)
       playAsAttachment()
       putIntoPlay()
@@ -692,6 +703,7 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
 
     case 'dynasty_discard_pile':
       // Gateway to Meido
+      abilitiesOutOfPlay()
       if (card?.type === 'character') {
         menu.plays = playActions(card, available)
         playAsAttachment()

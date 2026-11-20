@@ -286,7 +286,9 @@ return App::config([
                     ),
                     ...WorkflowConfig::bowAndReady(ConflictCard::STATE_IN_PLAY),
                     ...WorkflowConfig::bowAndReady(ConflictCard::STATE_ATTACHED),
-                    ...WorkflowConfig::triggerAbility(ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_ATTACHED),
+                    // out of play, only where the script of the card says (App\Workflow\TriggerAbilityGuardListener:
+                    // Vengeful Oathkeeper, from the hand)
+                    ...WorkflowConfig::triggerAbility(ConflictCard::STATE_IN_PLAY, ConflictCard::STATE_ATTACHED, ConflictCard::STATE_HAND, ConflictCard::STATE_DISCARD_PILE),
                 ],
             ),
             'dynasty_card' => WorkflowConfig::cardWorkflow(
@@ -419,8 +421,10 @@ return App::config([
                     ),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_IN_PLAY),
                     ...WorkflowConfig::bowAndReady(DynastyCard::STATE_ATTACHED),
-                    // a faceup holding in a province is in play (App\Workflow\DynastyCard\TriggerAbilityGuardListener)
-                    ...WorkflowConfig::triggerAbility(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_ATTACHED, DynastyCard::STATE_PROVINCE_FACEUP),
+                    // a faceup holding in a province is in play; another card out of play, only where its script says
+                    // (App\Workflow\TriggerAbilityGuardListener: Sneaky Shinjo in a province, Champions of Yomi from the
+                    // discard pile)
+                    ...WorkflowConfig::triggerAbility(DynastyCard::STATE_IN_PLAY, DynastyCard::STATE_ATTACHED, DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DISCARD_PILE),
                 ],
             ),
             'province_card' => WorkflowConfig::cardWorkflow(

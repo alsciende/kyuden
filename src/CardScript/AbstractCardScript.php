@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\StackType;
 use App\Event\TriggeringEventInterface;
 use App\Message\ActionInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
@@ -46,6 +47,18 @@ abstract readonly class AbstractCardScript
     public function isAbilityGrantedToAttached(): bool
     {
         return false;
+    }
+
+    /**
+     * The stacks out of play where the triggered abilities of the card are used, as its text says (Vengeful Oathkeeper:
+     * "put this character into play from your hand"; a character face up in a province: Sneaky Shinjo). Elsewhere out
+     * of play, its abilities cannot be triggered (App\Workflow\TriggerAbilityGuardListener); in play, they always can.
+     *
+     * @return list<StackType>
+     */
+    public function getAbilityStacksOutOfPlay(): array
+    {
+        return [];
     }
 
     /**

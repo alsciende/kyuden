@@ -50,6 +50,8 @@ export interface Card {
   text?: string | null
   ability_timings?: AbilityTiming[]
   ability_granted_to_attached?: boolean
+  /** the stacks out of play where its abilities are used (Vengeful Oathkeeper: `hand`), none for most cards */
+  ability_stacks_out_of_play?: string[]
   image_url: string | null
   /** the name of the first pack it was printed in */
   pack?: string | null

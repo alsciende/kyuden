@@ -30,7 +30,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 15 | The honor of a player | 5 | done (5) | – |
 | 16 | A status token, honored, dishonored | 4 | done (4) | – |
 | 17 | The hand: discarded from it, looked at | 4 | done (4) | – |
-| 18 | The dynasty phase: passing, collecting fate | 4 | done (2: Sneaky Shinjo and Ride at Dawn left out, see "Not offered") | – |
+| 18 | The dynasty phase: passing, collecting fate | 4 | done (3: Ride at Dawn left out, see "Not offered") | – |
 | 19 | Ring effects, fate taken from a ring | 5 | done (4: Medium of the Living Soul left out, see "Not offered") | – |
 | 20 | A character bowed or readied | 3 | done (3) | – |
 | 21 | A card turned face up in a province | 2 | done (1: Lost Papers left out, see "Not offered") | – |
@@ -39,7 +39,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 24 | The end of the resolution of a conflict | 2 | done (2) | – |
 | – | Out of scope | 2 | – | Mindful Warrior and Shadowed Alleyway too, listed under 1 and 2 |
 
-Every step is done: the cards not offered are listed in "Not offered" (the engine does not accept their reaction where they are), the forced reactions, offered marked forced, in "Forced reactions". Entering play (9) and playing a card (10, 11) are two events (`CardEnteredPlayEvent`, `CardPlayedEvent`), since "play" is not "put into play". Where a card names a cause the engine does not know, the events tell what it knows (by a card effect or by the rules, by an honor bid, leaving play, the fire ring being resolved) and the card is offered on every change of that kind: the player judges whose effect it was.
+Every step is done. The cards reacting from out of play (Vengeful Oathkeeper from the hand, Champions of Yomi and Keeper Initiate from the dynasty discard pile, Keeper Initiate and Sneaky Shinjo from a province) name where in their script (`getAbilityStacksOutOfPlay()`), the engine accepting their abilities there only. The cards not offered are listed in "Not offered" (the engine does not accept their reaction where they are), the forced reactions, offered marked forced, in "Forced reactions". Entering play (9) and playing a card (10, 11) are two events (`CardEnteredPlayEvent`, `CardPlayedEvent`), since "play" is not "put into play". Where a card names a cause the engine does not know, the events tell what it knows (by a card effect or by the rules, by an honor bid, leaving play, the fire ring being resolved) and the card is offered on every change of that kind: the player judges whose effect it was.
 
 ## Questions to decide
 
@@ -417,7 +417,7 @@ A discard from a hand (the transitions of `DiscardCard`, `DiscardRandomCardFromH
 `OpportunityPassedEvent` in the dynasty phase (`firstToPass`, with the fate gained: `FateGainedEvent`), `FateCollectedEvent` (Shiro Shinjo).
 
 - Shinjo Scout (`07-shinjo-scout`, character): After you gain fate for passing in the dynasty phase
-- Sneaky Shinjo (`10-sneaky-shinjo`, character): After you pass in the dynasty phase
+- Sneaky Shinjo (`10-sneaky-shinjo`, character): After you pass in the dynasty phase (from its province; "play this character" is put into play, `PutCharacterIntoPlay`, its player having passed)
 - Shiro Shinjo (`17-shiro-shinjo`, stronghold): After you collect fate during the dynasty phase
 - Lost Papers (`31-lost-papers`, event): a dynasty event, as Ride at Dawn below.
 - Medium of the Living Soul (`28-medium-of-the-living-soul`, character): its action grants the reaction to a participating character until the end of the conflict, a lasting effect the engine does not keep (and it has no script yet).
@@ -481,11 +481,10 @@ Their effect is not the choice of their player ("Forced Reaction:"): they are of
 - A pass on declaring a conflict: Hida Amoro (`08-hida-amoro`).
 - Declared as attacker or defender, defenders declared: Marauding Oni (`10-marauding-oni`), Arrogant Kakita (`39-arrogant-kakita`).
 
-## Not offered (4)
+## Not offered (3)
 
 Cards whose reaction the engine does not accept where the card is, left out until it does:
 
-- Sneaky Shinjo (`10-sneaky-shinjo`, character): it reacts from a province, where only a holding triggers its abilities (`Workflow/DynastyCard/TriggerAbilityGuardListener`).
 - Lost Papers (`31-lost-papers`, event): a dynasty event, as Ride at Dawn below.
 - Medium of the Living Soul (`28-medium-of-the-living-soul`, character): its action grants the reaction to a participating character until the end of the conflict, a lasting effect the engine does not keep (and it has no script yet).
 - Ride at Dawn (`32-ride-at-dawn`, event): a dynasty event, face up in a province; the engine plays the events of the conflict deck only (`play_event` of `conflict_card`), the 13 dynasty events of the fixtures included.

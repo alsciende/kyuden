@@ -64,9 +64,17 @@ class ApiCardsControllerTest extends AbstractKernelTestCase
             'strength_bonus' => null,
             'ability_timings' => ['action'],
             'ability_granted_to_attached' => false,
+            'ability_stacks_out_of_play' => [],
             'image_url' => 'https://images.kyuden.app/v1/cards/01-adept-of-the-waves.webp',
             'pack' => 'Core Set',
         ], $this->decode($response));
+    }
+
+    public function testTheStacksOutOfPlayWhereTheAbilitiesOfACardAreUsed(): void
+    {
+        $response = $this->get('/api/cards/01-keeper-initiate');
+
+        self::assertSame(['dynasty_discard_pile', 'regular_province', 'stronghold_province'], $this->decode($response)['ability_stacks_out_of_play'] ?? null);
     }
 
     public function testACardPrintedWithEveryElementHasTheFiveElements(): void
