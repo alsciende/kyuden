@@ -29,7 +29,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 14 | Fate placed on or removed from a character | 6 | done (6) | – |
 | 15 | The honor of a player | 5 | done (5) | – |
 | 16 | A status token, honored, dishonored | 4 | done (4) | – |
-| 17 | The hand: discarded from it, looked at | 4 | the discard transitions, `CardsLookedAtEvent`, `CardsRevealedEvent` | an event after a discard from a hand; the cause |
+| 17 | The hand: discarded from it, looked at | 4 | done (4) | – |
 | 18 | The dynasty phase: passing, collecting fate | 4 | `OpportunityPassedEvent`, `FateGainedEvent`, `FateCollectedEvent` | the events triggering |
 | 19 | Ring effects, fate taken from a ring | 5 | `RingFateTakenEvent`, place `resolve_ring_effects` | a ring effect resolved is not known to the engine |
 | 20 | A character bowed or readied | 3 | transitions `bow`, `ready` | an event after the transition; the cause |

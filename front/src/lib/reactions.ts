@@ -77,6 +77,12 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'cards_discarded_from_hand':
+      return `After ${window.params.player === game.viewer_id ? 'you discard' : 'your opponent discards'} from hand`
+    case 'cards_looked_at':
+      return `After ${subject(game, window.params.player, 'look', 'looks')} at a hand`
+    case 'cards_revealed':
+      return `After ${subject(game, window.params.player, 'reveal', 'reveals')} cards`
     case 'personal_honor_changed': {
       const name = cardName(game, cards, window.params.card) ?? 'a character'
       const action = window.params.action

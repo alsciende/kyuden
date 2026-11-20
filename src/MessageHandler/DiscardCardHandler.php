@@ -7,11 +7,14 @@ namespace App\MessageHandler;
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\StackType;
+use App\Event\CardsDiscardedFromHandEvent;
 use App\Message\DiscardCard;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\ProvinceRefiller;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\Registry;
 
@@ -30,6 +33,7 @@ final readonly class DiscardCardHandler implements PlayerActionHandlerInterface
         private CardRepository $cardRepository,
         private Registry $workflowRegistry,
         private ProvinceRefiller $provinceRefiller,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -50,6 +54,10 @@ final readonly class DiscardCardHandler implements PlayerActionHandlerInterface
         $this->workflowRegistry->get($card)->apply($card, 'discard_card');
         if ($card instanceof DynastyCard) {
             $this->provinceRefiller->schedule($stack);
+        }
+
+        if ($stack->getType() === StackType::Hand) {
+            $this->eventDispatcher->dispatch(new CardsDiscardedFromHandEvent($game, $stack->getPlayer(), [$card]));
         }
     }
 }

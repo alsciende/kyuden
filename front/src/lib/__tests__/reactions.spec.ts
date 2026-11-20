@@ -67,6 +67,15 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the hand discarded from or looked at', () => {
+    expect(triggerText(other('cards_discarded_from_hand', { player: 'opp' }), view([]), cards)).toBe(
+      'After your opponent discards from hand',
+    )
+    expect(triggerText(other('cards_looked_at', { player: 'me', owner: 'opp' }), view([]), cards)).toBe(
+      'After you look at a hand',
+    )
+  })
+
   it('names the character honored or dishonored', () => {
     expect(triggerText(other('personal_honor_changed', { card: 'raid', action: 'dishonored' }), view([]), cards)).toBe(
       'After Night Raid is dishonored',
