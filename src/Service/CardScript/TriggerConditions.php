@@ -130,6 +130,17 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The player controls a ready character ("if he or she controls 1 or more ready characters").
+     */
+    public function hasReadyCharacter(Player $player): bool
+    {
+        return array_any(
+            $player->getCharactersInPlay(),
+            fn (PhysicalCard $character): bool => $character->getOrientation() !== Orientation::Sideways,
+        );
+    }
+
+    /**
      * A conflict is being resolved, from its declaration until its participants return home.
      */
     public function isConflictInProgress(Game $game): bool

@@ -57,6 +57,8 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
     case 'conflict_declared':
     case 'conflict_declaration_completed':
       return `After ${subject(game, window.params.attacker, 'declare', 'declares')} a conflict`
+    case 'conflict_passed':
+      return `After ${subject(game, window.params.player, 'pass', 'passes')} on declaring a conflict`
     case 'ring_claimed': {
       const ring = ELEMENT_NAMES[window.params.ring as Element] ?? 'a'
 

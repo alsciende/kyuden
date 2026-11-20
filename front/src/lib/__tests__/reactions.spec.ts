@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the player passing on declaring a conflict', () => {
+    expect(triggerText(other('conflict_passed', { player: 'me' }), view([]), cards)).toBe(
+      'After you pass on declaring a conflict',
+    )
+  })
+
   it('names the ring claimed and its player', () => {
     expect(triggerText(other('ring_claimed', { player: 'opp', ring: 'water' }), view([]), cards)).toBe(
       'After your opponent claims the Water ring',
