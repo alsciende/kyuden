@@ -35,10 +35,12 @@ class ConflictDeclaredReactionsTest extends AbstractKernelTestCase
     private const array DECLARED_CODES = ['01-enlightened-warrior', '28-the-crashing-wave'];
 
     /**
-     * The other cards of the Stronghold format, but the forced reactions (the five temples of Clan War) and Shadowed
-     * Alleyway (the rings claimed on the provinces, of the Enlightenment format).
+     * The other cards of the Stronghold format, the forced reactions included (the five temples of Clan War, Marauding
+     * Oni), but Shadowed Alleyway (the rings claimed on the provinces, of the Enlightenment format).
      */
     private const array COMPLETED_CODES = [
+        // the forced reactions (ForcedReactionsTest)
+        '10-marauding-oni', '28-temple-of-daikoku', '28-temple-of-jikoju', '28-temple-of-osano-wo', '28-temple-of-shinsei-s-wisdom', '28-temple-of-the-thunders',
         '01-endless-plains', '01-mantra-of-fire', '09-ancient-master', '38-ki-alignment', '01-secret-cache', '04-mantra-of-water', '04-war-dog-master',
         '01-spyglass', '42-daikyu',
         '09-hiruma-outpost', '09-sacred-sanctuary', '14-mantra-of-earth', '14-tengu-sensei', '16-midnight-revels',

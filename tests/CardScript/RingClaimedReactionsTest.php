@@ -22,9 +22,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 class RingClaimedReactionsTest extends AbstractKernelTestCase
 {
     /**
-     * The cards of the Stronghold format, but Isawa Ujina (a forced reaction).
+     * The cards of the Stronghold format, Isawa Ujina (a forced reaction) included.
      */
     private const array CODES = [
+        // the forced reactions (ForcedReactionsTest)
+        '16-isawa-ujina',
         '01-akodo-toturi', '01-doji-hotaru', '01-keeper-initiate', '01-seeker-initiate', '07-asako-tsuki', '09-kudaka',
         '26-kansen-haunt',
     ];

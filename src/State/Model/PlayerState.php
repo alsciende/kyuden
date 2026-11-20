@@ -459,6 +459,7 @@ class PlayerState
         foreach ($this->reactionWindows as $reactionWindow) {
             if (in_array($cardId, $reactionWindow->cardIds, true)) {
                 $reactionWindow->cardIds = array_values(array_diff($reactionWindow->cardIds, [$cardId]));
+                $reactionWindow->forcedCardIds = array_values(array_diff($reactionWindow->forcedCardIds, [$cardId]));
                 break;
             }
         }

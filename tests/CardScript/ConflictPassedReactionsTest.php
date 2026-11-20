@@ -20,9 +20,11 @@ use App\Tests\Builder\Scenario;
 class ConflictPassedReactionsTest extends AbstractKernelTestCase
 {
     /**
-     * The cards of the Stronghold format, but Hida Amoro (a forced reaction).
+     * The cards of the Stronghold format, Hida Amoro (a forced reaction) included.
      */
     private const array CODES = [
+        // the forced reactions (ForcedReactionsTest)
+        '08-hida-amoro',
         '01-intimidating-hida', '08-pacifist-philosopher', '26-fruitful-respite', '28-mediator-of-hostilities',
         '28-one-of-the-forgotten', '29-our-foe-does-not-wait', '32-kuni-purifier', '33-asako-lawmaster',
         '33-endless-archives',

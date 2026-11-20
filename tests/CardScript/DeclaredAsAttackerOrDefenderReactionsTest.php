@@ -26,11 +26,11 @@ use Symfony\Component\Workflow\Marking;
 class DeclaredAsAttackerOrDefenderReactionsTest extends AbstractKernelTestCase
 {
     /**
-     * The cards of the Stronghold format reacting to the defenders declared, but the forced reactions (Marauding Oni,
-     * Arrogant Kakita); Spyglass and Daikyū react to a character committing to a conflict
+     * The cards of the Stronghold format reacting to the defenders declared, the forced reactions included (Marauding
+     * Oni, Arrogant Kakita); Spyglass and Daikyū react to a character committing to a conflict
      * (CharacterMovedToConflictReactionsTest).
      */
-    private const array CODES = ['09-ancient-master', '38-ki-alignment', '01-spyglass', '42-daikyu'];
+    private const array CODES = ['10-marauding-oni', '39-arrogant-kakita', '09-ancient-master', '38-ki-alignment', '01-spyglass', '42-daikyu'];
 
     private const array ALIASES = ['master', 'johns_alignment', 'janes_master', 'janes_alignment'];
 

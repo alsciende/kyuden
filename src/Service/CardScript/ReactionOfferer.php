@@ -25,8 +25,9 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  *
  * For each player, the cards asked are their active cards (ActiveCardsResolver: theirs, whose face they know) whose
  * script subscribes to the event, and that they can use where they are: an event in their hand, the abilities of a card
- * where the engine accepts that they trigger them (AbilityService). The script decides whether the card reacts. The
- * window offers, it blocks nothing: the reactions are accepted anywhere, the players do not have to answer.
+ * where the engine accepts that they trigger them (AbilityService). The script decides whether the card reacts, and
+ * whether its reaction is forced. The window offers, it blocks nothing: the reactions are accepted anywhere, the
+ * players do not have to answer.
  */
 final readonly class ReactionOfferer
 {
@@ -58,6 +59,7 @@ final readonly class ReactionOfferer
         foreach ($this->gameStateManager->getState($game)->playerIds as $playerId) {
             $player = $game->getPlayer($playerId);
             $cardIds = [];
+            $forcedCardIds = [];
             foreach ($this->activeCardsResolver->resolve($game, $player) as $activeCard) {
                 $method = $methods[$activeCard->card->getLogicalCard()->getId()] ?? null;
                 if ($method === null || ! $this->isUsable($activeCard->card, $player)) {
@@ -66,6 +68,9 @@ final readonly class ReactionOfferer
 
                 foreach ($this->call($activeCard->script, $method, $event, $activeCard->card) as $offer) {
                     $cardIds[] = $offer->card->getId();
+                    if ($offer->forced) {
+                        $forcedCardIds[] = $offer->card->getId();
+                    }
                 }
             }
 
@@ -73,7 +78,9 @@ final readonly class ReactionOfferer
                 // sorted, so that the state does not depend on the order in which the cards are loaded
                 $cardIds = array_values(array_unique($cardIds));
                 sort($cardIds);
-                $offers[$playerId] = $cardIds;
+                $forcedCardIds = array_values(array_unique($forcedCardIds));
+                sort($forcedCardIds);
+                $offers[$playerId] = [$cardIds, $forcedCardIds];
             }
         }
 
@@ -87,8 +94,8 @@ final readonly class ReactionOfferer
 
             return $state;
         });
-        foreach ($offers as $playerId => $cardIds) {
-            $window = new ReactionWindow($id, $event::getTriggerName(), $event->getTriggerParams(), $cardIds);
+        foreach ($offers as $playerId => [$cardIds, $forcedCardIds]) {
+            $window = new ReactionWindow($id, $event::getTriggerName(), $event->getTriggerParams(), $cardIds, $forcedCardIds);
             $this->playerStateManager->withState(
                 $game->getPlayer($playerId),
                 fn (PlayerState $state): PlayerState => $state->openReactionWindow($window),

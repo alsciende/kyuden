@@ -23,10 +23,12 @@ use Symfony\Component\Workflow\Transition;
 class PhaseBeganReactionsTest extends AbstractKernelTestCase
 {
     /**
-     * The cards of the Stronghold format reacting to a phase beginning, but the forced reactions (Steadfast Samurai,
-     * Kuni Laboratory, Bayushi Shoju).
+     * The cards of the Stronghold format reacting to a phase beginning, the forced reactions included (Steadfast
+     * Samurai, Kuni Laboratory, Bayushi Shoju).
      */
     private const array CODES = [
+        // the forced reactions (ForcedReactionsTest)
+        '01-steadfast-samurai', '13-kuni-laboratory', '24-bayushi-shoju',
         '01-forgotten-library', '01-secluded-temple', '06-master-of-gisei-toshi', '06-waning-hostilities',
         '07-togashi-mendicant', '08-secluded-shrine', '11-hiruma-kogoe', '13-ethereal-dreamer', '17-kakita-ryoku',
         '25-mirumoto-masashige', '26-agasha-hiyori', '28-all-out-assault', '28-expert-interpreter',

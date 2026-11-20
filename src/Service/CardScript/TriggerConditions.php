@@ -106,6 +106,14 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The honor of the player.
+     */
+    public function getHonor(Player $player): int
+    {
+        return $this->playerStateManager->getState($player)->getHonor() ?? 0;
+    }
+
+    /**
      * The player has more honor than the other ("if you are more honorable than your opponent").
      */
     public function isMoreHonorable(Player $player, Player $than): bool

@@ -24,10 +24,12 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 class ConflictWonReactionsTest extends AbstractKernelTestCase
 {
     /**
-     * The cards of the Stronghold format, but the forced reactions (Unmatched Expertise, Hall of Victories, Total
-     * Warfare, Mercenary Company) and Mindful Warrior (the rings claimed on the provinces, of the Enlightenment format).
+     * The cards of the Stronghold format, the forced reactions included (Unmatched Expertise, Hall of Victories, Total
+     * Warfare, Mercenary Company), but Mindful Warrior (the rings claimed on the provinces, of the Enlightenment format).
      */
     private const array CODES = [
+        // the forced reactions (ForcedReactionsTest)
+        '16-unmatched-expertise', '27-hall-of-victories', '27-total-warfare', '32-mercenary-company',
         '01-asako-diplomat', '01-blackmail-artist', '01-deathseeker', '01-defend-the-wall', '01-display-of-power',
         '01-fallen-in-battle', '01-hida-tomonatsu', '01-honored-blade', '01-ikoma-eiji', '01-indomitable-will',
         '01-keeper-of-air', '01-keeper-of-earth', '01-keeper-of-fire', '01-keeper-of-void', '01-keeper-of-water',

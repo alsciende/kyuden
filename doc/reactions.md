@@ -2,7 +2,7 @@
 
 The reactions of the cards of the fixtures, grouped by triggering condition, to decide in which order the engine offers them (`card-scripts.md`, "Reaction offers") and what each group needs. Only the triggering condition counts here: what the reaction does is applied by the players with the effect messages, as for every card.
 
-334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 16 are forced reactions, not offered (see "Forced reactions"), 4 are out of scope (see the end). The groups count every card; what is done says how many cards subscribe.
+334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 16 are forced reactions, offered marked forced (see "Forced reactions"), 4 are out of scope (see the end). The groups count every card; what is done says how many cards subscribe.
 
 Conventions of the lists: a card is listed under the event that triggers it, with its triggering condition as printed (the elements, types and clans in plain words), not its effect. The limits ("Max 1 per round") are not checked, as for the province revealed.
 
@@ -13,14 +13,14 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | # | Triggering condition | Cards | What exists in the engine | What is missing |
 | --- | --- | ---: | --- | --- |
 | – | A province revealed | 34 | done (34) | – |
-| 1 | A conflict won or lost | 93 | done (88) | – |
-| 2 | A conflict declared (attackers, covert) | 33 | done (27) | – |
-| 3 | A ring claimed | 8 | done (7) | – |
-| 4 | A pass on declaring a conflict | 10 | done (9) | – |
+| 1 | A conflict won or lost | 93 | done (92) | – |
+| 2 | A conflict declared (attackers, covert) | 33 | done (32) | – |
+| 3 | A ring claimed | 8 | done (8) | – |
+| 4 | A pass on declaring a conflict | 10 | done (10) | – |
 | 5 | A province broken | 9 | done (9) | – |
 | 6 | The honor dials of a bid revealed | 7 | done (9: the 2 of a duel of 12 too) | – |
-| 7 | Defenders declared, a character declared as attacker or defender | 4 | done (2) | – |
-| 8 | A phase begins | 24 | done (21) | – |
+| 7 | Defenders declared, a character declared as attacker or defender | 4 | done (4) | – |
+| 8 | A phase begins | 24 | done (24) | – |
 | 9 | A character or an attachment enters play | 22 | done (22) | – |
 | 10 | A player plays this card, or a character | 14 | done (14) | – |
 | 11 | A card played (an event, a trait, during a conflict) | 21 | done (21) | – |
@@ -39,7 +39,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 24 | The end of the resolution of a conflict | 2 | done (2) | – |
 | – | Out of scope | 2 | – | Mindful Warrior and Shadowed Alleyway too, listed under 1 and 2 |
 
-Every step is done: the cards not offered are listed in "Not offered" (the engine does not accept their reaction where they are), the forced reactions in "Forced reactions". Entering play (9) and playing a card (10, 11) are two events (`CardEnteredPlayEvent`, `CardPlayedEvent`), since "play" is not "put into play". Where a card names a cause the engine does not know, the events tell what it knows (by a card effect or by the rules, by an honor bid, leaving play, the fire ring being resolved) and the card is offered on every change of that kind: the player judges whose effect it was.
+Every step is done: the cards not offered are listed in "Not offered" (the engine does not accept their reaction where they are), the forced reactions, offered marked forced, in "Forced reactions". Entering play (9) and playing a card (10, 11) are two events (`CardEnteredPlayEvent`, `CardPlayedEvent`), since "play" is not "put into play". Where a card names a cause the engine does not know, the events tell what it knows (by a card effect or by the rules, by an honor bid, leaving play, the fire ring being resolved) and the card is offered on every change of that kind: the player judges whose effect it was.
 
 ## Questions to decide
 
@@ -472,7 +472,7 @@ The place `return_home`: the conflict must remember the provinces broken during 
 
 ## Forced reactions (16)
 
-Their effect is not the choice of their player ("Forced Reaction:"): the engine does not offer them. They stay in their groups above. A reminder to their player (a window without the choice to decline) is left for later.
+Their effect is not the choice of their player ("Forced Reaction:"): they are offered like the others, marked forced (`ReactionOffer::$forced`, `ReactionWindow::$forcedCardIds`), and their player cannot decline them. The engine enforces nothing: the web client moves the game on for neither player until they are triggered. They stay in their groups above; `tests/CardScript/ForcedReactionsTest.php` lists them. Every card with one is visible to both players (a character, an attachment, a holding or a province), so that the opponent may be told what they wait for.
 
 - A phase begins: Steadfast Samurai (`01-steadfast-samurai`), Kuni Laboratory (`13-kuni-laboratory`), Bayushi Shoju (`24-bayushi-shoju`).
 - A conflict won or lost: Unmatched Expertise (`16-unmatched-expertise`), Hall of Victories (`27-hall-of-victories`), Total Warfare (`27-total-warfare`), Mercenary Company (`32-mercenary-company`).
