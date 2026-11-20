@@ -45,6 +45,6 @@ final readonly class GainHonorHandler implements PlayerActionHandlerInterface
             $player,
             fn (PlayerState $state): PlayerState => $state->incrementHonor($message->getHonorGain()),
         );
-        $this->eventDispatcher->dispatch(new HonorGainedEvent($game, $player, $message->getHonorGain()));
+        $this->eventDispatcher->dispatch(new HonorGainedEvent($game, $player, $message->getHonorGain(), byCardEffect: true));
     }
 }

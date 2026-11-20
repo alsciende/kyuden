@@ -67,6 +67,16 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the player gaining, losing or giving honor', () => {
+    expect(triggerText(other('honor_gained', { player: 'opp' }), view([]), cards)).toBe(
+      'After your opponent gains honor',
+    )
+    expect(triggerText(other('honor_lost', { player: 'me' }), view([]), cards)).toBe('After you lose honor')
+    expect(triggerText(other('honor_transferred', { giver: 'opp', recipient: 'me' }), view([]), cards)).toBe(
+      'After your opponent gives honor',
+    )
+  })
+
   it('names the character fate is placed on or removed from', () => {
     expect(triggerText(other('fate_placed_on_card', { card: 'raid' }), view([]), cards)).toBe(
       'After fate is placed on Night Raid',

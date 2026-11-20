@@ -27,7 +27,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 12 | Duels | 7 | done (5, and 2 with 6: Iaijutsu Master, Niten Pupil) | – |
 | 13 | A character moves to the conflict | 7 | done (7) | – |
 | 14 | Fate placed on or removed from a character | 6 | done (6) | – |
-| 15 | The honor of a player | 5 | `HonorGainedEvent`, `HonorLostEvent`, `HonorTransferredEvent` | the events triggering; the cause (see below) |
+| 15 | The honor of a player | 5 | done (5) | – |
 | 16 | A status token, honored, dishonored | 4 | `PersonalHonorChangedEvent`, `StatusTokenPlacedEvent` | the events triggering; the cause |
 | 17 | The hand: discarded from it, looked at | 4 | the discard transitions, `CardsLookedAtEvent`, `CardsRevealedEvent` | an event after a discard from a hand; the cause |
 | 18 | The dynasty phase: passing, collecting fate | 4 | `OpportunityPassedEvent`, `FateGainedEvent`, `FateCollectedEvent` | the events triggering |

@@ -45,6 +45,6 @@ final readonly class LoseHonorHandler implements PlayerActionHandlerInterface
             $player,
             fn (PlayerState $state): PlayerState => $state->decrementHonor($message->getHonorLoss()),
         );
-        $this->eventDispatcher->dispatch(new HonorLostEvent($game, $player, $message->getHonorLoss()));
+        $this->eventDispatcher->dispatch(new HonorLostEvent($game, $player, $message->getHonorLoss(), byCardEffect: true));
     }
 }
