@@ -145,6 +145,23 @@ describe('cardMenu', () => {
     expect(abilities(toturi.id)).toEqual([])
   })
 
+  it('plays a dynasty event from its province during the dynasty phase only', () => {
+    const dynastyEvents = {
+      loyalty: printed('loyalty', { type: 'event', side: 'dynasty', cost: 0, ability_timings: ['action'] }),
+    }
+    const loyalty = card('loyalty', { side: 'dynasty' })
+    const board = (place: string) =>
+      game(player('me', [stack('regular_province', [card('raid'), loyalty])]), player('opp'), {
+        place,
+        available_actions: [...EFFECTS, 'play_action_event', 'trigger_action_ability'],
+      })
+
+    const menu = cardMenu(board('play_cards_from_provinces'), { ...cards, ...dynastyEvents }, loyalty.id)!
+    expect(menu.plays).toEqual([{ type: 'play_action_event', kind: 'event', label: 'Play this event', cost: 0 }])
+    expect(menu.abilities).toEqual([])
+    expect(cardMenu(board('conflict_action_window'), { ...cards, ...dynastyEvents }, loyalty.id)!.plays).toEqual([])
+  })
+
   it('plays an event from hand with the message of its timing', () => {
     const banzai = card('banzai')
     const view = game(player('me', [stack('hand', [banzai])]), player('opp'), {

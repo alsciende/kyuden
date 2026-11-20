@@ -18,12 +18,12 @@ use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
 
 /**
- * The cards reacting to the dynasty phase: a player passing (Sneaky Shinjo from its province), gaining fate for passing
- * first, collecting fate.
+ * The cards reacting to the dynasty phase: a player passing (Sneaky Shinjo and Ride at Dawn from their provinces),
+ * gaining fate for passing first, collecting fate.
  */
 class DynastyPhaseReactionsTest extends AbstractKernelTestCase
 {
-    private const array ALIASES = ['scout', 'shiro', 'sneaky'];
+    private const array ALIASES = ['scout', 'shiro', 'sneaky', 'ride'];
 
     /**
      * @return list<string> the cards offered to the player, by alias, among those of ALIASES
@@ -60,7 +60,8 @@ class DynastyPhaseReactionsTest extends AbstractKernelTestCase
             ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
                 ->stronghold('17-shiro-shinjo', as: 'shiro')
                 ->inPlay(['scout' => '07-shinjo-scout'])
-                ->province('01-entrenched-position', dynasty: '10-sneaky-shinjo', dynastyAs: 'sneaky', dynastyFaceup: true))
+                ->province('01-entrenched-position', dynasty: '10-sneaky-shinjo', dynastyAs: 'sneaky', dynastyFaceup: true)
+                ->province('01-entrenched-position', dynasty: '32-ride-at-dawn', dynastyAs: 'ride', dynastyFaceup: true))
             ->withPlayer('jane')
             ->activePlayer('john')
             ->persist();
@@ -68,7 +69,7 @@ class DynastyPhaseReactionsTest extends AbstractKernelTestCase
 
     public function testEveryCardReactingToTheDynastyPhaseSubscribesToIt(): void
     {
-        self::assertEqualsCanonicalizing(['07-shinjo-scout', '10-sneaky-shinjo'], $this->subscribers(DynastyPhasePassedEvent::class));
+        self::assertEqualsCanonicalizing(['07-shinjo-scout', '10-sneaky-shinjo', '32-ride-at-dawn'], $this->subscribers(DynastyPhasePassedEvent::class));
         self::assertEqualsCanonicalizing(['17-shiro-shinjo'], $this->subscribers(FateCollectedEvent::class));
     }
 
@@ -78,7 +79,7 @@ class DynastyPhaseReactionsTest extends AbstractKernelTestCase
 
         self::service(PlayCardsFromProvincesOpportunityPassedListener::class)(new OpportunityPassedEvent($scenario->game(), $scenario->player('john'), true));
 
-        self::assertSame(['scout', 'sneaky'], $this->offered($scenario, 'john'));
+        self::assertSame(['scout', 'sneaky', 'ride'], $this->offered($scenario, 'john'));
     }
 
     public function testThePlayerPassingSecondGainsNoFate(): void
@@ -87,8 +88,8 @@ class DynastyPhaseReactionsTest extends AbstractKernelTestCase
 
         self::service(PlayCardsFromProvincesOpportunityPassedListener::class)(new OpportunityPassedEvent($scenario->game(), $scenario->player('john'), false));
 
-        // Sneaky Shinjo reacts to the pass, whatever the fate gained
-        self::assertSame(['sneaky'], $this->offered($scenario, 'john'));
+        // Sneaky Shinjo and Ride at Dawn react to the pass, whatever the fate gained
+        self::assertSame(['sneaky', 'ride'], $this->offered($scenario, 'john'));
     }
 
     public function testThePlayerCollectingFate(): void

@@ -9,10 +9,12 @@ use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\AbilityTiming;
+use App\Enum\Phase;
 use App\Enum\Type;
 use App\Event\CardPlayedEvent;
 use App\Event\EventCardPlayedEvent;
 use App\Event\FateSpentEvent;
+use App\Exception\Rules\NotInDynastyPhaseException;
 use App\Exception\Rules\NotPlayableException;
 use App\Exception\Rules\WrongAbilityTimingException;
 use App\Exception\Rules\WrongCardTypeException;
@@ -20,9 +22,7 @@ use App\Service\CardScript\CardScriptRegistry;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\PlayerState;
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\Registry;
-use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
  * Rules about playing a card during an action window (PlayCharacter, PlayAttachment, PlayCharacterAsAttachment and the
@@ -30,7 +30,7 @@ use Symfony\Component\Workflow\WorkflowInterface;
  * card), from a province face up, a deck or a discard pile (a dynasty character), or from out of play (removed from the
  * game, under a card: Stolen Secrets, Daidoji Uji, Back-Alley Hideaway). The engine does not check the effect allowing it (Artisan
  * Academy, Kunshu, Prepared Ambush…): the player playing it controls it, and an event goes to the discard pile of its
- * owner.
+ * owner. A dynasty event is played from its province during the dynasty phase only (glossary, Event Cards).
  */
 readonly class PlayService
 {
@@ -42,10 +42,17 @@ readonly class PlayService
         DynastyCard::class => [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH],
     ];
 
+    /**
+     * The places an event is played from, by class: a dynasty event from its province, during the dynasty phase only
+     * (glossary, Event Cards).
+     */
+    private const array EVENT_PLACES = [
+        ConflictCard::class => self::PLAYABLE_PLACES[ConflictCard::class],
+        DynastyCard::class => [DynastyCard::STATE_PROVINCE_FACEUP],
+    ];
+
     public function __construct(
         private PlayerStateManager $playerStateManager,
-        #[Target('conflict_card')]
-        private WorkflowInterface $conflictCardStateMachine,
         private Registry $workflowRegistry,
         private EventDispatcherInterface $eventDispatcher,
         private CardScriptRegistry $cardScriptRegistry,
@@ -87,20 +94,51 @@ readonly class PlayService
     /**
      * The player pays the cost of an event with an ability of that timing; the event goes to the discard pile of its
      * owner, and its effects are resolved with other actions. Once there, the cards reacting to a card played may be
-     * triggered (CardPlayedEvent).
+     * triggered (CardPlayedEvent). A dynasty event is played from its province face up, during the dynasty phase, and
+     * the province is refilled once the event is resolved.
+     *
+     * @throws WrongCardTypeException
+     * @throws NotPlayableException
+     * @throws NotInDynastyPhaseException
+     * @throws WrongAbilityTimingException
      */
     public function playEvent(PhysicalCard $card, Player $player, int $cardCost, AbilityTiming $timing): void
     {
-        $this->assertPlayable($card, Type::Event);
+        $this->assertEventPlayable($card);
         if (! $this->cardScriptRegistry->hasAbilityTiming($card->getLogicalCard()->getId(), $timing)) {
             throw new WrongAbilityTimingException($card, $timing);
         }
 
-        $from = $card->getStack()->getType();
+        $from = $card->getStack();
         $this->payCost($player, $cardCost);
         $this->eventDispatcher->dispatch(new EventCardPlayedEvent($player->getGame(), $player, $card));
-        $this->conflictCardStateMachine->apply($card, 'play_event');
-        $this->eventDispatcher->dispatch(new CardPlayedEvent($player->getGame(), $card, $player, $from, $cardCost));
+        $this->workflowRegistry->get($card)->apply($card, 'play_event');
+        $this->provinceRefiller->schedule($from);
+        $this->eventDispatcher->dispatch(new CardPlayedEvent($player->getGame(), $card, $player, $from->getType(), $cardCost));
+    }
+
+    /**
+     * An event, where an event of its class is played from now: a dynasty event from its province, during the dynasty
+     * phase.
+     *
+     * @throws WrongCardTypeException
+     * @throws NotPlayableException
+     * @throws NotInDynastyPhaseException
+     */
+    public function assertEventPlayable(PhysicalCard $card): void
+    {
+        if ($card->getLogicalCard()->getType() !== Type::Event) {
+            throw new WrongCardTypeException($card, Type::Event);
+        }
+
+        if (! in_array($card->getCurrentPlace(), self::EVENT_PLACES[$card::class] ?? [], true)) {
+            throw new NotPlayableException($card);
+        }
+
+        $place = $card->getPlayer()->getGame()->getCurrentPlace();
+        if ($card instanceof DynastyCard && Phase::ofPlace($place) !== Phase::Dynasty) {
+            throw new NotInDynastyPhaseException($card, $place);
+        }
     }
 
     /**

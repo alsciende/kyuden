@@ -321,6 +321,13 @@ return App::config([
                         'stack' => StackType::InPlay,
                         'orientation' => Orientation::FaceUp,
                     ]),
+                    // a dynasty event played (PlayActionEvent, PlayInterruptEvent, PlayReactionEvent) from its province,
+                    // during the dynasty phase (App\Service\PlayService): it goes to the dynasty discard pile of its owner
+                    WorkflowConfig::transition('play_event', DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DISCARD_PILE, [
+                        'log' => '{card} is put from {from} into {to}',
+                        'stack' => StackType::DynastyDiscardPile,
+                        'orientation' => Orientation::FaceUp,
+                    ]),
                     // a character played as an attachment (PlayCharacterAsAttachment: Voice of the Ancestors), from where
                     // a character is played: the character it is attached to is the `stack` of the context
                     WorkflowConfig::transition('play_as_attachment', [DynastyCard::STATE_PROVINCE_FACEUP, DynastyCard::STATE_DRAW_DECK, DynastyCard::STATE_DISCARD_PILE, DynastyCard::STATE_REMOVED_FROM_GAME, DynastyCard::STATE_UNDERNEATH], DynastyCard::STATE_ATTACHED, [

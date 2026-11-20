@@ -1,7 +1,7 @@
 import type { AbilityTiming, Card } from '@/api/client'
 import type { GameView, PlayerView } from '@/api/game'
 import type { Message, MessagePayloads, MessageType } from '@/api/messages'
-import { charactersInPlay, locate, provinces, stacksOf, type Cards, type Located } from '@/lib/board'
+import { charactersInPlay, locate, provinces, stacksOf, stepOf, type Cards, type Located } from '@/lib/board'
 
 /**
  * What a player can do with a card, from where it is and from the actions the engine makes available now. Board
@@ -580,11 +580,16 @@ export function cardMenu(game: GameView, cards: Cards, cardId: string): CardMenu
           // during a conflict too (Prepared Ambush, Wind's Path)
           menu.plays = playActions(card, available, true)
           playAsAttachment()
+        } else if (card?.type === 'event') {
+          // a dynasty event, played from its province during the dynasty phase only
+          if (stepOf(game.place).phase === 'dynasty') {
+            menu.plays = playActions(card, available)
+          }
         }
         // a character has abilities once in play, unless its text says otherwise; a holding has them in its province
         if (card?.type === 'character') {
           abilitiesOutOfPlay()
-        } else {
+        } else if (card?.type !== 'event') {
           abilities()
         }
         putIntoPlay()

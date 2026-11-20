@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Service\CardScript;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Entity\CardTypes\DynastyCard;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Event\TriggeringEventInterface;
+use App\Exception\Rules\RulesException;
 use App\Model\ReactionOffer;
 use App\Service\AbilityService;
+use App\Service\PlayService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
@@ -24,7 +27,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * listeners, so that the cards read the state once the triggering condition has resolved.
  *
  * For each player, the cards asked are their active cards (ActiveCardsResolver: theirs, whose face they know) whose
- * script subscribes to the event, and that they can use where they are: an event in their hand, the abilities of a card
+ * script subscribes to the event, and that they can use where they are: an event in their hand (a dynasty event in its
+ * province during the dynasty phase), the abilities of a card
  * where the engine accepts that they trigger them (AbilityService). The script decides whether the card reacts, and
  * whether its reaction is forced. The window offers, it blocks nothing: the reactions are accepted anywhere, the
  * players do not have to answer.
@@ -40,6 +44,7 @@ final readonly class ReactionOfferer
     public function __construct(
         private ActiveCardsResolver $activeCardsResolver,
         private AbilityService $abilityService,
+        private PlayService $playService,
         private GameStateManager $gameStateManager,
         private PlayerStateManager $playerStateManager,
         #[Autowire(param: '.app.card_script_subscriptions')]
@@ -104,16 +109,30 @@ final readonly class ReactionOfferer
     }
 
     /**
-     * An event is played from the hand (an effect allowing it from elsewhere is not known); the abilities of a card
-     * are triggered where the engine accepts them.
+     * An event of the conflict deck is played from the hand (an effect allowing it from elsewhere is not known), a
+     * dynasty event from its province during the dynasty phase (PlayService); the abilities of a card are triggered
+     * where the engine accepts them.
      */
     private function isUsable(PhysicalCard $card, Player $player): bool
     {
         if ($card->getLogicalCard()->getType() === Type::Event) {
-            return $card->getCurrentPlace() === ConflictCard::STATE_HAND;
+            return $card instanceof DynastyCard
+                ? $this->isDynastyEventPlayable($card)
+                : $card->getCurrentPlace() === ConflictCard::STATE_HAND;
         }
 
         return $this->abilityService->canTrigger($card, $player);
+    }
+
+    private function isDynastyEventPlayable(DynastyCard $card): bool
+    {
+        try {
+            $this->playService->assertEventPlayable($card);
+        } catch (RulesException) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
