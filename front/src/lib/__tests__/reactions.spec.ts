@@ -3,7 +3,7 @@ import { nextTick, ref } from 'vue'
 
 import type { GameView, ReactionWindowView } from '@/api/game'
 import { ELEMENT_NAMES } from '@/lib/icons'
-import { offerOf, shownWindows, triggerText, useDeclinedReactions } from '@/lib/reactions'
+import { forcedBlock, offerOf, shownWindows, triggerText, useDeclinedReactions } from '@/lib/reactions'
 
 import { card, game, player, printed, stack } from './gameFixture'
 
@@ -218,14 +218,14 @@ describe('shownWindows', () => {
         id: '1',
         trigger: 'After Night Raid is revealed',
         offers: [
-          { windowId: '1', cardId: 'raid', name: 'Night Raid', kind: 'province' },
-          { windowId: '1', cardId: 'outflank', name: 'Outflank', kind: 'event · hand' },
+          { windowId: '1', cardId: 'raid', name: 'Night Raid', kind: 'province', forced: false },
+          { windowId: '1', cardId: 'outflank', name: 'Outflank', kind: 'event · hand', forced: false },
         ],
       },
       {
         id: '2',
         trigger: 'After Night Raid is revealed',
-        offers: [{ windowId: '2', cardId: 'seeker', name: 'Seeker of Air', kind: 'role' }],
+        offers: [{ windowId: '2', cardId: 'seeker', name: 'Seeker of Air', kind: 'role', forced: false }],
       },
     ])
   })
@@ -242,6 +242,47 @@ describe('shownWindows', () => {
 
   it('offers nothing to a spectator', () => {
     expect(shownWindows(view([window('1', ['raid'])], { spectating: true }), cards, new Set())).toEqual([])
+  })
+
+  it('marks the forced reactions, which cannot be declined', () => {
+    const forced = { ...window('1', ['raid', 'outflank']), forced_card_ids: ['raid'] }
+    const windows = shownWindows(view([forced]), cards, new Set(['1:raid', '1:outflank']))
+
+    expect(windows[0]?.offers).toEqual([
+      { windowId: '1', cardId: 'raid', name: 'Night Raid', kind: 'province', forced: true },
+    ])
+  })
+})
+
+describe('forcedBlock', () => {
+  const pending = { card_id: 'raid', window_id: '1', trigger: 'phase_began', params: { phase: 'conflict' } }
+
+  function withForced(owner: 'me' | 'opp', changes: Partial<GameView> = {}): GameView {
+    const raid = stack('regular_province', [card('raid', { id: 'raid' })])
+    const me = player('me', owner === 'me' ? [raid] : [], { forced_reactions: owner === 'me' ? [pending] : [] })
+    const opp = player('opp', owner === 'opp' ? [raid] : [], { forced_reactions: owner === 'opp' ? [pending] : [] })
+
+    return game(me, opp, changes)
+  }
+
+  it('blocks the viewer who has a forced reaction to trigger', () => {
+    expect(forcedBlock(withForced('me'), cards)).toMatchObject({
+      mine: true,
+      reactions: [{ cardId: 'raid', name: 'Night Raid', on: null, trigger: 'After the conflict phase begins' }],
+      reason: 'Resolve Night Raid first: a forced reaction cannot be declined.',
+    })
+  })
+
+  it('blocks the viewer while the opponent has one to trigger', () => {
+    const block = forcedBlock(withForced('opp'), cards)
+
+    expect(block?.mine).toBe(false)
+    expect(block?.reason).toMatch(/^Waiting for .* to resolve Night Raid\. You can still react\.$/)
+  })
+
+  it('blocks nothing without a forced reaction, nor in a replay', () => {
+    expect(forcedBlock(view([]), cards)).toBeNull()
+    expect(forcedBlock(withForced('me', { replaying: true }), cards)).toBeNull()
   })
 })
 

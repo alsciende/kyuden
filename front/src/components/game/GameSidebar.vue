@@ -10,7 +10,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import { PHASES, playerById, rings, type Cards } from '@/lib/board'
-import type { ShownWindow } from '@/lib/reactions'
+import { forcedBlock, type ShownWindow } from '@/lib/reactions'
 import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { waiting } from '@/lib/queueing'
@@ -25,7 +25,9 @@ import { spectatorsLabel } from '@/lib/watch'
  * in their bars, above and below the board).
  *
  * Above what the player does, the reactions the engine offers them (`lib/reactions.ts`): a click on "Open" opens the
- * card, which offers to activate it or decline it.
+ * card, which offers to activate it or decline it; a forced reaction is marked, and resolved at once ("Resolve": its
+ * ability triggered). The forced reactions the opponent has to trigger are told under them: nobody moves the game on
+ * meanwhile.
  *
  * A spectator does nothing in the step: they read who acts, from whose side they watch (they switch sides), and leave.
  * A replay puts its own panel in place of what the player does (slot `panel`), and its log in place of the last lines
@@ -91,6 +93,18 @@ const RING_STATUS = { unclaimed: '', contested: 'Contested', yours: 'You', their
 /** the ring whose window is open */
 const openRing = ref<Element | null>(null)
 
+/** the forced reactions the opponent (any player, for a spectator) has to trigger, which the viewer waits for */
+const othersForced = computed(() => {
+  const block = forcedBlock(props.game, props.cards)
+
+  return block === null || block.mine ? null : block
+})
+
+/** the forced reaction resolved at once: its ability triggered */
+function resolveForced(cardId: string): void {
+  void props.send('trigger_reaction_ability', { card_id: cardId })
+}
+
 /** the last lines of the log */
 const tail = computed(() => props.log.flatMap((message) => message.entries).slice(-3))
 </script>
@@ -153,12 +167,36 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <div v-for="window in reactionWindows" :key="window.id" class="reaction-window">
         <p class="trigger">{{ window.trigger }}</p>
         <ul class="offers">
-          <li v-for="offer in window.offers" :key="offer.cardId" class="offer">
+          <li v-for="offer in window.offers" :key="offer.cardId" class="offer" :class="{ forced: offer.forced }">
+            <span v-if="offer.forced" class="forced-tag">Forced</span>
             <span class="offer-name">{{ offer.name }}</span>
             <span class="offer-kind">{{ offer.kind }}</span>
-            <button type="button" class="open" @click="$emit('open', offer.cardId)">Open</button>
+            <button
+              v-if="offer.forced"
+              type="button"
+              class="open resolve"
+              :disabled="sending"
+              @click="resolveForced(offer.cardId)"
+            >
+              Resolve
+            </button>
+            <button v-else type="button" class="open" @click="$emit('open', offer.cardId)">Open</button>
           </li>
         </ul>
+      </div>
+    </section>
+
+    <section v-if="othersForced" class="others-forced" :aria-label="`Forced reactions of ${othersForced.player}`">
+      <span class="label">{{ othersForced.player }} must resolve</span>
+      <div v-for="reaction in othersForced.reactions" :key="reaction.cardId" class="others-forced-reaction">
+        <p class="others-forced-card">
+          <span class="forced-tag">Forced</span>
+          <button type="button" class="others-forced-name" @click="$emit('open', reaction.cardId)">
+            {{ reaction.name }}
+          </button>
+          <span v-if="reaction.on" class="offer-kind">on {{ reaction.on }}</span>
+        </p>
+        <p class="others-forced-trigger">{{ reaction.trigger }}</p>
       </div>
     </section>
 
@@ -461,6 +499,76 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   white-space: nowrap;
 }
 
+.offers:has(.forced) {
+  border-width: 2px;
+}
+
+.forced-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.open.resolve {
+  border-color: var(--seal);
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.others-forced {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--seal);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.others-forced .label {
+  color: var(--seal);
+}
+
+.others-forced-reaction {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.others-forced-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.others-forced-name {
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+
+.others-forced-trigger {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
 .offer-kind {
   flex: none;
   margin-left: auto;
@@ -485,6 +593,10 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
 @media (hover: hover) {
   .open:hover {
     background: var(--paper-3);
+  }
+
+  .open.resolve:hover {
+    background: var(--seal);
   }
 }
 

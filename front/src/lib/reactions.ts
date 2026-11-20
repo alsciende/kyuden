@@ -1,6 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 
-import type { Element, GameView, ReactionWindowView } from '@/api/game'
+import type { Element, ForcedReactionView, GameView, ReactionWindowView } from '@/api/game'
 import { locate, viewer, type Cards } from '@/lib/board'
 import { ELEMENT_NAMES } from '@/lib/icons'
 
@@ -12,6 +12,10 @@ import { ELEMENT_NAMES } from '@/lib/icons'
  *
  * Declining stays in the client, so that the opponent does not learn that the player had a card to react with: the
  * cards declined are kept by the tab, for each game, and a reload does not offer them again; another device does.
+ *
+ * A forced reaction cannot be declined: while a player has one to trigger (`forced_reactions` of their view, for every
+ * reader), the client moves the game on for neither player (`forcedBlock()`): the actions the engine waits for are
+ * disabled (`ActionPanel.vue`), the effects on the board stay available to apply the reaction.
  */
 
 /** a card offered in a reaction window */
@@ -21,6 +25,8 @@ export interface ShownOffer {
   name: string
   /** what the card is and, when it matters, where it is: "event · hand" */
   kind: string
+  /** a forced reaction: it cannot be declined */
+  forced: boolean
 }
 
 /** a reaction window, with the cards still offered */
@@ -155,7 +161,8 @@ export function shownWindows(game: GameView, cards: Cards, declined: Set<string>
   return viewer(game).reaction_windows.flatMap((window) => {
     const offers = window.card_ids.flatMap((cardId): ShownOffer[] => {
       const located = locate(game, cardId)
-      if (declined.has(declineKey(window.id, cardId)) || located === undefined) {
+      const forced = window.forced_card_ids.includes(cardId)
+      if ((!forced && declined.has(declineKey(window.id, cardId))) || located === undefined) {
         return []
       }
       const card = located.card.code === null ? undefined : cards[located.card.code]
@@ -167,12 +174,76 @@ export function shownWindows(game: GameView, cards: Cards, declined: Set<string>
           cardId,
           name: card?.name ?? 'Card',
           kind: located.stack.type === 'hand' ? `${type} · hand` : type,
+          forced,
         },
       ]
     })
 
     return offers.length === 0 ? [] : [{ id: window.id, trigger: triggerText(window, game, cards), offers }]
   })
+}
+
+/** a forced reaction a player has to trigger, as the client shows it */
+export interface ShownForcedReaction {
+  cardId: string
+  name: string
+  /** the card it is attached to, if any: "Doji Challenger" */
+  on: string | null
+  trigger: string
+}
+
+/** what keeps the game from moving on: the forced reactions to trigger, those of the viewer first */
+export interface ForcedBlock {
+  /** the viewer has to trigger them, not the opponent */
+  mine: boolean
+  /** the name of the player who has to trigger them */
+  player: string
+  reactions: ShownForcedReaction[]
+  /** why the actions moving the game on are disabled */
+  reason: string
+}
+
+function shownForced(game: GameView, cards: Cards, forced: ForcedReactionView): ShownForcedReaction {
+  const located = locate(game, forced.card_id)
+  const under = located?.under ?? null
+
+  return {
+    cardId: forced.card_id,
+    name: cardName(game, cards, forced.card_id) ?? 'A card',
+    on: under === null ? null : (cardName(game, cards, under.id) ?? null),
+    trigger: triggerText(
+      { id: forced.window_id, trigger: forced.trigger, params: forced.params, card_ids: [], forced_card_ids: [] },
+      game,
+      cards,
+    ),
+  }
+}
+
+/** the forced reactions keeping the game from moving on, none in a replay */
+export function forcedBlock(game: GameView, cards: Cards): ForcedBlock | null {
+  if (game.replaying) {
+    return null
+  }
+  const players = [...game.players].sort((a, b) => Number(b.id === game.viewer_id) - Number(a.id === game.viewer_id))
+  for (const player of players) {
+    const reactions = player.forced_reactions.map((forced) => shownForced(game, cards, forced))
+    if (reactions.length === 0) {
+      continue
+    }
+    const mine = player.id === game.viewer_id && !game.spectating
+    const names = reactions.map((reaction) => reaction.name).join(', ')
+
+    return {
+      mine,
+      player: player.name,
+      reactions,
+      reason: mine
+        ? `Resolve ${names} first: a forced reaction cannot be declined.`
+        : `Waiting for ${player.name} to resolve ${names}. You can still react.`,
+    }
+  }
+
+  return null
 }
 
 /** the first offer of a card, with the triggering condition of its window */

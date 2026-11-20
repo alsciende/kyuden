@@ -20,7 +20,7 @@ import { vTip } from '@/lib/tooltip'
  * A card opened: its image in the middle of the darkened screen, and what the player can do with it beside it; the
  * special actions (`lib/specialActions.ts`) in a panel of their own, opened with the "+": those the cards of the player
  * need, with these cards, then every other one on demand. A card offered in a reaction window (`lib/reactions.ts`) is
- * activated or declined from a band at the top of its panel.
+ * activated or declined from a band at the top of its panel; a forced reaction is resolved, never declined.
  */
 const props = defineProps<{
   menu: CardMenu
@@ -463,7 +463,32 @@ onMounted(() => {
           </div>
         </header>
 
-        <div v-if="offer && playing === null" class="offered" role="group" aria-label="Reaction offered">
+        <div
+          v-if="offer && offer.forced && playing === null"
+          class="offered forced"
+          role="group"
+          aria-label="Forced reaction"
+        >
+          <span class="forced-head">
+            <span class="forced-tag">Forced</span>
+            <span class="label">Reaction to resolve</span>
+          </span>
+          <p class="trigger">{{ offer.trigger }}</p>
+          <button
+            v-if="reactionAbility"
+            type="button"
+            class="btn btn-primary resolve"
+            :disabled="sending"
+            @click="runAction(reactionAbility)"
+          >
+            Resolve
+          </button>
+          <span class="forced-note"
+            >A forced reaction cannot be declined: neither player moves the game on until it is resolved.</span
+          >
+        </div>
+
+        <div v-else-if="offer && playing === null" class="offered" role="group" aria-label="Reaction offered">
           <span class="label">Reaction offered</span>
           <p class="trigger">{{ offer.trigger }}</p>
           <div class="row two">
@@ -940,6 +965,40 @@ h2 {
   padding: 12px 14px 14px;
   border: 1.5px solid var(--seal);
   border-radius: 2px;
+}
+
+.offered.forced {
+  border-width: 2px;
+  background: var(--paper);
+}
+
+.forced-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.forced-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.offered .resolve {
+  background: var(--seal);
+  border-color: var(--seal);
+  color: var(--seal-ink);
+}
+
+.forced-note {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
 }
 
 .offered .trigger {
