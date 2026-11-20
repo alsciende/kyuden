@@ -10,6 +10,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import { PHASES, playerById, rings, type Cards } from '@/lib/board'
+import type { ShownWindow } from '@/lib/reactions'
 import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
 import { waiting } from '@/lib/queueing'
@@ -22,6 +23,9 @@ import { spectatorsLabel } from '@/lib/watch'
  * The bar on the right of the board: the spectators of the game (a click lists them), the step of the round, what the
  * player does in it, then the rings (a click on one opens its window) and the last lines of the log (the players are
  * in their bars, above and below the board).
+ *
+ * Above what the player does, the reactions the engine offers them (`lib/reactions.ts`): a click on "Open" opens the
+ * card, which offers to activate it or decline it.
  *
  * A spectator does nothing in the step: they read who acts, from whose side they watch (they switch sides), and leave.
  * A replay puts its own panel in place of what the player does (slot `panel`), and its log in place of the last lines
@@ -38,9 +42,11 @@ const props = defineProps<{
   sending: boolean
   error: string | null
   send: Send
+  /** the reactions offered to the viewer (none for a spectator, in a replay) */
+  reactionWindows?: ShownWindow[]
 }>()
 
-defineEmits<{ openLog: []; switchSides: []; leave: [] }>()
+defineEmits<{ open: [cardId: string]; openLog: []; switchSides: []; leave: [] }>()
 
 const step = computed(() => stepWithDuel(props.game))
 
@@ -141,6 +147,20 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <h1>{{ step.title }}</h1>
       <p v-if="step.help" class="help">{{ step.help }}</p>
     </header>
+
+    <section v-if="reactionWindows?.length" class="reactions" aria-label="Reactions offered">
+      <span class="label">Reactions</span>
+      <div v-for="window in reactionWindows" :key="window.id" class="reaction-window">
+        <p class="trigger">{{ window.trigger }}</p>
+        <ul class="offers">
+          <li v-for="offer in window.offers" :key="offer.cardId" class="offer">
+            <span class="offer-name">{{ offer.name }}</span>
+            <span class="offer-kind">{{ offer.kind }}</span>
+            <button type="button" class="open" @click="$emit('open', offer.cardId)">Open</button>
+          </li>
+        </ul>
+      </div>
+    </section>
 
     <slot name="panel">
       <section v-if="game.spectating" class="spectator" aria-label="Spectating">
@@ -391,6 +411,81 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.reactions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reaction-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trigger {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1.5px solid var(--seal);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.offer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+}
+
+.offer + .offer {
+  border-top: 1px solid var(--line);
+}
+
+.offer-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offer-kind {
+  flex: none;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.open {
+  font: inherit;
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .open:hover {
+    background: var(--paper-3);
+  }
 }
 
 .others-resolving {

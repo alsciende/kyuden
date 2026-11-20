@@ -11,6 +11,7 @@ import { ACTION_SHORT_LABELS, actionIcon } from '@/lib/actionIcons'
 import { charactersInPlay, opponent, playerById, skillOf, type Cards } from '@/lib/board'
 import type { CardMenu, PlayAction, SimpleAction } from '@/lib/cardActions'
 import { CONFLICT_ICONS } from '@/lib/icons'
+import type { ShownOffer } from '@/lib/reactions'
 import { provinceCardsCount } from '@/lib/redistribution'
 import { groupSpecial, neededCount, specialActions } from '@/lib/specialActions'
 import { vTip } from '@/lib/tooltip'
@@ -18,10 +19,13 @@ import { vTip } from '@/lib/tooltip'
 /**
  * A card opened: its image in the middle of the darkened screen, and what the player can do with it beside it; the
  * special actions (`lib/specialActions.ts`) in a panel of their own, opened with the "+": those the cards of the player
- * need, with these cards, then every other one on demand.
+ * need, with these cards, then every other one on demand. A card offered in a reaction window (`lib/reactions.ts`) is
+ * activated or declined from a band at the top of its panel.
  */
 const props = defineProps<{
   menu: CardMenu
+  /** the reaction window offering the card, if any */
+  offer?: (ShownOffer & { trigger: string }) | null
   game: GameView
   cards: Cards
   sending: boolean
@@ -29,7 +33,7 @@ const props = defineProps<{
   send: Send
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; decline: [offer: ShownOffer] }>()
 
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
 
@@ -229,6 +233,20 @@ const playing = ref<PlayAction | null>(null)
 
 function confirmPlay(message: Message): void {
   void run(message.type, message.payload as never)
+}
+
+/** activating the reaction offered: its ability triggered, or the event played with its cost (PlayForm) */
+const reactionAbility = computed(() =>
+  props.menu.abilities.find((action) => action.type === 'trigger_reaction_ability'),
+)
+const reactionPlay = computed(() => props.menu.plays.find((action) => action.type === 'play_reaction_event'))
+
+function activate(): void {
+  if (reactionAbility.value !== undefined) {
+    runAction(reactionAbility.value)
+  } else if (reactionPlay.value !== undefined) {
+    playing.value = reactionPlay.value
+  }
 }
 
 /** the characters an attachment may go on */
@@ -444,6 +462,25 @@ onMounted(() => {
             <span v-for="tag in tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
         </header>
+
+        <div v-if="offer && playing === null" class="offered" role="group" aria-label="Reaction offered">
+          <span class="label">Reaction offered</span>
+          <p class="trigger">{{ offer.trigger }}</p>
+          <div class="row two">
+            <button
+              v-if="reactionAbility || reactionPlay"
+              type="button"
+              class="btn btn-primary"
+              :disabled="sending"
+              @click="activate"
+            >
+              Activate
+            </button>
+            <button type="button" class="btn btn-ghost" :disabled="sending" @click="emit('decline', offer)">
+              Decline
+            </button>
+          </div>
+        </div>
 
         <div v-if="menu.abilities.length" class="group">
           <button
@@ -894,6 +931,26 @@ h2 {
   padding: 3px 8px;
   border-radius: 2px;
   background: var(--paper-2);
+}
+
+.offered {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border: 1.5px solid var(--seal);
+  border-radius: 2px;
+}
+
+.offered .trigger {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.offered .btn {
+  min-height: 44px;
+  font-size: 15px;
 }
 
 .group,
