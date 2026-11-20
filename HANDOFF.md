@@ -80,7 +80,7 @@ Not planned for now (few cards, deep changes): all of the above but Akodo Zentar
 ### Card scripts
 
 - Conditions on the special actions where they only make sense somewhere (a duel from a character in play only…).
-- New hooks of `AbstractCardScript`: the constant skill bonuses (computed twice today, by `board.ts` and `BoardReader`); the triggering conditions of the other reactions, then of the interrupts (the triggering event dispatched before what it interrupts), on the model of the province revealed (`TriggeringEventInterface`, `on<Event>()`, `TriggerConditions`).
+- New hooks of `AbstractCardScript`: the constant skill bonuses (computed twice today, by `board.ts` and `BoardReader`); the triggering conditions of the other reactions (the groups, the proposed order and the questions to decide: `doc/reactions.md`), then of the interrupts (the triggering event dispatched before what it interrupts), on the model of the province revealed (`TriggeringEventInterface`, `on<Event>()`, `TriggerConditions`).
 
 ### Role cards
 
