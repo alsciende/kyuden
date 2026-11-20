@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { GameView, ReactionWindowView } from '@/api/game'
+import { ELEMENT_NAMES } from '@/lib/icons'
 import { offerOf, shownWindows, triggerText, useDeclinedReactions } from '@/lib/reactions'
 
 import { card, game, player, printed, stack } from './gameFixture'
@@ -64,6 +65,12 @@ describe('triggerText of the other triggering conditions', () => {
   it('names the character moving to the conflict', () => {
     expect(triggerText(other('character_moved_to_conflict', { card: 'raid' }), view([]), cards)).toBe(
       'After Night Raid moves to the conflict',
+    )
+  })
+
+  it('names the player taking the fate of a ring', () => {
+    expect(triggerText(other('ring_fate_taken', { player: 'opp', ring: 'fire' }), view([]), cards)).toBe(
+      `After your opponent takes the fate of the ${ELEMENT_NAMES.fire} ring`,
     )
   })
 

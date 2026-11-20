@@ -85,7 +85,11 @@ class FateOnCharacterReactionsTest extends AbstractKernelTestCase
         self::assertEqualsCanonicalizing(['01-ikoma-prodigy', '41-adorned-temple'], $this->subscribers(FatePlacedOnCardEvent::class));
         self::assertEqualsCanonicalizing(['38-kaito-mai', '38-shadowed-village', '40-kami-of-ancient-wisdom'], $this->subscribers(FateRemovedFromCardEvent::class));
         self::assertEqualsCanonicalizing(
-            ['01-ikoma-prodigy', '38-kaito-mai', '38-shadowed-village', '40-kami-of-ancient-wisdom', '41-adorned-temple'],
+            // and the cards reacting to fate gained from a ring (RingEffectReactionsTest)
+            [
+                '01-ikoma-prodigy', '38-kaito-mai', '38-shadowed-village', '40-kami-of-ancient-wisdom', '41-adorned-temple',
+                '20-kitsuki-yuikimi', '21-trusted-advisor', '25-four-temples-advisor',
+            ],
             $this->subscribers(FateMovedEvent::class),
         );
         self::assertEqualsCanonicalizing(['22-starry-heaven-sanctuary'], $this->subscribers(FatePhaseFateRemovedEvent::class));

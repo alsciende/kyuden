@@ -73,7 +73,8 @@ class PersonalHonorReactionsTest extends AbstractKernelTestCase
     public function testEveryCardReactingToAStatusSubscribesToIt(): void
     {
         self::assertEqualsCanonicalizing(
-            ['01-savvy-politician', '18-armament-artisan', '27-ardent-omoidasu', '40-final-whisper'],
+            // and Isawa Tsuke, by the effect of the fire ring (RingEffectReactionsTest)
+            ['01-savvy-politician', '18-armament-artisan', '27-ardent-omoidasu', '40-final-whisper', '27-isawa-tsuke'],
             $this->subscribers(PersonalHonorChangedEvent::class),
         );
         self::assertEqualsCanonicalizing(['40-final-whisper'], $this->subscribers(StatusTokenPlacedEvent::class));
