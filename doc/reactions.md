@@ -2,7 +2,7 @@
 
 The reactions of the cards of the fixtures, grouped by triggering condition, to decide in which order the engine offers them (`card-scripts.md`, "Reaction offers") and what each group needs. Only the triggering condition counts here: what the reaction does is applied by the players with the effect messages, as for every card.
 
-334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 2 are out of scope (see the end), 34 are done (a province revealed): 298 remain, in 25 groups.
+334 cards of `fixtures/cards` carry a reaction (`Reaction:` in their text, one each, those granted to the attached character included: "Attached character gains…", or the attachments whose text says "this character"). 16 are forced reactions, not offered (see "Forced reactions"), 3 are out of scope (see the end). The groups count every card; what is done says how many cards subscribe.
 
 Conventions of the lists: a card is listed under the event that triggers it, with its triggering condition as printed (the elements, types and clans in plain words), not its effect. The limits ("Max 1 per round") are not checked, as for the province revealed.
 
@@ -12,8 +12,8 @@ The order weighs the number of cards against what the engine lacks: first the gr
 
 | # | Triggering condition | Cards | What exists in the engine | What is missing |
 | --- | --- | ---: | --- | --- |
-| – | A province revealed | 34 | done | – |
-| 1 | A conflict won or lost | 93 | `ConflictWonEvent`, place `react_to_conflict_result` | the event triggering; the conditions on the result |
+| – | A province revealed | 34 | done (34) | – |
+| 1 | A conflict won or lost | 93 | done (88) | – |
 | 2 | A conflict declared (attackers, covert) | 33 | `ConflictDeclaredEvent`, `CharactersEvadedEvent`, place `react_to_conflict_declaration` | the events triggering; the fate on the ring before it is taken |
 | 3 | A ring claimed | 8 | `RingClaimedEvent`, place `react_to_ring_claim` | the event triggering, with the conflict |
 | 4 | A pass on declaring a conflict | 10 | `ConflictPassedEvent` | the event triggering |
@@ -37,7 +37,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 22 | A character leaves play | 2 | `LeavePlayListener` | an event once the card has left play |
 | 23 | An ability triggered | 2 | the handlers `Trigger*Ability` | an event |
 | 24 | The end of the resolution of a conflict | 2 | place `return_home` | the provinces broken during the conflict |
-| – | Out of scope | 2 | – | – |
+| – | Out of scope | 2 | – | Mindful Warrior too, listed under 1 |
 
 Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one triggering event dispatched after the transitions (entering play and playing a card share it), 12 to 24 53 cards.
 
@@ -468,9 +468,21 @@ The place `return_home`: the conflict must remember the provinces broken during 
 - Breakthrough (`01-breakthrough`, event): After the resolution of your first conflict this phase as the attacking player, if that conflict broke a province
 - Ivory Kingdoms Unicorn (`17-ivory-kingdoms-unicorn`, character): After the resolution of a conflict in which this character was attacking, if a province was broken in the conflict
 
-## Out of scope (2)
+## Forced reactions (16)
+
+Their effect is not the choice of their player ("Forced Reaction:"): the engine does not offer them. They stay in their groups above. A reminder to their player (a window without the choice to decline) is left for later.
+
+- A phase begins: Steadfast Samurai (`01-steadfast-samurai`), Kuni Laboratory (`13-kuni-laboratory`), Bayushi Shoju (`24-bayushi-shoju`).
+- A conflict won or lost: Unmatched Expertise (`16-unmatched-expertise`), Hall of Victories (`27-hall-of-victories`), Total Warfare (`27-total-warfare`), Mercenary Company (`32-mercenary-company`).
+- A conflict declared: Temple of Daikoku (`28-temple-of-daikoku`), Temple of Jikoju (`28-temple-of-jikoju`), Temple of Osano-wo (`28-temple-of-osano-wo`), Temple of Shinsei's Wisdom (`28-temple-of-shinsei-s-wisdom`), Temple of the Thunders (`28-temple-of-the-thunders`).
+- A ring claimed: Isawa Ujina (`16-isawa-ujina`).
+- A pass on declaring a conflict: Hida Amoro (`08-hida-amoro`).
+- Declared as attacker or defender, defenders declared: Marauding Oni (`10-marauding-oni`), Arrogant Kakita (`39-arrogant-kakita`).
+
+## Out of scope (3)
 
 - Strategizing (`28-strategizing`, province): the rings on the provinces belong to the Enlightenment format.
+- Mindful Warrior (`28-mindful-warrior`, character): it switches a ring with a ring claimed on a province, of the Enlightenment format too (listed under 1).
 - Greater Understanding (`19-greater-understanding`, attachment): an attachment on a ring, not playable (`HANDOFF.md`, "Cards not playable yet").
 
 ## Done: a province revealed (34)

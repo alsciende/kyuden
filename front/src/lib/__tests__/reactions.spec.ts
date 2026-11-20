@@ -44,6 +44,22 @@ describe('triggerText', () => {
   })
 })
 
+describe('triggerText of the other triggering conditions', () => {
+  const other = (trigger: string, params: Record<string, string>): ReactionWindowView => ({
+    id: '1',
+    trigger,
+    params,
+    card_ids: [],
+  })
+
+  it('names the winner of the conflict', () => {
+    expect(triggerText(other('conflict_won', { winner: 'me' }), view([]), cards)).toBe('After you win the conflict')
+    expect(triggerText(other('conflict_won', { winner: 'opp' }), view([]), cards)).toBe(
+      'After your opponent wins the conflict',
+    )
+  })
+})
+
 describe('shownWindows', () => {
   it('lists the cards offered in each window, where they are', () => {
     const windows = shownWindows(view([window('1', ['raid', 'outflank']), window('2', ['seeker'])]), cards, new Set())

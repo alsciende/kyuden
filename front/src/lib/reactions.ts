@@ -40,6 +40,11 @@ function cardName(game: GameView, cards: Cards, cardId: string | undefined): str
   return code === null ? null : (cards[code]?.name ?? null)
 }
 
+/** the player a triggering condition names, as its subject: "you win", "your opponent wins" */
+function subject(game: GameView, playerId: string | undefined, plural: string, singular: string): string {
+  return playerId === game.viewer_id ? `you ${plural}` : `your opponent ${singular}`
+}
+
 /** the triggering condition of a window, as the cards word it */
 export function triggerText(window: ReactionWindowView, game: GameView, cards: Cards): string {
   switch (window.trigger) {
@@ -48,6 +53,8 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
 
       return name === null ? 'After a province is revealed' : `After ${name} is revealed`
     }
+    case 'conflict_won':
+      return `After ${subject(game, window.params.winner, 'win', 'wins')} the conflict`
     default:
       return 'Reactions'
   }
