@@ -68,6 +68,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the attacking player of the conflict resolved', () => {
+    expect(triggerText(other('conflict_resolved', { attacker: 'me' }), view([]), cards)).toBe(
+      'After the resolution of your conflict',
+    )
+  })
+
   it('names the ability triggered', () => {
     expect(triggerText(other('ability_triggered', { card: 'raid', player: 'opp' }), view([]), cards)).toBe(
       'After your opponent triggers Night Raid',

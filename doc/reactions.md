@@ -36,14 +36,14 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 21 | A card turned face up in a province | 2 | done (1: Lost Papers left out, see "Not offered") | – |
 | 22 | A character leaves play | 2 | done (2) | – |
 | 23 | An ability triggered | 2 | done (2) | – |
-| 24 | The end of the resolution of a conflict | 2 | place `return_home` | the provinces broken during the conflict |
+| 24 | The end of the resolution of a conflict | 2 | done (2) | – |
 | – | Out of scope | 2 | – | Mindful Warrior and Shadowed Alleyway too, listed under 1 and 2 |
 
-Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one triggering event dispatched after the transitions (entering play and playing a card share it), 12 to 24 53 cards.
+Every step is done: the cards not offered are listed in "Not offered" (the engine does not accept their reaction where they are), the forced reactions in "Forced reactions". Entering play (9) and playing a card (10, 11) are two events (`CardEnteredPlayEvent`, `CardPlayedEvent`), since "play" is not "put into play". Where a card names a cause the engine does not know, the events tell what it knows (by a card effect or by the rules, by an honor bid, leaving play, the fire ring being resolved) and the card is offered on every change of that kind: the player judges whose effect it was.
 
 ## Questions to decide
 
-- **The cause of an effect** (Ready for Battle, Ardent Omoidasu, Righteous Samurai, Shiotome Heroine, Akodo Motivator, Shosuro Hyobu, Adorned Temple, Isawa Tsuke, Curry Favor): "an opponent's card effect", "a ring effect", "by a card effect", "as a result of conflict resolution". The engine does not know which ability a message applies. It knows the sender, what they resolve (`PlayerState::resolutions`) and the step (`resolve_ring_effects`, the bows of the end of a conflict): enough to approximate, or the card is offered on every change and its player judges.
+- **The cause of an effect** (decided: Ready for Battle, Ardent Omoidasu, Righteous Samurai, Shiotome Heroine, Akodo Motivator, Shosuro Hyobu, Adorned Temple, Isawa Tsuke, Curry Favor): "an opponent's card effect", "a ring effect", "by a card effect", "as a result of conflict resolution". The engine does not know which ability a message applies: the events say whether a card effect (an effect message) or the rules (a framework step) made the change (`byCardEffect`), not whose effect; the fire ring is its step (`resolve_ring_effects`); the card is offered on every change of that kind and its player judges.
 - **The targets of an event** (decided): the engine does not know what an event chooses; Withstand the Darkness and Dragon Tattoo are offered for every event played (by the opponent while the player controls a Crab character, by the player), the player judges.
 - **The effects of an event resolved** (decided): The Mirror's Gaze is offered once the opponent plays an event; the window blocks nothing, so that its player triggers it once the effects have resolved, which the engine does not know.
 - **The declaration and the reveal** (decided): the reactions to the declaration come once the attacked province is revealed (`ConflictDeclarationCompletedEvent`), as the rules say and so that a province reacting to its attack can trigger, face up; The Crashing Wave (before the province is revealed) and Enlightened Warrior (the fate on the contested ring, which the attacker takes at once) react to the declaration itself (`ConflictDeclaredEvent`, which carries the fate of the ring).

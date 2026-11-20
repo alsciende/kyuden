@@ -35,3 +35,4 @@ To add the script of a card:
 - a dynasty card turned face up in its province (`DynastyCardTurnedFaceupEvent`, once the transition `turn_faceup` of `dynasty_card` has completed): 1 card; Lost Papers, a dynasty event, is not offered.
 - a card left play (`CardLeftPlayEvent`, at the end of `LeavePlayListener`, with its controller and whether it was a character): 2 cards. `TriggerConditions::isPhase()` reads the phase of a place (`Enum/Phase::ofPlace()`).
 - an ability triggered (`AbilityTriggeredEvent`, by `AbilityService::trigger()`, with the character triggering it: the card in play, or the character an attachment grants it to): 2 cards.
+- the end of the resolution of a conflict (`ConflictResolvedEvent`, once its participants have returned home, with the characters that were attacking and the provinces it broke): 2 cards.
