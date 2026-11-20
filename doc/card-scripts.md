@@ -21,3 +21,4 @@ To add the script of a card:
 - the honor dials revealed (`HonorDialsRevealedEvent`, once every dial of the bid is revealed: the draw phase, or a duel, its players only): 9 cards, those of a duel included.
 - a character declared as an attacker (the declaration complete, above) or as a defender (`DefendersDeclaredEvent`): 2 cards.
 - a phase begun (`PhaseBeganEvent`, once a transition `*_phase_began` has completed, with the phase): 21 cards.
+- a character or an attachment entered play (`CardEnteredPlayEvent`: played, by the handlers of `PlayCharacter`, `PlayCharacterFromProvince`, `PlayAttachment`, `PlayCharacterAsAttachment`, or put into play, `PutCharacterIntoPlay`, `PutAttachmentIntoPlay`, once it has joined the conflict, with the stack it came from): 22 cards.

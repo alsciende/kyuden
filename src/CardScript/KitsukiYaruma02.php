@@ -7,7 +7,9 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Event\CardEnteredPlayEvent;
 use App\Message\TurnProvinceFacedown;
+use App\Model\ReactionOffer;
 
 /**
  * Kitsuki Yaruma.
@@ -30,5 +32,23 @@ final readonly class KitsukiYaruma02 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [TurnProvinceFacedown::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardEnteredPlayEvent::class => 'onCardEnteredPlay'];
+    }
+
+    /**
+     * After this character enters play.
+     *
+     * @return list<ReactionOffer>
+     */
+    public function onCardEnteredPlay(CardEnteredPlayEvent $event, PhysicalCard $card, Game $game): array
+    {
+        return $event->card === $card
+            ? [new ReactionOffer($card)]
+            : [];
     }
 }

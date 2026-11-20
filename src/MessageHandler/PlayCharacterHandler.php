@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\CardEnteredPlayEvent;
 use App\Event\CharacterPlayedIntoConflictEvent;
 use App\Event\FatePlacedOnCardEvent;
 use App\Exception\Rules\NoConflictException;
@@ -67,6 +68,7 @@ final readonly class PlayCharacterHandler implements PlayerActionHandlerInterfac
             }
         }
 
+        $from = $card->getStack()->getType();
         $this->playService->payCost($player, $message->getCardCost() + $message->getFateCost());
         $this->playService->enterPlay($card, $player);
         $this->cardStateManager->withState(
@@ -90,6 +92,8 @@ final readonly class PlayCharacterHandler implements PlayerActionHandlerInterfac
             });
             $this->eventDispatcher->dispatch(new CharacterPlayedIntoConflictEvent($game, $card));
         }
+
+        $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $player, true, $from));
 
         $this->opportunityService->takeAction($player);
     }

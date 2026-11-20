@@ -8,6 +8,7 @@ use App\Entity\CardTypes\ConflictCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\CardEnteredPlayEvent;
 use App\Event\CharacterPutIntoConflictEvent;
 use App\Exception\Rules\NoConflictException;
 use App\Exception\Rules\NotInConflictException;
@@ -96,5 +97,6 @@ final readonly class PutCharacterIntoPlayHandler implements PlayerActionHandlerI
         }
 
         $this->provinceRefiller->schedule($from);
+        $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $controller, false, $from->getType()));
     }
 }

@@ -7,8 +7,10 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Event\CardEnteredPlayEvent;
 use App\Message\LookAtCards;
 use App\Message\PutCardOnDeck;
+use App\Model\ReactionOffer;
 
 /**
  * Truthseeker.
@@ -31,5 +33,23 @@ final readonly class Truthseeker22 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [LookAtCards::class, PutCardOnDeck::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardEnteredPlayEvent::class => 'onCardEnteredPlay'];
+    }
+
+    /**
+     * After this character enters play.
+     *
+     * @return list<ReactionOffer>
+     */
+    public function onCardEnteredPlay(CardEnteredPlayEvent $event, PhysicalCard $card, Game $game): array
+    {
+        return $event->card === $card
+            ? [new ReactionOffer($card)]
+            : [];
     }
 }

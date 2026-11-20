@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the card entering play', () => {
+    expect(triggerText(other('card_entered_play', { card: 'raid', player: 'me' }), view([]), cards)).toBe(
+      'After Night Raid enters play',
+    )
+  })
+
   it('names the phase beginning', () => {
     expect(triggerText(other('phase_began', { phase: 'conflict' }), view([]), cards)).toBe(
       'After the conflict phase begins',

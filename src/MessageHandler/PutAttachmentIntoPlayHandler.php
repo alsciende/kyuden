@@ -8,12 +8,14 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\CardEnteredPlayEvent;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\PutAttachmentIntoPlay;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
 use App\Service\ConflictService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\Registry;
 
@@ -33,6 +35,7 @@ final readonly class PutAttachmentIntoPlayHandler implements PlayerActionHandler
         private CardRepository $cardRepository,
         private ConflictService $conflictService,
         private Registry $workflowRegistry,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -58,6 +61,7 @@ final readonly class PutAttachmentIntoPlayHandler implements PlayerActionHandler
         }
 
         $controller = $message->getControllerId() === null ? $card->getPlayer() : $this->playerRepository->get($message->getControllerId(), $game);
+        $from = $card->getStack()->getType();
         $workflow = $this->workflowRegistry->get($card);
         $workflow->apply($card, 'put_into_play', [
             'stack' => $target->getStack(),
@@ -67,5 +71,7 @@ final readonly class PutAttachmentIntoPlayHandler implements PlayerActionHandler
                 'controller' => $controller,
             ]);
         }
+
+        $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $controller, false, $from));
     }
 }
