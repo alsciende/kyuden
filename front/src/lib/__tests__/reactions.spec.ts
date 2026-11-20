@@ -68,6 +68,10 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the card leaving play', () => {
+    expect(triggerText(other('card_left_play', { card: 'raid' }), view([]), cards)).toBe('After Night Raid leaves play')
+  })
+
   it('names the dynasty card turned faceup', () => {
     expect(triggerText(other('dynasty_card_turned_faceup', { card: 'raid' }), view([]), cards)).toBe(
       'After Night Raid is turned faceup',

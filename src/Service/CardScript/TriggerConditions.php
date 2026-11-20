@@ -13,6 +13,7 @@ use App\Enum\ConflictType;
 use App\Enum\Element;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
+use App\Enum\Phase;
 use App\Enum\StackType;
 use App\Enum\Type;
 use App\Service\ControlService;
@@ -27,15 +28,6 @@ use App\State\Model\ConflictState;
  */
 final readonly class TriggerConditions
 {
-    /**
-     * The places of the `game` workflow in the fate phase.
-     */
-    private const array FATE_PHASE_PLACES = [
-        'fate_phase_begins', 'discard_characters_with_no_fate', 'remove_fate_from_characters',
-        'place_fate_on_unclaimed_rings', 'fate_phase_action_window', 'ready_cards', 'discard_from_provinces',
-        'return_rings', 'pass_first_player_token', 'fate_phase_ends',
-    ];
-
     public function __construct(
         private ControlService $controlService,
         private GameStateManager $gameStateManager,
@@ -195,11 +187,11 @@ final readonly class TriggerConditions
     }
 
     /**
-     * The game is in the fate phase, from its beginning to its end ("outside the fate phase").
+     * The game is in the phase, from its beginning to its end ("outside the fate phase", "during the conflict phase").
      */
-    public function isFatePhase(Game $game): bool
+    public function isPhase(Game $game, Phase $phase): bool
     {
-        return in_array($game->getCurrentPlace(), self::FATE_PHASE_PLACES, true);
+        return Phase::ofPlace($game->getCurrentPlace()) === $phase;
     }
 
     /**

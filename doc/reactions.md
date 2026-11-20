@@ -34,7 +34,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 19 | Ring effects, fate taken from a ring | 5 | done (4: Medium of the Living Soul left out, see "Not offered") | – |
 | 20 | A character bowed or readied | 3 | done (3) | – |
 | 21 | A card turned face up in a province | 2 | done (1: Lost Papers left out, see "Not offered") | – |
-| 22 | A character leaves play | 2 | `LeavePlayListener` | an event once the card has left play |
+| 22 | A character leaves play | 2 | done (2) | – |
 | 23 | An ability triggered | 2 | the handlers `Trigger*Ability` | an event |
 | 24 | The end of the resolution of a conflict | 2 | place `return_home` | the provinces broken during the conflict |
 | – | Out of scope | 2 | – | Mindful Warrior and Shadowed Alleyway too, listed under 1 and 2 |

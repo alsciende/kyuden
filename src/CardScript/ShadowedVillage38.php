@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\Phase;
 use App\Event\FateMovedEvent;
 use App\Event\FateRemovedFromCardEvent;
 use App\Model\ReactionOffer;
@@ -54,7 +55,7 @@ final readonly class ShadowedVillage38 extends AbstractCardScript
 
         return ! $event->leavingPlay
             && $this->triggerConditions->isControlledBy($event->card, $you)
-            && ! $this->triggerConditions->isFatePhase($game)
+            && ! $this->triggerConditions->isPhase($game, Phase::Fate)
             ? [new ReactionOffer($card)]
             : [];
     }
@@ -70,7 +71,7 @@ final readonly class ShadowedVillage38 extends AbstractCardScript
 
         return $event->source instanceof PhysicalCard
             && $this->triggerConditions->isControlledBy($event->source, $you)
-            && ! $this->triggerConditions->isFatePhase($game)
+            && ! $this->triggerConditions->isPhase($game, Phase::Fate)
             ? [new ReactionOffer($card)]
             : [];
     }

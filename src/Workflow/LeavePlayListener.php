@@ -7,6 +7,7 @@ namespace App\Workflow;
 use App\Entity\PhysicalCard;
 use App\Enum\PersonalHonor;
 use App\Event\FateRemovedFromCardEvent;
+use App\Event\CardLeftPlayEvent;
 use App\Event\HonorGainedEvent;
 use App\Event\HonorLostEvent;
 use App\Event\PersonalHonorChangedEvent;
@@ -31,7 +32,8 @@ use Symfony\Component\Workflow\Transition;
  *   reset): the card goes to an out-of-play area of its owner;
  * - the attachments on a character are discarded, the characters attached to it as attachments too (ancestral
  *   attachments are not returned to hand);
- * - the character no longer participates in the conflict.
+ * - the character no longer participates in the conflict;
+ * - then the cards reacting to a card leaving play may be triggered (CardLeftPlayEvent).
  */
 #[AsEventListener(event: 'workflow.leave')]
 readonly class LeavePlayListener
@@ -64,6 +66,8 @@ readonly class LeavePlayListener
             return;
         }
 
+        $controller = $this->controlService->getController($card);
+        $character = $card->isCharacterInPlay();
         $cardState = $this->cardStateManager->getState($card);
         $honorChange = match ($cardState->getPersonalHonor()) {
             PersonalHonor::Honored => self::PERSONAL_HONOR_GAIN,
@@ -71,7 +75,6 @@ readonly class LeavePlayListener
             PersonalHonor::Ordinary => 0,
         };
         if ($honorChange !== 0) {
-            $controller = $this->controlService->getController($card);
             $this->playerStateManager->withState(
                 $controller,
                 fn (PlayerState $state): PlayerState => $state->incrementHonor($honorChange),
@@ -106,5 +109,6 @@ readonly class LeavePlayListener
 
             return $state;
         });
+        $this->eventDispatcher->dispatch(new CardLeftPlayEvent($card->getGame(), $card, $controller, $character));
     }
 }

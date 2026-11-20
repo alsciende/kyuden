@@ -7,6 +7,7 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Enum\Phase;
 use App\Event\FateMovedEvent;
 use App\Event\FateRemovedFromCardEvent;
 use App\Model\ReactionOffer;
@@ -52,7 +53,7 @@ final readonly class KaitoMai38 extends AbstractCardScript
     {
         return $event->card === $card
             && ! $event->leavingPlay
-            && ! $this->triggerConditions->isFatePhase($game)
+            && ! $this->triggerConditions->isPhase($game, Phase::Fate)
             ? [new ReactionOffer($card)]
             : [];
     }
@@ -65,7 +66,7 @@ final readonly class KaitoMai38 extends AbstractCardScript
     public function onFateMoved(FateMovedEvent $event, PhysicalCard $card, Game $game): array
     {
         return $event->source === $card
-            && ! $this->triggerConditions->isFatePhase($game)
+            && ! $this->triggerConditions->isPhase($game, Phase::Fate)
             ? [new ReactionOffer($card)]
             : [];
     }
