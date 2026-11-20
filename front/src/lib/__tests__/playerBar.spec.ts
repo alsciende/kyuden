@@ -92,8 +92,8 @@ describe('playerBar', () => {
     const me = player('me', [], { honor_bid: 3 })
     const view = game(me, player('opp'), { first_player_id: 'me' })
 
-    expect(playerBar(view, me)).toMatchObject({ firstPlayer: true, notes: [] })
-    expect(playerBar({ ...view, place: 'draw_phase_action_window' }, me).notes).toEqual(['Bid 3'])
+    expect(playerBar(view, me)).toMatchObject({ firstPlayer: true, bid: null, notes: [] })
+    expect(playerBar({ ...view, place: 'draw_phase_action_window' }, me)).toMatchObject({ bid: 3, notes: [] })
   })
 })
 
@@ -123,6 +123,7 @@ describe('playerEffects', () => {
       'discard_random_card_from_hand',
       'shuffle_conflict_deck',
       'shuffle_dynasty_deck',
+      'set_honor_bid',
     ],
   })
 
@@ -195,6 +196,23 @@ describe('playerEffects', () => {
       label: 'Give 1 to you',
       payload: { giver_id: 'opp', recipient_id: 'me', amount: 1 },
     })
+  })
+
+  it('changes the honor bid revealed from its badge, not from the honor', () => {
+    const bidding = { ...everything, players: everything.players.map((one) => ({ ...one, honor_bid: 3 })) }
+    const bidder = bidding.players.find((one) => one.id === 'opp')!
+
+    expect(playerEffects(bidding, bidder, 'honor', 4).map((effect) => effect.type)).not.toContain('set_honor_bid')
+    expect(playerEffects(bidding, bidder, 'bid', 4)).toEqual([
+      {
+        type: 'set_honor_bid',
+        label: 'Set the bid to 4',
+        payload: { target_player_id: 'opp', bid: 4 },
+        disabled: false,
+      },
+    ])
+    expect(playerEffects(bidding, bidder, 'bid', 3)[0]?.disabled).toBe(true)
+    expect(playerEffects(everything, opp, 'bid', 4)).toEqual([])
   })
 
   it('draws, discards and shuffles the conflict cards', () => {
