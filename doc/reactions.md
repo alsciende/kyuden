@@ -32,7 +32,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 17 | The hand: discarded from it, looked at | 4 | done (4) | – |
 | 18 | The dynasty phase: passing, collecting fate | 4 | done (2: Sneaky Shinjo and Ride at Dawn left out, see "Not offered") | – |
 | 19 | Ring effects, fate taken from a ring | 5 | done (4: Medium of the Living Soul left out, see "Not offered") | – |
-| 20 | A character bowed or readied | 3 | transitions `bow`, `ready` | an event after the transition; the cause |
+| 20 | A character bowed or readied | 3 | done (3) | – |
 | 21 | A card turned face up in a province | 2 | transition `turn_faceup` of a dynasty card | an event after the transition |
 | 22 | A character leaves play | 2 | `LeavePlayListener` | an event once the card has left play |
 | 23 | An ability triggered | 2 | the handlers `Trigger*Ability` | an event |

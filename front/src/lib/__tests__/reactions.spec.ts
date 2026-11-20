@@ -68,6 +68,11 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the character bowed or readied', () => {
+    expect(triggerText(other('card_bowed', { card: 'raid' }), view([]), cards)).toBe('After Night Raid bows')
+    expect(triggerText(other('card_readied', { card: 'raid' }), view([]), cards)).toBe('After Night Raid is readied')
+  })
+
   it('names the player taking the fate of a ring', () => {
     expect(triggerText(other('ring_fate_taken', { player: 'opp', ring: 'fire' }), view([]), cards)).toBe(
       `After your opponent takes the fate of the ${ELEMENT_NAMES.fire} ring`,

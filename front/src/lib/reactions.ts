@@ -77,6 +77,10 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'card_bowed':
+      return `After ${cardName(game, cards, window.params.card) ?? 'a character'} bows`
+    case 'card_readied':
+      return `After ${cardName(game, cards, window.params.card) ?? 'a character'} is readied`
     case 'ring_fate_taken': {
       const ring = ELEMENT_NAMES[window.params.ring as Element] ?? 'a'
 

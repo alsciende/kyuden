@@ -6,9 +6,11 @@ namespace App\Workflow\Game;
 
 use App\Entity\Game;
 use App\Enum\Orientation;
+use App\Event\CardBowedEvent;
 use App\Repository\CardRepository;
 use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
 use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\Registry;
@@ -23,6 +25,7 @@ readonly class ReturnedHomeTransitionListener
         private GameStateManager $stateManager,
         private CardRepository $cardRepository,
         private Registry $workflowRegistry,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -38,6 +41,7 @@ readonly class ReturnedHomeTransitionListener
             $card = $this->cardRepository->get($cardId, $game);
             if ($card->getOrientation() === Orientation::FaceUp) {
                 $this->workflowRegistry->get($card)->apply($card, 'bow');
+                $this->eventDispatcher->dispatch(new CardBowedEvent($game, $card, false));
             }
         }
 

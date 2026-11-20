@@ -6,10 +6,12 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Event\CardReadiedEvent;
 use App\Message\ReadyCard;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\Registry;
 
@@ -26,6 +28,7 @@ final readonly class ReadyCardHandler implements PlayerActionHandlerInterface
         private PlayerRepository $playerRepository,
         private CardRepository $cardRepository,
         private Registry $workflowRegistry,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -43,5 +46,6 @@ final readonly class ReadyCardHandler implements PlayerActionHandlerInterface
         $card = $this->cardRepository->get($message->getCardId(), $game);
 
         $this->workflowRegistry->get($card)->apply($card, 'ready');
+        $this->eventDispatcher->dispatch(new CardReadiedEvent($game, $card, true));
     }
 }
