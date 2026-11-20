@@ -82,6 +82,21 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The role of the player is of the element ("a ring that matches the element of your role": Keeper of Air has the
+     * trait `air`).
+     */
+    public function isElementOfRole(Player $player, Element $element): bool
+    {
+        foreach ($player->getUniqueStack(StackType::Role)->getCards() as $role) {
+            if ($this->hasTrait($role, $element->value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The character is honored.
      */
     public function isHonored(PhysicalCard $character): bool

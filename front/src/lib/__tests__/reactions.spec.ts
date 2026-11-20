@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the ring claimed and its player', () => {
+    expect(triggerText(other('ring_claimed', { player: 'opp', ring: 'water' }), view([]), cards)).toBe(
+      'After your opponent claims the Water ring',
+    )
+  })
+
   it('names the winner of the conflict', () => {
     expect(triggerText(other('conflict_won', { winner: 'me' }), view([]), cards)).toBe('After you win the conflict')
     expect(triggerText(other('conflict_won', { winner: 'opp' }), view([]), cards)).toBe(

@@ -15,3 +15,4 @@ To add the script of a card:
 - a province revealed (`ProvinceRevealedEvent`, dispatched once the transition `reveal` of `province_card` has completed): 34 cards;
 - a conflict won or lost (`ConflictWonEvent`, when the result is determined, in `react_to_conflict_result`; a conflict nobody wins triggers nothing): 88 cards.
 - a conflict declared: once the attacked province is revealed, entering `react_to_conflict_declaration` (`ConflictDeclarationCompletedEvent`, after the transition `attacked_province_revealed`: the rules put the reactions there, and a province face down could not trigger its own), 25 cards; the declaration itself (`ConflictDeclaredEvent`, before the province is revealed: The Crashing Wave, and Enlightened Warrior, to the fate of the ring chosen, which the attacker takes at once), 2 cards.
+- a ring claimed (`RingClaimedEvent`: by the winner of a conflict, in `react_to_ring_claim`, or by an effect, `ClaimRing`): 7 cards.

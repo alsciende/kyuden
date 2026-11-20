@@ -1,7 +1,8 @@
 import { ref, watch, type Ref } from 'vue'
 
-import type { GameView, ReactionWindowView } from '@/api/game'
+import type { Element, GameView, ReactionWindowView } from '@/api/game'
 import { locate, viewer, type Cards } from '@/lib/board'
+import { ELEMENT_NAMES } from '@/lib/icons'
 
 /**
  * The reactions the engine offers the viewer: once a triggering condition has occurred (a province revealed…), a
@@ -56,6 +57,11 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
     case 'conflict_declared':
     case 'conflict_declaration_completed':
       return `After ${subject(game, window.params.attacker, 'declare', 'declares')} a conflict`
+    case 'ring_claimed': {
+      const ring = ELEMENT_NAMES[window.params.ring as Element] ?? 'a'
+
+      return `After ${subject(game, window.params.player, 'claim', 'claims')} the ${ring} ring`
+    }
     case 'conflict_won':
       return `After ${subject(game, window.params.winner, 'win', 'wins')} the conflict`
     default:
