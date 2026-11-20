@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the card played and its player', () => {
+    expect(triggerText(other('card_played', { card: 'outflank', player: 'opp' }), view([]), cards)).toBe(
+      'After your opponent plays Outflank',
+    )
+  })
+
   it('names the card entering play', () => {
     expect(triggerText(other('card_entered_play', { card: 'raid', player: 'me' }), view([]), cards)).toBe(
       'After Night Raid enters play',

@@ -22,7 +22,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 7 | Defenders declared, a character declared as attacker or defender | 4 | done (2) | – |
 | 8 | A phase begins | 24 | done (21) | – |
 | 9 | A character or an attachment enters play | 22 | done (22) | – |
-| 10 | A player plays this card, or a character | 14 | the play transitions | the same event as 9 |
+| 10 | A player plays this card, or a character | 14 | done (14) | – |
 | 11 | A card played (an event, a trait, during a conflict) | 21 | `EventCardPlayedEvent` (events only), `FateSpentEvent` | an event for every card played, with its traits |
 | 12 | Duels | 7 | `DuelWonEvent`, `DuelEndedEvent`; the dials of a duel done with 6 (Iaijutsu Master, Niten Pupil) | the events triggering |
 | 13 | A character moves to the conflict | 7 | `CharacterMovedToConflictEvent`, `CharacterPlayedIntoConflictEvent`, `CharacterPutIntoConflictEvent` | the events triggering ("commits": 2 and 7) |
@@ -306,7 +306,7 @@ The transitions into `in_play` and `attached` (played, put into play, played as 
 
 ## 10. A player plays this card, or a character (14)
 
-The event of 9, played only ("play" is not "put into play"): `PlayCharacter`, `PlayCharacterFromProvince`, `PlayAttachment`, `PlayCharacterAsAttachment`. Conditions: this card, from the hand or the provinces, into the conflict (Shinjo Ambusher), during a conflict, the clan and the printed cost of a character played by the player.
+`CardPlayedEvent`, dispatched after the event of 9 ("play" is not "put into play", so that the two are apart, and 11 shares it): `PlayCharacter`, `PlayCharacterFromProvince`, `PlayAttachment`, `PlayCharacterAsAttachment`. Conditions: this card, from the hand or the provinces, into the conflict (Shinjo Ambusher), during a conflict, the clan and the printed cost of a character played by the player.
 
 - Shosuro Miyako (`01-shosuro-miyako`, character): After you play a character from your hand
 - Meek Informant (`02-meek-informant`, character): After you play this character

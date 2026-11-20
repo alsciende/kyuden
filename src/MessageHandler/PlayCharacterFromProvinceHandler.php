@@ -9,6 +9,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Event\CardEnteredPlayEvent;
+use App\Event\CardPlayedEvent;
 use App\Event\FatePlacedOnCardEvent;
 use App\Event\FateSpentEvent;
 use App\Exception\Rules\NotActivePlayerException;
@@ -102,6 +103,7 @@ final readonly class PlayCharacterFromProvinceHandler implements PlayerActionHan
         }
         $this->provinceRefiller->schedule($province);
         $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $player, true, $province->getType()));
+        $this->eventDispatcher->dispatch(new CardPlayedEvent($game, $card, $player, $province->getType(), $message->getCardCost() + $message->getFateCost()));
 
         $this->opportunityService->takeAction($player);
     }

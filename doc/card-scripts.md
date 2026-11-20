@@ -22,3 +22,4 @@ To add the script of a card:
 - a character declared as an attacker (the declaration complete, above) or as a defender (`DefendersDeclaredEvent`): 2 cards.
 - a phase begun (`PhaseBeganEvent`, once a transition `*_phase_began` has completed, with the phase): 21 cards.
 - a character or an attachment entered play (`CardEnteredPlayEvent`: played, by the handlers of `PlayCharacter`, `PlayCharacterFromProvince`, `PlayAttachment`, `PlayCharacterAsAttachment`, or put into play, `PutCharacterIntoPlay`, `PutAttachmentIntoPlay`, once it has joined the conflict, with the stack it came from): 22 cards.
+- a card played (`CardPlayedEvent`: a character or an attachment, after `CardEnteredPlayEvent`; playing is not putting into play), with the stack it came from and the fate spent: 14 cards.

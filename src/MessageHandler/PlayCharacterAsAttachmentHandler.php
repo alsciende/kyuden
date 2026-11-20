@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
 use App\Event\CardEnteredPlayEvent;
+use App\Event\CardPlayedEvent;
 use App\Message\PlayCharacterAsAttachment;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
@@ -62,6 +63,7 @@ final readonly class PlayCharacterAsAttachmentHandler implements PlayerActionHan
             'stack' => $target->getStack(),
         ], asAttachment: true);
         $this->eventDispatcher->dispatch(new CardEnteredPlayEvent($game, $card, $player, true, $from));
+        $this->eventDispatcher->dispatch(new CardPlayedEvent($game, $card, $player, $from, $message->getCardCost()));
 
         $this->opportunityService->takeAction($player);
     }
