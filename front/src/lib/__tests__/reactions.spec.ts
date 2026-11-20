@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the phase beginning', () => {
+    expect(triggerText(other('phase_began', { phase: 'conflict' }), view([]), cards)).toBe(
+      'After the conflict phase begins',
+    )
+  })
+
   it('names the province broken and the player who broke it', () => {
     expect(triggerText(other('province_broken', { province: 'raid', breaker: 'opp' }), view([]), cards)).toBe(
       'After your opponent breaks Night Raid',

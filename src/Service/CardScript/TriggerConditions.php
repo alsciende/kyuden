@@ -148,6 +148,22 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The player has the Imperial Favor.
+     */
+    public function hasImperialFavor(Player $player): bool
+    {
+        return $this->gameStateManager->getState($player->getGame())->imperialFavorHolderId === $player->getId();
+    }
+
+    /**
+     * The number of characters the player controls in play ("if an opponent controls more characters than you").
+     */
+    public function countCharacters(Player $player): int
+    {
+        return count($player->getCharactersInPlay());
+    }
+
+    /**
      * The player controls a ready character ("if he or she controls 1 or more ready characters").
      */
     public function hasReadyCharacter(Player $player): bool
