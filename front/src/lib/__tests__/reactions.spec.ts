@@ -18,7 +18,7 @@ function window(
   cardIds: string[],
   params: Record<string, string> = { province: 'raid' },
 ): ReactionWindowView {
-  return { id, trigger: 'province_revealed', params, card_ids: cardIds }
+  return { id, trigger: 'province_revealed', params, card_ids: cardIds, forced_card_ids: [] }
 }
 
 function view(windows: ReactionWindowView[], changes: Partial<GameView> = {}): GameView {
@@ -51,6 +51,7 @@ describe('triggerText of the other triggering conditions', () => {
     trigger,
     params,
     card_ids: [],
+    forced_card_ids: [],
   })
 
   it('names the attacking player', () => {

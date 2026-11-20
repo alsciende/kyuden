@@ -20,6 +20,7 @@ final readonly class PlayerView
      * @param list<StackView>    $stacks
      * @param list<ResolutionView> $resolutions
      * @param list<ReactionWindowView> $reactionWindows
+     * @param list<ForcedReactionView> $forcedReactions
      */
     public function __construct(
         public string $id,
@@ -68,6 +69,10 @@ final readonly class PlayerView
          * (none for the other players).
          */
         public array $reactionWindows,
+        /**
+         * The forced reactions the player has to trigger, for every reader: nobody moves the game on meanwhile.
+         */
+        public array $forcedReactions,
         public bool $fateCollected,
         public int $conflictOpportunities,
         public array $declaredConflictTypes,

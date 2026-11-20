@@ -27,6 +27,7 @@ use App\View\GameViewFactory;
 use App\View\Model\CardView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
+use App\View\Model\ForcedReactionView;
 use App\View\Model\ReactionWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\StackView;
@@ -253,6 +254,31 @@ class GameViewFactoryTest extends AbstractKernelTestCase
 
         self::assertEquals([new ReactionWindowView('1', 'province_revealed', ['province' => 'p'], [$scenario->card('outflank')->getId()])], $johnsView->reactionWindows);
         self::assertSame([], $janesViewOfJohn->reactionWindows);
+    }
+
+    public function testTheForcedReactionsAreVisibleToEveryPlayerWhileTheirControllerCanTriggerThem(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('01-entrenched-position', dynasty: '13-kuni-laboratory', dynastyAs: 'laboratory', dynastyFaceup: true)
+                ->dynastyDiscardPile(['discarded' => '24-bayushi-shoju']))
+            ->withPlayer('jane')
+            ->build();
+        $laboratory = $scenario->card('laboratory')->getId();
+        self::service(PlayerStateManager::class)->withState(
+            $scenario->player('john'),
+            // Bayushi Shoju has left play since the window opened: nobody waits for it
+            fn (PlayerState $state): PlayerState => $state->openReactionWindow(new ReactionWindow('1', 'phase_began', ['phase' => 'conflict'], [$laboratory, $scenario->card('discarded')->getId()], [$laboratory, $scenario->card('discarded')->getId()])),
+        );
+
+        $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
+        $janesViewOfJohn = $this->playerView($this->view($scenario, 'jane'), $scenario, 'john');
+
+        $forced = [new ForcedReactionView($laboratory, '1', 'phase_began', ['phase' => 'conflict'])];
+        self::assertEquals($forced, $johnsView->forcedReactions);
+        self::assertEquals($forced, $janesViewOfJohn->forcedReactions);
+        self::assertSame([$laboratory, $scenario->card('discarded')->getId()], $johnsView->reactionWindows[0]->forcedCardIds);
     }
 
     public function testTheChosenStrongholdProvinceIsVisibleToItsOwnerOnly(): void

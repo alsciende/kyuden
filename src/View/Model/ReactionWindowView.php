@@ -14,12 +14,14 @@ final readonly class ReactionWindowView
     /**
      * @param array<string, string> $params
      * @param list<string>          $cardIds
+     * @param list<string>          $forcedCardIds those of the cards whose reaction is forced: they cannot be declined
      */
     public function __construct(
         public string $id,
         public string $trigger,
         public array $params,
         public array $cardIds,
+        public array $forcedCardIds = [],
     ) {
     }
 }

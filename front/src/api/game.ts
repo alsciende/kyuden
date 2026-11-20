@@ -78,6 +78,17 @@ export interface ReactionWindowView {
   trigger: string
   params: Record<string, string>
   card_ids: string[]
+  /** those of the cards whose reaction is forced: they cannot be declined */
+  forced_card_ids: string[]
+}
+
+/** a forced reaction a player has to trigger, shown to every reader: nobody moves the game on meanwhile */
+export interface ForcedReactionView {
+  card_id: string
+  /** the reaction window offering it to its controller */
+  window_id: string
+  trigger: string
+  params: Record<string, string>
 }
 
 export interface PlayerView {
@@ -102,6 +113,8 @@ export interface PlayerView {
   resolutions: ResolutionView[]
   /** the oldest first; for the viewer only (none for the other players) */
   reaction_windows: ReactionWindowView[]
+  /** the forced reactions the player has to trigger (those they can trigger now), for every reader */
+  forced_reactions: ForcedReactionView[]
   fate_collected: boolean
   conflict_opportunities: number
   declared_conflict_types: ConflictType[]
