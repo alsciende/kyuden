@@ -77,6 +77,16 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'personal_honor_changed': {
+      const name = cardName(game, cards, window.params.card) ?? 'a character'
+      const action = window.params.action
+
+      return action === 'honored' || action === 'dishonored'
+        ? `After ${name} is ${action}`
+        : `After ${name} becomes ordinary`
+    }
+    case 'status_token_placed':
+      return `After ${cardName(game, cards, window.params.card) ?? 'a card'} receives a status token`
     case 'honor_gained':
       return `After ${subject(game, window.params.player, 'gain', 'gains')} honor`
     case 'honor_lost':

@@ -6,6 +6,7 @@ namespace App\MessageHandler;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\PersonalHonor;
 use App\Event\PersonalHonorChangedEvent;
 use App\Message\HonorCharacter;
 use App\Repository\CardRepository;
@@ -52,6 +53,6 @@ final readonly class HonorCharacterHandler implements PlayerActionHandlerInterfa
             $card,
             fn (CardState $state): CardState => $state->honor(),
         );
-        $this->eventDispatcher->dispatch(new PersonalHonorChangedEvent($game, $card, $this->cardStateManager->getState($card)->getPersonalHonor()));
+        $this->eventDispatcher->dispatch(new PersonalHonorChangedEvent($game, $card, $this->cardStateManager->getState($card)->getPersonalHonor(), PersonalHonor::Honored));
     }
 }

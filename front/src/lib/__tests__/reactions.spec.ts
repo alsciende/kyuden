@@ -67,6 +67,15 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the character honored or dishonored', () => {
+    expect(triggerText(other('personal_honor_changed', { card: 'raid', action: 'dishonored' }), view([]), cards)).toBe(
+      'After Night Raid is dishonored',
+    )
+    expect(triggerText(other('status_token_placed', { card: 'raid' }), view([]), cards)).toBe(
+      'After Night Raid receives a status token',
+    )
+  })
+
   it('names the player gaining, losing or giving honor', () => {
     expect(triggerText(other('honor_gained', { player: 'opp' }), view([]), cards)).toBe(
       'After your opponent gains honor',
