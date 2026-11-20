@@ -33,7 +33,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 18 | The dynasty phase: passing, collecting fate | 4 | done (2: Sneaky Shinjo and Ride at Dawn left out, see "Not offered") | – |
 | 19 | Ring effects, fate taken from a ring | 5 | done (4: Medium of the Living Soul left out, see "Not offered") | – |
 | 20 | A character bowed or readied | 3 | done (3) | – |
-| 21 | A card turned face up in a province | 2 | transition `turn_faceup` of a dynasty card | an event after the transition |
+| 21 | A card turned face up in a province | 2 | done (1: Lost Papers left out, see "Not offered") | – |
 | 22 | A character leaves play | 2 | `LeavePlayListener` | an event once the card has left play |
 | 23 | An ability triggered | 2 | the handlers `Trigger*Ability` | an event |
 | 24 | The end of the resolution of a conflict | 2 | place `return_home` | the provinces broken during the conflict |
@@ -419,6 +419,7 @@ A discard from a hand (the transitions of `DiscardCard`, `DiscardRandomCardFromH
 - Shinjo Scout (`07-shinjo-scout`, character): After you gain fate for passing in the dynasty phase
 - Sneaky Shinjo (`10-sneaky-shinjo`, character): After you pass in the dynasty phase
 - Shiro Shinjo (`17-shiro-shinjo`, stronghold): After you collect fate during the dynasty phase
+- Lost Papers (`31-lost-papers`, event): a dynasty event, as Ride at Dawn below.
 - Medium of the Living Soul (`28-medium-of-the-living-soul`, character): its action grants the reaction to a participating character until the end of the conflict, a lasting effect the engine does not keep (and it has no script yet).
 - Ride at Dawn (`32-ride-at-dawn`, event): After you pass during the dynasty phase
 
@@ -430,6 +431,7 @@ A discard from a hand (the transitions of `DiscardCard`, `DiscardRandomCardFromH
 - Trusted Advisor (`21-trusted-advisor`, character): After you gain fate from a ring during a conflict in which this character is participating
 - Four Temples Advisor (`25-four-temples-advisor`, attachment): After you gain fate from a ring
 - Isawa Tsuke (`27-isawa-tsuke`, character): After you honor or dishonor a character by the effect of the fire ring
+- Lost Papers (`31-lost-papers`, event): a dynasty event, as Ride at Dawn below.
 - Medium of the Living Soul (`28-medium-of-the-living-soul`, character): After you resolve a ring effect during a conflict in which this character is participating
 
 ## 20. A character bowed or readied (3)
@@ -479,11 +481,12 @@ Their effect is not the choice of their player ("Forced Reaction:"): the engine 
 - A pass on declaring a conflict: Hida Amoro (`08-hida-amoro`).
 - Declared as attacker or defender, defenders declared: Marauding Oni (`10-marauding-oni`), Arrogant Kakita (`39-arrogant-kakita`).
 
-## Not offered (3)
+## Not offered (4)
 
 Cards whose reaction the engine does not accept where the card is, left out until it does:
 
 - Sneaky Shinjo (`10-sneaky-shinjo`, character): it reacts from a province, where only a holding triggers its abilities (`Workflow/DynastyCard/TriggerAbilityGuardListener`).
+- Lost Papers (`31-lost-papers`, event): a dynasty event, as Ride at Dawn below.
 - Medium of the Living Soul (`28-medium-of-the-living-soul`, character): its action grants the reaction to a participating character until the end of the conflict, a lasting effect the engine does not keep (and it has no script yet).
 - Ride at Dawn (`32-ride-at-dawn`, event): a dynasty event, face up in a province; the engine plays the events of the conflict deck only (`play_event` of `conflict_card`), the 13 dynasty events of the fixtures included.
 
