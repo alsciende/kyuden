@@ -10,6 +10,7 @@ use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\AbilityTiming;
 use App\Enum\Type;
+use App\Event\CardPlayedEvent;
 use App\Event\EventCardPlayedEvent;
 use App\Event\FateSpentEvent;
 use App\Exception\Rules\NotPlayableException;
@@ -85,7 +86,8 @@ readonly class PlayService
 
     /**
      * The player pays the cost of an event with an ability of that timing; the event goes to the discard pile of its
-     * owner, and its effects are resolved with other actions.
+     * owner, and its effects are resolved with other actions. Once there, the cards reacting to a card played may be
+     * triggered (CardPlayedEvent).
      */
     public function playEvent(PhysicalCard $card, Player $player, int $cardCost, AbilityTiming $timing): void
     {
@@ -94,9 +96,11 @@ readonly class PlayService
             throw new WrongAbilityTimingException($card, $timing);
         }
 
+        $from = $card->getStack()->getType();
         $this->payCost($player, $cardCost);
         $this->eventDispatcher->dispatch(new EventCardPlayedEvent($player->getGame(), $player, $card));
         $this->conflictCardStateMachine->apply($card, 'play_event');
+        $this->eventDispatcher->dispatch(new CardPlayedEvent($player->getGame(), $card, $player, $from, $cardCost));
     }
 
     /**

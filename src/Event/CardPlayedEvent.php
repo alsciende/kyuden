@@ -11,10 +11,11 @@ use App\Enum\StackType;
 use App\Enum\Type;
 
 /**
- * A player has played a card: a character or an attachment once it has entered play (after CardEnteredPlayEvent,
- * once it has joined the conflict when it enters it). Playing is not putting into play. The triggering condition of
- * the cards reacting to a card played ("After you play this character", "After you play a [clan-crane] character"),
- * which read the conflict in the state. Not logged: the transition writes its entry.
+ * A player has played a card: an event once in the discard pile (PlayService::playEvent()), a character or an
+ * attachment once it has entered play (after CardEnteredPlayEvent, once it has joined the conflict when it enters it).
+ * Playing is not putting into play. The triggering condition of the cards reacting to a card played ("After you play
+ * this character", "After an opponent plays an event during a conflict…"), which read the conflict in the state. Not
+ * logged: the transition writes its entry.
  */
 final readonly class CardPlayedEvent implements TriggeringEventInterface
 {
@@ -63,6 +64,14 @@ final readonly class CardPlayedEvent implements TriggeringEventInterface
     public function isFromProvince(): bool
     {
         return in_array($this->from, [StackType::RegularProvince, StackType::StrongholdProvince], true);
+    }
+
+    /**
+     * The card played has the printed trait ("a Spell card"), as the fixtures name it.
+     */
+    public function hasTrait(string $trait): bool
+    {
+        return in_array($trait, $this->card->getLogicalCard()->getTraits() ?? [], true);
     }
 
     /**

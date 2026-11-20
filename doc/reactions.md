@@ -23,7 +23,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 8 | A phase begins | 24 | done (21) | – |
 | 9 | A character or an attachment enters play | 22 | done (22) | – |
 | 10 | A player plays this card, or a character | 14 | done (14) | – |
-| 11 | A card played (an event, a trait, during a conflict) | 21 | `EventCardPlayedEvent` (events only), `FateSpentEvent` | an event for every card played, with its traits |
+| 11 | A card played (an event, a trait, during a conflict) | 21 | done (21) | – |
 | 12 | Duels | 7 | `DuelWonEvent`, `DuelEndedEvent`; the dials of a duel done with 6 (Iaijutsu Master, Niten Pupil) | the events triggering |
 | 13 | A character moves to the conflict | 7 | `CharacterMovedToConflictEvent`, `CharacterPlayedIntoConflictEvent`, `CharacterPutIntoConflictEvent` | the events triggering ("commits": 2 and 7) |
 | 14 | Fate placed on or removed from a character | 6 | `FatePlacedOnCardEvent`, `FateRemovedFromCardEvent` | the events triggering; the total removed in the fate phase |
@@ -44,8 +44,8 @@ Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one trigger
 ## Questions to decide
 
 - **The cause of an effect** (Ready for Battle, Ardent Omoidasu, Righteous Samurai, Shiotome Heroine, Akodo Motivator, Shosuro Hyobu, Adorned Temple, Isawa Tsuke, Curry Favor): "an opponent's card effect", "a ring effect", "by a card effect", "as a result of conflict resolution". The engine does not know which ability a message applies. It knows the sender, what they resolve (`PlayerState::resolutions`) and the step (`resolve_ring_effects`, the bows of the end of a conflict): enough to approximate, or the card is offered on every change and its player judges.
-- **The targets of an event** (Withstand the Darkness, Dragon Tattoo): the engine does not know what an event chooses; offered for every event played (by the opponent, by the player), the player judges.
-- **The effects of an event resolved** (The Mirror's Gaze): once the opponent ends the resolution of an event (`EndResolution`), not once they play it.
+- **The targets of an event** (decided): the engine does not know what an event chooses; Withstand the Darkness and Dragon Tattoo are offered for every event played (by the opponent while the player controls a Crab character, by the player), the player judges.
+- **The effects of an event resolved** (decided): The Mirror's Gaze is offered once the opponent plays an event; the window blocks nothing, so that its player triggers it once the effects have resolved, which the engine does not know.
 - **The declaration and the reveal** (decided): the reactions to the declaration come once the attacked province is revealed (`ConflictDeclarationCompletedEvent`), as the rules say and so that a province reacting to its attack can trigger, face up; The Crashing Wave (before the province is revealed) and Enlightened Warrior (the fate on the contested ring, which the attacker takes at once) react to the declaration itself (`ConflictDeclaredEvent`, which carries the fate of the ring).
 - **"Commits to a conflict"** (Spyglass, Daikyū): declared as attacker or defender; with the moves to the conflict (13), it needs the events of 2 and 7.
 
@@ -325,7 +325,7 @@ The transitions into `in_play` and `attached` (played, put into play, played as 
 
 ## 11. A card played (21)
 
-`EventCardPlayedEvent` covers the events; the characters and attachments played need the event of 10, so that one condition reads every card played. Conditions: the player or an opponent, during a conflict, a participating or defending character, the type (event), the traits (Spell, Air, Water, Gaijin, Tactic, Tattoo, Weapon, Kihō, Meishōdō, Mahō), the fate spent on it (`FateSpentEvent`: Sententious Poet), the honor of the players. See "Questions to decide" for the targets and The Mirror's Gaze.
+`CardPlayedEvent` of 10, dispatched for the events too (once in the discard pile), so that one condition reads every card played. Conditions: the player or an opponent, during a conflict, a participating or defending character, the type (event), the traits (Spell, Air, Water, Gaijin, Tactic, Tattoo, Weapon, Kihō, Meishōdō, Mahō), the fate spent on it (`FateSpentEvent`: Sententious Poet), the honor of the players. See "Questions to decide" for the targets and The Mirror's Gaze.
 
 - Niten Master (`01-niten-master`, character): After you attach a Weapon attachment to this character
 - Watch Commander (`01-watch-commander`, attachment): After an opponent plays a card during a conflict in which attached character is participating

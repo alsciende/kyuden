@@ -24,10 +24,19 @@ use App\Tests\Builder\Scenario;
  */
 class CardPlayedReactionsTest extends AbstractKernelTestCase
 {
+    /**
+     * The cards reacting to a card played: a character or an attachment (CardPlayedReactionsTest), an event
+     * (CardPlayedEventReactionsTest), whatever card (both).
+     */
     private const array CODES = [
-        '01-shosuro-miyako', '02-meek-informant', '04-hiruma-skirmisher', '12-hawk-tattoo', '13-mark-of-shame',
-        '15-ignoble-enforcers', '16-shinjo-ambusher', '17-agasha-taiko', '17-aranat', '18-asahina-takamori',
-        '18-benevolent-host', '21-shinjo-gunso', '21-shosuro-miyako', '42-audience-chamber',
+        '01-niten-master', '01-shosuro-miyako', '01-watch-commander', '02-meek-informant', '04-hiruma-skirmisher',
+        '08-doji-shigeru', '08-shiba-tetsu', '09-isawa-uona', '09-the-mirror-s-gaze', '12-hawk-tattoo',
+        '13-mark-of-shame', '15-ignoble-enforcers', '15-yasuki-oguri', '16-shinjo-ambusher', '17-agasha-taiko',
+        '17-aranat', '18-asahina-takamori', '18-benevolent-host', '18-winter-court-hosts', '19-sententious-poet',
+        '21-doji-hotaru', '21-isawa-heiko', '21-shinjo-gunso', '21-shosuro-miyako', '23-erudite-prestige',
+        '23-withstand-the-darkness', '25-dragon-tattoo', '25-togashi-acolyte', '25-togashi-gaijutsu',
+        '34-worldly-shiotome', '38-iuchi-shahai', '42-audience-chamber', '42-field-tactician', '42-silent-enforcer',
+        '42-togashi-dreamer',
     ];
 
     /**
