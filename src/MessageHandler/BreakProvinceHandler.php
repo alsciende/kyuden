@@ -8,11 +8,14 @@ use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Entity\Player;
 use App\Enum\Type;
+use App\Event\ProvinceBrokenEvent;
 use App\Exception\Rules\WrongCardTypeException;
 use App\Message\BreakProvince;
 use App\Repository\CardRepository;
 use App\Repository\GameRepository;
 use App\Repository\PlayerRepository;
+use App\Service\ControlService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Workflow\WorkflowInterface;
@@ -32,6 +35,8 @@ final readonly class BreakProvinceHandler implements PlayerActionHandlerInterfac
         private CardRepository $cardRepository,
         #[Target('province_card')]
         private WorkflowInterface $provinceCardStateMachine,
+        private ControlService $controlService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -44,13 +49,16 @@ final readonly class BreakProvinceHandler implements PlayerActionHandlerInterfac
     public function __invoke(BreakProvince $message): void
     {
         $game = $this->gameRepository->get($message->getGameId());
+        $player = $this->playerRepository->get($message->getPlayerId(), $game);
         // checks that the sender is a player of the game
-        $this->assertAvailable($game, $this->playerRepository->get($message->getPlayerId(), $game));
+        $this->assertAvailable($game, $player);
         $province = $this->cardRepository->get($message->getProvinceId(), $game);
         if (! $province instanceof ProvinceCard) {
             throw new WrongCardTypeException($province, Type::Province);
         }
 
         $this->provinceCardStateMachine->apply($province, 'break');
+        // the sender breaks it, by the effect they apply
+        $this->eventDispatcher->dispatch(new ProvinceBrokenEvent($game, $province, $this->controlService->getController($province), $player));
     }
 }

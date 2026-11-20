@@ -17,7 +17,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 2 | A conflict declared (attackers, covert) | 33 | done (27) | – |
 | 3 | A ring claimed | 8 | done (7) | – |
 | 4 | A pass on declaring a conflict | 10 | done (9) | – |
-| 5 | A province broken | 9 | transition `break`, place `react_to_broken_province` | an event after the transition |
+| 5 | A province broken | 9 | done (9) | – |
 | 6 | The honor dials of a bid revealed | 7 | `HonorBidRevealedEvent` (one per player) | one event once every dial is revealed |
 | 7 | Defenders declared, a character declared as attacker or defender | 4 | `DefendersDeclaredEvent`, `ConflictDeclaredEvent` | the events triggering |
 | 8 | A phase begins | 24 | places `*_phase_begins` | an event when the phase begins |

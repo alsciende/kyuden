@@ -61,6 +61,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the province broken and the player who broke it', () => {
+    expect(triggerText(other('province_broken', { province: 'raid', breaker: 'opp' }), view([]), cards)).toBe(
+      'After your opponent breaks Night Raid',
+    )
+  })
+
   it('names the player passing on declaring a conflict', () => {
     expect(triggerText(other('conflict_passed', { player: 'me' }), view([]), cards)).toBe(
       'After you pass on declaring a conflict',
