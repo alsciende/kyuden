@@ -40,6 +40,7 @@ class ConflictDeclaredReactionsTest extends AbstractKernelTestCase
      */
     private const array COMPLETED_CODES = [
         '01-endless-plains', '01-mantra-of-fire', '09-ancient-master', '38-ki-alignment', '01-secret-cache', '04-mantra-of-water', '04-war-dog-master',
+        '01-spyglass', '42-daikyu',
         '09-hiruma-outpost', '09-sacred-sanctuary', '14-mantra-of-earth', '14-tengu-sensei', '16-midnight-revels',
         '22-fortified-assembly', '22-issue-a-challenge', '23-shiro-kitsuki', '24-mantra-of-air', '25-fuchi-mura',
         '26-shinjo-yasamura', '28-battle-aspirant', '30-never-yield', '31-mantra-of-void', '32-under-siege',

@@ -31,7 +31,7 @@ class CardPlayedReactionsTest extends AbstractKernelTestCase
     private const array CODES = [
         '01-niten-master', '01-shosuro-miyako', '01-watch-commander', '02-meek-informant', '04-hiruma-skirmisher',
         '08-doji-shigeru', '08-shiba-tetsu', '09-isawa-uona', '09-the-mirror-s-gaze', '12-hawk-tattoo',
-        '13-mark-of-shame', '15-ignoble-enforcers', '15-yasuki-oguri', '16-shinjo-ambusher', '17-agasha-taiko',
+        '13-mark-of-shame', '15-ignoble-enforcers', '15-yasuki-oguri', '16-shinjo-ambusher', '17-agasha-taiko', '17-hida-tsuru',
         '17-aranat', '18-asahina-takamori', '18-benevolent-host', '18-winter-court-hosts', '19-sententious-poet',
         '21-doji-hotaru', '21-isawa-heiko', '21-shinjo-gunso', '21-shosuro-miyako', '23-erudite-prestige',
         '23-withstand-the-darkness', '25-dragon-tattoo', '25-togashi-acolyte', '25-togashi-gaijutsu',

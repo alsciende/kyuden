@@ -25,7 +25,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 10 | A player plays this card, or a character | 14 | done (14) | – |
 | 11 | A card played (an event, a trait, during a conflict) | 21 | done (21) | – |
 | 12 | Duels | 7 | done (5, and 2 with 6: Iaijutsu Master, Niten Pupil) | – |
-| 13 | A character moves to the conflict | 7 | `CharacterMovedToConflictEvent`, `CharacterPlayedIntoConflictEvent`, `CharacterPutIntoConflictEvent` | the events triggering ("commits": 2 and 7) |
+| 13 | A character moves to the conflict | 7 | done (7) | – |
 | 14 | Fate placed on or removed from a character | 6 | `FatePlacedOnCardEvent`, `FateRemovedFromCardEvent` | the events triggering; the total removed in the fate phase |
 | 15 | The honor of a player | 5 | `HonorGainedEvent`, `HonorLostEvent`, `HonorTransferredEvent` | the events triggering; the cause (see below) |
 | 16 | A status token, honored, dishonored | 4 | `PersonalHonorChangedEvent`, `StatusTokenPlacedEvent` | the events triggering; the cause |
@@ -47,7 +47,7 @@ Steps 1 to 7 cover 164 cards with what exists, 8 to 11 81 cards with one trigger
 - **The targets of an event** (decided): the engine does not know what an event chooses; Withstand the Darkness and Dragon Tattoo are offered for every event played (by the opponent while the player controls a Crab character, by the player), the player judges.
 - **The effects of an event resolved** (decided): The Mirror's Gaze is offered once the opponent plays an event; the window blocks nothing, so that its player triggers it once the effects have resolved, which the engine does not know.
 - **The declaration and the reveal** (decided): the reactions to the declaration come once the attacked province is revealed (`ConflictDeclarationCompletedEvent`), as the rules say and so that a province reacting to its attack can trigger, face up; The Crashing Wave (before the province is revealed) and Enlightened Warrior (the fate on the contested ring, which the attacker takes at once) react to the declaration itself (`ConflictDeclaredEvent`, which carries the fate of the ring).
-- **"Commits to a conflict"** (Spyglass, Daikyū): declared as attacker or defender; with the moves to the conflict (13), it needs the events of 2 and 7.
+- **"Commits to a conflict"** (decided: Spyglass, Daikyū): declared as attacker or defender, the events of 2 and 7, beside the moves to the conflict (13).
 
 ## 1. A conflict won or lost (93)
 
