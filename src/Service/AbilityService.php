@@ -6,8 +6,10 @@ namespace App\Service;
 
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
+use App\Event\AbilityTriggeredEvent;
 use App\Exception\Rules\NotControlledCardException;
 use App\Service\CardScript\CardScriptRegistry;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Registry;
 
 /**
@@ -20,13 +22,15 @@ readonly class AbilityService
         private Registry $workflowRegistry,
         private ControlService $controlService,
         private CardScriptRegistry $cardScriptRegistry,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
     /**
      * The card is controlled by the player and is where its abilities can be used (`trigger_ability` transition of its
      * workflow); it stays where it is. The abilities an attachment grants to the card it is attached to belong to the
-     * controller of that card, in whose stack the attachment is.
+     * controller of that card, in whose stack the attachment is. Then the cards reacting to an ability triggered may be
+     * triggered (AbilityTriggeredEvent).
      */
     public function trigger(PhysicalCard $card, Player $player): void
     {
@@ -36,6 +40,20 @@ readonly class AbilityService
 
         // fails unless the card is where its abilities can be used
         $this->workflowRegistry->get($card)->apply($card, 'trigger_ability');
+        $this->eventDispatcher->dispatch(new AbilityTriggeredEvent($card->getGame(), $card, $player, $this->getCharacter($card)));
+    }
+
+    /**
+     * The character triggering the abilities of the card: the card itself in play, or the character an attachment
+     * grants them to.
+     */
+    private function getCharacter(PhysicalCard $card): ?PhysicalCard
+    {
+        if ($card->isCharacterInPlay()) {
+            return $card;
+        }
+
+        return $this->cardScriptRegistry->isAbilityGrantedToAttached($card->getLogicalCard()->getId()) ? $card->getAttachedCharacter() : null;
     }
 
     /**

@@ -77,6 +77,8 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'ability_triggered':
+      return `After ${subject(game, window.params.player, 'trigger', 'triggers')} ${cardName(game, cards, window.params.card) ?? 'an ability'}`
     case 'card_left_play':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} leaves play`
     case 'dynasty_card_turned_faceup':

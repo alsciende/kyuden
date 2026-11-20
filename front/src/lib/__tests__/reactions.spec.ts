@@ -68,6 +68,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the ability triggered', () => {
+    expect(triggerText(other('ability_triggered', { card: 'raid', player: 'opp' }), view([]), cards)).toBe(
+      'After your opponent triggers Night Raid',
+    )
+  })
+
   it('names the card leaving play', () => {
     expect(triggerText(other('card_left_play', { card: 'raid' }), view([]), cards)).toBe('After Night Raid leaves play')
   })
