@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\EventListener;
 
+use App\Event\DynastyPhasePassedEvent;
 use App\Event\FateGainedEvent;
 use App\Event\OpportunityPassedEvent;
 use App\State\Manager\PlayerStateManager;
@@ -12,7 +13,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
- * During the play cards from provinces step, the first player to pass gains 1 fate.
+ * During the play cards from provinces step, the first player to pass gains 1 fate; then the cards reacting to a pass
+ * in the dynasty phase may be triggered (DynastyPhasePassedEvent).
  */
 #[AsEventListener]
 readonly class PlayCardsFromProvincesOpportunityPassedListener
@@ -27,14 +29,20 @@ readonly class PlayCardsFromProvincesOpportunityPassedListener
 
     public function __invoke(OpportunityPassedEvent $event): void
     {
-        if ($event->getGame()->getCurrentPlace() !== 'play_cards_from_provinces' || ! $event->isFirstToPass()) {
+        if ($event->getGame()->getCurrentPlace() !== 'play_cards_from_provinces') {
             return;
         }
 
-        $this->stateManager->withState(
-            $event->getPlayer(),
-            fn (PlayerState $state): PlayerState => $state->incrementFate(self::FIRST_TO_PASS_FATE),
-        );
-        $this->eventDispatcher->dispatch(new FateGainedEvent($event->getGame(), $event->getPlayer(), self::FIRST_TO_PASS_FATE));
+        $fateGained = 0;
+        if ($event->isFirstToPass()) {
+            $fateGained = self::FIRST_TO_PASS_FATE;
+            $this->stateManager->withState(
+                $event->getPlayer(),
+                fn (PlayerState $state): PlayerState => $state->incrementFate(self::FIRST_TO_PASS_FATE),
+            );
+            $this->eventDispatcher->dispatch(new FateGainedEvent($event->getGame(), $event->getPlayer(), self::FIRST_TO_PASS_FATE));
+        }
+
+        $this->eventDispatcher->dispatch(new DynastyPhasePassedEvent($event->getGame(), $event->getPlayer(), $fateGained));
     }
 }

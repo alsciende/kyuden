@@ -30,7 +30,7 @@ The order weighs the number of cards against what the engine lacks: first the gr
 | 15 | The honor of a player | 5 | done (5) | – |
 | 16 | A status token, honored, dishonored | 4 | done (4) | – |
 | 17 | The hand: discarded from it, looked at | 4 | done (4) | – |
-| 18 | The dynasty phase: passing, collecting fate | 4 | `OpportunityPassedEvent`, `FateGainedEvent`, `FateCollectedEvent` | the events triggering |
+| 18 | The dynasty phase: passing, collecting fate | 4 | done (2: Sneaky Shinjo and Ride at Dawn left out, see "Not offered") | – |
 | 19 | Ring effects, fate taken from a ring | 5 | `RingFateTakenEvent`, place `resolve_ring_effects` | a ring effect resolved is not known to the engine |
 | 20 | A character bowed or readied | 3 | transitions `bow`, `ready` | an event after the transition; the cause |
 | 21 | A card turned face up in a province | 2 | transition `turn_faceup` of a dynasty card | an event after the transition |
@@ -477,6 +477,13 @@ Their effect is not the choice of their player ("Forced Reaction:"): the engine 
 - A ring claimed: Isawa Ujina (`16-isawa-ujina`).
 - A pass on declaring a conflict: Hida Amoro (`08-hida-amoro`).
 - Declared as attacker or defender, defenders declared: Marauding Oni (`10-marauding-oni`), Arrogant Kakita (`39-arrogant-kakita`).
+
+## Not offered (2)
+
+Cards whose reaction the engine does not accept where the card is, left out until it does:
+
+- Sneaky Shinjo (`10-sneaky-shinjo`, character): it reacts from a province, where only a holding triggers its abilities (`Workflow/DynastyCard/TriggerAbilityGuardListener`).
+- Ride at Dawn (`32-ride-at-dawn`, event): a dynasty event, face up in a province; the engine plays the events of the conflict deck only (`play_event` of `conflict_card`), the 13 dynasty events of the fixtures included.
 
 ## Out of scope (4)
 

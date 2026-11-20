@@ -77,6 +77,10 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
       return `After ${subject(game, window.params.player, 'declare', 'declares')} defenders`
     case 'character_moved_to_conflict':
       return `After ${cardName(game, cards, window.params.card) ?? 'a character'} moves to the conflict`
+    case 'dynasty_phase_passed':
+      return `After ${subject(game, window.params.player, 'pass', 'passes')} in the dynasty phase`
+    case 'fate_collected':
+      return `After ${subject(game, window.params.player, 'collect', 'collects')} fate`
     case 'cards_discarded_from_hand':
       return `After ${window.params.player === game.viewer_id ? 'you discard' : 'your opponent discards'} from hand`
     case 'cards_looked_at':

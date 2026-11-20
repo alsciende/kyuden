@@ -67,6 +67,12 @@ describe('triggerText of the other triggering conditions', () => {
     )
   })
 
+  it('names the player passing in the dynasty phase', () => {
+    expect(triggerText(other('dynasty_phase_passed', { player: 'me' }), view([]), cards)).toBe(
+      'After you pass in the dynasty phase',
+    )
+  })
+
   it('names the hand discarded from or looked at', () => {
     expect(triggerText(other('cards_discarded_from_hand', { player: 'opp' }), view([]), cards)).toBe(
       'After your opponent discards from hand',
