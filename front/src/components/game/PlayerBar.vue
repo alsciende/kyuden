@@ -25,7 +25,8 @@ import { vTip } from '@/lib/tooltip'
  * and the first player token one above the other, so that the bar fits the width of an iPad mini. A click on a value
  * opens a popover with the effects on it, or the cards of a discard pile, which open like the cards of the board; a
  * click on a claimed ring opens its window, as in the bar on the right. A click on the name of a player tells their honor
- * bid, and lets the viewer concede from their own.
+ * bid, and lets the viewer concede from their own; a click on the badge of the bid revealed changes it (Contingency
+ * Plan).
  */
 const props = defineProps<{
   game: GameView
@@ -62,6 +63,7 @@ const TITLES: Record<BarStat, string> = {
   imperial_favor: 'Imperial Favor',
   conflicts: 'Conflicts',
   player: 'Player',
+  bid: 'Honor bid',
 }
 
 const mine = computed(() => props.player.id === props.game.viewer_id)
@@ -141,7 +143,8 @@ function toggle(key: BarStat, event: MouseEvent): void {
     return
   }
   place(event)
-  amount.value = 1
+  // the bid changed from the bid revealed
+  amount.value = key === 'bid' ? (props.player.honor_bid ?? 0) : 1
   openRing.value = null
   open.value = key
 }
@@ -358,6 +361,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </div>
 
     <div class="badges">
+      <template v-if="bar.bid !== null">
+        <span v-if="readOnly(game)" class="badge">Bid {{ bar.bid }}</span>
+        <button
+          v-else
+          type="button"
+          class="badge"
+          :class="{ on: open === 'bid' }"
+          :aria-expanded="open === 'bid'"
+          @click="toggle('bid', $event)"
+        >
+          Bid {{ bar.bid }}
+        </button>
+      </template>
       <span v-for="note in bar.notes" :key="note" class="badge">{{ note }}</span>
       <!-- the tokens one above the other -->
       <div v-if="bar.favor || unclaimedFavor || bar.firstPlayer" class="tokens">
@@ -464,7 +480,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <template v-else>
             <p v-if="open === 'player'" class="tip-text">{{ honorBidText(player) }}</p>
             <div v-if="!WITHOUT_AMOUNT.includes(open)" class="amount">
-              <span>Amount</span>
+              <span>{{ open === 'bid' ? 'Bid' : 'Amount' }}</span>
               <button type="button" class="step" aria-label="Less" :disabled="amount <= 0" @click="amount--">−</button>
               <b aria-live="polite">{{ amount }}</b>
               <button type="button" class="step" aria-label="More" @click="amount++">+</button>
@@ -476,7 +492,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 type="button"
                 class="effect"
                 :class="{ primary: index === 0 && !effect.danger, danger: effect.danger }"
-                :disabled="sending"
+                :disabled="sending || effect.disabled"
                 @click="runEffect(effect)"
               >
                 {{ effect.label }}

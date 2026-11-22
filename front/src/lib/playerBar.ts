@@ -30,7 +30,10 @@ export interface PlayerBar {
   firstPlayer: boolean
   /** the player holds the Imperial Favor */
   favor: boolean
-  /** what the player has done in the step: passed, bid, glory count */
+  /** the honor bid revealed, shown during the draw phase and the duels, the steps it is made for: its badge opens the
+   * effect changing it */
+  bid: number | null
+  /** what the player has done in the step: passed, chosen their bid, glory count */
   notes: string[]
 }
 
@@ -59,10 +62,10 @@ export function playerBar(game: GameView, player: PlayerView): PlayerBar {
     removed: [...cardsOf(stackOf(player, 'removed_from_game'))].reverse(),
     firstPlayer: player.id === game.first_player_id,
     favor: game.imperial_favor_holder_id === player.id,
+    bid: bidding ? player.honor_bid : null,
     notes: [
       hasPassed(game, player) ? 'Passed' : null,
       player.given_actions > 0 ? `Next ${actionsText(player.given_actions)}` : null,
-      bidding && player.honor_bid !== null ? `Bid ${player.honor_bid}` : null,
       player.honor_bid_selected ? 'Has bid' : null,
       player.glory_count !== null ? `Glory ${player.glory_count}` : null,
     ].filter((note): note is string => note !== null),
@@ -132,6 +135,8 @@ export type BarStat =
   | 'imperial_favor'
   /** the conflicts the player may still declare */
   | 'conflicts'
+  /** the honor bid revealed, its badge */
+  | 'bid'
   /** the player themselves, their name in their bar: their honor bid, and what the viewer does with the game */
   | 'player'
 
@@ -141,7 +146,8 @@ export const WITHOUT_AMOUNT: BarStat[] = ['provinces', 'first_player', 'imperial
 const SIDES: ConflictType[] = ['military', 'political']
 
 /** `danger`: an effect that cannot be undone (conceding), confirmed before it is sent */
-export type Effect = Message & { label: string; danger?: boolean }
+/** `disabled`: offered but changing nothing (the bid set to itself) */
+export type Effect = Message & { label: string; danger?: boolean; disabled?: boolean }
 
 /**
  * The effects on a value of the bar of a player, applied with an amount; only those the engine makes available now.
@@ -168,10 +174,16 @@ export function playerEffects(game: GameView, player: PlayerView, stat: BarStat,
           label: `Give ${amount} to ${other.id === game.viewer_id ? 'you' : 'Opp.'}`,
           payload: { giver_id: player.id, recipient_id: other.id, amount },
         },
+      ]
+      break
+    // the honor bid revealed, changed by a card (Contingency Plan): the amount is the new bid, prefilled with it
+    case 'bid':
+      effects = [
         player.honor_bid !== null && {
           type: 'set_honor_bid',
           label: `Set the bid to ${amount}`,
           payload: { ...target, bid: amount },
+          disabled: amount === player.honor_bid,
         },
       ]
       break
