@@ -1,12 +1,13 @@
 import { ref, watch, type Ref } from 'vue'
 
-import type { Element, ForcedReactionView, GameView, ReactionWindowView } from '@/api/game'
+import type { AbilityWindowView, Element, ForcedReactionView, GameView } from '@/api/game'
 import { locate, viewer, type Cards } from '@/lib/board'
 import { ELEMENT_NAMES } from '@/lib/icons'
 
 /**
  * The reactions the engine offers the viewer: once a triggering condition has occurred (a province revealed…), a
- * reaction window lists the cards of the player that can react to it (`reaction_windows` of their view). The window
+ * reaction window lists the cards of the player that can react to it (`ability_windows` of their view, of timing
+ * `reaction`, the newest first). The window
  * blocks nothing: the player activates a card (the engine then withdraws it), declines it, or ignores it until they
  * pass.
  *
@@ -37,6 +38,11 @@ export interface ShownWindow {
   offers: ShownOffer[]
 }
 
+/** the reaction windows of the viewer, the newest first */
+function reactionWindows(game: GameView): AbilityWindowView[] {
+  return viewer(game).ability_windows.filter((window) => window.timing === 'reaction')
+}
+
 export function declineKey(windowId: string, cardId: string): string {
   return `${windowId}:${cardId}`
 }
@@ -53,7 +59,7 @@ function subject(game: GameView, playerId: string | undefined, plural: string, s
 }
 
 /** the triggering condition of a window, as the cards word it */
-export function triggerText(window: ReactionWindowView, game: GameView, cards: Cards): string {
+export function triggerText(window: AbilityWindowView, game: GameView, cards: Cards): string {
   switch (window.trigger) {
     case 'province_revealed': {
       const name = cardName(game, cards, window.params.province)
@@ -151,14 +157,14 @@ export function triggerText(window: ReactionWindowView, game: GameView, cards: C
   }
 }
 
-/** the reaction windows of the viewer with the cards they have not declined, the oldest first; none for a spectator nor
+/** the reaction windows of the viewer with the cards they have not declined, the newest first; none for a spectator nor
  * in a replay, where nobody acts */
 export function shownWindows(game: GameView, cards: Cards, declined: Set<string>): ShownWindow[] {
   if (game.spectating || game.replaying) {
     return []
   }
 
-  return viewer(game).reaction_windows.flatMap((window) => {
+  return reactionWindows(game).flatMap((window) => {
     const offers = window.card_ids.flatMap((cardId): ShownOffer[] => {
       const located = locate(game, cardId)
       const forced = window.forced_card_ids.includes(cardId)
@@ -212,7 +218,14 @@ function shownForced(game: GameView, cards: Cards, forced: ForcedReactionView): 
     name: cardName(game, cards, forced.card_id) ?? 'A card',
     on: under === null ? null : (cardName(game, cards, under.id) ?? null),
     trigger: triggerText(
-      { id: forced.window_id, trigger: forced.trigger, params: forced.params, card_ids: [], forced_card_ids: [] },
+      {
+        id: forced.window_id,
+        timing: 'reaction',
+        trigger: forced.trigger,
+        params: forced.params,
+        card_ids: [],
+        forced_card_ids: [],
+      },
       game,
       cards,
     ),
@@ -301,7 +314,7 @@ export function useDeclinedReactions(game: Ref<GameView | null>): {
         gameId = current.id
         declined.value = load(gameId)
       }
-      const open = new Set(viewer(current).reaction_windows.map((window) => window.id))
+      const open = new Set(reactionWindows(current).map((window) => window.id))
       const kept = [...declined.value].filter((key) => open.has(key.split(':')[0]!))
       if (kept.length !== declined.value.size) {
         declined.value = new Set(kept)

@@ -96,7 +96,7 @@ class PlayerState
     private array $resolutions = [];
 
     /**
-     * The reaction windows in which the player has cards that can react (ReactionOfferer), the oldest first. Secret:
+     * The reaction windows in which the player has cards that can react (ReactionOfferer), in the order they opened. Secret:
      * the cards may be in their hand.
      *
      * @var list<ReactionWindow>
@@ -451,12 +451,12 @@ class PlayerState
     }
 
     /**
-     * The player has triggered a card offered: it leaves the oldest window offering it, and a window left without card
-     * closes.
+     * The player has triggered a card offered: it leaves the newest window offering it (nested sequences complete last
+     * in, first out), and a window left without card closes.
      */
     public function withdrawReactionOffer(string $cardId): self
     {
-        foreach ($this->reactionWindows as $reactionWindow) {
+        foreach (array_reverse($this->reactionWindows) as $reactionWindow) {
             if (in_array($cardId, $reactionWindow->cardIds, true)) {
                 $reactionWindow->cardIds = array_values(array_diff($reactionWindow->cardIds, [$cardId]));
                 $reactionWindow->forcedCardIds = array_values(array_diff($reactionWindow->forcedCardIds, [$cardId]));

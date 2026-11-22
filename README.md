@@ -66,6 +66,7 @@ The project:
 - [`doc/web-client.md`](doc/web-client.md): the screens of the web client and its identity
 - [`doc/card-scripts.md`](doc/card-scripts.md): the scripts of the cards, and how to add one
 - [`doc/reactions.md`](doc/reactions.md): the reactions of the cards by triggering condition, the order in which the engine offers them
+- [`doc/interrupts.md`](doc/interrupts.md): the design of the interrupt windows (to come), the interrupts of the cards by triggering condition
 - [`doc/services.md`](doc/services.md): the house bot, the replay, the trophies, the worker, matchmaking, spectators, security, Mercure
 - [`doc/production.md`](doc/production.md): the image, continuous integration, releases and deployment
 - [`HANDOFF.md`](HANDOFF.md): status, decisions and next steps; [`TROPHIES.md`](TROPHIES.md): the catalogue of the trophies

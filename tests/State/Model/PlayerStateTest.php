@@ -107,18 +107,18 @@ class PlayerStateTest extends TestCase
         self::assertSame([], $state->getAdditionalConflictTypes());
     }
 
-    public function testTheOldestWindowOfferingACardTriggeredLosesIt(): void
+    public function testTheNewestWindowOfferingACardTriggeredLosesIt(): void
     {
         $state = new PlayerState()
-            ->openReactionWindow(new ReactionWindow('1', 'province_revealed', [], ['a', 'b']))
-            ->openReactionWindow(new ReactionWindow('2', 'province_revealed', [], ['a']))
+            ->openReactionWindow(new ReactionWindow('1', 'province_revealed', [], ['a']))
+            ->openReactionWindow(new ReactionWindow('2', 'province_revealed', [], ['a', 'b']))
             ->withdrawReactionOffer('a');
 
-        self::assertSame([['b'], ['a']], array_map(fn (ReactionWindow $window): array => $window->cardIds, $state->getReactionWindows()));
+        self::assertSame([['a'], ['b']], array_map(fn (ReactionWindow $window): array => $window->cardIds, $state->getReactionWindows()));
 
         // a window left without card closes
         $state->withdrawReactionOffer('b');
-        self::assertSame(['2'], array_map(fn (ReactionWindow $window): string => $window->id, $state->getReactionWindows()));
+        self::assertSame(['1'], array_map(fn (ReactionWindow $window): string => $window->id, $state->getReactionWindows()));
     }
 
     public function testTheReactionWindowsCloseWithTheRound(): void
