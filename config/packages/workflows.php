@@ -78,7 +78,8 @@ $gameTransitions = [
     WorkflowConfig::transition('imperial_favor_unclaimed', 'claim_imperial_favor', 'conflict_phase_ends', ['auto' => true, 'log' => 'The glory count is a tie: the Imperial Favor stays where it is']),
     WorkflowConfig::transition('conflict_phase_ended', 'conflict_phase_ends', 'fate_phase_begins', ['auto' => true, 'log' => 'The conflict phase ends']),
     WorkflowConfig::transition('fate_phase_began', 'fate_phase_begins', 'discard_characters_with_no_fate', ['auto' => true, 'log' => 'The fate phase begins']),
-    WorkflowConfig::transition('characters_discarded', 'discard_characters_with_no_fate', 'remove_fate_from_characters', ['auto' => true, 'log' => 'The characters without fate are discarded']),
+    // the characters without fate would leave play: interrupted first (InterruptOfferer)
+    WorkflowConfig::transition('characters_discarded', 'discard_characters_with_no_fate', 'remove_fate_from_characters', ['auto' => true, 'interrupt' => true, 'log' => 'The characters without fate are discarded']),
     WorkflowConfig::transition('fate_removed', 'remove_fate_from_characters', 'place_fate_on_unclaimed_rings', ['auto' => true, 'log' => 'Fate is removed from the characters']),
     WorkflowConfig::transition('fate_placed_on_rings', 'place_fate_on_unclaimed_rings', 'fate_phase_action_window', ['auto' => true, 'log' => 'Fate is placed on the unclaimed rings']),
     WorkflowConfig::transition('fate_actions_passed', 'fate_phase_action_window', 'ready_cards', ['auto' => true, 'log' => 'The action window of the fate phase closes']),

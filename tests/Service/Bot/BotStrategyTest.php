@@ -22,20 +22,27 @@ use App\Message\DeclareGloryCount;
 use App\Message\DeclareNoDefenders;
 use App\Message\EndResolution;
 use App\Message\PassConflict;
+use App\Message\PassInterrupt;
 use App\Message\PassOpportunity;
 use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
 use App\Message\RevealProvince;
+use App\Message\TriggerInterruptAbility;
 use App\Message\TriggerReactionAbility;
 use App\Service\Bot\BotStrategy;
+use App\Service\ControlService;
+use App\Service\Interrupt\InterruptOfferer;
+use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
+use App\State\Model\InterruptWindowStage;
 use App\State\Model\PlayerState;
 use App\State\Model\ReactionWindow;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use App\Trigger\CardLeavingPlay;
 
 class BotStrategyTest extends AbstractKernelTestCase
 {
@@ -129,6 +136,40 @@ class BotStrategyTest extends AbstractKernelTestCase
         // before passing its opportunity
         self::assertInstanceOf(TriggerReactionAbility::class, $action);
         self::assertSame($laboratory, $action->getCardId());
+    }
+
+    public function testAnswersTheInterruptWindowsItIsAsked(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('fate_phase_action_window')
+            ->withPlayer('john')
+            ->withPlayer(self::BOT, fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['truthseeker' => '15-seppun-truthseeker']))
+            ->build();
+        $bot = $scenario->player(self::BOT);
+        $offerer = self::service(InterruptOfferer::class);
+        $controlService = self::service(ControlService::class);
+
+        // its forced interrupts first
+        $offerer->open($scenario->game(), [new CardLeavingPlay($scenario->card('truthseeker'), $bot, true)]);
+        $action = $this->nextAction($scenario);
+        self::assertInstanceOf(TriggerInterruptAbility::class, $action);
+        self::assertSame($scenario->card('truthseeker')->getId(), $action->getCardId());
+
+        // a window asking it about nothing forced: it plays no interrupt, it passes
+        self::service(GameStateManager::class)->withState($scenario->game(), function (GameState $state): GameState {
+            $state->interruptWindows = [];
+
+            return $state;
+        });
+        $offerer->open($scenario->game(), [new CardLeavingPlay($scenario->card('truthseeker'), $controlService->getController($scenario->card('truthseeker')), true)]);
+        self::service(GameStateManager::class)->withState($scenario->game(), function (GameState $state): GameState {
+            $stage = $state->currentInterruptWindow()?->currentStage();
+            \assert($stage instanceof InterruptWindowStage);
+            $stage->forcedCardIds = [];
+
+            return $state;
+        });
+        self::assertInstanceOf(PassInterrupt::class, $this->nextAction($scenario));
     }
 
     public function testPassesItsOpportunities(): void

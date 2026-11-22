@@ -65,8 +65,9 @@ final readonly class PlayerView
          */
         public array $resolutions,
         /**
-         * The windows in which the player has cards that can answer a triggering condition (reactions), the newest
-         * first: nested sequences complete last in, first out. For the viewer only (none for the other players).
+         * The windows in which the player has cards that can answer a triggering condition, the newest first: nested
+         * sequences complete last in, first out. The interrupt window answered now first, shown whether the player is
+         * asked or not, then the reaction windows. For the viewer only (none for the other players).
          */
         public array $abilityWindows,
         /**

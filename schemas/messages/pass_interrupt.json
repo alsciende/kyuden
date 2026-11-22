@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "pass_interrupt",
+    "description": "Passes in the interrupt window open, without interrupting what is about to happen: once every player asked has passed (an interrupt initiated meanwhile cancelling the passes), the window moves on to its next stage, or closes and what waited is done. A player who has passed may still initiate an interrupt in the same window.",
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+}

@@ -91,10 +91,23 @@ class GameState
     public array $provincesToRefill = [];
 
     /**
-     * The number of reaction windows opened (ReactionOfferer), from which their ids are numbered: never drawn from the
-     * generator of the game, whose draws would change.
+     * The number of reaction and interrupt windows opened (ReactionOfferer, InterruptOfferer), from which their ids are
+     * numbered: never drawn from the generator of the game, whose draws would change.
      */
     public int $reactionWindowCount = 0;
+
+    /**
+     * The interrupt windows open (InterruptOfferer), the last one opened last: only it is answered, the others wait for
+     * it to close (nested sequences complete last in, first out). Their ids are numbered with the reaction windows.
+     *
+     * @var list<InterruptWindow>
+     */
+    public array $interruptWindows = [];
+
+    /**
+     * The automatic transition whose interrupt window has closed, applied next without opening it again.
+     */
+    public ?InterruptedTransition $interruptedTransition = null;
 
     public function setPlayerOrder(Player ...$players): self
     {
@@ -138,6 +151,16 @@ class GameState
      *
      * @throws \LogicException outside of a duel
      */
+    /**
+     * The interrupt window answered now, the last one opened, if any.
+     */
+    public function currentInterruptWindow(): ?InterruptWindow
+    {
+        $window = end($this->interruptWindows);
+
+        return $window === false ? null : $window;
+    }
+
     public function currentDuel(): DuelState
     {
         return $this->duel ?? throw new \LogicException('No duel is being resolved.');

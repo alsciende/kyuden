@@ -14,6 +14,7 @@ use App\Exception\Rules\NotActivePlayerException;
 use App\Exception\Rules\NotInActionWindowException;
 use App\Exception\Rules\NothingToResolveException;
 use App\Exception\Rules\ResolutionInProgressException;
+use App\Service\Interrupt\InterruptWindowService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
@@ -43,6 +44,7 @@ readonly class OpportunityService
         private PlayerStateManager $playerStateManager,
         #[Target('game')]
         private WorkflowInterface $gameStateMachine,
+        private InterruptWindowService $interruptWindowService,
     ) {
     }
 
@@ -163,10 +165,15 @@ readonly class OpportunityService
 
     /**
      * The player has initiated an interrupt or a reaction, whether or not they have the opportunity to act: they
-     * resolve it, then end it (EndResolution). A reaction answers the oldest reaction window offering its card.
+     * resolve it, then end it (EndResolution). A reaction answers the newest reaction window offering its card; an
+     * interrupt answers the interrupt window open, if any, whose passes it cancels.
      */
     public function startInterruptOrReaction(Player $player, Resolution $resolution): void
     {
+        if ($resolution->timing === AbilityTiming::Interrupt) {
+            $this->interruptWindowService->interruptInitiated($player->getGame(), $player, $resolution->cardId);
+        }
+
         $this->playerStateManager->withState(
             $player,
             function (PlayerState $state) use ($resolution): PlayerState {

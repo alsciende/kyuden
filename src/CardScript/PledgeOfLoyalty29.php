@@ -7,13 +7,22 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\CancelImminentTrigger;
 use App\Message\DiscardStatusToken;
+use App\Model\InterruptOffer;
+use App\Service\CardScript\TriggerConditions;
+use App\Trigger\CardLeavingPlay;
 
 /**
  * Pledge of Loyalty.
  */
 final readonly class PledgeOfLoyalty29 extends AbstractCardScript
 {
+    public function __construct(
+        private TriggerConditions $triggerConditions,
+    ) {
+    }
+
     #[\Override]
     public static function getCode(): string
     {
@@ -29,6 +38,24 @@ final readonly class PledgeOfLoyalty29 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [DiscardStatusToken::class];
+        return [CancelImminentTrigger::class, DiscardStatusToken::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+    }
+
+    /**
+     * When an honored character you control would leave play.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->character && $trigger->controller === $this->triggerConditions->getController($card) && $this->triggerConditions->isHonored($trigger->card)
+            ? [new InterruptOffer($card, would: true)]
+            : [];
     }
 }
