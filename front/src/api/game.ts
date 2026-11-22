@@ -82,6 +82,12 @@ export interface AbilityWindowView {
   card_ids: string[]
   /** those of the cards whose reaction is forced: they cannot be declined */
   forced_card_ids: string[]
+  /** an interrupt window: its stage */
+  stage?: 'would' | 'forced' | 'standard' | null
+  /** an interrupt window: the players it waits for */
+  awaited_player_ids?: string[]
+  /** an interrupt window: the client passes for the viewer after a while (asked about a card out of sight) */
+  timed?: boolean
 }
 
 /** a forced reaction a player has to trigger, shown to every reader: nobody moves the game on meanwhile */

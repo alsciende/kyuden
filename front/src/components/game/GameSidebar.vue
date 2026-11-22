@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import type { Element, GameView, LoggedMessage, Send, SpectatorView } from '@/api/game'
 import EyeIcon from '@/components/EyeIcon.vue'
@@ -10,6 +10,7 @@ import PlayerChip from '@/components/game/PlayerChip.vue'
 import RingPopover from '@/components/game/RingPopover.vue'
 import QueueBanner from '@/components/queue/QueueBanner.vue'
 import { PHASES, playerById, rings, type Cards } from '@/lib/board'
+import { PASS_AFTER, type ShownInterruptWindow } from '@/lib/interrupts'
 import { forcedBlock, type ShownWindow } from '@/lib/reactions'
 import { stepWithDuel } from '@/lib/duel'
 import { CONFLICT_ICONS, ELEMENT_ICONS, ELEMENT_NAMES, ringTip } from '@/lib/icons'
@@ -27,7 +28,10 @@ import { spectatorsLabel } from '@/lib/watch'
  * Above what the player does, the reactions the engine offers them (`lib/reactions.ts`): a click on "Open" opens the
  * card, which offers to activate it or decline it; a forced reaction is marked, and resolved at once ("Resolve": its
  * ability triggered). The forced reactions the opponent has to trigger are told under them: nobody moves the game on
- * meanwhile.
+ * meanwhile. Above them, the interrupt window the game waits for (`lib/interrupts.ts`), with the red band of the
+ * windows that stop the game: what is about to happen, the cards the viewer can interrupt with, and "Pass", which the
+ * client sends itself after a few seconds when the viewer is asked about a card out of sight ("I need more time" stops
+ * it); for the other players, whom it waits for.
  *
  * A spectator does nothing in the step: they read who acts, from whose side they watch (they switch sides), and leave.
  * A replay puts its own panel in place of what the player does (slot `panel`), and its log in place of the last lines
@@ -46,6 +50,8 @@ const props = defineProps<{
   send: Send
   /** the reactions offered to the viewer (none for a spectator, in a replay) */
   reactionWindows?: ShownWindow[]
+  /** the interrupt window the game waits for, if any (none for a spectator, in a replay) */
+  interruptWindow?: ShownInterruptWindow | null
 }>()
 
 defineEmits<{ open: [cardId: string]; openLog: []; switchSides: []; leave: [] }>()
@@ -105,6 +111,58 @@ function resolveForced(cardId: string): void {
   void props.send('trigger_reaction_ability', { card_id: cardId })
 }
 
+/** the forced interrupt resolved at once: its ability triggered */
+function resolveForcedInterrupt(cardId: string): void {
+  void props.send('trigger_interrupt_ability', { card_id: cardId })
+}
+
+function passInterrupt(): void {
+  stopTimer()
+  void props.send('pass_interrupt')
+}
+
+/**
+ * The seconds left before the client passes for the viewer, asked about a card out of sight: the same whether they
+ * hold it or not, so that the time they take tells nothing; null once stopped ("I need more time").
+ */
+const countdown = ref<number | null>(null)
+let timer: ReturnType<typeof setInterval> | null = null
+
+function stopTimer(): void {
+  if (timer !== null) {
+    clearInterval(timer)
+    timer = null
+  }
+  countdown.value = null
+}
+
+watch(
+  () => {
+    const window = props.interruptWindow
+
+    return window?.mine && window.timed ? window.id : null
+  },
+  (id) => {
+    stopTimer()
+    if (id === null) {
+      return
+    }
+    countdown.value = PASS_AFTER
+    timer = setInterval(() => {
+      if (countdown.value === null) {
+        return
+      }
+      countdown.value -= 1
+      if (countdown.value <= 0) {
+        passInterrupt()
+      }
+    }, 1000)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(stopTimer)
+
 /** the last lines of the log */
 const tail = computed(() => props.log.flatMap((message) => message.entries).slice(-3))
 </script>
@@ -161,6 +219,40 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
       <h1>{{ step.title }}</h1>
       <p v-if="step.help" class="help">{{ step.help }}</p>
     </header>
+
+    <section v-if="interruptWindow" class="interrupt" aria-label="Interrupt window">
+      <p class="interrupt-head">
+        <span class="forced-tag">Interrupt</span>
+        <span class="label">{{ interruptWindow.stage }}</span>
+      </p>
+      <p class="trigger">{{ interruptWindow.trigger }}</p>
+      <ul v-if="interruptWindow.mine && interruptWindow.offers.length" class="offers">
+        <li v-for="offer in interruptWindow.offers" :key="offer.cardId" class="offer" :class="{ forced: offer.forced }">
+          <span v-if="offer.forced" class="forced-tag">Forced</span>
+          <span class="offer-name">{{ offer.name }}</span>
+          <span class="offer-kind">{{ offer.kind }}</span>
+          <button
+            v-if="offer.forced"
+            type="button"
+            class="open resolve"
+            :disabled="sending"
+            @click="resolveForcedInterrupt(offer.cardId)"
+          >
+            Resolve
+          </button>
+          <button v-else type="button" class="open" @click="$emit('open', offer.cardId)">Open</button>
+        </li>
+      </ul>
+      <div v-if="interruptWindow.mine" class="interrupt-actions">
+        <button type="button" class="open" :disabled="sending" @click="passInterrupt">
+          {{ countdown === null ? 'Pass' : `Pass (${countdown})` }}
+        </button>
+        <button v-if="countdown !== null" type="button" class="more-time" @click="stopTimer">I need more time</button>
+      </div>
+      <p v-else-if="interruptWindow.waitingFor.length" class="aside">
+        Waiting for {{ interruptWindow.waitingFor.join(', ') }} to interrupt or pass.
+      </p>
+    </section>
 
     <section v-if="reactionWindows?.length" class="reactions" aria-label="Reactions offered">
       <span class="label">Reactions</span>
@@ -449,6 +541,41 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.interrupt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--seal);
+  border-top: 6px solid var(--seal);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.interrupt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.interrupt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.more-time {
+  font: inherit;
+  font-size: 13px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-2);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .reactions {

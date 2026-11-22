@@ -27,6 +27,7 @@ import { mulliganWindow } from '@/lib/mulligan'
 import type { Effect } from '@/lib/playerBar'
 import { closeCardImage, viewedCode } from '@/lib/cardImage'
 import { hidePreview } from '@/lib/preview'
+import { shownInterruptWindow } from '@/lib/interrupts'
 import { offerOf, shownWindows, useDeclinedReactions, type ShownOffer } from '@/lib/reactions'
 import { RESOLVING_CARDS, resolvingCardIds } from '@/lib/resolutions'
 import { isGuest, session } from '@/lib/session'
@@ -119,6 +120,8 @@ const menu = computed(() =>
 /** the reactions offered to the viewer, but those they have declined (kept by the tab) */
 const { declined, decline } = useDeclinedReactions(game)
 const reactionWindows = computed(() => (game.value === null ? [] : shownWindows(game.value, cards, declined.value)))
+/** the interrupt window the game waits for */
+const interruptWindow = computed(() => (game.value === null ? null : shownInterruptWindow(game.value, cards)))
 const openOffer = computed(() => (openCardId.value === null ? null : offerOf(reactionWindows.value, openCardId.value)))
 
 function declineReaction(offer: ShownOffer): void {
@@ -335,6 +338,7 @@ const problem = computed(() => {
       :error="openCardId || barOpen || inspection || mulligan ? null : error"
       :send="send"
       :reaction-windows="reactionWindows"
+      :interrupt-window="interruptWindow"
       @open="open"
       @open-log="logOpen = true"
       @switch-sides="switchSides"

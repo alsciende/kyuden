@@ -1,6 +1,6 @@
 # Interrupts
 
-How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Nothing of this document is implemented yet.
+How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Done: the common ground, with the first triggering condition (1, a card would leave play); the other groups come next, in the proposed order.
 
 ## The rules
 
@@ -56,7 +56,7 @@ A stack of windows, `GameState::interruptWindows` (`State/Model/InterruptWindow`
 - its id (from a counter of `GameState`, never from the generator, as `reactionWindowCount`), and its triggering conditions (one occurrence, several conditions: one window), each with its name and params (ids, public, as those of the reaction windows);
 - what waits: a message (name and payload, as an `ActionRecord`), an automatic transition (its name), or nothing (a cancel window after a framework step that has nothing to hold);
 - its stage: `would` (the interrupts to what would occur, the cancels), `forced` (the forced interrupts, which every player sees, resolved before the window opens: their order the first player's choice, not checked), then `standard`; a stage nobody is asked in is skipped;
-- the players asked in the current stage, the player who has the opportunity (the first player first, then alternating), the consecutive passes;
+- the players asked in the current stage, those who have passed since the last interrupt initiated (an interrupt cancels the passes), and the number of interrupts and reactions each player resolved when it opened (`resolutionBase`: the window waits for those initiated in it to end). The players asked answer at once, as in the reaction windows: no turn among them, the first player's priority left to the players (rare: both interrupting the same condition);
 - `cancelled`: the condition is no longer imminent.
 
 ### Who is asked
@@ -72,7 +72,7 @@ The scripts subscribe to the imminent conditions statically, as to the triggerin
 
 - `PassInterrupt` (public, not independent: the players alternate): the player passes in the window on top. A window closes once every player asked has passed consecutively and nobody resolves an interrupt.
 - `CancelImminentTrigger` (special, named by the scripts of the cards that cancel or replace): the condition of the window on top is no longer imminent; the window closes at once, without waiting for the passes (a cancelled effect cannot be interrupted any more).
-- While a window is open, the engine accepts: the interrupts (`PlayInterruptEvent`, `TriggerInterruptAbility`), `PassInterrupt`, `CancelImminentTrigger`, `EndResolution`, `ConcedeGame`, and the effect messages of a player resolving an interrupt (a `Resolution` of timing interrupt in their state). It refuses the rest (`InterruptWindowOpenException`): the phase actions, passing an opportunity, the effects outside an interrupt, so that what waits cannot become invalid meanwhile (the character moved elsewhere).
+- While a window is open, the engine accepts (`InterruptWindowService::assertAccepted()`, in the middleware and `AvailableActionsResolver`): the interrupts (`PlayInterruptEvent`, `TriggerInterruptAbility`), the reactions (to what the interrupts do), `PassInterrupt`, `CancelImminentTrigger`, `ConcedeGame`, the abandonment, and any message but `PassOpportunity` from a player resolving an interrupt initiated in the window (`EndResolution` included). It refuses the rest (`InterruptWindowOpenException`): the phase actions, passing an opportunity, the effects outside an interrupt, so that what waits cannot become invalid meanwhile (the character moved elsewhere).
 - An interrupt played is itself a message: it creates "its effects would initiate", and its window is stacked on top (Censure against Voice of Honor). An effect of an interrupt creating a condition stacks its window the same way.
 
 Once a window closes, it is popped, what waits is resolved (unless cancelled), and the reaction windows of the condition open as today (`ReactionOfferer`, from the domain events the handler dispatches); the window below, if any, becomes active again.
@@ -81,8 +81,8 @@ Once a window closes, it is popped, what waits is resolved (unless cancelled), a
 
 - The message suspended is recorded when it arrives (its `ActionRecord`, the version incremented); its re-dispatch is internal, like the automatic transitions, and the engine redoes it from the state: replaying the records gives the same game. Whether a window opens depends on the scripts, so that the records of a game played before the windows would no longer replay the same: no flag on the game (decided by the author, 2026-11-22), the games recorded are deleted once, when the windows are deployed (a migration, the stack of production stopped, no game in progress: the physical cards, the stacks and the players first, their foreign keys to the game having no `ON DELETE`, then the games), with their action records, their log, their spectators and their replays (`CASCADE`); the trophies earned stay, without their game, and the matches of the tournaments ended keep their result, without their game (`SET NULL`). From then on, a change of a script that opens or closes windows breaks the replay of the games played before it, as a change of a handler does.
 - The log writes the imminent condition when the window opens ("{card} would leave play", "{player} is about to play {card}"), then the resolution (the transition, the event) at the version of the message that closed the window.
-- The view gives every player the window on top (its conditions, its stage, who is asked, who has the opportunity) and to each player what they can interrupt with, under one name with the reaction windows (`ability_windows`, each with its timing: interrupt or reaction), which replaces `reaction_windows` in the API and the MCP tools (the web client, the house bot and the instructions of the agents follow).
-- `AwaitedPlayersResolver` waits for the player who has the opportunity in the window on top (abandonment). The house bot passes, and triggers and ends its forced interrupts, without their effect. The agents (MCP) are told to answer the window first.
+- The view gives every player the window on top (its first condition, its stage, the players it waits for, `timed` for the viewer) and to each player what they can interrupt with, under one name with the reaction windows (`ability_windows`, each with its timing: interrupt or reaction), which replaces `reaction_windows` in the API and the MCP tools (the web client, the house bot and the instructions of the agents follow).
+- `AwaitedPlayersResolver` waits for the players the window on top waits for (abandonment). The house bot passes, and triggers and ends its forced interrupts, without their effect. The agents (MCP) are told to answer the window first.
 
 ### The web client
 
