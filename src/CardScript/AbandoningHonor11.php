@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\CardScript;
 
+use App\Entity\Game;
+use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Model\InterruptOffer;
+use App\Trigger\ProvinceBreaking;
 
 /**
  * Abandoning Honor.
@@ -21,5 +25,23 @@ final readonly class AbandoningHonor11 extends AbstractCardScript
     public function getAbilityTimings(): array
     {
         return [AbilityTiming::Interrupt];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+    }
+
+    /**
+     * When this province is broken.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->province === $card
+            ? [new InterruptOffer($card)]
+            : [];
     }
 }

@@ -7,14 +7,22 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\CancelImminentTrigger;
 use App\Message\PlaceHonorTokens;
-use App\Message\RestoreProvince;
+use App\Model\InterruptOffer;
+use App\State\Manager\CardStateManager;
+use App\Trigger\ProvinceBreaking;
 
 /**
  * Public Forum.
  */
 final readonly class PublicForum04 extends AbstractCardScript
 {
+    public function __construct(
+        private CardStateManager $cardStateManager,
+    ) {
+    }
+
     #[\Override]
     public static function getCode(): string
     {
@@ -30,6 +38,24 @@ final readonly class PublicForum04 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [PlaceHonorTokens::class, RestoreProvince::class];
+        return [CancelImminentTrigger::class, PlaceHonorTokens::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+    }
+
+    /**
+     * When this province would be broken, if there are no honor tokens on it.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->province === $card && $this->cardStateManager->getState($card)->getHonorTokens() === 0
+            ? [new InterruptOffer($card, would: true)]
+            : [];
     }
 }

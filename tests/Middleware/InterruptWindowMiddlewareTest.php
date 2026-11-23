@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Middleware;
 
 use App\Entity\CardTypes\ConflictCard;
+use App\Entity\CardTypes\ProvinceCard;
 use App\Enum\InterruptStage;
+use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Exception\Rules\InterruptWindowOpenException;
 use App\Message\BowCard;
+use App\Message\BreakProvince;
 use App\Message\CancelImminentTrigger;
 use App\Message\DiscardCard;
 use App\Message\EndResolution;
@@ -17,6 +20,7 @@ use App\Message\PointAtCard;
 use App\Message\TriggerInterruptAbility;
 use App\Service\AvailableActionsResolver;
 use App\State\Manager\GameStateManager;
+use App\State\Model\GameState;
 use App\State\Model\ImminentTriggerRecord;
 use App\State\Model\InterruptWindow;
 use App\Tests\AbstractKernelTestCase;
@@ -196,5 +200,88 @@ class InterruptWindowMiddlewareTest extends AbstractKernelTestCase
         // kept by the interrupt; the other one is discarded
         self::assertTrue($this->inPlay($scenario, 'kisada'));
         self::assertFalse($this->inPlay($scenario, 'yoshi'));
+    }
+
+    private function withPublicForum(string $place): Scenario
+    {
+        return $this->scenario()
+            ->atPlace($place)
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['kisada' => '01-hida-kisada']))
+            ->withPlayer('jane', fn (PlayerBuilder $p): PlayerBuilder => $p
+                ->province('04-public-forum', as: 'forum', orientation: Orientation::FaceUp))
+            ->conflict('john', 'forum', attackers: ['kisada'])
+            ->withGameState(function (GameState $state, Scenario $scenario): void {
+                $conflict = $state->currentConflict();
+                $conflict->attackerSkill = 5;
+                $conflict->defenderSkill = 0;
+                $conflict->provinceStrengths[$scenario->card('forum')->getId()] = 3;
+                $conflict->determineWinner();
+            })
+            ->persist();
+    }
+
+    private function broken(Scenario $scenario, string $alias): bool
+    {
+        return $scenario->card($alias)->getCurrentPlace() === ProvinceCard::STATE_BROKEN;
+    }
+
+    public function testAProvinceBrokenByAnEffectWaitsForItsInterruptsAndIsKeptByACancel(): void
+    {
+        $scenario = $this->withPublicForum('conflict_action_window');
+        $game = $scenario->game()->getId();
+        $jane = $scenario->player('jane')->getId();
+        $forum = $scenario->card('forum')->getId();
+
+        $this->messageBus->dispatch(new BreakProvince($game, $scenario->player('john')->getId(), $forum));
+        self::assertEquals([new ImminentTriggerRecord('province_breaking', [
+            'card' => $forum,
+            'controller' => $jane,
+            'breaker' => $scenario->player('john')->getId(),
+        ])], $this->window($scenario)?->triggers);
+        self::assertSame(InterruptStage::Would, $this->window($scenario)?->currentStage()?->stage);
+        // the province still unbroken triggers its own interrupt
+        self::assertFalse($this->broken($scenario, 'forum'));
+
+        $this->messageBus->dispatch(new TriggerInterruptAbility($game, $jane, $forum));
+        $this->messageBus->dispatch(new CancelImminentTrigger($game, $jane, $forum));
+        $this->messageBus->dispatch(new EndResolution($game, $jane));
+
+        self::assertNull($this->window($scenario));
+        self::assertFalse($this->broken($scenario, 'forum'));
+    }
+
+    public function testTheProvincesTheResultOfAConflictBreaksWaitForTheirInterrupts(): void
+    {
+        $scenario = $this->withPublicForum('break_province');
+        $game = $scenario->game()->getId();
+        $jane = $scenario->player('jane')->getId();
+
+        // any message lets the automatic transitions apply
+        $this->messageBus->dispatch(new PointAtCard($game, $jane, $scenario->card('kisada')->getId()));
+        self::assertSame('break_province', $scenario->game()->getCurrentPlace());
+        self::assertSame('provinces_broken', $this->window($scenario)?->transition);
+
+        $this->messageBus->dispatch(new PassInterrupt($game, $jane));
+
+        self::assertNull($this->window($scenario));
+        self::assertTrue($this->broken($scenario, 'forum'));
+        self::assertSame([$scenario->card('forum')->getId()], self::service(GameStateManager::class)->getState($scenario->game())->conflict?->brokenProvinceIds);
+    }
+
+    public function testAProvinceACancelKeepsUnbrokenAtTheResultOfAConflict(): void
+    {
+        $scenario = $this->withPublicForum('break_province');
+        $game = $scenario->game()->getId();
+        $jane = $scenario->player('jane')->getId();
+        $forum = $scenario->card('forum')->getId();
+
+        $this->messageBus->dispatch(new PointAtCard($game, $jane, $scenario->card('kisada')->getId()));
+        $this->messageBus->dispatch(new TriggerInterruptAbility($game, $jane, $forum));
+        $this->messageBus->dispatch(new CancelImminentTrigger($game, $jane, $forum));
+        $this->messageBus->dispatch(new EndResolution($game, $jane));
+
+        self::assertFalse($this->broken($scenario, 'forum'));
+        // no province broken: the conflict goes on with the ring effects
+        self::assertNotContains($scenario->game()->getCurrentPlace(), ['break_province', 'react_to_broken_province']);
     }
 }

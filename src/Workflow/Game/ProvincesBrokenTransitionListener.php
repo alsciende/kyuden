@@ -7,9 +7,9 @@ namespace App\Workflow\Game;
 use App\Entity\CardTypes\ProvinceCard;
 use App\Entity\Game;
 use App\Event\ProvinceBrokenEvent;
-use App\Repository\CardRepository;
-use App\State\Manager\GameStateManager;
+use App\Service\ConflictService;
 use App\Service\ControlService;
+use App\State\Manager\GameStateManager;
 use App\State\Model\GameState;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Target;
@@ -18,16 +18,18 @@ use Symfony\Component\Workflow\Event\TransitionEvent;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * 3.2.5: when the attacking player won by at least the strength of an attacked province, that province is broken.
- * Each attacked province is compared separately. Breaking the stronghold province ends the game (VictoryService). Once
- * the broken provinces are recorded, the cards reacting to each one may be triggered (ProvinceBrokenEvent).
+ * 3.2.5: when the attacking player won by at least the strength of an attacked province, that province is broken
+ * (ConflictService::findProvincesToBreak()). The interrupts to its breaking come first (InterruptOfferer): those an
+ * interrupt has cancelled stay unbroken (Public Forum). Breaking the stronghold province ends the game
+ * (VictoryService). Once the broken provinces are recorded, the cards reacting to each one may be triggered
+ * (ProvinceBrokenEvent).
  */
 #[AsTransitionListener(workflow: 'game', transition: 'provinces_broken')]
 readonly class ProvincesBrokenTransitionListener
 {
     public function __construct(
         private GameStateManager $stateManager,
-        private CardRepository $cardRepository,
+        private ConflictService $conflictService,
         #[Target('province_card')]
         private WorkflowInterface $provinceCardStateMachine,
         private ControlService $controlService,
@@ -41,15 +43,13 @@ readonly class ProvincesBrokenTransitionListener
     public function __invoke(TransitionEvent $event): void
     {
         $game = $event->getSubject();
-        $conflict = $this->stateManager->getState($game)->currentConflict();
-        if (! $conflict->attackerWon()) {
-            return;
-        }
+        $state = $this->stateManager->getState($game);
+        // the provinces an interrupt has kept unbroken (CancelImminentTrigger)
+        $kept = $state->interruptedTransition?->name === 'provinces_broken' ? $state->interruptedTransition->cancelledCardIds : [];
 
         $brokenProvinces = [];
-        foreach ($conflict->attackedProvinceIds as $provinceId) {
-            $province = $this->cardRepository->get($provinceId, $game);
-            if ($province instanceof ProvinceCard && $province->getCurrentPlace() === ProvinceCard::STATE_UNBROKEN && $conflict->excessSkill() >= ($conflict->provinceStrengths[$provinceId] ?? 0)) {
+        foreach ($this->conflictService->findProvincesToBreak($game) as $province) {
+            if (! in_array($province->getId(), $kept, true)) {
                 $this->provinceCardStateMachine->apply($province, 'break');
                 $brokenProvinces[] = $province;
             }
@@ -60,7 +60,7 @@ readonly class ProvincesBrokenTransitionListener
 
             return $state;
         });
-        $attacker = $game->getPlayer($conflict->attackingPlayerId);
+        $attacker = $game->getPlayer($state->currentConflict()->attackingPlayerId);
         foreach ($brokenProvinces as $province) {
             $this->eventDispatcher->dispatch(new ProvinceBrokenEvent($game, $province, $this->controlService->getController($province), $attacker));
         }

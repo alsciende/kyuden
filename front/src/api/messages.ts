@@ -1061,7 +1061,7 @@ export interface ResetCharacterSkill {
 }
 
 /**
- * Restores a broken province: it is face up and unbroken again (Ethereal Alignment, Public Forum, Akodo Toshiro). A broken stronghold province ends the game at once: it cannot be restored.
+ * Restores a broken province: it is face up and unbroken again (Ethereal Alignment, Akodo Toshiro). A broken stronghold province ends the game at once: it cannot be restored.
  *
  * The province can belong to any player: the engine does not apply card effects.
  */

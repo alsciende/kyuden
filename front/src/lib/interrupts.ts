@@ -54,6 +54,8 @@ export function imminentText(window: AbilityWindowView, game: GameView, cards: C
   switch (window.trigger) {
     case 'card_leaving_play':
       return `${cardName(game, cards, window.params.card) ?? 'A card'} would leave play`
+    case 'province_breaking':
+      return `${cardName(game, cards, window.params.card) ?? 'A province'} would be broken`
     case 'effects_initiating':
       return window.params.kind === 'event'
         ? `${player} is about to play ${announcedName(cards, window.params.code)}`

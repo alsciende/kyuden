@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\MoveFate;
+use App\Model\InterruptOffer;
+use App\Trigger\ProvinceBreaking;
 
 /**
  * Feast or Famine.
@@ -30,5 +32,23 @@ final readonly class FeastOrFamine04 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [MoveFate::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+    }
+
+    /**
+     * When this province is broken.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->province === $card
+            ? [new InterruptOffer($card)]
+            : [];
     }
 }
