@@ -106,6 +106,14 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The character is dishonored.
+     */
+    public function isDishonored(PhysicalCard $character): bool
+    {
+        return $this->cardStateManager->getState($character)->getPersonalHonor() === PersonalHonor::Dishonored;
+    }
+
+    /**
      * The honor of the player.
      */
     public function getHonor(Player $player): int
@@ -191,6 +199,48 @@ final readonly class TriggerConditions
         return array_any(
             $player->getCharactersInPlay(),
             fn (PhysicalCard $character): bool => $character->getOrientation() !== Orientation::Sideways,
+        );
+    }
+
+    /**
+     * The number of honored characters the player controls ("if you control more honored characters than an
+     * opponent": Voice of Honor).
+     */
+    public function countHonoredCharacters(Player $player): int
+    {
+        return count(array_filter($player->getCharactersInPlay(), $this->isHonored(...)));
+    }
+
+    /**
+     * The player controls a character matching the condition ("a Shugenja you control", "a unique character you
+     * control"), with its attachments in the count ("a character you control with 2 or more attachments").
+     *
+     * @param \Closure(PhysicalCard, int): bool $condition the character and its number of attachments
+     */
+    public function controlsCharacter(Player $player, \Closure $condition): bool
+    {
+        return array_any(
+            $player->getCharactersInPlay(),
+            fn (PhysicalCard $character): bool => $condition($character, count($character->getStack()->getCards()) - 1),
+        );
+    }
+
+    /**
+     * The card is bowed (a character, an attachment, a stronghold).
+     */
+    public function isBowed(PhysicalCard $card): bool
+    {
+        return $card->getOrientation() === Orientation::Sideways;
+    }
+
+    /**
+     * The province has face-down cards in it ("if that province has any facedown cards in it": Cursecatcher).
+     */
+    public function hasFacedownCards(PhysicalCard $province): bool
+    {
+        return array_any(
+            $province->getStack()->getCards()->toArray(),
+            fn (PhysicalCard $card): bool => ! $card instanceof ProvinceCard && $card->getOrientation() === Orientation::FaceDown,
         );
     }
 

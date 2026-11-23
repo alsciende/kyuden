@@ -48,6 +48,14 @@ class InterruptWindow
     public array $cancelledCardIds = [];
 
     /**
+     * The cards whose effects a cancel has cancelled (a condition resolved when cancelled): what waits is still done,
+     * the resolution of each marked cancelled.
+     *
+     * @var list<string>
+     */
+    public array $cancelledEffectCardIds = [];
+
+    /**
      * What waits, a message (its class and its payload, as an ActionRecord), or an automatic transition of the game.
      */
     public ?string $messageName = null;

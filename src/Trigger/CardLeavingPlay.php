@@ -43,6 +43,12 @@ final readonly class CardLeavingPlay implements ImminentTriggerInterface
     }
 
     #[\Override]
+    public static function isResolvedWhenCancelled(): bool
+    {
+        return false;
+    }
+
+    #[\Override]
     public function getTriggerParams(): array
     {
         $params = ['card' => $this->card->getId(), 'controller' => $this->controller->getId()];

@@ -7,13 +7,22 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\CancelImminentTrigger;
 use App\Message\InitiateDuel;
+use App\Model\InterruptOffer;
+use App\Service\CardScript\TriggerConditions;
+use App\Trigger\EffectsInitiating;
 
 /**
  * Defend Your Honor.
  */
 final readonly class DefendYourHonor16 extends AbstractCardScript
 {
+    public function __construct(
+        private TriggerConditions $triggerConditions,
+    ) {
+    }
+
     #[\Override]
     public static function getCode(): string
     {
@@ -27,8 +36,26 @@ final readonly class DefendYourHonor16 extends AbstractCardScript
     }
 
     #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [EffectsInitiating::class => 'onEffectsInitiating'];
+    }
+
+    /**
+     * When the effects of an opponent's event would initiate during a conflict, initiate a military duel against a character your opponent controls of their choice – resolve the duel. If your character is the duel's winner, cancel those effects.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onEffectsInitiating(EffectsInitiating $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->event && $trigger->player !== $this->triggerConditions->getController($card) && $this->triggerConditions->isConflictInProgress($game)
+            ? [new InterruptOffer($card, would: true)]
+            : [];
+    }
+
+    #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [InitiateDuel::class];
+        return [CancelImminentTrigger::class, InitiateDuel::class];
     }
 }

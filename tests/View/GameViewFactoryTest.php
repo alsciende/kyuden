@@ -147,7 +147,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         $this->playerStateManager->withState($scenario->player('john'), fn (PlayerState $state): PlayerState => $state->setResolutions([
             new Resolution($scenario->card('toturi')->getId(), AbilityTiming::Action),
             new Resolution($scenario->card('banzai')->getId(), AbilityTiming::Interrupt),
-            new Resolution('shuffled-away', AbilityTiming::Reaction),
+            new Resolution('shuffled-away', AbilityTiming::Reaction, cancelled: true),
         ]));
 
         $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
@@ -156,12 +156,13 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         self::assertEquals([
             new ResolutionView($scenario->card('toturi')->getId(), '01-akodo-toturi', AbilityTiming::Action),
             new ResolutionView($scenario->card('banzai')->getId(), '01-banzai', AbilityTiming::Interrupt),
-            new ResolutionView(null, null, AbilityTiming::Reaction),
+            // its effects cancelled, whatever became of it
+            new ResolutionView(null, null, AbilityTiming::Reaction, cancelled: true),
         ], $johnsView->resolutions);
         self::assertEquals([
             new ResolutionView($scenario->card('toturi')->getId(), '01-akodo-toturi', AbilityTiming::Action),
             new ResolutionView(null, null, AbilityTiming::Interrupt),
-            new ResolutionView(null, null, AbilityTiming::Reaction),
+            new ResolutionView(null, null, AbilityTiming::Reaction, cancelled: true),
         ], $janesView->resolutions);
         self::assertSame(2, $janesView->resolvingInterruptsAndReactions);
     }

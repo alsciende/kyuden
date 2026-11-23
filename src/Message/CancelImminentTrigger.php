@@ -9,9 +9,11 @@ use App\Attribute\Description;
 
 /**
  * Cancels what the interrupt window open is about to make happen, or replaces it ("would… instead": Reprieve, Iron
- * Mine, Stand Your Ground…): the condition of a card no longer occurs (a character no longer leaves play, nor its
- * attachments with it), or none of the window when no card is given. A window left without condition closes at once,
- * and what waited in it is not done; the replacement itself is applied with the effect messages.
+ * Mine, Stand Your Ground…), or cancels the effects of an event or an ability (Censure, Voice of Honor, Mushin no
+ * Shin…): the condition of a card no longer occurs (a character no longer leaves play, nor its attachments with it),
+ * or none of the window when no card is given. A window left without condition closes at once: what waited in it is
+ * not done, but an event or an ability, which is still played (its costs paid), its resolution marked cancelled; the
+ * replacement itself is applied with the effect messages.
  *
  * Any player of the game can send it: the engine does not apply card effects.
  */
@@ -21,7 +23,7 @@ final readonly class CancelImminentTrigger implements PlayerActionInterface
     public function __construct(
         private string $gameId,
         private string $playerId,
-        #[Description('Card whose imminent condition is cancelled (the character that would leave play); every condition of the window when omitted.')]
+        #[Description('Card whose imminent condition is cancelled (the character that would leave play, the event played or the card whose ability is triggered); every condition of the window when omitted.')]
         private ?string $cardId = null,
     ) {
     }
