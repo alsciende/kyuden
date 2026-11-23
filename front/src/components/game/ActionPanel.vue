@@ -248,7 +248,10 @@ const nothing = computed(
             :marks-resolution="false"
           />
           <div class="resolving-title">
-            <span class="label">{{ resolving.current.label }}</span>
+            <span class="label"
+              >{{ resolving.current.label }}
+              <span v-if="resolving.current.cancelled" class="cancelled-tag">Cancelled</span></span
+            >
             <span class="name">{{ resolving.current.card.name }}</span>
             <span v-if="resolving.current.where" class="where">{{ resolving.current.where }}</span>
           </div>
@@ -256,6 +259,7 @@ const nothing = computed(
         <CardText
           v-if="resolving.current.paragraphs.length > 0"
           class="text"
+          :class="{ cancelled: resolving.current.cancelled }"
           :paragraphs="resolving.current.paragraphs"
         />
       </div>
@@ -311,7 +315,11 @@ const nothing = computed(
       {{ resolving ? `Done with ${resolving.current.card.name}` : 'End resolution' }}
     </button>
     <p v-if="resolving && available.has('end_resolution')" class="hint">
-      Apply it with the cards of the board.<template v-if="resolving.current.timing === 'action'">
+      {{
+        resolving.current.cancelled
+          ? 'Its effects are cancelled: nothing to apply.'
+          : 'Apply it with the cards of the board.'
+      }}<template v-if="resolving.current.timing === 'action'">
         Ending it gives the opportunity to the opponent.</template
       >
     </p>
@@ -652,6 +660,23 @@ const nothing = computed(
 .resolving-card .text {
   padding-top: 10px;
   border-top: 1px solid var(--line);
+}
+
+.resolving-card .text.cancelled {
+  color: var(--ink-2);
+  text-decoration: line-through;
+}
+
+.cancelled-tag {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: var(--seal);
+  color: var(--seal-ink);
 }
 
 .ring-seal {

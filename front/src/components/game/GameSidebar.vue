@@ -338,7 +338,11 @@ const tail = computed(() => props.log.flatMap((message) => message.entries).slic
     >
       <p v-for="{ player, resolving } in othersResolve" :key="player.id" class="resolving-line">
         <PlayerChip :player="player" :viewer-id="game.viewer_id" short />
-        <span
+        <span v-if="resolving.current.cancelled"
+          >ends <CardName :code="resolving.current.card.code" :above="false">{{ resolving.current.card.name }}</CardName
+          >, its effects cancelled.</span
+        >
+        <span v-else
           >resolves
           <CardName :code="resolving.current.card.code" :above="false">{{ resolving.current.card.name }}</CardName
           >.</span

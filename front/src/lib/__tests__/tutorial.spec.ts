@@ -72,7 +72,7 @@ describe('nextTip', () => {
     const assassination = card('assassination', { id: 'assassination' })
     const me = player('me', [stack('conflict_discard_pile', [assassination])], {
       acted: true,
-      resolutions: [{ card_id: 'assassination', code: 'assassination', timing: 'action' }],
+      resolutions: [{ card_id: 'assassination', code: 'assassination', timing: 'action', cancelled: false }],
     })
 
     const tip = nextTip(context({ available_actions: ['end_resolution'] }, false, me), new Set(['welcome']))
@@ -86,7 +86,7 @@ describe('nextTip', () => {
     const kuwanan = card('kuwanan', { id: 'kuwanan' })
     const me = player('me', [stack('in_play', [kuwanan])], {
       acted: true,
-      resolutions: [{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action' }],
+      resolutions: [{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action', cancelled: false }],
     })
 
     const tip = nextTip(context({ available_actions: ['end_resolution'] }, false, me), new Set(['welcome']))

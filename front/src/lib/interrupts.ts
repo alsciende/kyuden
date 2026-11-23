@@ -43,11 +43,23 @@ function cardName(game: GameView, cards: Cards, cardId: string | undefined): str
   return code === null ? null : (cards[code]?.name ?? null)
 }
 
+/** the card a condition announces, by its code: an event in the hand is revealed by the window */
+function announcedName(cards: Cards, code: string | undefined): string {
+  return (code === undefined ? undefined : cards[code]?.name) ?? 'a card'
+}
+
 /** what the window is about to let happen, as the cards word it */
 export function imminentText(window: AbilityWindowView, game: GameView, cards: Cards): string {
+  const player = playerById(game, window.params.player ?? '')?.name ?? 'A player'
   switch (window.trigger) {
     case 'card_leaving_play':
       return `${cardName(game, cards, window.params.card) ?? 'A card'} would leave play`
+    case 'effects_initiating':
+      return window.params.kind === 'event'
+        ? `${player} is about to play ${announcedName(cards, window.params.code)}`
+        : `${player} is about to trigger ${announcedName(cards, window.params.code)}`
+    case 'attachment_being_played':
+      return `${player} is about to play ${announcedName(cards, window.params.code)} on ${cardName(game, cards, window.params.target) ?? 'a character'}`
     default:
       return 'Something is about to happen'
   }

@@ -67,6 +67,8 @@ export interface ResolutionView {
   card_id: string | null
   code: string | null
   timing: AbilityTiming
+  /** its effects were cancelled before they initiated: its player only ends it */
+  cancelled: boolean
 }
 
 /**

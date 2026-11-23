@@ -47,7 +47,7 @@ function view(resolutions: ResolutionView[] = []) {
 
 describe('resolvingOf', () => {
   it('shows the ability being resolved, the paragraph of its timing standing out', () => {
-    const current = view([{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action' }])
+    const current = view([{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action', cancelled: false }])
     const resolving = resolvingOf(current, current.players[0]!, cards)
 
     expect(resolving?.current).toMatchObject({
@@ -60,11 +60,17 @@ describe('resolvingOf', () => {
     expect(resolving?.then).toEqual([])
   })
 
+  it('tells that the effects were cancelled', () => {
+    const current = view([{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action', cancelled: true }])
+
+    expect(resolvingOf(current, current.players[0]!, cards)?.current.cancelled).toBe(true)
+  })
+
   it('shows first what EndResolution ends: the last interrupt or reaction, then the action', () => {
     const current = view([
-      { card_id: 'banzai', code: 'banzai', timing: 'action' },
-      { card_id: 'gift', code: 'gift', timing: 'reaction' },
-      { card_id: 'kuwanan', code: 'kuwanan', timing: 'action' },
+      { card_id: 'banzai', code: 'banzai', timing: 'action', cancelled: false },
+      { card_id: 'gift', code: 'gift', timing: 'reaction', cancelled: false },
+      { card_id: 'kuwanan', code: 'kuwanan', timing: 'action', cancelled: false },
     ])
     const resolving = resolvingOf(current, current.players[0]!, cards)
 
@@ -74,7 +80,7 @@ describe('resolvingOf', () => {
 
   it('shows nothing for a character played or a card no longer in sight', () => {
     const played = view()
-    const lost = view([{ card_id: null, code: null, timing: 'reaction' }])
+    const lost = view([{ card_id: null, code: null, timing: 'reaction', cancelled: false }])
 
     expect(resolvingOf(played, played.players[0]!, cards)).toBeNull()
     expect(resolvingOf(lost, lost.players[0]!, cards)).toBeNull()
@@ -84,10 +90,10 @@ describe('resolvingOf', () => {
 describe('endingOrder', () => {
   it('ends the interrupts and reactions first, the last one first', () => {
     const order = endingOrder([
-      { card_id: 'a', code: null, timing: 'action' },
-      { card_id: 'i', code: null, timing: 'interrupt' },
-      { card_id: 'b', code: null, timing: 'action' },
-      { card_id: 'r', code: null, timing: 'reaction' },
+      { card_id: 'a', code: null, timing: 'action', cancelled: false },
+      { card_id: 'i', code: null, timing: 'interrupt', cancelled: false },
+      { card_id: 'b', code: null, timing: 'action', cancelled: false },
+      { card_id: 'r', code: null, timing: 'reaction', cancelled: false },
     ])
 
     expect(order.map((resolution) => resolution.card_id)).toEqual(['r', 'i', 'b', 'a'])
@@ -98,10 +104,10 @@ describe('othersResolving and resolvingCardIds', () => {
   function both(spectating: boolean) {
     const me = player('me', [stack('in_play', [kuwanan])], {
       acted: true,
-      resolutions: [{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action' }],
+      resolutions: [{ card_id: 'kuwanan', code: 'kuwanan', timing: 'action', cancelled: false }],
     })
     const opp = player('opp', [stack('conflict_discard_pile', [gift])], {
-      resolutions: [{ card_id: 'gift', code: 'gift', timing: 'reaction' }],
+      resolutions: [{ card_id: 'gift', code: 'gift', timing: 'reaction', cancelled: false }],
     })
 
     return game(me, opp, { spectating })
