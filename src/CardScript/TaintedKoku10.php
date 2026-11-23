@@ -9,7 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\MoveAttachment;
 use App\Model\InterruptOffer;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 /**
  * Tainted Koku.
@@ -37,7 +37,7 @@ final readonly class TaintedKoku10 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+        return [CardLeavingPlayTrigger::class => 'onCardLeavingPlay'];
     }
 
     /**
@@ -45,7 +45,7 @@ final readonly class TaintedKoku10 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    public function onCardLeavingPlay(CardLeavingPlayTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->card === $card->getAttachedCharacter()
             ? [new InterruptOffer($card)]

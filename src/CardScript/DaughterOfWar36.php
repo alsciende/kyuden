@@ -11,7 +11,7 @@ use App\Message\PutCharacterIntoPlay;
 use App\Message\SearchDynastyDeck;
 use App\Message\ShuffleDynastyDeck;
 use App\Model\InterruptOffer;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 /**
  * Daughter of War.
@@ -39,7 +39,7 @@ final readonly class DaughterOfWar36 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+        return [CardLeavingPlayTrigger::class => 'onCardLeavingPlay'];
     }
 
     /**
@@ -47,7 +47,7 @@ final readonly class DaughterOfWar36 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    public function onCardLeavingPlay(CardLeavingPlayTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->card === $card->getAttachedCharacter()
             ? [new InterruptOffer($card)]

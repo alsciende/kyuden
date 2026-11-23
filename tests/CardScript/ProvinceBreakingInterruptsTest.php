@@ -15,7 +15,7 @@ use App\State\Model\CardState;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\ProvinceBreaking;
+use App\Trigger\ProvinceBreakingTrigger;
 
 /**
  * The cards interrupting a province broken (doc/interrupts.md, 3), the province still unbroken.
@@ -29,7 +29,7 @@ class ProvinceBreakingInterruptsTest extends AbstractKernelTestCase
         $registry = self::service(CardScriptRegistry::class);
         $codes = array_values(array_filter(
             $registry->getCodes(),
-            fn (string $code): bool => array_key_exists(ProvinceBreaking::class, $registry->find($code)?->getSubscribedEvents() ?? []),
+            fn (string $code): bool => array_key_exists(ProvinceBreakingTrigger::class, $registry->find($code)?->getSubscribedEvents() ?? []),
         ));
 
         // not the cards reading the rings claimed on a province (Enlightenment)
@@ -65,7 +65,7 @@ class ProvinceBreakingInterruptsTest extends AbstractKernelTestCase
         $province = $scenario->card($alias);
         \assert($province instanceof ProvinceCard);
         $controller = self::service(ControlService::class)->getController($province);
-        if (! self::service(InterruptOfferer::class)->open($scenario->game(), [new ProvinceBreaking($province, $controller, $scenario->player('john'))])) {
+        if (! self::service(InterruptOfferer::class)->open($scenario->game(), [new ProvinceBreakingTrigger($province, $controller, $scenario->player('john'))])) {
             return [];
         }
 

@@ -12,7 +12,7 @@ use App\Message\CancelImminentTrigger;
 use App\Message\PutCharacterIntoPlay;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\EffectsInitiatingTrigger;
 
 /**
  * Yogo Kikuyo.
@@ -45,7 +45,7 @@ final readonly class YogoKikuyo08 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [EffectsInitiating::class => 'onEffectsInitiating'];
+        return [EffectsInitiatingTrigger::class => 'onEffectsInitiating'];
     }
 
     /**
@@ -53,7 +53,7 @@ final readonly class YogoKikuyo08 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onEffectsInitiating(EffectsInitiating $trigger, PhysicalCard $card, Game $game): array
+    public function onEffectsInitiating(EffectsInitiatingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->event && $trigger->player !== $this->triggerConditions->getController($card)
             && $this->triggerConditions->hasTrait($trigger->card, 'spell') && $this->triggerConditions->isConflictInProgress($game)

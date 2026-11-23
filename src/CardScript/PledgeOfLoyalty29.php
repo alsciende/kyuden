@@ -11,7 +11,7 @@ use App\Message\CancelImminentTrigger;
 use App\Message\DiscardStatusToken;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 /**
  * Pledge of Loyalty.
@@ -44,7 +44,7 @@ final readonly class PledgeOfLoyalty29 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+        return [CardLeavingPlayTrigger::class => 'onCardLeavingPlay'];
     }
 
     /**
@@ -52,7 +52,7 @@ final readonly class PledgeOfLoyalty29 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    public function onCardLeavingPlay(CardLeavingPlayTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->character && $trigger->controller === $this->triggerConditions->getController($card) && $this->triggerConditions->isHonored($trigger->card)
             ? [new InterruptOffer($card, would: true)]

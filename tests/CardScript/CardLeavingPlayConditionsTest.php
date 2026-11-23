@@ -12,7 +12,7 @@ use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -73,7 +73,7 @@ class CardLeavingPlayConditionsTest extends AbstractKernelTestCase
     {
         $card = $scenario->card($alias);
         $character = $card->isCharacterInPlay();
-        $triggers = [new CardLeavingPlay($card, self::service(ControlService::class)->getController($card), $character, $sacrificed)];
+        $triggers = [new CardLeavingPlayTrigger($card, self::service(ControlService::class)->getController($card), $character, $sacrificed)];
         if (! self::service(InterruptOfferer::class)->open($scenario->game(), $triggers)) {
             return [];
         }

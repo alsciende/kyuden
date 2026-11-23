@@ -11,7 +11,7 @@ use App\Enum\Type;
 use App\Message\CancelImminentTrigger;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\EffectsInitiatingTrigger;
 
 /**
  * Seppun Hidden Guard.
@@ -38,7 +38,7 @@ final readonly class SeppunHiddenGuard16 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [EffectsInitiating::class => 'onEffectsInitiating'];
+        return [EffectsInitiatingTrigger::class => 'onEffectsInitiating'];
     }
 
     /**
@@ -46,7 +46,7 @@ final readonly class SeppunHiddenGuard16 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onEffectsInitiating(EffectsInitiating $trigger, PhysicalCard $card, Game $game): array
+    public function onEffectsInitiating(EffectsInitiatingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return ! $trigger->event && $trigger->player !== $this->triggerConditions->getController($card) && $trigger->card->getLogicalCard()->getType() === Type::Character
             && $this->triggerConditions->controlsCharacter($this->triggerConditions->getController($card), fn (PhysicalCard $character): bool => $character->getLogicalCard()->getUniqueness() === true)

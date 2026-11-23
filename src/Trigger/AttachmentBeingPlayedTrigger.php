@@ -12,7 +12,7 @@ use App\GameLog\LogParam;
  * An attachment would be played onto a character (PlayAttachment, PlayCharacterAsAttachment), before its cost is paid
  * (Iron Mountain Castle reduces it). Nothing cancels a play: cancelled, the message is still handled.
  */
-final readonly class AttachmentBeingPlayed implements ImminentTriggerInterface
+final readonly class AttachmentBeingPlayedTrigger implements ImminentTriggerInterface
 {
     public function __construct(
         public PhysicalCard $card,

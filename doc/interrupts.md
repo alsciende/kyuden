@@ -66,7 +66,7 @@ The decision to ask a player depends on public information only, so that a stop 
 - **A card the opponent sees** (in play, a holding or a province face up, an attachment: Reprieve, Iron Mine, Pledge of Loyalty, Akodo Kaede, Master of Many Lifetimes): its player is asked when its script says it can interrupt the condition.
 - **An event out of sight** (the hand): its player is asked when the condition its script reads is met (on public information: an honored character they control would leave play) and a copy of the card is in their hand or their conflict deck, whichever. The opponent cannot tell the hand from the deck; they learn that the deck may hold the card, which its play would show anyway. A copy in the discard pile is public. A player asked without the card in hand gets the same window, offering nothing but passing.
 
-The scripts subscribe to the imminent conditions statically, as to the triggering events of the reactions (`getSubscribedEvents()`): an imminent condition is not a domain event (nothing has changed yet, and the domain events are named in the past tense), but a model of `src/Trigger` (`ImminentTriggerInterface`: `getTriggerName()`, `getTriggerParams()`), the script returning offers (`InterruptOffer`: the card, forced or not). Compiled by `App\Kernel` with the subscriptions of the reactions.
+The scripts subscribe to the imminent conditions statically, as to the triggering events of the reactions (`getSubscribedEvents()`): an imminent condition is not a domain event (nothing has changed yet, and the domain events are named in the past tense), but a model of `src/Trigger`, named after the condition in the present and suffixed `Trigger` (`CardLeavingPlayTrigger`; `ImminentTriggerInterface`: `getTriggerName()`, `getTriggerParams()`), the script returning offers (`InterruptOffer`: the card, forced or not). Compiled by `App\Kernel` with the subscriptions of the reactions.
 
 ### The messages
 
@@ -157,7 +157,7 @@ Proposed order: the common ground (the stack, the stages, `PassInterrupt`, `Canc
 
 The targets are not known to the engine (as for the reactions): the cards naming them are offered for every effect of their kind, their player judging.
 
-Done (`Trigger/EffectsInitiating`, `Trigger/AttachmentBeingPlayed`, `Service/Interrupt/PlayTriggerResolver`):
+Done (`Trigger/EffectsInitiatingTrigger`, `Trigger/AttachmentBeingPlayedTrigger`, `Service/Interrupt/PlayTriggerResolver`):
 
 - **The conditions**: `effects_initiating` for the events played and the abilities triggered (the six messages, whatever their timing), checked as their handlers would (the place of the event, its timing, `AbilityService::canTrigger()`); `attachment_being_played` for `PlayAttachment` and `PlayCharacterAsAttachment` onto a character (Iron Mountain Castle). Their params name the card and its code, the player and, for the first, `kind` (`event` or `ability`) and `timing`: the card is announced, the log reveals it ("{player} is about to play {card}", "… trigger {card}") and the window names it, an event in the hand included.
 - **What cancelling means**: each condition says it (`ImminentTriggerInterface::isResolvedWhenCancelled()`, kept on its record). Cancelled, these two are still done: the message is handled once the window closes (the costs paid, the event discarded), then the resolution it has started is marked cancelled (`Resolution::$cancelled`, `cancelled` in `ResolutionView`; `InterruptWindow::$cancelledEffectCardIds`): its player only ends it. The engine refuses nothing else from them (the effects are accepted from any player anyway); the web client marks it and offers nothing but ending it, the instructions of the agents say so.
@@ -177,7 +177,7 @@ Done (`Trigger/EffectsInitiating`, `Trigger/AttachmentBeingPlayed`, `Service/Int
 
 The window opens before the province is broken, so that a province triggers its own interrupt unbroken (`trigger_ability` of a province only leaves `unbroken`).
 
-Done (`Trigger/ProvinceBreaking`, `Service/Interrupt/ProvinceBreakTriggerResolver`):
+Done (`Trigger/ProvinceBreakingTrigger`, `Service/Interrupt/ProvinceBreakTriggerResolver`):
 
 - **The condition**: `province_breaking`, for `BreakProvince` on a province the transition `break` accepts (face up, unbroken), its breaker the sender, and for `provinces_broken` (metadata `interrupt`), each attacked province the result of the conflict breaks (`ConflictService::findProvincesToBreak()`, shared with `ProvincesBrokenTransitionListener`), its breaker the attacking player; its params name the province (`card`), its controller and the breaker. One window for every province of the conflict (A War on Two Fronts).
 - **What cancelling means**: the province is not broken (Public Forum, `CancelImminentTrigger` beside `PlaceHonorTokens`, offered while no honor token is on it): the message is not handled; at the resolution of a conflict, the transition leaves it out (`InterruptedTransition::$cancelledCardIds`), and with no province broken the conflict goes on with the ring effects (`no_province_broken`). Strategic Weakpoint interrupts what would occur without cancelling it (its stage `would`).

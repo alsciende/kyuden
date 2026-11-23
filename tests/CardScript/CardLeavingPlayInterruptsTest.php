@@ -13,7 +13,7 @@ use App\State\Manager\GameStateManager;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 /**
  * The cards interrupting a card leaving play (doc/interrupts.md, 1).
@@ -25,7 +25,7 @@ class CardLeavingPlayInterruptsTest extends AbstractKernelTestCase
         $registry = self::service(CardScriptRegistry::class);
         $codes = array_values(array_filter(
             $registry->getCodes(),
-            fn (string $code): bool => array_key_exists(CardLeavingPlay::class, $registry->find($code)?->getSubscribedEvents() ?? []),
+            fn (string $code): bool => array_key_exists(CardLeavingPlayTrigger::class, $registry->find($code)?->getSubscribedEvents() ?? []),
         ));
 
         self::assertEqualsCanonicalizing([
@@ -62,7 +62,7 @@ class CardLeavingPlayInterruptsTest extends AbstractKernelTestCase
     {
         $card = $scenario->card($alias);
         $controller = self::service(ControlService::class)->getController($card);
-        if (! self::service(InterruptOfferer::class)->open($scenario->game(), [new CardLeavingPlay($card, $controller, true, $sacrificed)])) {
+        if (! self::service(InterruptOfferer::class)->open($scenario->game(), [new CardLeavingPlayTrigger($card, $controller, true, $sacrificed)])) {
             return [];
         }
 

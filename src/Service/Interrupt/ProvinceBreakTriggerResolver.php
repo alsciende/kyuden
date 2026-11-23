@@ -13,12 +13,12 @@ use App\Repository\CardRepository;
 use App\Service\ConflictService;
 use App\Service\ControlService;
 use App\State\Manager\GameStateManager;
-use App\Trigger\ProvinceBreaking;
+use App\Trigger\ProvinceBreakingTrigger;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\Workflow\WorkflowInterface;
 
 /**
- * A province would be broken (ProvinceBreaking): by an effect (BreakProvince), or by the result of the conflict
+ * A province would be broken (ProvinceBreakingTrigger): by an effect (BreakProvince), or by the result of the conflict
  * (`provinces_broken`), each attacked province it breaks.
  */
 final readonly class ProvinceBreakTriggerResolver implements ImminentTriggerResolverInterface
@@ -52,7 +52,7 @@ final readonly class ProvinceBreakTriggerResolver implements ImminentTriggerReso
             return [];
         }
 
-        return [new ProvinceBreaking($province, $this->controlService->getController($province), $breaker)];
+        return [new ProvinceBreakingTrigger($province, $this->controlService->getController($province), $breaker)];
     }
 
     #[\Override]
@@ -65,7 +65,7 @@ final readonly class ProvinceBreakTriggerResolver implements ImminentTriggerReso
         $attacker = $game->getPlayer($this->gameStateManager->getState($game)->currentConflict()->attackingPlayerId);
 
         return array_map(
-            fn (ProvinceCard $province): ProvinceBreaking => new ProvinceBreaking($province, $this->controlService->getController($province), $attacker),
+            fn (ProvinceCard $province): ProvinceBreakingTrigger => new ProvinceBreakingTrigger($province, $this->controlService->getController($province), $attacker),
             $this->conflictService->findProvincesToBreak($game),
         );
     }

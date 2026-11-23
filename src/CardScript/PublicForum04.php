@@ -11,7 +11,7 @@ use App\Message\CancelImminentTrigger;
 use App\Message\PlaceHonorTokens;
 use App\Model\InterruptOffer;
 use App\State\Manager\CardStateManager;
-use App\Trigger\ProvinceBreaking;
+use App\Trigger\ProvinceBreakingTrigger;
 
 /**
  * Public Forum.
@@ -44,7 +44,7 @@ final readonly class PublicForum04 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+        return [ProvinceBreakingTrigger::class => 'onProvinceBreaking'];
     }
 
     /**
@@ -52,7 +52,7 @@ final readonly class PublicForum04 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    public function onProvinceBreaking(ProvinceBreakingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->province === $card && $this->cardStateManager->getState($card)->getHonorTokens() === 0
             ? [new InterruptOffer($card, would: true)]

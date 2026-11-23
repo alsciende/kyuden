@@ -14,8 +14,8 @@ use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\GameBuilder;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\AttachmentBeingPlayed;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\AttachmentBeingPlayedTrigger;
+use App\Trigger\EffectsInitiatingTrigger;
 
 /**
  * The condition of each card interrupting the effects of a card that would initiate (doc/interrupts.md, 2), on a
@@ -66,7 +66,7 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
      *
      * @return array<string, list<string>>
      */
-    private function offers(Scenario $scenario, EffectsInitiating|AttachmentBeingPlayed $trigger): array
+    private function offers(Scenario $scenario, EffectsInitiatingTrigger|AttachmentBeingPlayedTrigger $trigger): array
     {
         if (! self::service(InterruptOfferer::class)->open($scenario->game(), [$trigger])) {
             return [];
@@ -102,9 +102,9 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
         }
     }
 
-    private function event(Scenario $scenario, string $alias, string $player = 'jane'): EffectsInitiating
+    private function event(Scenario $scenario, string $alias, string $player = 'jane'): EffectsInitiatingTrigger
     {
-        return new EffectsInitiating($scenario->card($alias), $scenario->player($player), true, AbilityTiming::Action);
+        return new EffectsInitiatingTrigger($scenario->card($alias), $scenario->player($player), true, AbilityTiming::Action);
     }
 
     public function testAnEventOfTheOpponent(): void
@@ -151,7 +151,7 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
     public function testAProvinceAbilityOfTheOpponent(): void
     {
         $scenario = $this->board();
-        $trigger = new EffectsInitiating($scenario->card('mori'), $scenario->player('jane'), false, AbilityTiming::Action);
+        $trigger = new EffectsInitiatingTrigger($scenario->card('mori'), $scenario->player('jane'), false, AbilityTiming::Action);
 
         self::assertSame([
             'john:standard' => ['hantei'],
@@ -164,9 +164,9 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
     {
         $scenario = $this->board();
 
-        self::assertSame(['john:standard' => ['castle']], $this->offers($scenario, new AttachmentBeingPlayed($scenario->card('katana'), $scenario->player('john'), $scenario->card('shiba'))));
+        self::assertSame(['john:standard' => ['castle']], $this->offers($scenario, new AttachmentBeingPlayedTrigger($scenario->card('katana'), $scenario->player('john'), $scenario->card('shiba'))));
         // on a character of the opponent
-        self::assertSame([], $this->offers($scenario, new AttachmentBeingPlayed($scenario->card('katana'), $scenario->player('john'), $scenario->card('hotaru'))));
+        self::assertSame([], $this->offers($scenario, new AttachmentBeingPlayedTrigger($scenario->card('katana'), $scenario->player('john'), $scenario->card('hotaru'))));
     }
 
     public function testACharacterAbilityAtTheirProvince(): void
@@ -179,7 +179,7 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
                 ->inPlay(['kisada' => '01-hida-kisada'])
                 ->province('21-effective-deception', as: 'deception', orientation: Orientation::FaceUp),
         );
-        $trigger = new EffectsInitiating($scenario->card('hotaru'), $scenario->player('jane'), false, AbilityTiming::Action);
+        $trigger = new EffectsInitiatingTrigger($scenario->card('hotaru'), $scenario->player('jane'), false, AbilityTiming::Action);
 
         self::assertSame([
             'john:standard' => ['hantei'],
@@ -193,7 +193,7 @@ class EffectsInitiatingConditionsTest extends AbstractKernelTestCase
             fn (GameBuilder $builder): GameBuilder => $builder->conflict('john', 'mori', attackers: ['kisada']),
             fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['kisada' => '01-hida-kisada', 'blade' => '03-pathfinder-s-blade']),
         );
-        $trigger = new EffectsInitiating($scenario->card('mori'), $scenario->player('jane'), false, AbilityTiming::Action);
+        $trigger = new EffectsInitiatingTrigger($scenario->card('mori'), $scenario->player('jane'), false, AbilityTiming::Action);
 
         self::assertSame([
             'john:standard' => ['hantei'],

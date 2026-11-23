@@ -12,7 +12,7 @@ use App\Message\CancelImminentTrigger;
 use App\Message\PlaceCardUnder;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 /**
  * Back-Alley Hideaway.
@@ -45,7 +45,7 @@ final readonly class BackAlleyHideaway04 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+        return [CardLeavingPlayTrigger::class => 'onCardLeavingPlay'];
     }
 
     /**
@@ -53,7 +53,7 @@ final readonly class BackAlleyHideaway04 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    public function onCardLeavingPlay(CardLeavingPlayTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->character && $trigger->controller === $this->triggerConditions->getController($card) && $trigger->card->getLogicalCard()->getClan() === Clan::Scorpion
             ? [new InterruptOffer($card, would: true)]

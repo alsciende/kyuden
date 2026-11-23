@@ -13,7 +13,7 @@ use App\Entity\Player;
  * is, the province still unbroken (its abilities can be triggered); cancelled ("would be broken… instead": Public
  * Forum), the province is not broken.
  */
-final readonly class ProvinceBreaking implements ImminentTriggerInterface
+final readonly class ProvinceBreakingTrigger implements ImminentTriggerInterface
 {
     public function __construct(
         public ProvinceCard $province,

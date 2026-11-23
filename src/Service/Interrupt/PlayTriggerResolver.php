@@ -26,13 +26,13 @@ use App\Service\AbilityService;
 use App\Service\AvailableActionsResolver;
 use App\Service\CardScript\CardScriptRegistry;
 use App\Service\PlayService;
-use App\Trigger\AttachmentBeingPlayed;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\AttachmentBeingPlayedTrigger;
+use App\Trigger\EffectsInitiatingTrigger;
 use Symfony\Component\Workflow\Exception\ExceptionInterface as WorkflowException;
 
 /**
- * The effects of a card would initiate (EffectsInitiating): an event played, an ability triggered; an attachment would
- * be played onto a character (AttachmentBeingPlayed). Checked as their handlers would, so that no window opens for a
+ * The effects of a card would initiate (EffectsInitiatingTrigger): an event played, an ability triggered; an attachment would
+ * be played onto a character (AttachmentBeingPlayedTrigger). Checked as their handlers would, so that no window opens for a
  * play the engine would refuse.
  */
 final readonly class PlayTriggerResolver implements ImminentTriggerResolverInterface
@@ -90,14 +90,14 @@ final readonly class PlayTriggerResolver implements ImminentTriggerResolverInter
                     return [];
                 }
 
-                return [new EffectsInitiating($card, $player, true, self::EVENTS[$class])];
+                return [new EffectsInitiatingTrigger($card, $player, true, self::EVENTS[$class])];
             }
         } catch (DataException|RulesException|WorkflowException) {
             // refused by its handler: nothing would occur
             return [];
         }
 
-        return $this->abilityService->canTrigger($card, $player) ? [new EffectsInitiating($card, $player, false, self::ABILITIES[$class])] : [];
+        return $this->abilityService->canTrigger($card, $player) ? [new EffectsInitiatingTrigger($card, $player, false, self::ABILITIES[$class])] : [];
     }
 
     #[\Override]
@@ -107,13 +107,13 @@ final readonly class PlayTriggerResolver implements ImminentTriggerResolverInter
     }
 
     /**
-     * @return list<AttachmentBeingPlayed>
+     * @return list<AttachmentBeingPlayedTrigger>
      */
     private function attachment(PhysicalCard $card, Player $player, string $targetId, Game $game, bool $attachment): array
     {
         $this->playService->assertPlayable($card, $attachment ? Type::Attachment : Type::Character);
         $target = $this->cardRepository->get($targetId, $game);
 
-        return $target->isCharacterInPlay() ? [new AttachmentBeingPlayed($card, $player, $target)] : [];
+        return $target->isCharacterInPlay() ? [new AttachmentBeingPlayedTrigger($card, $player, $target)] : [];
     }
 }

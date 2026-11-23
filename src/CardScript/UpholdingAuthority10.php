@@ -9,7 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\RevealCards;
 use App\Model\InterruptOffer;
-use App\Trigger\ProvinceBreaking;
+use App\Trigger\ProvinceBreakingTrigger;
 
 /**
  * Upholding Authority.
@@ -37,7 +37,7 @@ final readonly class UpholdingAuthority10 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+        return [ProvinceBreakingTrigger::class => 'onProvinceBreaking'];
     }
 
     /**
@@ -45,7 +45,7 @@ final readonly class UpholdingAuthority10 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    public function onProvinceBreaking(ProvinceBreakingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->province === $card
             ? [new InterruptOffer($card)]

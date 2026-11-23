@@ -25,7 +25,7 @@ use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 use App\View\GameViewFactory;
 use App\View\Model\AbilityWindowView;
 use App\View\Model\CardView;
@@ -289,7 +289,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
             ->withPlayer('jane')
             ->build();
         $kisada = $scenario->card('kisada');
-        self::service(InterruptOfferer::class)->open($scenario->game(), [new CardLeavingPlay($kisada, $scenario->player('john'), true)]);
+        self::service(InterruptOfferer::class)->open($scenario->game(), [new CardLeavingPlayTrigger($kisada, $scenario->player('john'), true)]);
         $john = $scenario->player('john')->getId();
 
         $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');

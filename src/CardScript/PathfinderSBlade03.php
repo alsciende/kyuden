@@ -11,7 +11,7 @@ use App\Enum\AbilityTiming;
 use App\Message\CancelImminentTrigger;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\EffectsInitiatingTrigger;
 
 /**
  * Pathfinder's Blade.
@@ -38,7 +38,7 @@ final readonly class PathfinderSBlade03 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [EffectsInitiating::class => 'onEffectsInitiating'];
+        return [EffectsInitiatingTrigger::class => 'onEffectsInitiating'];
     }
 
     /**
@@ -46,7 +46,7 @@ final readonly class PathfinderSBlade03 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onEffectsInitiating(EffectsInitiating $trigger, PhysicalCard $card, Game $game): array
+    public function onEffectsInitiating(EffectsInitiatingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         $attached = $card->getAttachedCharacter();
 

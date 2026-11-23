@@ -12,7 +12,7 @@ use App\Entity\Player;
  * placed under a card, put into a province, or discarded in the fate phase for having no fate. A character takes its
  * attachments with it: each of them would leave play too, caused by it (`host`).
  */
-final readonly class CardLeavingPlay implements ImminentTriggerInterface
+final readonly class CardLeavingPlayTrigger implements ImminentTriggerInterface
 {
     public function __construct(
         public PhysicalCard $card,

@@ -8,7 +8,7 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Model\InterruptOffer;
-use App\Trigger\ProvinceBreaking;
+use App\Trigger\ProvinceBreakingTrigger;
 
 /**
  * The Art of Peace.
@@ -30,7 +30,7 @@ final readonly class TheArtOfPeace01 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [ProvinceBreaking::class => 'onProvinceBreaking'];
+        return [ProvinceBreakingTrigger::class => 'onProvinceBreaking'];
     }
 
     /**
@@ -38,7 +38,7 @@ final readonly class TheArtOfPeace01 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onProvinceBreaking(ProvinceBreaking $trigger, PhysicalCard $card, Game $game): array
+    public function onProvinceBreaking(ProvinceBreakingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->province === $card
             ? [new InterruptOffer($card)]

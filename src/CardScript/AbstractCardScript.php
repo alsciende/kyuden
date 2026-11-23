@@ -75,7 +75,7 @@ abstract readonly class AbstractCardScript
      *   returns the interrupts its controller may trigger (list<InterruptOffer>). The condition is read on what every
      *   player sees: for a card out of sight, the copy may be in the conflict deck.
      *
-     *       public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+     *       public function onCardLeavingPlay(CardLeavingPlayTrigger $trigger, PhysicalCard $card, Game $game): array
      *
      * Read when the container is compiled (App\Kernel).
      *

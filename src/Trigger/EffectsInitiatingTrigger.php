@@ -18,7 +18,7 @@ use App\GameLog\LogParam;
  * The card is announced: the window reveals it to every player, an event in the hand included (its code in the params).
  * The targets are not known to the engine: the cards naming them are offered for every effect of their kind.
  */
-final readonly class EffectsInitiating implements ImminentTriggerInterface
+final readonly class EffectsInitiatingTrigger implements ImminentTriggerInterface
 {
     public function __construct(
         /**

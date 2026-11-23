@@ -42,7 +42,7 @@ use App\State\Model\ReactionWindow;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 
 class BotStrategyTest extends AbstractKernelTestCase
 {
@@ -150,7 +150,7 @@ class BotStrategyTest extends AbstractKernelTestCase
         $controlService = self::service(ControlService::class);
 
         // its forced interrupts first
-        $offerer->open($scenario->game(), [new CardLeavingPlay($scenario->card('truthseeker'), $bot, true)]);
+        $offerer->open($scenario->game(), [new CardLeavingPlayTrigger($scenario->card('truthseeker'), $bot, true)]);
         $action = $this->nextAction($scenario);
         self::assertInstanceOf(TriggerInterruptAbility::class, $action);
         self::assertSame($scenario->card('truthseeker')->getId(), $action->getCardId());
@@ -161,7 +161,7 @@ class BotStrategyTest extends AbstractKernelTestCase
 
             return $state;
         });
-        $offerer->open($scenario->game(), [new CardLeavingPlay($scenario->card('truthseeker'), $controlService->getController($scenario->card('truthseeker')), true)]);
+        $offerer->open($scenario->game(), [new CardLeavingPlayTrigger($scenario->card('truthseeker'), $controlService->getController($scenario->card('truthseeker')), true)]);
         self::service(GameStateManager::class)->withState($scenario->game(), function (GameState $state): GameState {
             $stage = $state->currentInterruptWindow()?->currentStage();
             \assert($stage instanceof InterruptWindowStage);

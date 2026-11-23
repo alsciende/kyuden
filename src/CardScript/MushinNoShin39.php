@@ -10,7 +10,7 @@ use App\Enum\AbilityTiming;
 use App\Message\CancelImminentTrigger;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\EffectsInitiating;
+use App\Trigger\EffectsInitiatingTrigger;
 
 /**
  * Mushin no Shin.
@@ -37,7 +37,7 @@ final readonly class MushinNoShin39 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [EffectsInitiating::class => 'onEffectsInitiating'];
+        return [EffectsInitiatingTrigger::class => 'onEffectsInitiating'];
     }
 
     /**
@@ -45,7 +45,7 @@ final readonly class MushinNoShin39 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onEffectsInitiating(EffectsInitiating $trigger, PhysicalCard $card, Game $game): array
+    public function onEffectsInitiating(EffectsInitiatingTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->player !== $this->triggerConditions->getController($card) && $this->triggerConditions->controlsCharacter($this->triggerConditions->getController($card), fn (PhysicalCard $character, int $attachments): bool => $attachments >= 2)
             ? [new InterruptOffer($card, would: true)]

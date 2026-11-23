@@ -25,11 +25,11 @@ use App\Service\AvailableActionsResolver;
 use App\Service\ControlService;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\GameStateManager;
-use App\Trigger\CardLeavingPlay;
+use App\Trigger\CardLeavingPlayTrigger;
 use Symfony\Component\Workflow\Exception\ExceptionInterface as WorkflowException;
 
 /**
- * A card in play would leave play (CardLeavingPlay): the effects moving it out of play, and the discard of the
+ * A card in play would leave play (CardLeavingPlayTrigger): the effects moving it out of play, and the discard of the
  * characters without fate in the fate phase (`characters_discarded`). A character takes its attachments along.
  */
 final readonly class LeavePlayTriggerResolver implements ImminentTriggerResolverInterface
@@ -109,15 +109,15 @@ final readonly class LeavePlayTriggerResolver implements ImminentTriggerResolver
     /**
      * The card, and for a character the cards attached to it, which leave play with it.
      *
-     * @return list<CardLeavingPlay>
+     * @return list<CardLeavingPlayTrigger>
      */
     private function leaving(PhysicalCard $card, bool $sacrificed): array
     {
         $character = $card->isCharacterInPlay();
-        $triggers = [new CardLeavingPlay($card, $this->controlService->getController($card), $character, $sacrificed)];
+        $triggers = [new CardLeavingPlayTrigger($card, $this->controlService->getController($card), $character, $sacrificed)];
         if ($character) {
             foreach (array_slice($card->getStack()->getOrderedCards(), 1) as $attachment) {
-                $triggers[] = new CardLeavingPlay($attachment, $this->controlService->getController($attachment), false, host: $card);
+                $triggers[] = new CardLeavingPlayTrigger($attachment, $this->controlService->getController($attachment), false, host: $card);
             }
         }
 

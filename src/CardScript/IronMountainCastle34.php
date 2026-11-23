@@ -9,7 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Model\InterruptOffer;
 use App\Service\CardScript\TriggerConditions;
-use App\Trigger\AttachmentBeingPlayed;
+use App\Trigger\AttachmentBeingPlayedTrigger;
 
 /**
  * Iron Mountain Castle.
@@ -36,7 +36,7 @@ final readonly class IronMountainCastle34 extends AbstractCardScript
     #[\Override]
     public static function getSubscribedEvents(): array
     {
-        return [AttachmentBeingPlayed::class => 'onAttachmentBeingPlayed'];
+        return [AttachmentBeingPlayedTrigger::class => 'onAttachmentBeingPlayed'];
     }
 
     /**
@@ -44,7 +44,7 @@ final readonly class IronMountainCastle34 extends AbstractCardScript
      *
      * @return list<InterruptOffer>
      */
-    public function onAttachmentBeingPlayed(AttachmentBeingPlayed $trigger, PhysicalCard $card, Game $game): array
+    public function onAttachmentBeingPlayed(AttachmentBeingPlayedTrigger $trigger, PhysicalCard $card, Game $game): array
     {
         return $trigger->player === $this->triggerConditions->getController($card) && $this->triggerConditions->isControlledBy($trigger->target, $trigger->player) && ! $this->triggerConditions->isBowed($card)
             ? [new InterruptOffer($card)]
