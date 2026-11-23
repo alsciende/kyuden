@@ -10,7 +10,11 @@ use App\Exception\Rules\InterruptWindowOpenException;
 use App\Exception\Rules\NoInterruptWindowException;
 use App\Exception\Rules\NotAwaitedInInterruptWindowException;
 use App\Exception\Rules\ResolutionInProgressException;
+use App\Message\BidHonor;
+use App\Message\CancelDuel;
 use App\Message\CancelImminentTrigger;
+use App\Message\DeclareDuelStatistic;
+use App\Message\EndDuel;
 use App\Message\ClaimAbandonment;
 use App\Message\ConcedeGame;
 use App\Message\EndAbandonedGame;
@@ -30,9 +34,9 @@ use App\State\Model\InterruptWindow;
  * The interrupt windows of a game (GameState::interruptWindows): only the last one opened is answered.
  *
  * While one is open, the game waits for it: the engine accepts the interrupts, the reactions (to what the interrupts
- * do), passing in the window, cancelling a condition, conceding, and the effects of a player who resolves an interrupt
- * initiated since the window opened; it refuses the rest (InterruptWindowOpenException), so that what waits cannot
- * become invalid meanwhile.
+ * do), passing in the window, cancelling a condition, conceding, the effects of a player who resolves an interrupt
+ * initiated since the window opened, and the steps of a duel such an interrupt has initiated; it refuses the rest
+ * (InterruptWindowOpenException), so that what waits cannot become invalid meanwhile.
  */
 final readonly class InterruptWindowService
 {
@@ -49,6 +53,17 @@ final readonly class InterruptWindowService
         ConcedeGame::class,
         ClaimAbandonment::class,
         EndAbandonedGame::class,
+    ];
+
+    /**
+     * Accepted from any player while a duel is being resolved: a duel an interrupt has initiated in the window
+     * (Defend Your Honor) involves the opponent.
+     */
+    private const array DUEL = [
+        BidHonor::class,
+        DeclareDuelStatistic::class,
+        EndDuel::class,
+        CancelDuel::class,
     ];
 
     public function __construct(
@@ -74,6 +89,10 @@ final readonly class InterruptWindowService
     {
         $window = $this->current($game);
         if (! $window instanceof InterruptWindow || in_array($messageClass, self::ACCEPTED, true)) {
+            return;
+        }
+
+        if (in_array($messageClass, self::DUEL, true) && $this->gameStateManager->getState($game)->duel !== null) {
             return;
         }
 
@@ -167,7 +186,9 @@ final readonly class InterruptWindowService
             foreach ($window->triggers as $trigger) {
                 $card = $trigger->params['card'] ?? null;
                 if ($cardId === null || $card === $cardId || ($trigger->params['host'] ?? null) === $cardId) {
-                    if ($card !== null) {
+                    if ($card !== null && $trigger->resolvedWhenCancelled) {
+                        $window->cancelledEffectCardIds[] = $card;
+                    } elseif ($card !== null) {
                         $window->cancelledCardIds[] = $card;
                     }
                 } else {

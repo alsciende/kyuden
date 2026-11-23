@@ -18,6 +18,12 @@ interface ImminentTriggerInterface
     public static function getTriggerName(): string;
 
     /**
+     * What cancelling it means (CancelImminentTrigger): false, what would make it occur is not done (a character no
+     * longer leaves play); true, it is still done, its resolution marked cancelled (the effects of an event).
+     */
+    public static function isResolvedWhenCancelled(): bool;
+
+    /**
      * What the triggering condition names, by param: ids of cards and players, for the clients. `card`, when present,
      * is the card a cancel names (CancelImminentTrigger), `host` the card whose own condition causes this one.
      *

@@ -23,6 +23,8 @@ export interface ShownResolution {
   label: string
   /** where the card holding the ability is, null for an event */
   where: string | null
+  /** its effects were cancelled before they initiated (an interrupt): there is nothing to apply */
+  cancelled: boolean
   paragraphs: { segments: TextSegment[]; emphasized: boolean }[]
 }
 
@@ -98,6 +100,7 @@ function show(game: GameView, cards: Cards, resolution: ResolutionView): ShownRe
     event,
     label: `${TIMING_NAMES[resolution.timing]} · ${event ? 'event' : 'ability'}`,
     where: event ? null : whereIs(game, resolution.card_id),
+    cancelled: resolution.cancelled,
     paragraphs: paragraphs.map((paragraph, index) => ({ segments: paragraph.segments, emphasized: strong[index]! })),
   }
 }

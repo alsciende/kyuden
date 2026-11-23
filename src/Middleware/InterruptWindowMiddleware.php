@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Middleware;
 
 use App\Entity\Game;
+use App\Entity\Player;
 use App\Exception\Data\DataException;
 use App\Exception\Data\PlayerNotFoundException;
 use App\Exception\Rules\RulesException;
@@ -16,9 +17,11 @@ use App\Service\Interrupt\ImminentTriggers;
 use App\Service\Interrupt\InterruptOfferer;
 use App\Service\Interrupt\InterruptWindowService;
 use App\State\Manager\GameStateManager;
+use App\State\Manager\PlayerStateManager;
 use App\State\Model\GameState;
 use App\State\Model\InterruptedTransition;
 use App\State\Model\InterruptWindow;
+use App\State\Model\PlayerState;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -36,14 +39,16 @@ use Symfony\Component\Workflow\Exception\ExceptionInterface as WorkflowException
  *
  * After each message, the windows it has moved on are closed, the last one opened first: what waited in each is done,
  * a message handled at once (its handler, without the middlewares: it is recorded already), an automatic transition
- * left to WorkflowTransitionMiddleware. A message that its handler now refuses (what it named has gone elsewhere
- * meanwhile) is not done.
+ * left to WorkflowTransitionMiddleware. A message whose conditions were all cancelled is not done, unless cancelling
+ * them means cancelling its effects (the effects of an event): it is done, its resolutions marked cancelled. A message
+ * that its handler now refuses (what it named has gone elsewhere meanwhile) is not done.
  */
 final readonly class InterruptWindowMiddleware implements MiddlewareInterface
 {
     public function __construct(
         private GameRepository $gameRepository,
         private GameStateManager $gameStateManager,
+        private PlayerStateManager $playerStateManager,
         private ImminentTriggers $imminentTriggers,
         private InterruptOfferer $interruptOfferer,
         private InterruptWindowService $interruptWindowService,
@@ -96,13 +101,19 @@ final readonly class InterruptWindowMiddleware implements MiddlewareInterface
                 });
             }
 
-            if ($window->messageName !== null && $window->messagePayload !== null && $window->triggers !== []) {
-                $this->resolve($window->messageName, $window->messagePayload);
+            if ($window->messageName !== null && $window->messagePayload !== null && ($window->triggers !== [] || $window->cancelledEffectCardIds !== [])) {
+                $message = $this->resolve($window->messageName, $window->messagePayload);
+                if ($message instanceof PlayerActionInterface) {
+                    $this->cancelResolutions($game->getPlayer($message->getPlayerId()), $window->cancelledEffectCardIds);
+                }
             }
         }
     }
 
-    private function resolve(string $name, string $payload): void
+    /**
+     * @return object|null the message, null when its handler has refused it
+     */
+    private function resolve(string $name, string $payload): ?object
     {
         $message = $this->serializer->deserialize($payload, $name, 'json');
         \assert(is_object($message));
@@ -115,7 +126,32 @@ final readonly class InterruptWindowMiddleware implements MiddlewareInterface
                     throw $exception;
                 }
             }
+
             // refused now: what it named has gone elsewhere meanwhile
+            return null;
         }
+
+        return $message;
+    }
+
+    /**
+     * The effects cancelled in the window: the resolutions the message has started are marked cancelled, its player
+     * only ends them.
+     *
+     * @param list<string> $cardIds
+     */
+    private function cancelResolutions(Player $player, array $cardIds): void
+    {
+        if ($cardIds === []) {
+            return;
+        }
+
+        $this->playerStateManager->withState($player, function (PlayerState $state) use ($cardIds): PlayerState {
+            foreach ($cardIds as $cardId) {
+                $state->cancelResolution($cardId);
+            }
+
+            return $state;
+        });
     }
 }

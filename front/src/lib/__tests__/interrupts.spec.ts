@@ -9,6 +9,9 @@ const cards = {
   kisada: printed('kisada', { name: 'Hida Kisada', type: 'character' }),
   reprieve: printed('reprieve', { name: 'Reprieve', type: 'attachment' }),
   ground: printed('ground', { name: 'Stand Your Ground', type: 'event' }),
+  banzai: printed('banzai', { name: 'Banzai!', type: 'event' }),
+  mori: printed('mori', { name: 'Kuroi Mori', type: 'province' }),
+  katana: printed('katana', { name: 'Fine Katana', type: 'attachment' }),
 }
 
 function window(changes: Partial<AbilityWindowView> = {}): AbilityWindowView {
@@ -64,6 +67,21 @@ describe('shownInterruptWindow', () => {
     expect(shownInterruptWindow(view([window({ card_ids: [], timed: true })]), cards)?.timed).toBe(true)
     expect(shownInterruptWindow(view([window({ timed: true, forced_card_ids: ['reprieve'] })]), cards)?.timed).toBe(
       false,
+    )
+  })
+
+  it('names the card announced, an event in the hand of the opponent included', () => {
+    const trigger = (name: string, params: Record<string, string>): string | undefined =>
+      shownInterruptWindow(view([window({ trigger: name, params: { player: 'opp', ...params } })]), cards)?.trigger
+
+    expect(trigger('effects_initiating', { card: 'hidden', code: 'banzai', kind: 'event' })).toBe(
+      'Jane is about to play Banzai!',
+    )
+    expect(trigger('effects_initiating', { card: 'mori', code: 'mori', kind: 'ability' })).toBe(
+      'Jane is about to trigger Kuroi Mori',
+    )
+    expect(trigger('attachment_being_played', { card: 'hidden', code: 'katana', target: 'kisada' })).toBe(
+      'Jane is about to play Fine Katana on Hida Kisada',
     )
   })
 

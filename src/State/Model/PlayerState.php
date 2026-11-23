@@ -480,6 +480,23 @@ class PlayerState
     }
 
     /**
+     * The effects of the last resolution of the card not cancelled yet have been cancelled (CancelImminentTrigger): the
+     * player only ends it. Not prefixed with `set`, so that the serializer of the state does not take it for a property.
+     */
+    public function cancelResolution(string $cardId): self
+    {
+        foreach (array_reverse($this->resolutions) as $resolution) {
+            if ($resolution->cardId === $cardId && ! $resolution->cancelled) {
+                $resolution->cancelled = true;
+
+                break;
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Number of interrupts and reactions the player has initiated and has not ended yet. Not prefixed with `get`, so
      * that the serializer of the state does not take it for a property.
      */

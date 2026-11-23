@@ -16,6 +16,10 @@ class ImminentTriggerRecord
     public function __construct(
         public string $name,
         public array $params,
+        /**
+         * Cancelled, what waits is still done (ImminentTriggerInterface::isResolvedWhenCancelled()).
+         */
+        public bool $resolvedWhenCancelled = false,
     ) {
     }
 }

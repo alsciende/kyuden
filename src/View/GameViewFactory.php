@@ -192,7 +192,7 @@ final readonly class GameViewFactory
     private function createResolutionView(Resolution $resolution, ?PhysicalCard $card, ?Player $viewer): ResolutionView
     {
         if (! $card instanceof PhysicalCard) {
-            return new ResolutionView(null, null, $resolution->timing);
+            return new ResolutionView(null, null, $resolution->timing, $resolution->cancelled);
         }
 
         $stack = $card->getStack();
@@ -201,6 +201,7 @@ final readonly class GameViewFactory
             cardId: $this->visibility->isStackVisibleTo($stack->getType(), $stack->getPlayer(), $viewer) ? $card->getId() : null,
             code: $this->visibility->isCardInStackVisibleTo($card, $stack, $viewer) ? $card->getLogicalCard()->getId() : null,
             timing: $resolution->timing,
+            cancelled: $resolution->cancelled,
         );
     }
 

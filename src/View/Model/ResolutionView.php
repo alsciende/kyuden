@@ -17,6 +17,10 @@ final readonly class ResolutionView
         public ?string $cardId,
         public ?string $code,
         public AbilityTiming $timing,
+        /**
+         * Its effects have been cancelled before they initiated: its player only ends it.
+         */
+        public bool $cancelled = false,
     ) {
     }
 }

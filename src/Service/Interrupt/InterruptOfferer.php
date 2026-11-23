@@ -75,13 +75,20 @@ final readonly class InterruptOfferer
             $stages[$stage->value] = new InterruptWindowStage($stage);
         }
 
+        $waiting = $this->waitingCardIds($state);
         foreach ($state->playerIds as $playerId) {
             $player = $game->getPlayer($playerId);
             foreach ($this->visibleOffers($game, $player, $triggers) as $offer) {
-                $this->add($stages[$offer->stage()->value], $player, $offer, false);
+                if (! in_array($offer->card->getId(), $waiting, true)) {
+                    $this->add($stages[$offer->stage()->value], $player, $offer, false);
+                }
             }
 
             foreach ($this->hiddenOffers($game, $player, $triggers) as $offer) {
+                if (in_array($offer->card->getId(), $waiting, true)) {
+                    continue;
+                }
+
                 $inHand = $offer->card->getStack()->getType() === StackType::Hand;
                 $this->add($stages[$offer->stage()->value], $player, $offer, true, $inHand);
             }
@@ -95,7 +102,7 @@ final readonly class InterruptOfferer
         $this->gameStateManager->withState($game, function (GameState $state) use ($game, $stages, $triggers, $message, $transition): GameState {
             $window = new InterruptWindow((string) ++$state->reactionWindowCount);
             $window->triggers = array_map(
-                fn (ImminentTriggerInterface $trigger): ImminentTriggerRecord => new ImminentTriggerRecord($trigger::getTriggerName(), $trigger->getTriggerParams()),
+                fn (ImminentTriggerInterface $trigger): ImminentTriggerRecord => new ImminentTriggerRecord($trigger::getTriggerName(), $trigger->getTriggerParams(), $trigger::isResolvedWhenCancelled()),
                 $triggers,
             );
             $window->stages = $stages;
@@ -119,6 +126,25 @@ final readonly class InterruptOfferer
         }
 
         return true;
+    }
+
+    /**
+     * The cards whose play waits in a window open (an interrupt played in it, still in the hand): not offered again.
+     *
+     * @return list<string>
+     */
+    private function waitingCardIds(GameState $state): array
+    {
+        $cardIds = [];
+        foreach ($state->interruptWindows as $window) {
+            foreach ($window->triggers as $trigger) {
+                if ($trigger->resolvedWhenCancelled && isset($trigger->params['card'])) {
+                    $cardIds[] = $trigger->params['card'];
+                }
+            }
+        }
+
+        return $cardIds;
     }
 
     private function add(InterruptWindowStage $stage, Player $player, InterruptOffer $offer, bool $timed, bool $offered = true): void
@@ -199,8 +225,7 @@ final readonly class InterruptOfferer
                     }
 
                     $script = $this->cardScriptRegistry->find($card->getLogicalCard()->getId());
-                    if (! $script instanceof AbstractCardScript
-                        || ($card->getLogicalCard()->getType() !== Type::Event && ! $this->abilityService->canTrigger($card, $player))) {
+                    if (! $script instanceof AbstractCardScript || ! $this->isUsableFromHand($script, $card, $player, $stackType)) {
                         continue;
                     }
 
@@ -210,6 +235,21 @@ final readonly class InterruptOfferer
         }
 
         return $offers;
+    }
+
+    /**
+     * An event, or a card whose abilities its script lets its player trigger from the hand: in the hand, where they
+     * can trigger it now; in the deck, a copy that would be, so that the deck asks as the hand does (Yogo Kikuyo).
+     */
+    private function isUsableFromHand(AbstractCardScript $script, PhysicalCard $card, Player $player, StackType $stackType): bool
+    {
+        if ($card->getLogicalCard()->getType() === Type::Event) {
+            return true;
+        }
+
+        return $stackType === StackType::Hand
+            ? $this->abilityService->canTrigger($card, $player)
+            : in_array(StackType::Hand, $script->getAbilityStacksOutOfPlay(), true);
     }
 
     /**
