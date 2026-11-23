@@ -101,7 +101,7 @@ code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em;
       <p>The engine that plays Legend of the Five Rings LCG as a board: it enforces rounds, phases and framework steps, while the players apply the card rules. Pick a step beside a diagram to follow it.</p>
     </div>
     <nav aria-label="Diagrams">
-      <a href="#server">Server</a><a href="#client">Web client</a><a href="#scripts">Scripts and log</a><a href="#bus">Bus middlewares</a><a href="#transitions">Automatic transitions</a><a href="#events">Events and replays</a>
+      <a href="#server">Server</a><a href="#client">Web client</a><a href="#scripts">Scripts and log</a><a href="#bus">Bus middlewares</a><a href="#transitions">Automatic transitions</a><a href="#interrupts">Interrupt windows</a><a href="#events">Action records and replays</a>
     </nav>
   </header>
 
@@ -135,13 +135,19 @@ code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em;
     <div class="chapter"><div class="diagram" data-d="5"></div><div class="steps" data-d="5"></div></div>
   </section>
 
+  <section id="interrupts">
+    <h2><span class="n">VI</span> Interrupt windows</h2>
+    <p class="lede">An interrupt resolves before what it interrupts, so a message that would make a card leave play cannot be handled at once. <code>InterruptWindowMiddleware</code> splits it: accepted now, handled later. Between the two, what waits is nowhere but in the state of the game, the stack <code>GameState::interruptWindows</code>, saved with it at each commit; each answer of the players is a message of its own.</p>
+    <div class="chapter"><div class="diagram" data-d="6"></div><div class="steps" data-d="6"></div></div>
+  </section>
+
   <section id="events">
-    <h2><span class="n">VI</span> Events and replays</h2>
-    <p class="lede">Every action handled on a game is stored as an <code>Event</code>: the class of the message and its JSON payload, numbered by the version of the game. Since every random draw comes from the seeded generator of the game, dispatching the same events again should give the same game.</p>
+    <h2><span class="n">VII</span> Action records and replays</h2>
+    <p class="lede">Every action handled on a game is stored as an <code>ActionRecord</code>: the class of the message and its JSON payload, numbered by the version of the game. Since every random draw comes from the seeded generator of the game, dispatching the same records again should give the same game.</p>
     <div class="chapter"><div class="diagram" data-d="4"></div><div class="steps" data-d="4"></div></div>
   </section>
 
-  <footer>Drawn from <code>doc/architecture.md</code> and <code>config/packages/messenger.yaml</code> of the Kyūden repository, November 2026.</footer>
+  <footer>Drawn from <code>doc/architecture.md</code>, <code>doc/interrupts.md</code> and <code>config/packages/messenger.yaml</code> of the Kyūden repository, November 2026.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
@@ -165,7 +171,7 @@ const DIAGRAMS = [
     worker["Worker<br/><small>tasks of src/Task</small>"]
     house["House bot<br/><small>PlayHouseBotTurn</small>"]
   end
-  db[("PostgreSQL<br/><small>state, events, log, tasks</small>")]
+  db[("PostgreSQL<br/><small>state, action records, log, tasks</small>")]
   web -->|JSON + If-Match| api
   agent -->|tools| mcp
   mcp --> bus
@@ -183,7 +189,7 @@ const DIAGRAMS = [
       ['Players send actions', 'The web client calls the HTTP API; an AI bot calls the same actions as MCP tools.', 'web agent api mcp web>api agent>mcp'],
       ['One action at a time', 'Each message is validated, the game row is locked, a stale version is rejected.', 'bus api>bus mcp>bus'],
       ['Handlers drive workflows', 'A handler checks what the current step allows and applies transitions; listeners hold what depends on the step.', 'bus handlers wf bus>handlers handlers>wf'],
-      ['Everything is recorded', 'The state is saved, the message becomes an Event, replayable with the seeded randomizer of the game, and every change writes a log entry.', 'wf db wf>db'],
+      ['Everything is recorded', 'The state is saved, the message becomes an ActionRecord, replayable with the seeded randomizer of the game, and every change writes a log entry.', 'wf db wf>db'],
       ['Clients are notified', 'After the commit, Mercure tells the players the version changed; they read their view and the log again, masked for them.', 'bus hub web api bus>hub hub>web web>api'],
       ['The house bot plays', 'Once a message on its game is committed, HouseBotMiddleware sends the turn of the bot to the worker (PlayHouseBotTurn). There Kyūden no Karō reads the board and plays through the bus like any player.', 'house worker bus bus>worker worker>house house>bus'],
     ],
@@ -268,7 +274,7 @@ const DIAGRAMS = [
   },
   {
     src: `flowchart TD
-  msg>"Action message<br/><small>HTTP API, MCP tool, house bot, EventPlayer</small>"]
+  msg>"Action message<br/><small>HTTP API, MCP tool, house bot, ActionRecordPlayer</small>"]
   housebot["HouseBotMiddleware<br/><small>after the commit: the bot turn to the worker</small>"]
   validation["validation<br/><small>constraints of the message</small>"]
   notify["GameUpdatedNotificationMiddleware<br/><small>notifies after the commit</small>"]
@@ -276,32 +282,34 @@ const DIAGRAMS = [
   lock["GameLockMiddleware<br/><small>SELECT … FOR UPDATE</small>"]
   version["GameVersionMiddleware<br/><small>stale If-Match → 412</small>"]
   gameover["GameEndedMiddleware<br/><small>no action once the game is over</small>"]
-  replay["GameReplayMiddleware<br/><small>a replay only takes its events</small>"]
-  record["EventRecordingMiddleware<br/><small>version++, save the Event</small>"]
+  replay["GameReplayMiddleware<br/><small>a replay only takes its records</small>"]
+  record["ActionRecordingMiddleware<br/><small>version++, save the ActionRecord</small>"]
   autotr["WorkflowTransitionMiddleware<br/><small>automatic transitions</small>"]
   refillmw["ProvinceRefillMiddleware<br/><small>scheduled province refills</small>"]
+  interruptmw["InterruptWindowMiddleware<br/><small>holds a message in an interrupt window</small>"]
   handler(["Handler<br/><small>assertAvailable, then transitions</small>"])
-  msg --> housebot --> validation --> notify --> tx --> lock --> version --> gameover --> replay --> record --> autotr --> refillmw --> handler
+  msg --> housebot --> validation --> notify --> tx --> lock --> version --> gameover --> replay --> record --> autotr --> refillmw --> interruptmw --> handler
   class tx,lock accent`,
     steps: [
       ['Before anything is locked', 'The Validator checks the payload, so an invalid message never touches the database.', 'msg validation msg>housebot housebot>validation'],
       ['Notify only after the commit', 'The notification middleware wraps the transaction: players hear about a change only once it is committed, and about nothing when the handling fails.', 'notify tx validation>notify notify>tx'],
-      ['Lock, then check', 'Inside the transaction the game row is locked, then a stale version (unless the message is independent), an ended game or a message on a replay that is not one of its events is rejected before the handling.', 'tx lock version gameover replay tx>lock lock>version version>gameover gameover>replay'],
-      ['Handle, refill, cascade', 'The handler runs, then the scheduled provinces are refilled if nothing is being resolved, then the enabled automatic transition of highest priority applies, again and again until none is enabled.', 'autotr refillmw handler record>autotr autotr>refillmw refillmw>handler'],
-      ['Record the event', 'Once the cascade is done, the version is incremented and the message saved as an Event, so the log entries of the automatic transitions share its version.', 'record replay>record'],
-      ['The house bot comes last', 'HouseBotMiddleware wraps everything: once the message is handled and committed, it sends the turn of the house bot to the worker when the bot plays the game, unless the message is a replayed event.', 'housebot msg>housebot'],
+      ['Lock, then check', 'Inside the transaction the game row is locked, then a stale version (unless the message is independent), an ended game or a message on a replay that is not one of its records is rejected before the handling.', 'tx lock version gameover replay tx>lock lock>version version>gameover gameover>replay'],
+      ['Handle, refill, cascade', 'The handler runs, then the scheduled provinces are refilled if nothing is being resolved, then the enabled automatic transition of highest priority applies, again and again until none is enabled.', 'autotr refillmw handler record>autotr autotr>refillmw interruptmw>handler'],
+      ['Interrupts come first', 'Right before the handler, InterruptWindowMiddleware refuses what does not answer an open interrupt window, and holds a message that would make a card leave play while a player can interrupt it: the handler is then not called (chapter VI).', 'interruptmw refillmw>interruptmw interruptmw>handler'],
+      ['Record the action', 'Once the cascade is done, the version is incremented and the message saved as an ActionRecord, so the log entries of the automatic transitions share its version.', 'record replay>record'],
+      ['The house bot comes last', 'HouseBotMiddleware wraps everything: once the message is handled and committed, it sends the turn of the house bot to the worker when the bot plays the game, unless the message is a replayed record.', 'housebot msg>housebot'],
     ],
   },
   {
     src: `flowchart LR
   msg>"Action message<br/><small>API, MCP tool, house bot</small>"]
   bus["Message bus<br/><small>handler + auto transitions</small>"]
-  record["EventRecordingMiddleware<br/><small>after the handling</small>"]
+  record["ActionRecordingMiddleware<br/><small>after the handling</small>"]
   game["Game<br/><small>version, random engine state</small>"]
-  events[("events table<br/><small>game, version, class, JSON payload</small>")]
+  events[("action_records<br/><small>game, version, class, JSON payload</small>")]
   log["Game log<br/><small>what the players read</small>"]
-  eventplayer["EventPlayer<br/><small>deserialize, dispatch</small>"]
-  cli["app:event:play<br/><small>one message, typed by hand</small>"]
+  eventplayer["ActionRecordPlayer<br/><small>deserialize, dispatch</small>"]
+  cli["app:record:play<br/><small>one message, typed by hand</small>"]
   replayer["GameReplayer<br/><small>a copy under another id, ids translated</small>"]
   msg --> bus
   bus --> record
@@ -314,12 +322,12 @@ const DIAGRAMS = [
   eventplayer -->|dispatch again| bus
   class record,eventplayer accent`,
     steps: [
-      ['Recording', 'Once the handler and the automatic transitions are done, the middleware increments the version of the game and stores the message: its class and its JSON payload. Events are numbered from 1, unique by game and version.', 'msg bus record game events msg>bus bus>record record>game record>events'],
-      ['Secrets stay in the events', 'The payload holds everything, including the seed of CreateGame and the secret honor bids, so events are never shown to the players. They read the game log, masked for each of them.', 'events log bus>log'],
+      ['Recording', 'Once the handler and the automatic transitions are done, the middleware increments the version of the game and stores the message: its class and its JSON payload. The records are numbered from 1, unique by game and version.', 'msg bus record game events msg>bus bus>record record>game record>events'],
+      ['Secrets stay in the records', 'The payload holds everything, including the seed of CreateGame and the secret honor bids, so the records are never shown to the players. They read the game log, masked for each of them.', 'events log bus>log'],
       ['Deterministic by construction', 'CreateGame carries a seed; the game owns its random generator and saves the engine state with itself. Shuffles, first player, random discards and the ids of new cards and stacks all draw from it.', 'game record>game'],
-      ['Replaying a message', 'EventPlayer deserializes a stored event and dispatches it through the same bus. The expected version is a stamp outside the payload, so a replay never fails on it. A test checks the round trip through the serializer on one message, DeclareConflict.', 'eventplayer cli bus cli>eventplayer eventplayer>bus'],
-      ['Replaying a game', 'GameReplayer rebuilds a game that has ended for one of its players, on a copy under another id: the ids of the payloads are translated, since the game salts the ids it draws. The events carry a ReplayStamp: nobody is notified, the house bot does not play, and GameReplayMiddleware refuses any other message on the copy.', 'events replayer eventplayer bus events>replayer replayer>eventplayer eventplayer>bus'],
-      ['What breaks a replay', 'A deck or the engine code changed since the game was played: the event the engine refuses stops the replay at its version, and the log of the copy is compared with that of the game. Renaming a message is such a change: old events are not migrated.', 'events replayer eventplayer events>replayer replayer>eventplayer'],
+      ['Replaying a message', 'ActionRecordPlayer deserializes a stored record and dispatches it through the same bus. The expected version is a stamp outside the payload, so a replay never fails on it. A test checks the round trip through the serializer on one message, DeclareConflict.', 'eventplayer cli bus cli>eventplayer eventplayer>bus'],
+      ['Replaying a game', 'GameReplayer rebuilds a game that has ended for one of its players, on a copy under another id: the ids of the payloads are translated, since the game salts the ids it draws. The records carry a ReplayStamp: nobody is notified, the house bot does not play, and GameReplayMiddleware refuses any other message on the copy.', 'events replayer eventplayer bus events>replayer replayer>eventplayer eventplayer>bus'],
+      ['What breaks a replay', 'A deck or the engine code changed since the game was played: the record the engine refuses stops the replay at its version, and the log of the copy is compared with that of the game. Renaming a message is such a change: old records are not migrated.', 'events replayer eventplayer events>replayer replayer>eventplayer'],
     ],
   },
   {
@@ -354,6 +362,53 @@ const DIAGRAMS = [
       ['One automatic transition wins', 'Only transitions marked auto count, and the one with the highest priority is applied. end_game has priority 100, so the game ends as soon as a player wins. Two at the same highest priority are a definition error.', 'enabled pick ambiguous enabled>pick pick>ambiguous'],
       ['Applying runs the listeners', 'The transition writes its log entry, its transition listeners do the work of the framework step (drawing cards, transferring honor), and the enter listeners of the new place give the opportunities to act and reset the passes.', 'pick apply listeners pick>apply apply>listeners'],
       ['Repeat until the game waits', 'The loop checks again after each transition, and stops when no automatic transition is enabled. Once both players have collected fate, fate_collected leads to play_cards_from_provinces, the first player becomes active, and dynasty_actions_passed stays blocked until both pass.', 'apply enabled wait apply>enabled enabled>wait'],
+    ],
+  },
+  {
+    src: `flowchart TD
+  msg>"DiscardCard<br/><small>Jane discards Hida Kisada</small>"]
+  mw["InterruptWindowMiddleware<br/><small>triggers of the message: CardLeavingPlay</small>"]
+  offerer["InterruptOfferer<br/><small>who is asked, on what both players see</small>"]
+  asked{"A player<br/>asked?"}
+  now(["Handled at once<br/><small>no window</small>"])
+  push["Window pushed<br/><small>triggers, stages, message serialized</small>"]
+  state[("GameState.interruptWindows<br/><small>a stack, saved with the game</small>")]
+  wait(["Committed, not handled<br/><small>Kisada still in play</small>"])
+  answer>"An answer of John<br/><small>PassInterrupt, TriggerInterruptAbility, CancelImminentTrigger</small>"]
+  ahandler["Its handler<br/><small>a pass, the passes reset, triggers cancelled</small>"]
+  close{"closeIfDone<br/>everyone passed?"}
+  pop["Window popped<br/><small>the next stage first, then the outer windows</small>"]
+  left{"Triggers<br/>left?"}
+  resolve["Message handled<br/><small>deserialized, InterruptsResolvedStamp</small>"]
+  trans["interruptedTransition<br/><small>the automatic transition applies</small>"]
+  dropped(["Nothing happens<br/><small>cancelled</small>"])
+  msg --> mw
+  mw --> offerer
+  offerer --> asked
+  asked -->|no| now
+  asked -->|yes| push
+  push --> state
+  push --> wait
+  answer --> ahandler
+  ahandler --> close
+  state -.->|read| close
+  close -->|"not yet: still waits"| wait
+  close -->|yes| pop
+  pop --> left
+  left -->|"yes, a message"| resolve
+  left -->|"yes, a transition"| trans
+  left -->|no| dropped
+  class state,close accent`,
+    steps: [
+      ['A message would make a condition occur', 'Before the handler, the resolvers tagged ImminentTriggerResolverInterface tell what the message would make occur. LeavePlayTriggerResolver: a card in play would leave it, with its attachments; the handler is asked first whether it would accept the message.', 'msg mw msg>mw'],
+      ['Who is asked', 'InterruptOfferer asks the scripts of the cards, on public information only: a card in sight that can interrupt, or an event out of sight with a copy in the hand or the conflict deck (asked whatever, the client passing after a while). Nobody asked: the handler runs at once.', 'offerer asked now mw>offerer offerer>asked asked>now'],
+      ['Suspended in the state', 'Otherwise a window is pushed onto GameState.interruptWindows: the conditions, the stages Would, Forced and Standard, and the message serialized as JSON, as in an ActionRecord. The middleware returns without calling the handler; the transaction commits; the message is recorded all the same.', 'push state wait asked>push push>state push>wait'],
+      ['The game waits for the answers', 'While a window is open, only what answers it is accepted: passing, interrupting, cancelling, reacting, conceding, and the effects of an interrupt initiated in it. Every answer is a message of its own, handled through the whole bus.', 'answer ahandler answer>ahandler'],
+      ['After each answer', 'Right after the handler of the answer, the middleware calls closeIfDone, which reads the window from the state: it waits while a player asked has not passed or resolves an interrupt initiated in it. An interrupt initiated resets the passes.', 'ahandler close state wait ahandler>close state>close close>wait'],
+      ['Closing', 'Once everyone has passed, the stage gives way to the next one; after the last, the window is popped. The middleware loops: closing a nested window may let the window under it close too.', 'close pop close>pop'],
+      ['What waited is done', 'The message is deserialized and given straight to the handler, with InterruptsResolvedStamp so that it does not open a window again; refused now (the card has gone elsewhere), it is dropped. A transition is stored as interruptedTransition, which WorkflowTransitionMiddleware then applies, skipping the cards cancelled.', 'pop left resolve trans pop>left left>resolve left>trans'],
+      ['Cancelled', 'CancelImminentTrigger removes the conditions of a card, and those of its attachments: a window left without a condition closes, and its message is never handled. The replacement itself is applied with the effect messages.', 'left dropped left>dropped'],
+      ['Replays', 'The records hold DiscardCard, then PassInterrupt: replaying them opens the same window and closes it the same way. The deferred handling is not recorded apart, being part of the answer that closed the window.', 'msg answer state'],
     ],
   },
 ];
