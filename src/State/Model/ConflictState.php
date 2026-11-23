@@ -124,7 +124,16 @@ class ConflictState
         $attackerSkill = $this->attackerSkill ?? throw new \LogicException('The attacking player has not declared their skill.');
         $defenderSkill = $this->defenderSkill ?? throw new \LogicException('The defending player has not declared their skill.');
 
-        $this->winnerId = match (true) {
+        $this->winnerId = $this->winnerIdFor($attackerSkill, $defenderSkill);
+    }
+
+    /**
+     * The player who wins with these totals, none when neither does (3.2.3): read before the result is determined,
+     * for its interrupts (Kakita Toshimoko).
+     */
+    public function winnerIdFor(int $attackerSkill, int $defenderSkill): ?string
+    {
+        return match (true) {
             $attackerSkill >= $defenderSkill && $attackerSkill > 0 => $this->attackingPlayerId,
             $defenderSkill > $attackerSkill => $this->defendingPlayerId,
             default => null,

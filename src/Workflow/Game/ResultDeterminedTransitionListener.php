@@ -33,6 +33,13 @@ readonly class ResultDeterminedTransitionListener
         $game = $event->getSubject();
 
         $this->stateManager->withState($game, function (GameState $state): GameState {
+            // the loss an interrupt has cancelled (CancelImminentTrigger: Kakita Toshimoko): both players count 0
+            // total skill, the conflict has no winner
+            if ($state->interruptedTransition?->cancelledFor('result_determined') ?? false) {
+                $state->currentConflict()->attackerSkill = 0;
+                $state->currentConflict()->defenderSkill = 0;
+            }
+
             $state->currentConflict()->determineWinner();
 
             return $state;

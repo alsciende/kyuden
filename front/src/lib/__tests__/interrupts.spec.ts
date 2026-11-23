@@ -95,6 +95,29 @@ describe('shownInterruptWindow', () => {
     expect(shown?.trigger).toBe('Kuroi Mori would be broken')
   })
 
+  it('words the framework steps and the effects waiting', () => {
+    const trigger = (name: string, params: Record<string, string> = {}): string | undefined =>
+      shownInterruptWindow(view([window({ trigger: name, params: { player: 'opp', ...params } })]), cards)?.trigger
+
+    expect(trigger('phase_beginning', { phase: 'draw' })).toBe('The draw phase would begin')
+    expect(trigger('phase_ending', { phase: 'conflict' })).toBe('The conflict phase would end')
+    expect(trigger('honor_losing', { amount: '1' })).toBe('Jane would lose 1 honor')
+    expect(trigger('conflict_losing')).toBe('Jane would lose the conflict')
+    expect(trigger('glory_count_beginning')).toBe('The glory count would begin')
+    expect(trigger('conflict_declaring', { province: 'mori' })).toBe(
+      'Jane is about to declare a conflict against Kuroi Mori',
+    )
+    expect(trigger('ring_effect_resolving', { ring: 'water' })).toBe('Jane would resolve the water ring effect')
+    expect(trigger('character_honoring', { card: 'kisada' })).toBe('Hida Kisada would be honored')
+    expect(trigger('character_dishonoring', { card: 'kisada' })).toBe('Hida Kisada would be dishonored')
+    expect(trigger('fate_removing', { card: 'kisada', amount: '1' })).toBe('1 fate would be removed from Hida Kisada')
+    expect(trigger('first_player_token_passing')).toBe('Jane would pass the first player token')
+    expect(trigger('ring_returning', { ring: 'fire' })).toBe('The fire ring would return to the unclaimed pool')
+    expect(trigger('duel_resolving')).toBe('The duel would resolve')
+    expect(trigger('cards_drawing', { amount: '1' })).toBe('Jane would draw a card')
+    expect(trigger('cards_drawing', { amount: '3' })).toBe('Jane would draw 3 cards')
+  })
+
   it('names the hand of an event offered', () => {
     expect(shownInterruptWindow(view([window({ card_ids: ['ground'] })]), cards)?.offers[0]?.kind).toBe('event · hand')
   })
