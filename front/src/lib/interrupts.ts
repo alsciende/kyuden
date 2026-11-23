@@ -62,6 +62,34 @@ export function imminentText(window: AbilityWindowView, game: GameView, cards: C
         : `${player} is about to trigger ${announcedName(cards, window.params.code)}`
     case 'attachment_being_played':
       return `${player} is about to play ${announcedName(cards, window.params.code)} on ${cardName(game, cards, window.params.target) ?? 'a character'}`
+    case 'phase_beginning':
+      return `The ${window.params.phase ?? ''} phase would begin`
+    case 'phase_ending':
+      return `The ${window.params.phase ?? ''} phase would end`
+    case 'honor_losing':
+      return `${player} would lose ${window.params.amount ?? ''} honor`
+    case 'conflict_losing':
+      return `${player} would lose the conflict`
+    case 'glory_count_beginning':
+      return 'The glory count would begin'
+    case 'conflict_declaring':
+      return `${player} is about to declare a conflict against ${cardName(game, cards, window.params.province) ?? 'a province'}`
+    case 'ring_effect_resolving':
+      return `${player} would resolve the ${window.params.ring ?? ''} ring effect`
+    case 'character_honoring':
+      return `${cardName(game, cards, window.params.card) ?? 'A character'} would be honored`
+    case 'character_dishonoring':
+      return `${cardName(game, cards, window.params.card) ?? 'A character'} would be dishonored`
+    case 'fate_removing':
+      return `${window.params.amount ?? ''} fate would be removed from ${cardName(game, cards, window.params.card) ?? 'a character'}`
+    case 'first_player_token_passing':
+      return `${player} would pass the first player token`
+    case 'ring_returning':
+      return `The ${window.params.ring ?? ''} ring would return to the unclaimed pool`
+    case 'duel_resolving':
+      return 'The duel would resolve'
+    case 'cards_drawing':
+      return `${player} would draw ${window.params.amount === '1' ? 'a card' : `${window.params.amount ?? ''} cards`}`
     default:
       return 'Something is about to happen'
   }

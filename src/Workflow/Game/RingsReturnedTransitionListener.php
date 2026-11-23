@@ -29,8 +29,12 @@ readonly class RingsReturnedTransitionListener
         $game = $event->getSubject();
 
         $this->stateManager->withState($game, function (GameState $state): GameState {
-            foreach ($state->rings as $ring) {
-                $ring->unclaim();
+            // the rings an interrupt has kept claimed (CancelImminentTrigger: Wholeness of the World)
+            $kept = $state->interruptedTransition?->name === 'rings_returned' ? $state->interruptedTransition->cancelledRings : [];
+            foreach ($state->rings as $element => $ring) {
+                if (! in_array((string) $element, $kept, true)) {
+                    $ring->unclaim();
+                }
             }
 
             return $state;

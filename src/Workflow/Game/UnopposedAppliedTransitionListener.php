@@ -34,9 +34,12 @@ readonly class UnopposedAppliedTransitionListener
     public function __invoke(TransitionEvent $event): void
     {
         $game = $event->getSubject();
-        $conflict = $this->stateManager->getState($game)->currentConflict();
+        $state = $this->stateManager->getState($game);
+        $conflict = $state->currentConflict();
+        // the honor loss an interrupt has cancelled (CancelImminentTrigger: Ikebana Artisan, Duty)
+        $cancelled = $state->interruptedTransition?->cancelledFor('unopposed_applied') ?? false;
 
-        if ($conflict->attackerWon() && $conflict->defenderIds === []) {
+        if ($conflict->attackerWon() && $conflict->defenderIds === [] && ! $cancelled) {
             $this->playerStateManager->withState(
                 $game->getPlayer($conflict->defendingPlayerId),
                 fn (PlayerState $state): PlayerState => $state->decrementHonor(self::UNOPPOSED_HONOR_LOSS),

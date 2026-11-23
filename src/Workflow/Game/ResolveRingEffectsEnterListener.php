@@ -33,8 +33,11 @@ readonly class ResolveRingEffectsEnterListener
     public function __invoke(EnterEvent $event): void
     {
         $game = $event->getSubject();
-        $conflict = $this->stateManager->getState($game)->currentConflict();
-        $resolverId = $conflict->attackerWon() ? $conflict->attackingPlayerId : null;
+        $state = $this->stateManager->getState($game);
+        $conflict = $state->currentConflict();
+        // the ring effect an interrupt has cancelled or replaced (CancelImminentTrigger: Leniency, Jade Talisman…)
+        $cancelled = $state->interruptedTransition?->cancelledFor((string) $event->getTransition()?->getName()) ?? false;
+        $resolverId = $conflict->attackerWon() && ! $cancelled ? $conflict->attackingPlayerId : null;
 
         $this->stateManager->withState($game, function (GameState $state) use ($resolverId): GameState {
             $state->activePlayerIds = $resolverId === null ? [] : [$resolverId];

@@ -8,6 +8,7 @@ use App\Entity\Game;
 use App\Event\FatePhaseFateRemovedEvent;
 use App\Event\FateRemovedFromCardEvent;
 use App\State\Manager\CardStateManager;
+use App\State\Manager\GameStateManager;
 use App\State\Model\CardState;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Workflow\Attribute\AsTransitionListener;
@@ -23,6 +24,7 @@ readonly class FateRemovedTransitionListener
 
     public function __construct(
         private CardStateManager $cardStateManager,
+        private GameStateManager $gameStateManager,
         private EventDispatcherInterface $eventDispatcher,
     ) {
     }
@@ -34,9 +36,16 @@ readonly class FateRemovedTransitionListener
     {
         $game = $event->getSubject();
 
+        $state = $this->gameStateManager->getState($game);
+        // the characters an interrupt has kept their fate (CancelImminentTrigger: Embrace the Void)
+        $kept = $state->interruptedTransition?->name === 'fate_removed' ? $state->interruptedTransition->cancelledCardIds : [];
         $total = 0;
         foreach ($game->getPlayers() as $player) {
             foreach ($player->getCharactersInPlay() as $character) {
+                if (in_array($character->getId(), $kept, true)) {
+                    continue;
+                }
+
                 $removed = min(self::FATE_REMOVED, $this->cardStateManager->getState($character)->getFate());
                 if ($removed === 0) {
                     continue;

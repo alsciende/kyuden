@@ -95,7 +95,7 @@ final readonly class InterruptWindowMiddleware implements MiddlewareInterface
         while (($window = $this->interruptWindowService->closeIfDone($game)) instanceof InterruptWindow) {
             if ($window->transition !== null) {
                 $this->gameStateManager->withState($game, function (GameState $state) use ($window): GameState {
-                    $state->interruptedTransition = new InterruptedTransition((string) $window->transition, $window->cancelledCardIds);
+                    $state->interruptedTransition = new InterruptedTransition((string) $window->transition, $window->cancelledCardIds, $window->cancelledRings, $window->triggers === []);
 
                     return $state;
                 });

@@ -32,6 +32,11 @@ readonly class FirstPlayerTokenPassedTransitionListener
         $game = $event->getSubject();
 
         $state = $this->stateManager->getState($game);
+        // the token an interrupt has kept (CancelImminentTrigger: Way of the Unicorn)
+        if ($state->interruptedTransition?->cancelledFor('first_player_token_passed') ?? false) {
+            return;
+        }
+
         $firstPlayerId = $state->firstPlayerId ?? throw new \LogicException('The game has no first player.');
         $nextPlayer = $game->getPlayer($state->getNextPlayerId($game->getPlayer($firstPlayerId)));
         $this->stateManager->withState($game, fn (GameState $state): GameState => $state->setFirstPlayer($nextPlayer));

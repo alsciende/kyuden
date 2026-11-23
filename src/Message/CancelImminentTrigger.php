@@ -6,12 +6,14 @@ namespace App\Message;
 
 use App\Attribute\AppAction;
 use App\Attribute\Description;
+use App\Enum\Element;
 
 /**
  * Cancels what the interrupt window open is about to make happen, or replaces it ("would… instead": Reprieve, Iron
  * Mine, Stand Your Ground…), or cancels the effects of an event or an ability (Censure, Voice of Honor, Mushin no
  * Shin…): the condition of a card no longer occurs (a character no longer leaves play, nor its attachments with it),
- * or none of the window when no card is given. A window left without condition closes at once: what waited in it is
+ * or that of a ring (a claimed ring no longer returns to the unclaimed pool: Wholeness of the World), or none of the window
+ * when neither is given. A window left without condition closes at once: what waited in it is
  * not done, but an event or an ability, which is still played (its costs paid), its resolution marked cancelled; the
  * replacement itself is applied with the effect messages.
  *
@@ -25,6 +27,8 @@ final readonly class CancelImminentTrigger implements PlayerActionInterface
         private string $playerId,
         #[Description('Card whose imminent condition is cancelled (the character that would leave play, the event played or the card whose ability is triggered); every condition of the window when omitted.')]
         private ?string $cardId = null,
+        #[Description('Ring whose imminent condition is cancelled (a claimed ring that would be returned), instead of a card.')]
+        private ?Element $ring = null,
     ) {
     }
 
@@ -43,5 +47,10 @@ final readonly class CancelImminentTrigger implements PlayerActionInterface
     public function getCardId(): ?string
     {
         return $this->cardId;
+    }
+
+    public function getRing(): ?Element
+    {
+        return $this->ring;
     }
 }

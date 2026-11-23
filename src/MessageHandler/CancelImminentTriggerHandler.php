@@ -46,7 +46,7 @@ final readonly class CancelImminentTriggerHandler implements PlayerActionHandler
         $player = $this->playerRepository->get($message->getPlayerId(), $game);
         $this->assertAvailable($game, $player);
 
-        $this->interruptWindowService->cancel($game, $message->getCardId());
+        $this->interruptWindowService->cancel($game, $message->getCardId(), $message->getRing());
         $this->eventDispatcher->dispatch(new ImminentTriggerCancelledEvent($game, $player));
     }
 }

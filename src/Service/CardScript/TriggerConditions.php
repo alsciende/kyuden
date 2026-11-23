@@ -354,18 +354,55 @@ final readonly class TriggerConditions
      */
     public function countUnbrokenProvinces(Player $player): int
     {
-        $count = 0;
+        return count(array_filter($this->getProvinces($player), fn (ProvinceCard $province): bool => $province->getCurrentPlace() !== ProvinceCard::STATE_BROKEN));
+    }
+
+    /**
+     * The broken provinces the player controls ("if you control 1 or fewer broken provinces": Pious Guardian).
+     *
+     * @return list<ProvinceCard>
+     */
+    public function getBrokenProvinces(Player $player): array
+    {
+        return array_values(array_filter($this->getProvinces($player), fn (ProvinceCard $province): bool => $province->getCurrentPlace() === ProvinceCard::STATE_BROKEN));
+    }
+
+    /**
+     * The provinces of the player, the stronghold province included.
+     *
+     * @return list<ProvinceCard>
+     */
+    private function getProvinces(Player $player): array
+    {
+        $provinces = [];
         foreach ([StackType::RegularProvince, StackType::StrongholdProvince] as $stackType) {
             foreach ($player->getStacks($stackType) as $stack) {
                 foreach ($stack->getCards() as $card) {
-                    if ($card instanceof ProvinceCard && $card->getCurrentPlace() !== ProvinceCard::STATE_BROKEN) {
-                        ++$count;
+                    if ($card instanceof ProvinceCard) {
+                        $provinces[] = $card;
                     }
                 }
             }
         }
 
-        return $count;
+        return $provinces;
+    }
+
+    /**
+     * The rings in the claimed ring pool of the player.
+     *
+     * @return list<Element>
+     */
+    public function getClaimedRings(Player $player): array
+    {
+        $rings = [];
+        foreach (Element::cases() as $element) {
+            if ($this->gameStateManager->getState($player->getGame())->getRing($element)->claimedById === $player->getId()) {
+                $rings[] = $element;
+            }
+        }
+
+        return $rings;
     }
 
     /**

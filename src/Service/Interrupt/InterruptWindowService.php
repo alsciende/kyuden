@@ -6,6 +6,7 @@ namespace App\Service\Interrupt;
 
 use App\Entity\Game;
 use App\Entity\Player;
+use App\Enum\Element;
 use App\Exception\Rules\InterruptWindowOpenException;
 use App\Exception\Rules\NoInterruptWindowException;
 use App\Exception\Rules\NotAwaitedInInterruptWindowException;
@@ -168,31 +169,37 @@ final readonly class InterruptWindowService
     }
 
     /**
-     * Cancels the imminent conditions of the card (its param `card`, and those it causes, `host`), or every condition
-     * of the window: the window closes once none is left.
+     * Cancels the imminent conditions of the card (its param `card`, and those it causes, `host`), of the ring (its
+     * param `ring`), or every condition of the window: the window closes once none is left.
      *
      * @throws NoInterruptWindowException
      */
-    public function cancel(Game $game, ?string $cardId): void
+    public function cancel(Game $game, ?string $cardId, ?Element $ring = null): void
     {
         if (! $this->current($game) instanceof InterruptWindow) {
             throw new NoInterruptWindowException();
         }
 
-        $this->gameStateManager->withState($game, function (GameState $state) use ($cardId): GameState {
+        $this->gameStateManager->withState($game, function (GameState $state) use ($cardId, $ring): GameState {
             $window = $state->currentInterruptWindow();
             \assert($window instanceof InterruptWindow);
             $kept = [];
             foreach ($window->triggers as $trigger) {
                 $card = $trigger->params['card'] ?? null;
-                if ($cardId === null || $card === $cardId || ($trigger->params['host'] ?? null) === $cardId) {
-                    if ($card !== null && $trigger->resolvedWhenCancelled) {
-                        $window->cancelledEffectCardIds[] = $card;
-                    } elseif ($card !== null) {
-                        $window->cancelledCardIds[] = $card;
-                    }
-                } else {
+                $triggerRing = $trigger->params['ring'] ?? null;
+                $named = match (true) {
+                    $cardId !== null => $card === $cardId || ($trigger->params['host'] ?? null) === $cardId,
+                    $ring instanceof Element => $triggerRing === $ring->value,
+                    default => true,
+                };
+                if (! $named) {
                     $kept[] = $trigger;
+                } elseif ($card !== null && $trigger->resolvedWhenCancelled) {
+                    $window->cancelledEffectCardIds[] = $card;
+                } elseif ($card !== null) {
+                    $window->cancelledCardIds[] = $card;
+                } elseif ($triggerRing !== null) {
+                    $window->cancelledRings[] = $triggerRing;
                 }
             }
 

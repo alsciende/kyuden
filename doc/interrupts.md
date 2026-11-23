@@ -1,6 +1,6 @@
 # Interrupts
 
-How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Done: the common ground, with the first triggering condition (1, a card would leave play), then the effects of a card that would initiate (2, the cancels), then a province that would be broken (3); the small groups come next, in the proposed order.
+How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Done: the common ground, with the first triggering condition (1, a card would leave play), then the effects of a card that would initiate (2, the cancels), then a province that would be broken (3), then the small groups (4 to 8).
 
 ## The rules
 
@@ -164,7 +164,7 @@ Done (`Trigger/EffectsInitiatingTrigger`, `Trigger/AttachmentBeingPlayedTrigger`
 - **Nested windows**: an interrupt played in a window is itself an event whose effects would initiate, its window stacked on top (Appeal to Sympathy cancelling the Appeal to Sympathy that cancels Banzai!: the second is played and cancelled, its player ends it, the first window asks again, Banzai! resolves). A card whose play waits in a window, still in the hand, is not offered again (`InterruptOfferer::waitingCardIds()`).
 - **Only the opponent's effects are offered to be cancelled** (decided while implementing): a player does not cancel their own effect, and being asked about each of them with the timer would only slow them down. Mantis Tenkinja and Iron Mountain Castle answer their own player's plays, Hantei XXXVIII every ability of the opponent (whether it chooses targets is not known).
 - **The conditions read on the public state**: Voice of Honor (more honored characters), Censure (the Imperial Favor), Forgery (less honor), Forged Edict (a Courtier that can be dishonored), Master of the Court (honored), Mushin no Shin (a character with 2 attachments or more), Shiba Yōjimbō (a Shugenja), Seppun Hidden Guard (a unique character, a character's ability), Finger of Jade (any card ability), Pathfinder's Blade (an ability of the attacked province, its character attacking), Effective Deception (attacked), Highlight the Flaws and Cursecatcher (a province's ability, face-down cards in it), Yogo Kikuyo and Defend Your Honor (during a conflict, a Spell event for the first). A card offered from the hand that is not an event (Yogo Kikuyo, `getAbilityStacksOutOfPlay()`) asks from the deck as well, as an event does.
-- **Duty** ("would cause you to lose your last honor") is not an effect initiating: it goes with the small groups (8).
+- **Duty** ("would cause you to lose your last honor") is not an effect initiating: it went with the small groups (5, the honor lost).
 
 ### 3. A province would be broken (20)
 
@@ -190,6 +190,8 @@ Done (`Trigger/ProvinceBreakingTrigger`, `Service/Interrupt/ProvinceBreakTrigger
 - Jurōjin's Curse (`11-jurojin-s-curse`, attachment, forced): When the fate phase ends
 - Trading on the Sand Road (`17-trading-on-the-sand-road`, event): When the draw phase would begin – skip the draw phase
 
+Done (`Trigger/PhaseBeginningTrigger`, `Trigger/PhaseEndingTrigger`, `Service/Interrupt/PhaseTriggerResolver`): `phase_beginning` and `phase_ending` (param `phase`), for the steps `<phase>_phase_began` and `<phase>_phase_ended` marked `interrupt` (`draw_phase_began`, `conflict_phase_ended`, `fate_phase_ended`: the phases a card interrupts). Nothing cancels a phase ending; the beginning of the draw phase cancelled (Trading on the Sand Road) skips it: `draw_phase_skipped` (`draw_phase_begins` to `conflict_phase_begins`) replaces `draw_phase_began` (`DrawPhaseSkippedGuardListener`, reading `InterruptedTransition::$cancelled`, every condition of its window cancelled). The conditions read on the public state: Pious Guardian (1 or fewer broken provinces), Hidden Mountain Pass (its province unbroken), Ethereal Alignment (a broken province sharing an element with a claimed ring), Jurōjin's Curse (forced, its character ready); Warden of the Damned is forced. The second fate phase of Jurōjin's Curse is not played by the engine (its players resolve what they can with the effect messages).
+
 ### 5. The conflict (5)
 
 - Ikebana Artisan (`12-ikebana-artisan`, character): When you would lose 1 honor for an unopposed conflict
@@ -197,6 +199,14 @@ Done (`Trigger/ProvinceBreakingTrigger`, `Service/Interrupt/ProvinceBreakTrigger
 - Ikoma Kiyono (`22-ikoma-kiyono`, character): When a glory count would begin
 - Know the Terrain (`24-know-the-terrain`, event): When an attack is declared against a non-stronghold facedown province you control
 - Seven Stings Keep (`30-seven-stings-keep`, stronghold): When you declare a conflict
+
+Done (`Service/Interrupt/HonorLossTriggerResolver`, `Service/Interrupt/ConflictTriggerResolver`):
+
+- **The honor lost** (`Trigger/HonorLosingTrigger`, `honor_losing`: `player`, `amount`): `LoseHonor`, and the defending player of an unopposed conflict (`unopposed_applied`, marked `unopposed`), not a player without honor. Cancelled, the honor is not lost (Ikebana Artisan, for the unopposed conflict only; Duty, when the amount is their honor or more). Giving honor is not losing it (glossary, Honor: the decision of the reactions): Duty is not offered for `TransferHonor`, the honor bids or the duels.
+- **The conflict lost** (`Trigger/ConflictLosingTrigger`, `conflict_losing`: `player`, the loser, and `winner`): `result_determined`, when the declared totals give a winner (`ConflictState::winnerIdFor()`). Cancelled (Kakita Toshimoko, once he has won his duel, initiated in the window), both players count 0 total skill: the conflict has no winner.
+- **The glory count** (`Trigger/GloryCountBeginningTrigger`, `glory_count_beginning`): `imperial_favor_contest_began`; Ikoma Kiyono is offered bowed, its player more honorable.
+- **The declaration** (`Trigger/ConflictDeclaringTrigger`, `conflict_declaring`: `player`, `defender`, `province`, `ring`, `type`): `DeclareConflict`, before the province is revealed. Know the Terrain is offered to the defending player for a regular province face down, when they have another one; the switch is approximated once the conflict is declared: the cards of the two provinces switched (`SwitchProvinceCards`) and the conflict moved to the other province (`MoveConflict`), the province cards keeping their place.
+- **Left out**: Seven Stings Keep, whose opponent declares the defenders before the attackers, which `DeclareConflict` carries.
 
 ### 6. A ring effect would resolve (5)
 
@@ -206,11 +216,15 @@ Done (`Trigger/ProvinceBreakingTrigger`, `Service/Interrupt/ProvinceBreakTrigger
 - Leniency (`16-leniency`, event): When you would resolve a ring effect
 - Jade Talisman (`42-jade-talisman`, attachment): When a ring effect would initiate
 
+Done (`Trigger/RingEffectResolvingTrigger`, in `ConflictTriggerResolver`): `ring_effect_resolving` (`ring`, `player`), the attacking player having won the conflict, before they resolve the effect of the contested ring: the steps entering `resolve_ring_effects` (`break_reactions_passed`, `no_province_broken`) are marked `interrupt`. Cancelled or replaced ("instead": Asako Azunami, All and Nothing, Restored Heirloom, Leniency; Jade Talisman cancels it), nobody resolves it (`ResolveRingEffectsEnterListener` activates nobody): the replacement is applied in the window with the effect messages. The cards "you would resolve" are offered to the attacking player (Leniency with a character of printed cost 2 or lower face up in their provinces, the cards face down being hidden from them too); Restored Heirloom from the hand and the conflict discard pile (`getAbilityStacksOutOfPlay()`); Jade Talisman, attached to a character, for every ring effect (its targets are not known to the engine). The ring effects resolved by cards (Shiba Tsukune) are not this condition.
+
 ### 7. Honored, dishonored, fate removed (3)
 
 - Young Rumormonger (`01-young-rumormonger`, character): When a character would be honored or dishonored
 - Embrace the Void (`02-embrace-the-void`, attachment): When 1 or more fate would be removed from attached character
 - Kitsuki Shomon (`15-kitsuki-shomon`, character): When another character you control would be dishonored
+
+Done (`Trigger/CharacterHonoringTrigger`, `Trigger/CharacterDishonoringTrigger`, `Trigger/FateRemovingTrigger`, `Service/Interrupt/CharacterStatusTriggerResolver`): `character_honoring` and `character_dishonoring` (`card`, `controller`) for `HonorCharacter` and `DishonorCharacter` on a character in play that can take the status; `fate_removing` (`card`, `controller`, `amount`) for `RemoveFate` on a character in play and for each character with fate in the fate phase (`fate_removed`). Cancelled, the message is not handled, the character keeps its fate (`fate_removed` leaves it out); the replacement is applied in the window (the other character honored, Kitsuki Shomon dishonored: a message that opens its own window; the fate moved to the fate pool, `MoveFate`). Young Rumormonger is offered when the player of the character controls another one. The status tokens placed or discarded are not honoring (the decision of the reactions).
 
 ### 8. Others (4)
 
@@ -218,6 +232,13 @@ Done (`Trigger/ProvinceBreakingTrigger`, `Service/Interrupt/ProvinceBreakTrigger
 - Wholeness of the World (`08-wholeness-of-the-world`, event): When a ring in your claimed ring pool would be returned to the unclaimed ring pool
 - Stay Your Hand (`16-stay-your-hand`, event): When a duel that targets a character you control would resolve (`CancelDuel` covers it meanwhile)
 - Subterfuge (`41-subterfuge`, event): When an opponent would draw 1 or more cards outside the draw phase
+
+Done (`Trigger/FirstPlayerTokenPassingTrigger`, `Trigger/RingReturningTrigger`, `Trigger/DuelResolvingTrigger`, `Trigger/CardsDrawingTrigger`; `Service/Interrupt/RingReturnTriggerResolver`, `Service/Interrupt/RoundTriggerResolver`):
+
+- **The first player token** (`first_player_token_passing`: `player`, `next`): `first_player_token_passed`; cancelled (Way of the Unicorn), the first player keeps it.
+- **A ring returned** (`ring_returning`: `ring`, `player`): `ReturnRing` on a claimed ring, and each claimed ring of `rings_returned`, one window for all. A cancel names the ring (`CancelImminentTrigger::$ring`, `InterruptWindow::$cancelledRings`): Wholeness of the World keeps one ring claimed, the others return.
+- **A duel resolved** (`duel_resolving`: `challenger`, `challenged`): the second `DeclareDuelStatistic`, before the honor is transferred and the result determined. Stay Your Hand cancels the duel itself (`CancelDuel`, accepted in the window): the statistic waiting is then refused by its handler, and not done.
+- **Cards drawn** (`cards_drawing`: `player`, `amount`): `DrawConflictCards` outside of the draw phase (`Phase::ofPlace()`). Cancelled (Subterfuge, its player less honorable), the cards are not drawn: Subterfuge discards up to 3 cards of the top of the deck, the player draws the others, with the effect messages.
 
 ## Decided (2026-11-22)
 

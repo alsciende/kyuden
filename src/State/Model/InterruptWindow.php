@@ -48,6 +48,13 @@ class InterruptWindow
     public array $cancelledCardIds = [];
 
     /**
+     * The rings whose triggering condition a cancel has removed (the param `ring`: a claimed ring kept).
+     *
+     * @var list<string>
+     */
+    public array $cancelledRings = [];
+
+    /**
      * The cards whose effects a cancel has cancelled (a condition resolved when cancelled): what waits is still done,
      * the resolution of each marked cancelled.
      *

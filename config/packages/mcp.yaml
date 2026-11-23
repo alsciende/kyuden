@@ -109,13 +109,14 @@ mcp:
                   must trigger them (trigger_reaction_ability), apply their effect and end them before any other action
                   that moves the game on. forced_reactions, in the view of each player, lists the forced reactions that
                   player has to trigger: while your opponent has one, wait for them.
-                - Interrupt windows: an effect that would make a card leave play, an event played, an ability
-                  triggered or an attachment played (and other conditions to come) may wait in an interrupt window (the
-                  first of ability_windows, timing interrupt) instead of being done: while your id is in its
-                  awaited_player_ids, interrupt (trigger_interrupt_ability, play_interrupt_event) or pass
+                - Interrupt windows: an effect or a framework step that would make a triggering condition occur (a
+                  card leaving play, an event played, an ability triggered, a province broken, a phase beginning or
+                  ending, honor lost, a ring effect, a ring returned…: the trigger of the window) may wait in an
+                  interrupt window (the first of ability_windows, timing interrupt) instead of being done: while your
+                  id is in its awaited_player_ids, interrupt (trigger_interrupt_ability, play_interrupt_event) or pass
                   (pass_interrupt); a card that cancels or replaces it sends cancel_imminent_trigger with the card of
-                  its params (the card that would leave play, the event or the card whose ability is triggered), then
-                  applies its replacement. Nothing else is accepted until it closes. An event or an ability whose
+                  its params (the card that would leave play, the event or the card whose ability is triggered), or its
+                  ring (a ring returned), or neither, then applies its replacement. Nothing else is accepted until it closes. An event or an ability whose
                   effects were cancelled is still played (its cost paid): it is marked cancelled in your resolutions,
                   apply nothing of it and end it (end_resolution).
                 - Totals: the engine does not compute skills, province strengths nor glory. When a step asks for them
