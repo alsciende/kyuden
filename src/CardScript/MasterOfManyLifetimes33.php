@@ -7,14 +7,23 @@ namespace App\CardScript;
 use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
+use App\Message\CancelImminentTrigger;
 use App\Message\FillProvince;
 use App\Message\PutCardIntoProvince;
+use App\Model\InterruptOffer;
+use App\Service\CardScript\TriggerConditions;
+use App\Trigger\CardLeavingPlay;
 
 /**
  * Master of Many Lifetimes.
  */
 final readonly class MasterOfManyLifetimes33 extends AbstractCardScript
 {
+    public function __construct(
+        private TriggerConditions $triggerConditions,
+    ) {
+    }
+
     #[\Override]
     public static function getCode(): string
     {
@@ -30,6 +39,24 @@ final readonly class MasterOfManyLifetimes33 extends AbstractCardScript
     #[\Override]
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
-        return [FillProvince::class, PutCardIntoProvince::class];
+        return [CancelImminentTrigger::class, FillProvince::class, PutCardIntoProvince::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+    }
+
+    /**
+     * When a character you control would leave play.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->character && $trigger->controller === $this->triggerConditions->getController($card)
+            ? [new InterruptOffer($card, would: true)]
+            : [];
     }
 }

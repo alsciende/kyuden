@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\TurnProvinceFacedown;
+use App\Model\InterruptOffer;
+use App\Trigger\CardLeavingPlay;
 
 /**
  * Traveling Philosopher.
@@ -30,5 +32,23 @@ final readonly class TravelingPhilosopher30 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [TurnProvinceFacedown::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+    }
+
+    /**
+     * When this character leaves play.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->card === $card
+            ? [new InterruptOffer($card)]
+            : [];
     }
 }

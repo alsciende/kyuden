@@ -70,16 +70,24 @@ export interface ResolutionView {
 }
 
 /**
- * A reaction window open for the viewer: the triggering condition that opened it (`province_revealed`, with the ids of
- * what it names) and the cards of the viewer that can react to it, until they trigger them, decline them or pass.
+ * A window open for the viewer, of an interrupt or a reaction (its timing): the triggering condition that opened it
+ * (`province_revealed`, with the ids of what it names) and the cards of the viewer that can answer it, until they
+ * trigger them, decline them or pass.
  */
-export interface ReactionWindowView {
+export interface AbilityWindowView {
   id: string
+  timing: 'interrupt' | 'reaction'
   trigger: string
   params: Record<string, string>
   card_ids: string[]
   /** those of the cards whose reaction is forced: they cannot be declined */
   forced_card_ids: string[]
+  /** an interrupt window: its stage */
+  stage?: 'would' | 'forced' | 'standard' | null
+  /** an interrupt window: the players it waits for */
+  awaited_player_ids?: string[]
+  /** an interrupt window: the client passes for the viewer after a while (asked about a card out of sight) */
+  timed?: boolean
 }
 
 /** a forced reaction a player has to trigger, shown to every reader: nobody moves the game on meanwhile */
@@ -111,8 +119,9 @@ export interface PlayerView {
   resolving_interrupts_and_reactions: number
   /** in the order they were initiated */
   resolutions: ResolutionView[]
-  /** the oldest first; for the viewer only (none for the other players) */
-  reaction_windows: ReactionWindowView[]
+  /** the newest first (nested sequences complete last in, first out); for the viewer only (none for the other
+   * players) */
+  ability_windows: AbilityWindowView[]
   /** the forced reactions the player has to trigger (those they can trigger now), for every reader */
   forced_reactions: ForcedReactionView[]
   fate_collected: boolean

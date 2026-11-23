@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\PutCharacterIntoPlay;
+use App\Model\InterruptOffer;
+use App\Trigger\CardLeavingPlay;
 
 /**
  * Fushichō.
@@ -30,5 +32,23 @@ final readonly class Fushicho08 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [PutCharacterIntoPlay::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+    }
+
+    /**
+     * When this character leaves play.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->card === $card
+            ? [new InterruptOffer($card)]
+            : [];
     }
 }

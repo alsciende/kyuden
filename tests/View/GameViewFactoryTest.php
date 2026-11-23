@@ -9,11 +9,13 @@ use App\Enum\AbilityTiming;
 use App\Enum\BannerPattern;
 use App\Enum\Clan;
 use App\Enum\Element;
+use App\Enum\InterruptStage;
 use App\Enum\Mon;
 use App\Enum\Orientation;
 use App\Enum\PersonalHonor;
 use App\Enum\Side;
 use App\Model\Banner;
+use App\Service\Interrupt\InterruptOfferer;
 use App\State\Manager\CardStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\CardState;
@@ -23,12 +25,13 @@ use App\State\Model\Resolution;
 use App\Tests\AbstractKernelTestCase;
 use App\Tests\Builder\PlayerBuilder;
 use App\Tests\Builder\Scenario;
+use App\Trigger\CardLeavingPlay;
 use App\View\GameViewFactory;
+use App\View\Model\AbilityWindowView;
 use App\View\Model\CardView;
+use App\View\Model\ForcedReactionView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
-use App\View\Model\ForcedReactionView;
-use App\View\Model\ReactionWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\StackView;
 
@@ -252,8 +255,54 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
         $janesViewOfJohn = $this->playerView($this->view($scenario, 'jane'), $scenario, 'john');
 
-        self::assertEquals([new ReactionWindowView('1', 'province_revealed', ['province' => 'p'], [$scenario->card('outflank')->getId()])], $johnsView->reactionWindows);
-        self::assertSame([], $janesViewOfJohn->reactionWindows);
+        self::assertEquals([new AbilityWindowView('1', AbilityTiming::Reaction, 'province_revealed', ['province' => 'p'], [$scenario->card('outflank')->getId()])], $johnsView->abilityWindows);
+        self::assertSame([], $janesViewOfJohn->abilityWindows);
+    }
+
+    public function testTheNewestWindowComesFirst(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('conflict_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->hand(['outflank' => '23-outflank']))
+            ->withPlayer('jane')
+            ->build();
+        $outflank = $scenario->card('outflank')->getId();
+        self::service(PlayerStateManager::class)->withState(
+            $scenario->player('john'),
+            fn (PlayerState $state): PlayerState => $state
+                ->openReactionWindow(new ReactionWindow('1', 'province_revealed', ['province' => 'p'], [$outflank]))
+                ->openReactionWindow(new ReactionWindow('2', 'province_revealed', ['province' => 'q'], [$outflank])),
+        );
+
+        $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
+
+        // nested sequences complete last in, first out
+        self::assertSame(['2', '1'], array_map(fn (AbilityWindowView $window): string => $window->id, $johnsView->abilityWindows));
+    }
+
+    public function testTheInterruptWindowIsShownToEveryPlayerWithTheCardsOfTheViewerOnly(): void
+    {
+        $scenario = $this->scenario()
+            ->atPlace('fate_phase_action_window')
+            ->withPlayer('john', fn (PlayerBuilder $p): PlayerBuilder => $p->inPlay(['kisada' => '01-hida-kisada', 'reprieve' => '01-reprieve']))
+            ->withPlayer('jane')
+            ->build();
+        $kisada = $scenario->card('kisada');
+        self::service(InterruptOfferer::class)->open($scenario->game(), [new CardLeavingPlay($kisada, $scenario->player('john'), true)]);
+        $john = $scenario->player('john')->getId();
+
+        $johnsView = $this->playerView($this->view($scenario, 'john'), $scenario, 'john');
+        $janesView = $this->playerView($this->view($scenario, 'jane'), $scenario, 'jane');
+
+        $window = $johnsView->abilityWindows[0];
+        self::assertSame(AbilityTiming::Interrupt, $window->timing);
+        self::assertSame('card_leaving_play', $window->trigger);
+        self::assertSame(InterruptStage::Would, $window->stage);
+        self::assertSame([$scenario->card('reprieve')->getId()], $window->cardIds);
+        self::assertSame([$john], $window->awaitedPlayerIds);
+        // the opponent sees the game wait, not the cards
+        self::assertSame([], $janesView->abilityWindows[0]->cardIds);
+        self::assertSame([$john], $janesView->abilityWindows[0]->awaitedPlayerIds);
     }
 
     public function testTheForcedReactionsAreVisibleToEveryPlayerWhileTheirControllerCanTriggerThem(): void
@@ -278,7 +327,7 @@ class GameViewFactoryTest extends AbstractKernelTestCase
         $forced = [new ForcedReactionView($laboratory, '1', 'phase_began', ['phase' => 'conflict'])];
         self::assertEquals($forced, $johnsView->forcedReactions);
         self::assertEquals($forced, $janesViewOfJohn->forcedReactions);
-        self::assertSame([$laboratory, $scenario->card('discarded')->getId()], $johnsView->reactionWindows[0]->forcedCardIds);
+        self::assertSame([$laboratory, $scenario->card('discarded')->getId()], $johnsView->abilityWindows[0]->forcedCardIds);
     }
 
     public function testTheChosenStrongholdProvinceIsVisibleToItsOwnerOnly(): void

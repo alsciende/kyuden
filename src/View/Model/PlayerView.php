@@ -19,7 +19,7 @@ final readonly class PlayerView
      * @param list<ConflictType> $declarableConflictTypes
      * @param list<StackView>    $stacks
      * @param list<ResolutionView> $resolutions
-     * @param list<ReactionWindowView> $reactionWindows
+     * @param list<AbilityWindowView> $abilityWindows
      * @param list<ForcedReactionView> $forcedReactions
      */
     public function __construct(
@@ -65,10 +65,11 @@ final readonly class PlayerView
          */
         public array $resolutions,
         /**
-         * The reaction windows in which the player has cards that can react, the oldest first: for the viewer only
-         * (none for the other players).
+         * The windows in which the player has cards that can answer a triggering condition, the newest first: nested
+         * sequences complete last in, first out. The interrupt window answered now first, shown whether the player is
+         * asked or not, then the reaction windows. For the viewer only (none for the other players).
          */
-        public array $reactionWindows,
+        public array $abilityWindows,
         /**
          * The forced reactions the player has to trigger, for every reader: nobody moves the game on meanwhile.
          */

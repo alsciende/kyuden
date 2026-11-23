@@ -28,16 +28,19 @@ use App\Message\EndResolution;
 use App\Message\MulliganConflictCards;
 use App\Message\MulliganDynastyCards;
 use App\Message\PassConflict;
+use App\Message\PassInterrupt;
 use App\Message\PassOpportunity;
 use App\Message\PlayCharacterFromProvince;
 use App\Message\PlayerActionInterface;
 use App\Message\RevealDynastyCard;
 use App\Message\RevealProvince;
+use App\Message\TriggerInterruptAbility;
 use App\Message\TriggerReactionAbility;
 use App\Model\PendingForcedReaction;
 use App\Service\AvailableActionsResolver;
 use App\Service\CardScript\ForcedReactionsResolver;
 use App\Service\ConflictService;
+use App\Service\Interrupt\InterruptWindowService;
 use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 use App\State\Model\DuelState;
@@ -80,6 +83,7 @@ final readonly class BotStrategy
         private BoardReader $boardReader,
         private RingEffectChooser $ringEffectChooser,
         private ForcedReactionsResolver $forcedReactionsResolver,
+        private InterruptWindowService $interruptWindowService,
     ) {
     }
 
@@ -99,6 +103,12 @@ final readonly class BotStrategy
         $forced = $this->forcedReactionsResolver->pending($player)[0] ?? null;
         if ($forced instanceof PendingForcedReaction) {
             return new TriggerReactionAbility($gameId, $playerId, $forced->card->getId());
+        }
+
+        // likewise its forced interrupts in the interrupt window open; it passes the others below
+        $forcedInterrupt = $this->interruptWindowService->current($game)?->currentStage()->forcedCardIds[$playerId][0] ?? null;
+        if ($forcedInterrupt !== null && in_array('trigger_interrupt_ability', $available, true)) {
+            return new TriggerInterruptAbility($gameId, $playerId, $forcedInterrupt);
         }
 
         if (in_array('choose_stronghold_province', $available, true) && $playerState->getStrongholdProvinceId() === null) {
@@ -135,6 +145,10 @@ final readonly class BotStrategy
         // character it has played
         if (in_array('end_resolution', $available, true)) {
             return new EndResolution($gameId, $playerId);
+        }
+
+        if (in_array('pass_interrupt', $available, true)) {
+            return new PassInterrupt($gameId, $playerId);
         }
 
         if (in_array('collect_fate', $available, true)) {

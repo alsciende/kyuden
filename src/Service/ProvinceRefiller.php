@@ -63,7 +63,8 @@ readonly class ProvinceRefiller
     public function refillScheduled(Game $game): void
     {
         $state = $this->gameStateManager->getState($game);
-        if ($state->provincesToRefill === [] || $state->duel !== null) {
+        // once what is resolved is over, interrupt windows included
+        if ($state->provincesToRefill === [] || $state->duel !== null || $state->interruptWindows !== []) {
             return;
         }
 

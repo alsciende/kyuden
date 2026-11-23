@@ -299,6 +299,26 @@ final readonly class TriggerConditions
     }
 
     /**
+     * The unbroken provinces the player controls, the stronghold province included ("the number of unbroken provinces
+     * you control": Ceaseless Duty).
+     */
+    public function countUnbrokenProvinces(Player $player): int
+    {
+        $count = 0;
+        foreach ([StackType::RegularProvince, StackType::StrongholdProvince] as $stackType) {
+            foreach ($player->getStacks($stackType) as $stack) {
+                foreach ($stack->getCards() as $card) {
+                    if ($card instanceof ProvinceCard && $card->getCurrentPlace() !== ProvinceCard::STATE_BROKEN) {
+                        ++$count;
+                    }
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * The province the card is attached to, or lies on (an attachment on a province: Untainted, Total Warfare).
      */
     public function getProvinceOf(PhysicalCard $card): ?ProvinceCard

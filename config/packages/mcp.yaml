@@ -104,10 +104,16 @@ mcp:
                 - Interrupts and reactions: when their triggering condition occurs, play them (play_interrupt_event,
                   play_reaction_event, trigger_interrupt_ability, trigger_reaction_ability) even outside of your
                   opportunity, then end them with end_resolution. The engine lists in your view the cards that can
-                  react to what just happened (reaction_windows); those of forced_card_ids are forced reactions: you
+                  react to what just happened (ability_windows, the newest first, each with its timing); those of
+                  forced_card_ids are forced reactions: you
                   must trigger them (trigger_reaction_ability), apply their effect and end them before any other action
                   that moves the game on. forced_reactions, in the view of each player, lists the forced reactions that
                   player has to trigger: while your opponent has one, wait for them.
+                - Interrupt windows: an effect that would make a card leave play (and other conditions to come) may wait
+                  in an interrupt window (the first of ability_windows, timing interrupt) instead of being done: while
+                  your id is in its awaited_player_ids, interrupt (trigger_interrupt_ability, play_interrupt_event) or
+                  pass (pass_interrupt); a card that cancels or replaces it sends cancel_imminent_trigger with the card
+                  that would leave play, then applies its replacement. Nothing else is accepted until it closes.
                 - Totals: the engine does not compute skills, province strengths nor glory. When a step asks for them
                   (declare_conflict_skill, declare_province_strength, declare_glory_count, declare_duel_statistic),
                   declare the true total of your side, every modifier applied (attachments, honored or dishonored

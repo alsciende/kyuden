@@ -12,6 +12,7 @@ use App\GameLog\GameLogEventListener;
 use App\Message\PlayerActionInterface;
 use App\MessageHandler\PlayerActionHandlerInterface;
 use App\Service\CardScript\ReactionOfferer;
+use App\Trigger\ImminentTriggerInterface;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\Config\Resource\DirectoryResource;
 use Symfony\Component\DependencyInjection\ChildDefinition;
@@ -54,8 +55,9 @@ class Kernel extends BaseKernel implements CompilerPassInterface
             ]);
         }
 
-        $subscriptions = $this->findCardScriptSubscriptions($container);
+        $subscriptions = $this->findCardScriptSubscriptions($container, TriggeringEventInterface::class);
         $container->setParameter('.app.card_script_subscriptions', $subscriptions);
+        $container->setParameter('.app.card_script_interrupt_subscriptions', $this->findCardScriptSubscriptions($container, ImminentTriggerInterface::class));
         $reactionOfferer = $container->getDefinition(ReactionOfferer::class);
         foreach (array_keys($subscriptions) as $eventClass) {
             // after the listeners applying its consequences: the cards read the state once it has resolved
@@ -67,12 +69,17 @@ class Kernel extends BaseKernel implements CompilerPassInterface
     }
 
     /**
-     * What the scripts of the cards subscribe to (AbstractCardScript::getSubscribedEvents()): the method of the script,
-     * by code of card, by class of event.
+     * What the scripts of the cards subscribe to (AbstractCardScript::getSubscribedEvents()), of one kind: the domain
+     * events their reactions answer (TriggeringEventInterface), or the imminent conditions their interrupts answer
+     * (ImminentTriggerInterface). The method of the script, by code of card, by class of event or condition.
      *
-     * @return array<class-string<TriggeringEventInterface>, array<string, string>>
+     * @template T of object
+     *
+     * @param class-string<T> $kind
+     *
+     * @return array<class-string<T>, array<string, string>>
      */
-    private function findCardScriptSubscriptions(ContainerBuilder $container): array
+    private function findCardScriptSubscriptions(ContainerBuilder $container, string $kind): array
     {
         $subscriptions = [];
         foreach (array_keys($container->findTaggedServiceIds(AbstractCardScript::class)) as $id) {
@@ -82,8 +89,12 @@ class Kernel extends BaseKernel implements CompilerPassInterface
             }
 
             foreach ($class::getSubscribedEvents() as $eventClass => $method) {
-                if (! is_subclass_of($eventClass, TriggeringEventInterface::class)) {
-                    throw new \LogicException(sprintf('The script %s subscribes to %s, which does not implement %s.', $class, $eventClass, TriggeringEventInterface::class));
+                if (! is_subclass_of($eventClass, TriggeringEventInterface::class) && ! is_subclass_of($eventClass, ImminentTriggerInterface::class)) {
+                    throw new \LogicException(sprintf('The script %s subscribes to %s, which implements neither %s nor %s.', $class, $eventClass, TriggeringEventInterface::class, ImminentTriggerInterface::class));
+                }
+
+                if (! is_subclass_of($eventClass, $kind)) {
+                    continue;
                 }
 
                 if (! method_exists($class, $method) || ! new \ReflectionMethod($class, $method)->isPublic()) {

@@ -9,10 +9,12 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Entity\Stack;
+use App\Enum\AbilityTiming;
 use App\Enum\StackType;
 use App\Model\PendingForcedReaction;
 use App\Service\AvailableActionsResolver;
 use App\Service\CardScript\ForcedReactionsResolver;
+use App\Service\Interrupt\InterruptWindowService;
 use App\Service\Nobori\NoboriCollection;
 use App\Service\SpecialActionsResolver;
 use App\State\Manager\CardStateManager;
@@ -24,7 +26,7 @@ use App\View\Model\CardView;
 use App\View\Model\ForcedReactionView;
 use App\View\Model\GameView;
 use App\View\Model\PlayerView;
-use App\View\Model\ReactionWindowView;
+use App\View\Model\AbilityWindowView;
 use App\View\Model\ResolutionView;
 use App\View\Model\SpecialActionView;
 use App\View\Model\StackView;
@@ -52,6 +54,7 @@ final readonly class GameViewFactory
         private Visibility $visibility,
         private NoboriCollection $noboriCollection,
         private ForcedReactionsResolver $forcedReactionsResolver,
+        private InterruptWindowService $interruptWindowService,
     ) {
     }
 
@@ -88,6 +91,37 @@ final readonly class GameViewFactory
     }
 
     /**
+     * The interrupt window answered now, if any, as the viewer sees it: the cards they can interrupt with in its current
+     * stage, and the players it waits for. The windows below it wait for it to close.
+     *
+     * @return list<AbilityWindowView>
+     */
+    private function createInterruptWindowViews(Player $viewer): array
+    {
+        $game = $viewer->getGame();
+        $window = $this->interruptWindowService->current($game);
+        $stage = $window?->currentStage();
+        $trigger = $window?->triggers[0] ?? null;
+        if ($window === null || $stage === null || $trigger === null) {
+            return [];
+        }
+
+        $viewerId = $viewer->getId();
+
+        return [new AbilityWindowView(
+            $window->id,
+            AbilityTiming::Interrupt,
+            $trigger->name,
+            $trigger->params,
+            $stage->cardIds[$viewerId] ?? [],
+            $stage->forcedCardIds[$viewerId] ?? [],
+            $stage->stage,
+            $this->interruptWindowService->awaitedPlayerIds($game),
+            in_array($viewerId, $stage->timedPlayerIds, true),
+        )];
+    }
+
+    /**
      * @param array<string, PhysicalCard> $cards the cards of the game by id
      */
     private function createPlayerView(Player $player, ?Player $viewer, array $cards): PlayerView
@@ -116,10 +150,13 @@ final readonly class GameViewFactory
             givenActions: $state->getGivenActions(),
             resolvingInterruptsAndReactions: $state->countInterruptsAndReactions(),
             resolutions: array_map(fn (Resolution $resolution): ResolutionView => $this->createResolutionView($resolution, $cards[$resolution->cardId] ?? null, $viewer), $state->getResolutions()),
-            reactionWindows: $isViewer ? array_map(
-                fn (ReactionWindow $window): ReactionWindowView => new ReactionWindowView($window->id, $window->trigger, $window->params, $window->cardIds, $window->forcedCardIds),
-                $state->getReactionWindows(),
-            ) : [],
+            abilityWindows: $isViewer ? [
+                ...$this->createInterruptWindowViews($player),
+                ...array_map(
+                    fn (ReactionWindow $window): AbilityWindowView => new AbilityWindowView($window->id, AbilityTiming::Reaction, $window->trigger, $window->params, $window->cardIds, $window->forcedCardIds),
+                    array_reverse($state->getReactionWindows()),
+                ),
+            ] : [],
             forcedReactions: array_map(
                 fn (PendingForcedReaction $pending): ForcedReactionView => new ForcedReactionView($pending->card->getId(), $pending->window->id, $pending->window->trigger, $pending->window->params),
                 $this->forcedReactionsResolver->pending($player),

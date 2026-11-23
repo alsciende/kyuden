@@ -52,6 +52,9 @@ framework:
                     # right after the handling, before the automatic transitions: the provinces dynasty cards have left,
                     # once nothing is being resolved
                     - 'App\Middleware\ProvinceRefillMiddleware'
+                    # last, right before the handler: a message making a triggering condition occur may wait in an
+                    # interrupt window instead of being handled (doc/interrupts.md)
+                    - 'App\Middleware\InterruptWindowMiddleware'
             # bus without middlewares to use in the message handlers
             transition.bus:
             # the tasks of the worker (src/Task), sent to the transport async: none of the middlewares of the actions,

@@ -9,6 +9,7 @@ use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Enum\StackType;
 use App\Event\TriggeringEventInterface;
+use App\Trigger\ImminentTriggerInterface;
 use App\Message\ActionInterface;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
@@ -62,16 +63,24 @@ abstract readonly class AbstractCardScript
     }
 
     /**
-     * The triggering conditions the card reacts to: the method of the script called, when such an event is dispatched,
-     * for each copy of the card that its controller can use where it is (ReactionOfferer). The method reads the event,
-     * the copy and the game, and returns the reactions its controller may trigger now (list<ReactionOffer>, none when
-     * the condition is not met); it changes nothing:
+     * The triggering conditions the card answers: the method of the script called for each copy of the card its
+     * controller can use where it is. The method reads the condition, the copy and the game, and changes nothing.
      *
-     *     public function onProvinceRevealed(ProvinceRevealedEvent $event, PhysicalCard $card, Game $game): array
+     * - A reaction answers a domain event (TriggeringEventInterface), once dispatched (ReactionOfferer): it returns the
+     *   reactions its controller may trigger now (list<ReactionOffer>, none when the condition is not met).
+     *
+     *       public function onProvinceRevealed(ProvinceRevealedEvent $event, PhysicalCard $card, Game $game): array
+     *
+     * - An interrupt answers an imminent condition (ImminentTriggerInterface), before it occurs (InterruptOfferer): it
+     *   returns the interrupts its controller may trigger (list<InterruptOffer>). The condition is read on what every
+     *   player sees: for a card out of sight, the copy may be in the conflict deck.
+     *
+     *       public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
      *
      * Read when the container is compiled (App\Kernel).
      *
-     * @return array<class-string<TriggeringEventInterface>, string> the name of the method, by class of event
+     * @return array<class-string<TriggeringEventInterface|ImminentTriggerInterface>, string> the name of the method, by
+     *                                                                                      class of event or condition
      */
     public static function getSubscribedEvents(): array
     {

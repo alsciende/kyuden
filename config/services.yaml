@@ -45,6 +45,7 @@ services:
             - '../src/Notification/'
             - '../src/Service/Tournament/Format/Pairing.php'
             - '../src/State/Model/'
+            - '../src/Trigger/'
             - '../src/View/Model/'
 
     # the fixtures and the makers extend classes of development dependencies, missing in production: private, so that

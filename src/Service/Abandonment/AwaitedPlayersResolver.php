@@ -29,7 +29,9 @@ use App\Message\PassConflict;
 use App\Message\PassOpportunity;
 use App\Service\AvailableActionsResolver;
 use App\Service\CardScript\ForcedReactionsResolver;
+use App\Service\Interrupt\InterruptWindowService;
 use App\State\Manager\GameStateManager;
+use App\State\Model\InterruptWindow;
 
 /**
  * The players the game waits for: those who must act for it to move on. Read from the state only, the same for every
@@ -70,6 +72,7 @@ final readonly class AwaitedPlayersResolver
         private AvailableActionsResolver $availableActionsResolver,
         private GameStateManager $gameStateManager,
         private ForcedReactionsResolver $forcedReactionsResolver,
+        private InterruptWindowService $interruptWindowService,
     ) {
     }
 
@@ -89,6 +92,12 @@ final readonly class AwaitedPlayersResolver
         ));
         if ($forced !== []) {
             return $forced;
+        }
+
+        // an interrupt window waits for its players only
+        $interrupting = $this->interruptWindowService->awaitedPlayerIds($game);
+        if ($this->interruptWindowService->current($game) instanceof InterruptWindow) {
+            return array_values(array_filter($players, fn (Player $player): bool => in_array($player->getId(), $interrupting, true)));
         }
 
         return array_values(array_filter($players, fn (Player $player): bool => $this->isAwaited($game, $player)));

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { GameView, ReactionWindowView } from '@/api/game'
+import type { GameView, AbilityWindowView } from '@/api/game'
 import { ELEMENT_NAMES } from '@/lib/icons'
 import { forcedBlock, offerOf, shownWindows, triggerText, useDeclinedReactions } from '@/lib/reactions'
 
@@ -17,11 +17,11 @@ function window(
   id: string,
   cardIds: string[],
   params: Record<string, string> = { province: 'raid' },
-): ReactionWindowView {
-  return { id, trigger: 'province_revealed', params, card_ids: cardIds, forced_card_ids: [] }
+): AbilityWindowView {
+  return { id, timing: 'reaction', trigger: 'province_revealed', params, card_ids: cardIds, forced_card_ids: [] }
 }
 
-function view(windows: ReactionWindowView[], changes: Partial<GameView> = {}): GameView {
+function view(windows: AbilityWindowView[], changes: Partial<GameView> = {}): GameView {
   const me = player(
     'me',
     [
@@ -29,7 +29,7 @@ function view(windows: ReactionWindowView[], changes: Partial<GameView> = {}): G
       stack('hand', [card('outflank', { id: 'outflank' })]),
       stack('role', [card('seeker', { id: 'seeker' })]),
     ],
-    { reaction_windows: windows },
+    { ability_windows: windows },
   )
 
   return game(me, player('opp'), changes)
@@ -46,8 +46,9 @@ describe('triggerText', () => {
 })
 
 describe('triggerText of the other triggering conditions', () => {
-  const other = (trigger: string, params: Record<string, string>): ReactionWindowView => ({
+  const other = (trigger: string, params: Record<string, string>): AbilityWindowView => ({
     id: '1',
+    timing: 'reaction',
     trigger,
     params,
     card_ids: [],

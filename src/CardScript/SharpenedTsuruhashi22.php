@@ -8,6 +8,8 @@ use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Enum\AbilityTiming;
 use App\Message\AddCardToHand;
+use App\Model\InterruptOffer;
+use App\Trigger\CardLeavingPlay;
 
 /**
  * Sharpened Tsuruhashi.
@@ -30,5 +32,23 @@ final readonly class SharpenedTsuruhashi22 extends AbstractCardScript
     public function getSpecialActions(PhysicalCard $card, Game $game): array
     {
         return [AddCardToHand::class];
+    }
+
+    #[\Override]
+    public static function getSubscribedEvents(): array
+    {
+        return [CardLeavingPlay::class => 'onCardLeavingPlay'];
+    }
+
+    /**
+     * When attached character is sacrificed.
+     *
+     * @return list<InterruptOffer>
+     */
+    public function onCardLeavingPlay(CardLeavingPlay $trigger, PhysicalCard $card, Game $game): array
+    {
+        return $trigger->card === $card->getAttachedCharacter() && $trigger->sacrificed
+            ? [new InterruptOffer($card)]
+            : [];
     }
 }

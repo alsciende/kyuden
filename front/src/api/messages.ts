@@ -68,6 +68,18 @@ export interface BreakProvince {
 export type CancelDuel = Record<string, never>
 
 /**
+ * Cancels what the interrupt window open is about to make happen, or replaces it ("would… instead": Reprieve, Iron Mine, Stand Your Ground…): the condition of a card no longer occurs (a character no longer leaves play, nor its attachments with it), or none of the window when no card is given. A window left without condition closes at once, and what waited in it is not done; the replacement itself is applied with the effect messages.
+ *
+ * Any player of the game can send it: the engine does not apply card effects.
+ */
+export interface CancelImminentTrigger {
+  /**
+   * Card whose imminent condition is cancelled (the character that would leave play); every condition of the window when omitted.
+   */
+  card_id?: string | null
+}
+
+/**
  * The player chooses, during setup, the province put under their stronghold.
  */
 export interface ChooseStrongholdProvince {
@@ -611,6 +623,11 @@ export interface MulliganDynastyCards {
  * The active player passes a conflict opportunity (3.2): they forfeit it, whatever its type.
  */
 export type PassConflict = Record<string, never>
+
+/**
+ * Passes in the interrupt window open, without interrupting what is about to happen: once every player asked has passed (an interrupt initiated meanwhile cancelling the passes), the window moves on to its next stage, or closes and what waited is done. A player who has passed may still initiate an interrupt in the same window.
+ */
+export type PassInterrupt = Record<string, never>
 
 /**
  * The active player passes their opportunity to act: they cannot act anymore until the end of the step.
@@ -1372,6 +1389,7 @@ export interface MessagePayloads {
   bow_card: BowCard
   break_province: BreakProvince
   cancel_duel: CancelDuel
+  cancel_imminent_trigger: CancelImminentTrigger
   choose_stronghold_province: ChooseStrongholdProvince
   claim_imperial_favor: ClaimImperialFavor
   claim_ring: ClaimRing
@@ -1415,6 +1433,7 @@ export interface MessagePayloads {
   mulligan_conflict_cards: MulliganConflictCards
   mulligan_dynasty_cards: MulliganDynastyCards
   pass_conflict: PassConflict
+  pass_interrupt: PassInterrupt
   pass_opportunity: PassOpportunity
   place_card_under: PlaceCardUnder
   place_fate: PlaceFate
