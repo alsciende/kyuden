@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\CardTypes\DynastyCard;
 use App\Entity\CardTypes\ProvinceCard;
+use App\Entity\Game;
 use App\Entity\PhysicalCard;
 use App\Entity\Player;
 use App\Enum\Orientation;
@@ -17,6 +18,8 @@ use App\Exception\Rules\NotInPlayException;
 use App\Exception\Rules\NotInProvinceException;
 use App\Exception\Rules\ProvinceNotAttackableException;
 use App\Exception\Rules\WrongCardTypeException;
+use App\Repository\CardRepository;
+use App\State\Manager\GameStateManager;
 use App\State\Manager\PlayerStateManager;
 
 /**
@@ -32,6 +35,8 @@ readonly class ConflictService
     public function __construct(
         private PlayerStateManager $playerStateManager,
         private ControlService $controlService,
+        private GameStateManager $gameStateManager,
+        private CardRepository $cardRepository,
     ) {
     }
 
@@ -150,5 +155,29 @@ readonly class ConflictService
                 && ! $this->isStrongholdProvince($province)
                 && $province->getCurrentPlace() === ProvinceCard::STATE_BROKEN,
         )->count();
+    }
+
+    /**
+     * 3.2.5: the attacked provinces the result of the conflict breaks, the attacking player having won by at least the
+     * strength of each one (compared separately), still unbroken.
+     *
+     * @return list<ProvinceCard>
+     */
+    public function findProvincesToBreak(Game $game): array
+    {
+        $conflict = $this->gameStateManager->getState($game)->currentConflict();
+        if (! $conflict->attackerWon()) {
+            return [];
+        }
+
+        $provinces = [];
+        foreach ($conflict->attackedProvinceIds as $provinceId) {
+            $province = $this->cardRepository->get($provinceId, $game);
+            if ($province instanceof ProvinceCard && $province->getCurrentPlace() === ProvinceCard::STATE_UNBROKEN && $conflict->excessSkill() >= ($conflict->provinceStrengths[$provinceId] ?? 0)) {
+                $provinces[] = $province;
+            }
+        }
+
+        return $provinces;
     }
 }

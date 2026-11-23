@@ -1,6 +1,6 @@
 # Interrupts
 
-How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Done: the common ground, with the first triggering condition (1, a card would leave play), then the effects of a card that would initiate (2, the cancels); the other groups come next, in the proposed order.
+How the engine is to offer the interrupts of the cards, and wait for them: the design decided with the author (2026-11-22), and the interrupts of the cards of the fixtures, grouped by triggering condition. The reactions are in `reactions.md`; what the engine does today is in `game-flow.md` ("Interrupts and reactions", "Reaction windows"). Done: the common ground, with the first triggering condition (1, a card would leave play), then the effects of a card that would initiate (2, the cancels), then a province that would be broken (3); the small groups come next, in the proposed order.
 
 ## The rules
 
@@ -17,7 +17,7 @@ The engine is a board: a message applies its effect when it is handled, and the 
 
 Rejected alternatives:
 
-- **Repairing after the fact** (restoring a character that has left play from a snapshot): its fate, status, tokens, skills, controller, participation, attachments and their state, the cards under it, the honor lost and the fate returned. Too much to save and restore, too easy to get wrong; no other online engine does it. `RestoreProvince` (Public Forum) stays until its triggering condition is taken in charge.
+- **Repairing after the fact** (restoring a character that has left play from a snapshot): its fate, status, tokens, skills, controller, participation, attachments and their state, the cards under it, the honor lost and the fate returned. Too much to save and restore, too easy to get wrong; no other online engine does it. `RestoreProvince` stays for the effects that restore a province broken (Ethereal Alignment, Akodo Toshiro); Public Forum cancels its breaking.
 - **A toggle on the card in hand**, arming it to stop the game: the card is unplayable without it, and the stops tell the opponent what the hand holds.
 - **Stopping only for the players who hold a card able to interrupt**: the stop tells the opponent that the player holds it.
 
@@ -175,7 +175,14 @@ Done (`Trigger/EffectsInitiating`, `Trigger/AttachmentBeingPlayed`, `Service/Int
 - Public Forum (`04-public-forum`, province): When this province would be broken
 - Strategic Weakpoint (`23-strategic-weakpoint`, holding): When the holding's province would be broken
 
-The window opens before the province is broken, so that a province triggers its own interrupt unbroken (the bug of `trigger_ability` on a broken province, `HANDOFF.md`, is not met).
+The window opens before the province is broken, so that a province triggers its own interrupt unbroken (`trigger_ability` of a province only leaves `unbroken`).
+
+Done (`Trigger/ProvinceBreaking`, `Service/Interrupt/ProvinceBreakTriggerResolver`):
+
+- **The condition**: `province_breaking`, for `BreakProvince` on a province the transition `break` accepts (face up, unbroken), its breaker the sender, and for `provinces_broken` (metadata `interrupt`), each attacked province the result of the conflict breaks (`ConflictService::findProvincesToBreak()`, shared with `ProvincesBrokenTransitionListener`), its breaker the attacking player; its params name the province (`card`), its controller and the breaker. One window for every province of the conflict (A War on Two Fronts).
+- **What cancelling means**: the province is not broken (Public Forum, `CancelImminentTrigger` beside `PlaceHonorTokens`, offered while no honor token is on it): the message is not handled; at the resolution of a conflict, the transition leaves it out (`InterruptedTransition::$cancelledCardIds`), and with no province broken the conflict goes on with the ring effects (`no_province_broken`). Strategic Weakpoint interrupts what would occur without cancelling it (its stage `would`).
+- **The holdings** read the province of their stack (Miwaku Kabe, Watchtower of Sun's Shadow, forced: offered in the stage `forced`, which every player sees).
+- **Left out**: Fury of the Kami, Model of Courtesy, Karmic Teachings and Slaughtered Village read the rings claimed on a province, which belong to Enlightenment (as Strategizing among the reactions).
 
 ### 4. A phase would begin or end (7)
 

@@ -35,6 +35,7 @@ function view(windows: AbilityWindowView[], changes: Partial<GameView> = {}): Ga
     [
       stack('in_play', [card('kisada', { id: 'kisada' }), card('reprieve', { id: 'reprieve' })]),
       stack('hand', [card('ground', { id: 'ground' })]),
+      stack('regular_province', [card('mori', { id: 'mori' })]),
     ],
     { ability_windows: windows },
   )
@@ -83,6 +84,15 @@ describe('shownInterruptWindow', () => {
     expect(trigger('attachment_being_played', { card: 'hidden', code: 'katana', target: 'kisada' })).toBe(
       'Jane is about to play Fine Katana on Hida Kisada',
     )
+  })
+
+  it('names the province that would be broken', () => {
+    const shown = shownInterruptWindow(
+      view([window({ trigger: 'province_breaking', params: { card: 'mori' } })]),
+      cards,
+    )
+
+    expect(shown?.trigger).toBe('Kuroi Mori would be broken')
   })
 
   it('names the hand of an event offered', () => {
